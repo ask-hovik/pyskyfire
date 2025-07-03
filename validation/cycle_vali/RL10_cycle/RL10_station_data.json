@@ -1,0 +1,112 @@
+{
+    "engine_condition_fuel": {
+      "fuel_tank": {
+        "static_pressure": 190800,
+        "total_pressure": 190800, 
+        "total_temperature": 21.44,
+        "mass_flow": null,
+        "density": 69.47,
+        "total_enthalpy": -244464
+      },
+      "fuel_pump_inlet": {
+        "static_pressure": 179800,
+        "total_pressure": 187500, 
+        "total_temperature": 21.44,
+        "mass_flow": 2.7946,
+        "density": 69.47,
+        "total_enthalpy": -244464
+      },
+      "fuel_pump_interstage": {
+        "static_pressure": 3669000,
+        "total_pressure": 3687000, 
+        "total_temperature": 26.47,
+        "mass_flow": 2.7751,
+        "density": 68.64,
+        "total_enthalpy": -158657
+      },
+      "fuel_pump_discharge": {
+        "static_pressure": 7301000,
+        "total_pressure": 7359000, 
+        "total_temperature": 32.02,
+        "mass_flow": 2.7587,
+        "density": 67.60,
+        "total_enthalpy": -64756.1
+      },
+      "cooling_jacket_inlet": {
+        "static_pressure": 7021000,
+        "total_pressure": 7078000, 
+        "total_temperature": 32.19,
+        "mass_flow": 2.7587,
+        "density": 67.04,
+        "total_enthalpy": -64756.1
+      },
+      "cooling_jacket_exit": {
+        "static_pressure": 5632000,
+        "total_pressure": 5729000, 
+        "total_temperature": 213.4,
+        "mass_flow": 2.7587,
+        "density": 6.175,
+        "total_enthalpy": 2885410
+      },
+      "turbine_inlet": {
+        "static_pressure": 5493000,
+        "total_pressure": 5611000, 
+        "total_temperature": 213.4,
+        "mass_flow": 2.7470,
+        "density": 6.034,
+        "total_enthalpy": 2885410
+      },
+      "turbine_housing_exit": {
+        "static_pressure": 3876000,
+        "total_pressure": 3973000, 
+        "total_temperature": 200.6,
+        "mass_flow": 2.7587,
+        "density": 4.594,
+        "total_enthalpy": 2673050
+      },
+      "fuel_injector_plenum": {
+        "static_pressure": 3709000,
+        "total_pressure": 3709000, 
+        "total_temperature": 199.7,
+        "mass_flow": 2.7587,
+        "density": 4.392,
+        "total_enthalpy": 2657230
+      }
+    },
+
+    "engine_condition_oxidizer": {
+        "oxygen_tank": {
+          "static_pressure": 292000,
+          "total_pressure": 292000, 
+          "total_temperature": 97.06,
+          "mass_flow": null,
+          "density": 1106.40,
+          "total_enthalpy": 154494
+        },
+        "ox_pump_inlet": {
+          "static_pressure": 250500,
+          "total_pressure": 275500, 
+          "total_temperature": 97.06,
+          "mass_flow": 13.9525,
+          "density": 1106.40,
+          "total_enthalpy": 154494
+        },
+        "ox_pump_discharge": {
+          "static_pressure": 4147000,
+          "total_pressure": 4282000, 
+          "total_temperature": 99.22,
+          "mass_flow": 13.9480,
+          "density": 1105.59,
+          "total_enthalpy": 160122
+        },
+        "ox_injector_plenum": {
+          "static_pressure": 3650000,
+          "total_pressure": 3718000, 
+          "total_temperature": 101.2,
+          "mass_flow": 13.9480,
+          "density": 1094.22,
+          "total_enthalpy": 163170
+        }
+    }
+}
+  

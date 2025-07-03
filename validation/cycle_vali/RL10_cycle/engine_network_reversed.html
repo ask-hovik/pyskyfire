@@ -1,0 +1,155 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 1080px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "fu_engine_in", "label": "Fu Engine In\np = 1.908e+05 Pa\nT = 22.7 K\n\u1e41  = 2.765 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "stage1_pump_in", "label": "Stage1 Pump In\np = 1.908e+05 Pa\nT = 22.7 K\n\u1e41  = 2.793 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "stage1_shaft_recirc", "label": "Stage1 Shaft Recirc\np = 3.711e+06 Pa\nT = 28.1 K\n\u1e41  = 0.020 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "stage2_shaft_recirc", "label": "Stage2 Shaft Recirc\np = 7.232e+06 Pa\nT = 33.4 K\n\u1e41  = 0.008 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "pump_interstage1", "label": "Pump Interstage1\np = 3.711e+06 Pa\nT = 28.1 K\n\u1e41  = 2.793 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "pump_interstage2", "label": "Pump Interstage2\np = 3.711e+06 Pa\nT = 28.1 K\n\u1e41  = 2.773 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "stage2_pump_out", "label": "Stage2 Pump Out\np = 7.232e+06 Pa\nT = 33.4 K\n\u1e41  = 2.773 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "regen_duct_in", "label": "Regen Duct In\np = 7.232e+06 Pa\nT = 33.4 K\n\u1e41  = 2.757 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "regen_in", "label": "Regen In\np = 6.870e+06 Pa\nT = 33.4 K\n\u1e41  = 2.757 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "regen_interstage", "label": "Regen Interstage\np = 6.865e+06 Pa\nT = 61.1 K\n\u1e41  = 2.757 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "regen_out", "label": "Regen Out\np = 5.437e+06 Pa\nT = 234.2 K\n\u1e41  = 2.757 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "bypass_in", "label": "Bypass In\np = 5.328e+06 Pa\nT = 234.2 K\n\u1e41  = 2.757 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "bypass_valve", "label": "Bypass Valve\np = 5.328e+06 Pa\nT = 234.2 K\n\u1e41  = 0.012 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "turbine_in", "label": "Turbine In\np = 5.328e+06 Pa\nT = 234.2 K\n\u1e41  = 2.745 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "turbine_out", "label": "Turbine Out\np = 3.959e+06 Pa\nT = 214.1 K\n\u1e41  = 2.757 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "bypass_out", "label": "Bypass Out\np = 3.959e+06 Pa\nT = 214.0 K\n\u1e41  = 2.745 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "fu_injector_plenum", "label": "Fu Injector Plenum\np = 3.722e+06 Pa\nT = 214.1 K\n\u1e41  = 2.757 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "fu_chamber_in", "label": "Fu Chamber In\np = 3.275e+06 Pa\nT = 214.1 K\n\u1e41  = 2.757 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "ox_engine_in", "label": "Ox Engine In\np = 2.920e+05 Pa\nT = 97.0 K\n\u1e41  = 13.976 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "ox_pump_in", "label": "Ox Pump In\np = 2.920e+05 Pa\nT = 97.1 K\n\u1e41  = 13.983 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "ox_pump_out", "label": "Ox Pump Out\np = 4.229e+06 Pa\nT = 99.2 K\n\u1e41  = 13.983 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "ox_shaft_recirc", "label": "Ox Shaft Recirc\np = 4.229e+06 Pa\nT = 99.2 K\n\u1e41  = 0.007 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "ox_duct_in", "label": "Ox Duct In\np = 4.229e+06 Pa\nT = 99.2 K\n\u1e41  = 13.976 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "ox_injector_plenum", "label": "Ox Injector Plenum\np = 3.722e+06 Pa\nT = 99.2 K\n\u1e41  = 13.976 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "ox_chamber_in", "label": "Ox Chamber In\np = 3.275e+06 Pa\nT = 99.2 K\n\u1e41  = 13.976 kg/s", "shape": "box"}, {"color": {"background": "#FFFFFF", "border": "#555"}, "font": {"align": "left", "color": "#333", "face": "Latin Modern Roman"}, "id": "gearbox_dump", "label": "Gearbox Dump\np = 7.232e+06 Pa\nT = 33.4 K\n\u1e41  = 0.008 kg/s", "shape": "box"}, {"color": {"background": "#AFC6E0", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "merge_stage1_recirc", "label": "Merge Stage1 Recirc", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#C9B3E6", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "stage1_fuel_pump", "label": "Stage1 Fuel Pump", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#AFC6E0", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "split_stage1_recirc", "label": "Split Stage1 Recirc", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#C9B3E6", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "stage2_fuel_pump", "label": "Stage2 Fuel Pump", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#AFC6E0", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "split_stage2_recirc", "label": "Split Stage2 Recirc", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#AFC6E0", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "duct_pump_regen", "label": "Duct Pump Regen", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#D46A6A", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "regen_half_pass", "label": "Regen Half Pass", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#D46A6A", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "regen_full_pass", "label": "Regen Full Pass", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#AFC6E0", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "duct_regen_turbine", "label": "Duct Regen Turbine", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#AFC6E0", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "split_turbine_bypass", "label": "Split Turbine Bypass", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#66CDAA", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "turbine", "label": "Turbine", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#AFC6E0", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "merge_turbine_bypass", "label": "Merge Turbine Bypass", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#AFC6E0", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "duct_turbine_injector", "label": "Duct Turbine Injector", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#AFC6E0", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "fu_injector", "label": "Fu Injector", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#AFC6E0", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "merge_ox_recirc", "label": "Merge Ox Recirc", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#C9B3E6", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "ox_pump", "label": "Ox Pump", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#AFC6E0", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "split_ox_recirc", "label": "Split Ox Recirc", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#AFC6E0", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "duct_pump_chamber_ox", "label": "Duct Pump\nChamber Ox", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#AFC6E0", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "ox_injector", "label": "Ox Injector", "shape": "box", "shape_properties": {"borderRadius": 10}}, {"color": {"background": "#FFE066", "border": "#444"}, "font": {"color": "#222", "face": "Latin Modern Roman"}, "id": "transmission", "label": "Transmission", "shape": "box", "shape_properties": {"borderRadius": 10}}]);
+                  edges = new vis.DataSet([{"arrows": "to", "color": {"color": "#888"}, "from": "fu_engine_in", "length": 100, "to": "merge_stage1_recirc", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "stage1_shaft_recirc", "length": 100, "to": "merge_stage1_recirc", "width": 1}, {"arrows": "to", "color": {"color": "#888"}, "from": "stage2_shaft_recirc", "length": 100, "to": "merge_stage1_recirc", "width": 1}, {"arrows": "to", "color": {"color": "#888"}, "from": "merge_stage1_recirc", "length": 100, "to": "stage1_pump_in", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "stage1_pump_in", "length": 100, "to": "stage1_fuel_pump", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "stage1_fuel_pump", "length": 100, "to": "pump_interstage1", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "pump_interstage1", "length": 100, "to": "split_stage1_recirc", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "split_stage1_recirc", "length": 100, "to": "pump_interstage2", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "split_stage1_recirc", "length": 100, "to": "stage1_shaft_recirc", "width": 1}, {"arrows": "to", "color": {"color": "#888"}, "from": "pump_interstage2", "length": 100, "to": "stage2_fuel_pump", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "stage2_fuel_pump", "length": 100, "to": "stage2_pump_out", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "stage2_pump_out", "length": 100, "to": "split_stage2_recirc", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "split_stage2_recirc", "length": 100, "to": "regen_duct_in", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "split_stage2_recirc", "length": 100, "to": "stage2_shaft_recirc", "width": 1}, {"arrows": "to", "color": {"color": "#888"}, "from": "split_stage2_recirc", "length": 100, "to": "gearbox_dump", "width": 1}, {"arrows": "to", "color": {"color": "#888"}, "from": "regen_duct_in", "length": 100, "to": "duct_pump_regen", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "duct_pump_regen", "length": 100, "to": "regen_in", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "regen_in", "length": 100, "to": "regen_half_pass", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "regen_half_pass", "length": 100, "to": "regen_interstage", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "regen_interstage", "length": 100, "to": "regen_full_pass", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "regen_full_pass", "length": 100, "to": "regen_out", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "regen_out", "length": 100, "to": "duct_regen_turbine", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "duct_regen_turbine", "length": 100, "to": "bypass_in", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "bypass_in", "length": 100, "to": "split_turbine_bypass", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "split_turbine_bypass", "length": 100, "to": "turbine_in", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "split_turbine_bypass", "length": 100, "to": "bypass_valve", "width": 1}, {"arrows": "to", "color": {"color": "#888"}, "from": "turbine_in", "length": 100, "to": "turbine", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "turbine", "length": 100, "to": "bypass_out", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "bypass_out", "length": 100, "to": "merge_turbine_bypass", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "bypass_valve", "length": 100, "to": "merge_turbine_bypass", "width": 1}, {"arrows": "to", "color": {"color": "#888"}, "from": "merge_turbine_bypass", "length": 100, "to": "turbine_out", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "turbine_out", "length": 100, "to": "duct_turbine_injector", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "duct_turbine_injector", "length": 100, "to": "fu_injector_plenum", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "fu_injector_plenum", "length": 100, "to": "fu_injector", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "fu_injector", "length": 100, "to": "fu_chamber_in", "width": 3}, {"arrows": "to", "color": {"color": "#888"}, "from": "ox_engine_in", "length": 100, "to": "merge_ox_recirc", "width": 5}, {"arrows": "to", "color": {"color": "#888"}, "from": "ox_shaft_recirc", "length": 100, "to": "merge_ox_recirc", "width": 1}, {"arrows": "to", "color": {"color": "#888"}, "from": "merge_ox_recirc", "length": 100, "to": "ox_pump_in", "width": 6}, {"arrows": "to", "color": {"color": "#888"}, "from": "ox_pump_in", "length": 100, "to": "ox_pump", "width": 6}, {"arrows": "to", "color": {"color": "#888"}, "from": "ox_pump", "length": 100, "to": "ox_pump_out", "width": 6}, {"arrows": "to", "color": {"color": "#888"}, "from": "ox_pump_out", "length": 100, "to": "split_ox_recirc", "width": 6}, {"arrows": "to", "color": {"color": "#888"}, "from": "split_ox_recirc", "length": 100, "to": "ox_duct_in", "width": 5}, {"arrows": "to", "color": {"color": "#888"}, "from": "split_ox_recirc", "length": 100, "to": "ox_shaft_recirc", "width": 1}, {"arrows": "to", "color": {"color": "#888"}, "from": "ox_duct_in", "length": 100, "to": "duct_pump_chamber_ox", "width": 5}, {"arrows": "to", "color": {"color": "#888"}, "from": "duct_pump_chamber_ox", "length": 100, "to": "ox_injector_plenum", "width": 5}, {"arrows": "to", "color": {"color": "#888"}, "from": "ox_injector_plenum", "length": 100, "to": "ox_injector", "width": 5}, {"arrows": "to", "color": {"color": "#888"}, "from": "ox_injector", "length": 100, "to": "ox_chamber_in", "width": 5}, {"arrows": "to", "color": {"color": "#888"}, "dashes": true, "from": "transmission", "length": 100, "to": "turbine", "width": 1}, {"arrows": "to", "color": {"color": "#888"}, "dashes": true, "from": "stage1_fuel_pump", "length": 100, "to": "transmission", "width": 1}, {"arrows": "to", "color": {"color": "#888"}, "dashes": true, "from": "stage2_fuel_pump", "length": 100, "to": "transmission", "width": 1}, {"arrows": "to", "color": {"color": "#888"}, "dashes": true, "from": "ox_pump", "length": 100, "to": "transmission", "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
