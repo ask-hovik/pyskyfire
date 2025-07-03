@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyskyfire"
+version = "0.1.0"
+description = "A Python library for rocket engine simulation and design."
+readme = "README.md"           # Ensure README.md exists
+license = { file = "LICENSE" } # Ensure LICENSE file exists
+authors = [
+  { name = "Ask Haugerud Hovik", email = "ask.hovik@gmail.com" }
+]
+dependencies = [
+  "numpy",
+  "scipy",
+  "matplotlib",
+  "cantera",
+  "rocketcea",
+  "vispy"
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false  # Ensures setuptools treats it as a standard package
