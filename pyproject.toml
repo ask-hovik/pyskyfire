@@ -17,7 +17,13 @@ dependencies = [
   "matplotlib",
   "cantera",
   "rocketcea",
-  "vispy"
+  "vispy",
+  "coolprop",
+  "pandas",
+  "cloudpickle",
+  "pyvis",
+  "pywebview",
+  "PySide6"
 ]
 classifiers = [
   "Programming Language :: Python :: 3",

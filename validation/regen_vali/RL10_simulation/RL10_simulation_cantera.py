@@ -156,7 +156,7 @@ plt.rcParams.update({
     'legend.edgecolor': 'black',
     'grid.linestyle': '--',
     'grid.alpha': 0.7, 
-    'savefig.dpi': 600
+    'savefig.dpi': 600,
 })
 
 # -------------------------------

@@ -11,7 +11,7 @@ Modules:
     thrust_chamber  - Thrust chamber and cooling channel geometry.
 """
 
-from .contour import *
+#from .contour import *
 from .physics import *
 from .solver import *
 from .thrust_chamber import *

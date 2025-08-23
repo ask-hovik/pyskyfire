@@ -1,0 +1,91 @@
+# ------------------------------------------------------------------------------
+#  PYTHON / GENERAL IGNORES
+# ------------------------------------------------------------------------------
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+*.egg-info/
+build/
+dist/
+wheelhouse/
+*.egg
+.eggs/
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+coverage.xml
+*.cover
+*.py,cover
+.cache
+nosetests.xml
+pytest_cache/
+junit-xml/
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+venv.bak/
+*venv*/
+
+# Environment / Python tool configs
+.env
+.venv/
+pythonenv.yaml
+
+# ------------------------------------------------------------------------------
+#  EDITOR / OS / MISCELLANEOUS
+# ------------------------------------------------------------------------------
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# VSCode / IDE settings (if you don't want to track them)
+.vscode/
+.idea/
+
+# ------------------------------------------------------------------------------
+# OUTPUT FILES
+# ------------------------------------------------------------------------------
+*.png
+*.jpg
+*.log
+
+# ------------------------------------------------------------------------------
+#  PROJECT-SPECIFIC / OPTIONAL
+# ------------------------------------------------------------------------------
+
+# Temporary or backup files
+*.bak
+*.swp
+*.tmp
+*~
+*.dll
+
+# If you don't want to track your dill folder or any generated data, uncomment:
+# dills/
+
+# If you create large simulation outputs or logs in validation/ or results/,
+# you can ignore them here:
+# validation/logs/
+# results_comparison/*.log
+
+# ------------------------------------------------------------------------------
+#  END
+# ------------------------------------------------------------------------------

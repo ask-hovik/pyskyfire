@@ -1,6 +1,8 @@
 
 import numpy as np
-from vispy import app, scene
+from vispy import app
+app.use_app('pyside6')
+from vispy import scene
 from vispy.scene import visuals, SceneCanvas
 from vispy.visuals.filters.clipping_planes import PlanesClipper
 import matplotlib.pyplot as plt
@@ -74,7 +76,7 @@ def plot_engine_3D(
         norm_arr = np.array(norm, dtype=np.float32)
 
     # Set up VisPy scene
-    canvas = SceneCanvas(keys="interactive", show=True, bgcolor="white", size=(4000, 5000))
+    canvas = SceneCanvas(keys="interactive", show=True, bgcolor="white")#, size=(4000, 5000))
     view = canvas.central_widget.add_view()
     if show_axis:
         visuals.XYZAxis(parent=view.scene)
