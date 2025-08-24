@@ -24,16 +24,15 @@ dependencies = [
   "PySide6>=6.9.1"
 ]
 
-[project.urls]
-Homepage = "https://github.com/ask-hovik/pyskyfire"
-Issues = "https://github.com/ask-hovik/pyskyfire/issues"
-
-[project.classifiers]
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent"
 ]
+
+[project.urls]
+Homepage = "https://github.com/ask-hovik/pyskyfire"
+Issues = "https://github.com/ask-hovik/pyskyfire/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyskyfire"]
