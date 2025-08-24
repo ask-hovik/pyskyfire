@@ -12,6 +12,12 @@ Usage:
     import pyskyfire.turbine as turbine
 """
 
+try:
+    from importlib.metadata import version, PackageNotFoundError
+    __version__ = version("pyskyfire")
+except PackageNotFoundError:  # during editable installs without metadata
+    __version__ = "0+unknown"
+
 from . import regen
 from . import pump
 from . import turbine

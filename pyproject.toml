@@ -1,36 +1,46 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
 
 [project]
 name = "pyskyfire"
 version = "0.1.0"
 description = "A Python library for rocket engine simulation and design."
-readme = "README.md"           # Ensure README.md exists
-license = { file = "LICENSE" } # Ensure LICENSE file exists
-authors = [
-  { name = "Ask Haugerud Hovik", email = "ask.hovik@gmail.com" }
-]
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Ask Haugerud Hovik", email = "ask.hovik@gmail.com" }]
 dependencies = [
-  "numpy",
-  "scipy",
-  "matplotlib",
-  "cantera",
-  "rocketcea",
-  "vispy",
-  "coolprop",
-  "pandas",
-  "cloudpickle",
-  "pyvis",
-  "pywebview",
-  "PySide6"
+  "numpy>=2.3.2",
+  "scipy>=1.16.1",
+  "matplotlib>=3.10.5",
+  "cantera>=3.1.0",
+  "rocketcea>=1.2.1",
+  "vispy>=0.15.2",
+  "coolprop>=7.0.0",
+  "pandas>=2.3.2",
+  "cloudpickle>=3.1.1",
+  "pyvis>=0.3.2",
+  "pywebview>=6.0",
+  "PySide6>=6.9.1"
 ]
+
+[project.urls]
+Homepage = "https://github.com/ask-hovik/pyskyfire"
+Issues = "https://github.com/ask-hovik/pyskyfire/issues"
+
+[project.classifiers]
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent"
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
-namespaces = false  # Ensures setuptools treats it as a standard package
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyskyfire"]
+
+[tool.hatch.build]
+include = [
+  "src/pyskyfire/**",
+  "README.md",
+  "LICENSE",
+]
