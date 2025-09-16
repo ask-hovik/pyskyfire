@@ -2,7 +2,6 @@ import numpy as np
 import math
 import pyskyfire.regen.physics as physics
 from scipy.optimize import fsolve
-from scipy.integrate import solve_ivp
 
 class BoundaryConditions:
     """Object for storing boundary conditions for the solver.
@@ -29,55 +28,115 @@ class HeatExchangerPhysics:
     def __init__(self, thrust_chamber, circuit_index):
         self.thrust_chamber = thrust_chamber
         self.circuit_index = circuit_index
+        self.counter = 0
 
     def dQ_hot_dx(self, x, T_hw):
         """
         Computes the heat transfer rate from the hot gas to the wall. Bartz equation, for example
         """
-        D_hyd = 2*self.thrust_chamber.contour.r(x) # TODO: Need to update the hydraulic diameter to take the cooling channel shape into account?
-        A_chmb = self.thrust_chamber.contour.A(x)
-        mdot_g = self.thrust_chamber.combustion_transport.mdot
-        T_g = self.thrust_chamber.combustion_transport.get_T(x)
-        T_gr = (T_hw + T_g)/2 # this is a temporary measure until I find a better way, This is actually T_film, T_gr is supposed to be something else
-        Cp_gr = self.thrust_chamber.combustion_transport.get_cp(x)
-        mu_gr = self.thrust_chamber.combustion_transport.get_mu(x)
-        k_gr = self.thrust_chamber.combustion_transport.get_k(x)
-        h_gas_corr = self.thrust_chamber.h_gas_corr # a user supplied correction factor
-        H_hw = self.thrust_chamber.combustion_transport.get_H(x, T=T_hw)
+        approach = "new"
+        if approach == "new":
+            h_gas_corr = self.thrust_chamber.h_gas_corr # a user supplied correction factor
+            D_hyd = 2*self.thrust_chamber.contour.r(x) # TODO: Need to update the hydraulic diameter to take the cooling channel shape into account?
+            A_chmb = self.thrust_chamber.contour.A(x)
+            mdot_g = self.thrust_chamber.combustion_transport.mdot
+            T_g = self.thrust_chamber.combustion_transport.get_T(x)
+            T_gr = (T_hw + T_g)/2 # film temperature
 
-        """# optional route
-        H_g = self.thrust_chamber.combustion_transport.get_H(x)
-        gamma_g = self.thrust_chamber.combustion_transport.get_gamma(x)
-        Cp_g = self.thrust_chamber.combustion_transport.get_cp(x)
-        M_g = self.thrust_chamber.combustion_transport.get_M(x)
-        T_stag = T_g*(1 + (gamma_g - 1)/2*M_g**2)
-        H_g0  = Cp_g*T_stag
- 
-        #Eckert reference enthalpy
-        H_gr = 0.5*(H_hw + H_g) + 0.18*(H_g0 - H_g)
-        #print(f"H_gr: {H_gr}")
-        #print(f"x: {x}")
-        T_gr = self.thrust_chamber.combustion_transport.get_T(x, H=H_gr)
-        Cp_gr = self.thrust_chamber.combustion_transport.get_cp(x, H=H_gr)
-        mu_gr = self.thrust_chamber.combustion_transport.get_mu(x, H=H_gr)
-        k_gr = k_g"""
+            H_hw = self.thrust_chamber.combustion_transport.get_h(x, T=T_hw)
+            self.counter +=1
+            
+            H_g = self.thrust_chamber.combustion_transport.get_h(x)
 
-        h_gr = physics.h_gas_bartz(k_gr, D_hyd, Cp_gr, mu_gr, mdot_g, A_chmb, T_g, T_gr)*h_gas_corr
-        # TODO: The issue with the above approximations is that they don't evaluate the property at the correct 
-        # wall enthalpy. Instead the freestream is used. Likely the only way to rectify this is to switch from using
-        # CEA to using cantera. I want to make this switch anyways to get contraction region values. 
-        
-        dA_dx_hot = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
+            M_g = self.thrust_chamber.combustion_transport.get_M(x)
+            a_g = self.thrust_chamber.combustion_transport.get_a(x)
+            H_gr = 0.5*(H_hw + H_g) + 0.18*(0.5*M_g**2*a_g**2) # original eq: H_gr = 0.5*(H_hw + H_g) + 0.18*(H_g0 - H_g)
+            
+            #print(f"H_gr:{H_gr}")
+            #input()
+            #Cp_gr = self.thrust_chamber.combustion_transport.get_cp(x, T=T_gr)
+            #mu_gr = self.thrust_chamber.combustion_transport.get_mu(x, T=T_gr)
+            #k_gr = self.thrust_chamber.combustion_transport.get_k(x, T=T_gr)
+            #Pr_gr = Cp_gr*mu_gr/k_gr
 
-        
+            #props = self.thrust_chamber.combustion_transport.get_properties(x, h=H_gr, props=("cp","mu","k","Pr"))
+            #Cp_gr, mu_gr, k_gr, Pr_gr = props["cp"], props["mu"], props["k"], props["Pr"]
 
-        M_inf = self.thrust_chamber.combustion_transport.get_M(x)
-        gamma = self.thrust_chamber.combustion_transport.get_gamma(x)
-        T_aw = self.thrust_chamber.combustion_transport.get_T_aw(x, gamma, M_inf, T_inf=T_g)
-        H_aw = self.thrust_chamber.combustion_transport.get_H(x, T=T_aw)
+            # could potentially evaluate all of these in a single run (much faster)
+            #Cp_gr = self.thrust_chamber.combustion_transport.get_cp(x, h=H_gr)
+            #mu_gr = self.thrust_chamber.combustion_transport.get_mu(x, h=H_gr)
+            #k_gr = self.thrust_chamber.combustion_transport.get_k(x, h=H_gr)
+            #Pr_gr = Cp_gr*mu_gr/k_gr
 
-        h_g = h_gr/Cp_gr # enthalpy driven heat transfer definition
-        dQ_hw_dx = h_g*dA_dx_hot*(H_aw - H_hw)
+            Cp_gr = self.thrust_chamber.combustion_transport.get_cp(x)
+            mu_gr = self.thrust_chamber.combustion_transport.get_mu(x)
+            k_gr = self.thrust_chamber.combustion_transport.get_k(x)
+            Pr_gr = self.thrust_chamber.combustion_transport.get_Pr(x)
+
+
+            
+            # The glorious Bartz equation
+            h_gr = physics.h_gas_bartz_enthalpy_driven(k_gr, D_hyd, Cp_gr, mu_gr, mdot_g, A_chmb, T_g, T_gr)*h_gas_corr
+
+            dA_dx_hot = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
+            gamma = self.thrust_chamber.combustion_transport.get_gamma(x)
+            T_aw = physics.T_aw(gamma=gamma, M_inf=M_g, T_inf=T_g, Pr=Pr_gr)
+            H_aw = H_g + 0.5*Pr_gr**(1/3)*(M_g**2*a_g**2)
+            #print(H_aw)
+            #input()
+            #H_aw = -1399116.7949471772
+
+            #print(f"H_aw: {H_aw}")
+
+            h_g = h_gr/Cp_gr # enthalpy driven heat transfer definition
+            dQ_hw_dx = h_g*dA_dx_hot*(H_aw - H_hw)
+
+        elif approach == "old":
+            # Old Approach:
+            D_hyd = 2*self.thrust_chamber.contour.r(x) # TODO: Need to update the hydraulic diameter to take the cooling channel shape into account?
+            A_chmb = self.thrust_chamber.contour.A(x)
+            mdot_g = self.thrust_chamber.combustion_transport.mdot
+            T_g = self.thrust_chamber.combustion_transport.get_T(x)
+            T_gr = (T_hw + T_g)/2 # film temperature
+            
+            Cp_gr = self.thrust_chamber.combustion_transport.get_cp(x)
+            mu_gr = self.thrust_chamber.combustion_transport.get_mu(x)
+            k_gr = self.thrust_chamber.combustion_transport.get_k(x)
+            h_gas_corr = self.thrust_chamber.h_gas_corr # a user supplied correction factor
+
+            h_gr = physics.h_gas_bartz_enthalpy_driven(k_gr, D_hyd, Cp_gr, mu_gr, mdot_g, A_chmb, T_g, T_gr)*h_gas_corr
+            dA_dx_hot = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
+            M_inf = self.thrust_chamber.combustion_transport.get_M(x)
+            gamma = self.thrust_chamber.combustion_transport.get_gamma(x)
+            T_aw = self.thrust_chamber.combustion_transport.get_T_aw(x, gamma, M_inf, T_inf=T_g)
+            #H_aw = self.thrust_chamber.combustion_transport.get_h(x, T=T_aw)
+            H_aw = -1399116.7949471772
+            #H_hw = self.thrust_chamber.combustion_transport.get_h(x, T=T_hw) # problem child
+            H_hw = -11247569.350990318
+            h_g = h_gr/Cp_gr # enthalpy driven heat transfer definition
+            dQ_hw_dx = h_g*dA_dx_hot*(H_aw - H_hw)
+
+        elif approach == "idea":
+            
+            D_t = self.thrust_chamber.contour.r_t*2
+            cp_g = self.thrust_chamber.combustion_transport.get_cp(x)
+            mu_g = self.thrust_chamber.combustion_transport.get_mu(x)
+            Pr_g = self.thrust_chamber.combustion_transport.get_Pr(x)
+            p_c = self.thrust_chamber.combustion_transport.p_c
+            c_star = self.thrust_chamber.combustion_transport.c_star
+            A_t = self.thrust_chamber.contour.A_t
+            A_x = self.thrust_chamber.contour.A(x)
+            T_c = self.thrust_chamber.combustion_transport.T_c
+            gamma_g = self.thrust_chamber.combustion_transport.get_gamma(x)
+            M_g = self.thrust_chamber.combustion_transport.get_M(x)
+            
+            sigma = physics.sigma(T_hw, T_c, gamma_g, M_g, omega=0.6)
+            h_g = physics.h_gas_bartz(D_t, mu_g, cp_g, Pr_g, p_c, c_star, A_t, A_x, sigma)
+
+            dA_dx_hot = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
+            T_g = self.thrust_chamber.combustion_transport.get_T(x)
+            dQ_hw_dx = h_g*dA_dx_hot*(T_g - T_hw) 
+
 
         printout = False
         if printout: 
@@ -91,13 +150,14 @@ class HeatExchangerPhysics:
             print(f"k_gr in Q_hot: {k_gr}")
             print(f"h_gr in Q_hot: {h_gr}")
             print(f"dA_dx_hot in Q_hot: {dA_dx_hot}")
-            print(f"p in Q_hot: {p}")
+            #print(f"p in Q_hot: {p}")
             print(f"H_hw in Q_hot: {H_hw}")
-            print(f"M_inf in Q_hot: {M_inf}")
+            #print(f"M_inf in Q_hot: {M_g}")
             print(f"gamma in Q_hot: {gamma}")
             print(f"T_aw in Q_hot: {T_aw}")
             print(f"H_aw in Q_hot: {H_aw}")
             print(f"dQ_hw_dx in Q_hot: {dQ_hw_dx}\n")
+            x = input()
 
         return dQ_hw_dx
 
@@ -131,7 +191,7 @@ class HeatExchangerPhysics:
 
         # 2) sum each wall’s thermal resistance (R = L/(k·A)) per unit length
         walls = self.thrust_chamber.wall_group.walls
-        R_tot = sum(wall.thickness(x) / (wall.material.k * dA_dx_hot) for wall in walls) # TODO: this looks a little iffy
+        R_tot = sum(wall.thickness(x) / (wall.material.get_k((T_hw + T_cw)/2) * dA_dx_hot) for wall in walls) # TODO: this looks a little iffy
         dQ_cond_dx = (T_hw - T_cw) / R_tot
 
         # 3) conduction per unit length
@@ -141,7 +201,6 @@ class HeatExchangerPhysics:
         """
         Computes the heat transfer rate from the wall to the coolant.
         """
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         n_chan = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channel_positions*self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channels_per_leaf
 
         p = self.thrust_chamber.combustion_transport.get_p(x)
@@ -151,7 +210,6 @@ class HeatExchangerPhysics:
         Cp_cr = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].coolant_transport.get_cp(T_coolant_film, p)
         mu_cf = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].coolant_transport.get_mu(T_coolant_film, p)
 
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         D_c = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].Dh_coolant(x)
         dA_dx_cool = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_coolant(x) # TODO: reimplement fin area
         A_channel = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].A_coolant(x)
@@ -161,7 +219,6 @@ class HeatExchangerPhysics:
         u_c = physics.u_coolant(rho_bulk, mdot_c_single_channel, A_channel)
         Re_c = physics.reynolds(rho_bulk, u_c, D_c, mu_bulk)
 
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         R_curv = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].radius_of_curvature(x)
         phi_curv = physics.phi_curv(Re_c, D_c, R_curv)
 
@@ -289,10 +346,10 @@ class HeatExchangerPhysics:
 
         # heat transfer per length
         qdx = self.dQ_cond_dx(x, T_hw, T_cw)
-
+        T_rep = 0.5 * (T_hw + T_cw)
         Ts = [T_hw]
         for wall in self.thrust_chamber.wall_group.walls:
-            Rj = wall.thickness(x) / (wall.material.k * dA_dx_hot)
+            Rj = wall.thickness(x) / (wall.material.get_k(T_rep) * dA_dx_hot)
             # drop in temperature across this layer:
             T_next = Ts[-1] - qdx * Rj
             Ts.append(T_next)
@@ -471,7 +528,7 @@ def solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, cir
     p_static_arr = p_static_corrected
 
     global_R, final_R = analyse_residuals(residual_log, n_nodes)
-
+    #print(f"TP was acessed {physics_helper.counter} times")
     cooling_data = {
         "x"            : x_domain,
         "T"            : T_full,

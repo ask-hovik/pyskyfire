@@ -2,9 +2,7 @@
 # ---------------------------------------------------------------------
 import numpy as np
 from dataclasses import dataclass
-from typing      import Dict, List, Tuple, Iterable, Any
-import pyskyfire as psf
-import matplotlib.pyplot as plt
+from typing      import Dict, List, Iterable, Any
 
 # ────────────────────────────────────────────────────────────────────
 #  Tiny helper –– you already have this in blocks.py, re-import here

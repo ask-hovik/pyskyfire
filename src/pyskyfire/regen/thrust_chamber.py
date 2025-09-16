@@ -1,14 +1,9 @@
-from math import gamma
-from multiprocessing.sharedctypes import Value
+from __future__ import annotations
+from pyskyfire.regen.cross_section import SectionProfiles
 import numpy as np
-import scipy.optimize
-import scipy.special
-import scipy.interpolate
-import matplotlib.pyplot as plt
-import matplotlib.patches
-import warnings
-import time
-
+from abc import ABC, abstractmethod
+from math import gcd
+from functools import reduce
 
 class Contour:
     def __init__(self, xs, rs, name = None):
@@ -317,8 +312,6 @@ class ContourToroidalAerospike:
 
         super().__setattr__(key, value)
 
-
-
 class Wall:
     def __init__(self, material, thickness, name=None):
         """Object for representing an engine wall.
@@ -373,7 +366,7 @@ class WallGroup:
         """
         return sum(wall.thickness(x) for wall in self.walls)
 
-class CoolingCircuit:
+'''class CoolingCircuit:
     def __init__(self, name, contour, cross_section, span, placement, channel_height, coolant_transport): 
         """ defines a cooling circuit, which is a section of cooling channel
         
@@ -407,6 +400,8 @@ class CoolingCircuit:
         dx_dx_val = self.centerline_deriv_list[0][:, 0]
         dr_dx_val = self.centerline_deriv_list[0][:, 1]
         dtheta_dx_val = self.centerline_deriv_list[0][:, 2]
+
+        prof = self._make_profiles(centerline, local_coords)
         
         # Compute the stretching factor along the channel:
         #ds_dx = np.sqrt(dx_dx_val**2 + dr_dx_val**2 + (r_vals * dtheta_dx_val)**2) 
@@ -635,7 +630,329 @@ class CoolingCircuit:
     def finalize(self):
         self.precompute_thermal_properties()
         self.compute_volume()
-        #self.compute_geometry()
+        #self.compute_geometry()'''
+
+class CoolingCircuit:
+    def __init__(self, name, contour, cross_section, span, placement, channel_height, coolant_transport, blockage_ratio=None): 
+        self.name = name
+        self.contour = contour
+        self.cross_section = cross_section
+        self.placement = placement
+        self.channel_height = channel_height
+        self.coolant_transport = coolant_transport
+        self.blockage_ratio = blockage_ratio
+
+        if span[0] > span[1]:
+            self.span = [span[1], span[0]]
+            self.direction = -1
+        else:
+            self.span = span
+            self.direction = 1
+
+    # --- minimal helper: wrap the SAME params you used to pass before -----------
+    def _prof(self, centerline, local_coords):
+        N = centerline.shape[0]
+        br = getattr(self, "blockage_ratio", None)
+
+        if br is None:
+            br_arr = np.full(N, 0.5, dtype=float)  # default preserves current behavior
+        else:
+            br = np.asarray(br, dtype=float)
+            br_arr = np.full(N, float(br), dtype=float) if br.ndim == 0 else br
+            if br_arr.shape[0] != N:
+                raise ValueError(f"blockage_ratio length {br_arr.shape[0]} != N {N}")
+
+        return SectionProfiles(
+            h=np.asarray(self.channel_heights, float),
+            theta=np.asarray(self.channel_width, float),
+            t_wall=np.asarray(self.t_wall_tot, float),
+            centerline=np.asarray(centerline, float),
+            local_coords=np.asarray(local_coords, float),
+            blockage_ratio=br_arr
+        )
+
+    def precompute_thermal_properties(self):
+        centerline   = self.centerlines[0]
+        local_coords = self.local_coords_list[0]
+        x_vals       = centerline[:, 0]
+        r_vals       = centerline[:, 1]
+
+        dx_dx_val     = self.centerline_deriv_list[0][:, 0]
+        dr_dx_val     = self.centerline_deriv_list[0][:, 1]
+        dtheta_dx_val = self.centerline_deriv_list[0][:, 2]
+
+        # keep your current simplified ds/dx (your TODO remains)
+        ds_dx = np.sqrt(1.0 + dr_dx_val**2)
+
+        # pass EXACTLY the same inputs as before, but wrapped in prof
+        prof = self._prof(centerline, local_coords)
+
+        hot_perimeter  = self.cross_section.P_thermal(prof)
+        cold_perimeter = self.cross_section.P_coolant(prof)
+
+        self.dA_dx_thermal_exhaust_vals = hot_perimeter  * ds_dx
+        self.dA_dx_thermal_coolant_vals = cold_perimeter * ds_dx
+
+        A_coolant_vals = self.cross_section.A_coolant(prof)
+        self.A_coolant_vals = A_coolant_vals
+        self.dA_dx_coolant_vals = np.gradient(A_coolant_vals, x_vals)
+
+        self.Dh_coolant_vals = self.cross_section.Dh_coolant(prof)
+
+        self.radius_of_curvature_vals = radius_of_curvature(centerline)
+
+    def compute_volume(self):
+        centerline = self.centerlines[0]
+        x_vals = centerline[:, 0]
+        r_vals = centerline[:, 1]
+
+        dr_dx     = self.centerline_deriv_list[0][:, 1]
+        dtheta_dx = self.centerline_deriv_list[0][:, 2]
+        ds_dx = np.sqrt(1.0 + dr_dx**2 + (r_vals * dtheta_dx)**2)
+
+        volume_per_channel = np.trapezoid(self.A_coolant_vals * ds_dx, x_vals)
+        total_volume = volume_per_channel * self.placement.n_channel_positions
+        self.volume = total_volume
+
+    def compute_single_centerline(self):
+        list_of_wires = []
+        centerl = self.centerlines[0]
+        for i in range(len(centerl)):
+            local_coords = self.local_coords_list[i]
+            prof_i = self._prof(centerl, local_coords)
+            wire = self.cross_section.compute_cross_section(prof_i, i)
+            list_of_wires.append(wire)
+        self.wires = list_of_wires
+
+    def compute_geometry(self):
+        all_point_clouds = []
+        for i, centerline in enumerate(self.centerlines):
+            local_coords = self.local_coords_list[i]
+            prof_i = self._prof(centerline, local_coords)
+            # minimal change: pass just prof
+            point_cloud = self.cross_section.compute_point_cloud(prof_i)
+            all_point_clouds.append(point_cloud)
+        self.point_cloud = all_point_clouds
+
+    def dA_dx_thermal_exhaust(self, x):
+        return np.interp(x, self.x_domain, self.dA_dx_thermal_exhaust_vals)
+    
+    def dA_dx_thermal_coolant(self, x):
+        return np.interp(x, self.x_domain, self.dA_dx_thermal_coolant_vals)
+    
+    def A_coolant(self, x):
+        return np.interp(x, self.x_domain, self.A_coolant_vals)
+    
+    def dA_dx_coolant(self, x):
+        return np.interp(x, self.x_domain, self.dA_dx_coolant_vals)
+    
+    def Dh_coolant(self, x):
+        return np.interp(x, self.x_domain, self.Dh_coolant_vals)
+    
+    def radius_of_curvature(self, x):
+        return np.interp(x, self.x_domain, self.radius_of_curvature_vals)
+    
+    def set_centerline_test(self, centerline_list):
+        self.centerlines = centerline_list
+        self.local_coords_list = []
+        self.centerline_deriv_list = []
+
+        for centerline in centerline_list:
+            x_vals = centerline[:, 0]
+            r_vals = centerline[:, 1]
+            theta_vals = centerline[:, 2]
+
+            points_3d = np.column_stack((
+                x_vals,
+                r_vals * np.cos(theta_vals),
+                r_vals * np.sin(theta_vals),
+            ))
+
+            tangent_vectors = np.zeros_like(points_3d)
+            for i in range(3):
+                tangent_vectors[:, i] = np.gradient(points_3d[:, i], x_vals)
+            norms = np.linalg.norm(tangent_vectors, axis=1, keepdims=True)
+            tangent_vectors = tangent_vectors / np.clip(norms, 1e-12, None)
+        
+            # Vector from each point to the nearest point on the x-axis (i.e., to (x, 0, 0))
+            delta_to_axis = np.column_stack([
+                np.zeros_like(points_3d[:, 0]),   # no x component
+                -points_3d[:, 1],                 # -y
+                -points_3d[:, 2],                 # -z
+            ])
+
+            # Project "delta_to_axis" onto the plane perpendicular to the tangent
+            dot_dt = np.sum(delta_to_axis * tangent_vectors, axis=1, keepdims=True)
+            n = delta_to_axis - dot_dt * tangent_vectors
+
+            # Normalize; handle near-degenerate cases with sensible fallbacks
+            n_norm = np.linalg.norm(n, axis=1, keepdims=True)
+            tiny = 1e-12
+            bad = (n_norm[:, 0] < 1e-10)  # where projection nearly vanished
+
+            # Fallback 1: start from pure inward radial (yz) direction, then orthogonalize to t
+            rad = np.column_stack([
+                np.zeros_like(points_3d[:, 0]),
+                -points_3d[:, 1],
+                -points_3d[:, 2]
+            ])
+            rad_norm = np.linalg.norm(rad, axis=1, keepdims=True)
+            rad_unit = np.divide(rad, np.clip(rad_norm, tiny, None))
+            n_fb1 = rad_unit - np.sum(rad_unit * tangent_vectors, axis=1, keepdims=True) * tangent_vectors
+            n_fb1_norm = np.linalg.norm(n_fb1, axis=1, keepdims=True)
+
+            # Fallback 2: if still bad (e.g., point on axis and awkward tangent), use a double-cross with e_x
+            ex = np.array([1.0, 0.0, 0.0])
+            t_cross_ex = np.cross(tangent_vectors, ex)
+            n_fb2 = np.cross(tangent_vectors, t_cross_ex)
+            n_fb2_norm = np.linalg.norm(n_fb2, axis=1, keepdims=True)
+
+            # Choose the best available normal at each point
+            use_fb1 = bad & (n_fb1_norm[:, 0] >= 1e-10)
+            use_fb2 = bad & ~use_fb1
+
+            n[use_fb1] = n_fb1[use_fb1]
+            n_norm[use_fb1] = n_fb1_norm[use_fb1]
+
+            n[use_fb2] = n_fb2[use_fb2]
+            n_norm[use_fb2] = n_fb2_norm[use_fb2]
+
+            # Final normalize
+            n = np.divide(n, np.clip(np.linalg.norm(n, axis=1, keepdims=True), tiny, None))
+
+            # Ensure orientation truly points toward the x-axis
+            # (flip if the angle to delta_to_axis is obtuse)
+            flip = (np.sum(n * delta_to_axis, axis=1) < 0.0)
+            n[flip] *= -1.0
+
+            normal_vectors = n  # unit normals, perpendicular to tangents, pointing inward toward x-axis
+
+            binormal_vectors = np.cross(tangent_vectors, normal_vectors)
+            local_coords = np.stack((tangent_vectors, normal_vectors, binormal_vectors), axis=1)
+            self.local_coords_list.append(local_coords)
+
+            dr_dx = np.gradient(r_vals, x_vals)
+            dtheta_dx = np.gradient(theta_vals, x_vals)
+            centerline_deriv = np.column_stack((x_vals, dr_dx, dtheta_dx))
+            self.centerline_deriv_list.append(centerline_deriv)
+        # Example call (after computing tangent_vectors and normal_vectors for one centerline):
+        #plot_local_frames(points_3d, tangent_vectors, normal_vectors, vec_len=0.05)
+
+
+    def set_centerline(self, centerline_list):
+        self.centerlines = centerline_list
+        self.local_coords_list = []
+        self.centerline_deriv_list = []
+
+        for centerline in centerline_list:
+            x_vals = centerline[:, 0]
+            r_vals = centerline[:, 1]
+            theta_vals = centerline[:, 2]
+
+            points_3d = np.column_stack((
+                x_vals,
+                r_vals * np.cos(theta_vals),
+                r_vals * np.sin(theta_vals),
+            ))
+
+            tangent_vectors = np.zeros_like(points_3d)
+            for i in range(3):
+                tangent_vectors[:, i] = np.gradient(points_3d[:, i], x_vals)
+            norms = np.linalg.norm(tangent_vectors, axis=1, keepdims=True)
+            tangent_vectors = tangent_vectors / np.clip(norms, 1e-12, None)
+
+            normals = np.zeros_like(points_3d)
+            for i, (P, t) in enumerate(zip(points_3d, tangent_vectors)):
+                x, y, z = P
+                t_x, t_y, t_z = t
+                if abs(t_x) < 1e-6:
+                    candidate = np.array([0, -y, -z])
+                else:
+                    candidate = np.array([(y * t_y + z * t_z) / t_x, -y, -z])
+                nrm = np.linalg.norm(candidate)
+                normals[i] = candidate / nrm if nrm > 1e-6 else np.array([0.0, 0.0, 0.0])
+
+            binormal_vectors = np.cross(tangent_vectors, normals)
+            local_coords = np.stack((tangent_vectors, normals, binormal_vectors), axis=1)
+            self.local_coords_list.append(local_coords)
+
+            dr_dx = np.gradient(r_vals, x_vals)
+            dtheta_dx = np.gradient(theta_vals, x_vals)
+            centerline_deriv = np.column_stack((x_vals, dr_dx, dtheta_dx))
+            self.centerline_deriv_list.append(centerline_deriv)
+
+        # === Debug plot of frames in 3D ===
+        """fig = plt.figure(figsize=(8, 6))
+        ax = fig.add_subplot(111, projection="3d")
+        ax.plot(points_3d[:, 0], points_3d[:, 1], points_3d[:, 2], "k-", label="centerline")
+
+        scale = 0.05 * np.max(r_vals)  # arrow length scaling
+        for P, t, n, b in zip(points_3d, tangent_vectors, normals, binormal_vectors):
+            ax.quiver(*P, *(t * scale), color="r", linewidth=0.5)
+            ax.quiver(*P, *(n * scale), color="g", linewidth=0.5)
+            ax.quiver(*P, *(b * scale), color="b", linewidth=0.5)
+
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+        ax.set_title("Local coordinate frames along centerline")
+        ax.legend()
+        ax.set_box_aspect([1,1,1])
+        plt.show()"""
+
+
+
+
+    def set_channel_width(self, widths_rad):
+        self.channel_width = widths_rad
+    
+    def set_channel_height(self, heights):
+        self.channel_heights = heights
+
+    def set_t_wall_tot(self, t_wall_tot):
+        self.t_wall_tot = t_wall_tot
+    
+    def set_blockage_ratio(self, blockage_ratio):
+        """blockage_ratio can be scalar or length-N array over x-domain."""
+        self.blockage_ratio = blockage_ratio
+
+    def set_x_domain(self, x_domain):
+        self.x_domain = x_domain
+
+    def finalize(self):
+        self.precompute_thermal_properties()
+        self.compute_volume()
+        # self.compute_geometry()
+
+
+"""def plot_local_frames(points_3d, tangents, normals, vec_len=0.05):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    X, Y, Z = points_3d[:, 0], points_3d[:, 1], points_3d[:, 2]
+
+    # Tangents
+    ax.quiver(X, Y, Z,
+              tangents[:, 0], tangents[:, 1], tangents[:, 2],
+              length=vec_len, normalize=True, linewidth=0.5)
+
+    # Normals
+    ax.quiver(X, Y, Z,
+              normals[:, 0], normals[:, 1], normals[:, 2],
+              length=vec_len, normalize=True, linewidth=0.5)
+
+    # Plot the x-axis for reference
+    x_min, x_max = np.min(X), np.max(X)
+    ax.plot([x_min, x_max], [0, 0], [0, 0], linestyle='--', linewidth=1)
+
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+    ax.set_box_aspect((x_max - x_min + 1e-9,
+                       np.ptp(Y) + 1e-9,
+                       np.ptp(Z) + 1e-9))
+    plt.tight_layout()
+    plt.show()"""
+
 
 def old_radius_of_curvature(points): # TODO: not sure where this function should live
     """
@@ -768,7 +1085,7 @@ class CoolingCircuitGroup:
                 total_channels += circuit.placement.channel_count()
         return total_channels
 
-from abc import ABC, abstractmethod
+
 
 
 class ChannelPlacement(ABC):
@@ -824,12 +1141,8 @@ class InternalPlacement(ChannelPlacement):
     """def channel_count(self) -> int:
         return self.n_channel_positions# * self.n_channels_per_leaf"""
 
-import numpy as np
-from math import gcd
-from functools import reduce
-
 class ThrustChamber:
-    def __init__(self, contour, wall_group, cooling_circuit_group, combustion_transport, optimal_values=None, roughness=0.015e-3, K_factor=0.3, n_nodes=50):
+    def __init__(self, contour, wall_group, cooling_circuit_group, combustion_transport, optimal_values=None, roughness=0.015e-3, K_factor=0.3, n_nodes=50, h_gas_corr=1.0, h_cold_corr=1.0):
         """
         Args:
             contour (Contour): The hot-gas contour of the engine
@@ -845,8 +1158,8 @@ class ThrustChamber:
         self.n_nodes = n_nodes
         self.optimal_values = optimal_values
 
-        self.h_gas_corr = 1.0 # TODO: reimplement these as input values (maybe). Consider moving them to a more appropriate class?
-        self.h_cold_corr = 1.0
+        self.h_gas_corr = h_gas_corr 
+        self.h_cold_corr = h_cold_corr
 
         self._roughness = roughness
         self.K_factor = K_factor
@@ -860,7 +1173,11 @@ class ThrustChamber:
         for circuit in self.cooling_circuit_group.circuits: 
             circuit.finalize()
 
-        self.combustion_transport.compute_transport(self.contour) 
+        #self.combustion_transport.compute_transport(self.contour) 
+        #try:
+        self.combustion_transport.compute_aerothermodynamics(self.contour)
+        #except Exception:
+        #    self.combustion_transport.compute_transport(self.contour)
         # TODO: consider wheather this should be "automated" here or that compute_transport should be done by the user. 
         # I can imagine some scenarioes where simulations are bogged down because the transport properties are automatically
         # computed whenever a thrust chamber is initialised. 

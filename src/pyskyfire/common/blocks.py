@@ -1,14 +1,15 @@
 from __future__ import annotations
-import pyskyfire as psf
 import CoolProp.CoolProp as CP
 import numpy as np
 from copy import deepcopy
-
-g0 = 9.81
-
 from abc import ABC, abstractmethod
 from typing import Dict, List
-from dataclasses import dataclass
+
+# internal imports
+from pyskyfire.common.engine_network import Station
+from pyskyfire.regen.solver import BoundaryConditions, steady_heating_analysis
+
+g0 = 9.81 # TODO: implement shared constants regisry
 
 class FluidBlock(ABC):
     # metadata
@@ -25,9 +26,9 @@ class FluidBlock(ABC):
     @abstractmethod
     def compute(
         self,
-        stations_in : dict[str, psf.common.Station],
+        stations_in : dict[str, Station],
         signals_in  : dict[str, float]
-    ) -> tuple[dict[str, psf.common.Station], dict[str, float]]:
+    ) -> tuple[dict[str, Station], dict[str, float]]:
         """
         Return two dicts:
             • updated/created Station objects
@@ -50,9 +51,9 @@ class SignalBlock(ABC):
     @abstractmethod
     def compute(
         self,
-        stations_in : dict[str, psf.common.Station],
+        stations_in : dict[str, Station],
         signals_in  : dict[str, float]
-    ) -> tuple[dict[str, psf.common.Station], dict[str, float]]:
+    ) -> tuple[dict[str, Station], dict[str, float]]:
         """
         Return two dicts:
             • updated/created Station objects
@@ -135,7 +136,7 @@ class PumpBlock(FluidBlock):
 
         P_pump   = mdot_in * dh_act                    # W
 
-        stations_out = {self.st_out: psf.common.Station(p_target, T_out, mdot_in)}
+        stations_out = {self.st_out: Station(p_target, T_out, mdot_in)}
         signals_out  = {f"P_{self.name}": P_pump}
 
         return stations_out, signals_out
@@ -155,7 +156,7 @@ class RegenBlock(FluidBlock):
         Station key written back to the network (exit of circuit).
     circuit_index : int
         Which cooling circuit of the engine model this block represents.
-    engine : psf.Engine
+    engine : Engine
         Your pre-built rocket engine object (geometry + prop data).
     """
 
@@ -197,14 +198,14 @@ class RegenBlock(FluidBlock):
         #print(f"T_coolant_in: {st_i.T}")
         #print(f"p_coolant_in: {st_i.p}")
         #print(f"mdot_coolant_in: {st_i.mdot}")
-        bc = psf.regen.BoundaryConditions(
+        bc = BoundaryConditions(
                  T_coolant_in = T_in,
                  p_coolant_in = p_in,
                  mdot_coolant = mdot
              )
 
 
-        cooling_data = psf.regen.steady_heating_analysis(
+        cooling_data = steady_heating_analysis(
                            self.thrust_chamber,
                            n_nodes        = 100,
                            circuit_index  = self.circuit_index,
@@ -222,7 +223,7 @@ class RegenBlock(FluidBlock):
 
         # ---- build return dicts -------------------------------------
         stations_out = {
-            self.st_out: psf.common.Station(p = p_out,
+            self.st_out: Station(p = p_out,
                                  T = T_out,
                                  mdot = mdot)
         }
@@ -241,7 +242,7 @@ class RegenBlock(FluidBlock):
 
         st_i = stations[self.st_in]
 
-        bc = psf.regen.BoundaryConditions(
+        bc = BoundaryConditions(
             T_coolant_in = st_i.T,
             p_coolant_in = st_i.p,
             mdot_coolant = st_i.mdot,
@@ -249,7 +250,7 @@ class RegenBlock(FluidBlock):
 
 
         # Use a finer axial grid for the final report
-        cooling_data = psf.regen.steady_heating_analysis(
+        cooling_data = steady_heating_analysis(
             self.thrust_chamber,
             n_nodes        = 50,
             circuit_index  = self.circuit_index,
@@ -324,7 +325,7 @@ class TurbineBlock(FluidBlock):
 
         dp     = st_i.p - p_out                    # positive number
 
-        st_o = psf.common.Station(p = p_out,
+        st_o = Station(p = p_out,
                        T = T_out,
                        mdot = mdot)
 
@@ -375,7 +376,7 @@ class SimpleDuctBlock(FluidBlock):
         p_out = self.eta * p_in
         dp    = p_in - p_out                     # Pa
 
-        st_o = psf.common.Station(p = p_out,
+        st_o = Station(p = p_out,
                        T = T_in,                 # no heat pick-up modelled
                        mdot = mdot)
 
@@ -514,9 +515,9 @@ class OrificePlateBlock(FluidBlock):
         self.signal_outputs   = [self.dp_key]
 
     # ------------------------------------------------------------------
-    def compute(self, stations: dict[str, "psf.common.Station"],
+    def compute(self, stations: dict[str, "Station"],
                 signals : dict[str, float]
-               ) -> tuple[dict[str, "psf.common.Station"], dict[str, float]]:
+               ) -> tuple[dict[str, "Station"], dict[str, float]]:
 
         st_i = stations[self.st_in]
         p_in, T_in, mdot = st_i.p, st_i.T, st_i.mdot
@@ -533,7 +534,7 @@ class OrificePlateBlock(FluidBlock):
         if p_out <= 0.0:
             raise RuntimeError(f"{self.name}: computed p_out ≤ 0 Pa – geometry/Cd/mdot inconsistent?")
 
-        st_o = psf.common.Station(p=p_out, T=T_in, mdot=mdot)
+        st_o = Station(p=p_out, T=T_in, mdot=mdot)
 
         return {self.st_out: st_o}, {self.dp_key: dp}
 
@@ -628,7 +629,7 @@ class JunctionBlock(FluidBlock):
 
     # .................................................................
     def _simulate_path(self, blk_names: List[str], st_key: str, p_mix: float,
-                        T_mix: float, mdot: float, stations: Dict[str, "psf.common.Station"],
+                        T_mix: float, mdot: float, stations: Dict[str, "Station"],
                         signals: Dict[str, float]) -> float:
         """Return the *exit pressure* of one branch for a trial mdot.
 
@@ -646,7 +647,7 @@ class JunctionBlock(FluidBlock):
         loc_st = deepcopy(stations)
         loc_sg = deepcopy(signals)
 
-        loc_st[st_key] = psf.common.Station(p=p_mix, T=T_mix, mdot=mdot)
+        loc_st[st_key] = Station(p=p_mix, T=T_mix, mdot=mdot)
 
         for blk in path_blocks:
             ds, sg = blk.compute(loc_st, loc_sg)
@@ -682,7 +683,7 @@ class JunctionBlock(FluidBlock):
     # ------------------------------------------------------------------
     #  MAIN ENTRY POINT
     # ------------------------------------------------------------------
-    def compute(self, stations: Dict[str, "psf.common.Station"],
+    def compute(self, stations: Dict[str, "Station"],
                 signals: Dict[str, float]):
 
         # ─── 1. *merge* all inlet streams ────────────────────────────
@@ -757,7 +758,7 @@ class JunctionBlock(FluidBlock):
         # ─── 3. build output Station objects ─────────────────────────
         st_out = {}
         for out_key, m in branch_mdots.items():
-            st_out[out_key] = psf.common.Station(p=p_mix, T=T_mix, mdot=m)
+            st_out[out_key] = Station(p=p_mix, T=T_mix, mdot=m)
 
         # this block does not emit scalar signals
         return st_out, {}
@@ -839,7 +840,7 @@ class MassFlowSplitterBlock(FluidBlock):
         # build one Station per branch
         stations_out = {}
         for f, st_key in zip(fracs, self.st_out):
-            stations_out[st_key] = psf.common.Station(
+            stations_out[st_key] = Station(
                 p    = st_i.p,         # no Δp inside the node itself
                 T    = st_i.T,
                 mdot = f * mdot
@@ -890,7 +891,7 @@ class MassFlowMergerBlock(FluidBlock):
         T_mix = CP.PropsSI("T", "Hmass", h_mix, "P", p_ref, self.medium)  # ∗
 
         return {
-            self.st_out: psf.common.Station(p = p_ref, T = T_mix, mdot = mdot_tot)
+            self.st_out: Station(p = p_ref, T = T_mix, mdot = mdot_tot)
         }, {}
 
 

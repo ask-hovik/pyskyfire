@@ -2,7 +2,7 @@
 
 # Explicit imports for accessibility
 from .impeller import Impeller
-from .plot import plot_impeller_views, plot_impeller_3D
+#from .plot import plot_impeller_views, plot_impeller_3D
 
 # Expose submodules for direct access if needed
 from . import impeller, utils, plot, constants

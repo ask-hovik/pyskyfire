@@ -1,4 +1,4 @@
-import numpy as np
+'''import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Patch
 
@@ -216,3 +216,4 @@ def plot_impeller_views(imp):
     #plt.pause(0.1)
 
     print("Both plots displayed, continuing execution...")
+'''
