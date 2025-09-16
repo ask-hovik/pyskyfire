@@ -13,12 +13,12 @@ dependencies = [
   "numpy>=2.3",
   "scipy>=1.16",
   "coolprop>=7.0",
-  "CEA_Wrap>=2.0,
+  "CEA_Wrap>=2.0",
   "pandas>=2.3",
   "cloudpickle>=3.1",
   "pyvis>=0.3",
   "plotly>=6.3",
-  "gmsh>=4.14"
+  "gmsh>=4.14",
   "trimesh>=4.8"
 ]
 
