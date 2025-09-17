@@ -166,9 +166,9 @@ fig_ox_side_mdot = psf.viz.PlotStationProperty(station_dicts=[stations, ref_ox_s
                             labels=["Pyskyfire", "NASA, Binder"]
                             )
 
-tab_sizer.add_figure(fig_fuel_side_pressure)
-tab_sizer.add_figure(fig_fuel_side_temperature)
-tab_sizer.add_figure(fig_fuel_side_mdot)
+tab_sizer.add_figure(fig_fuel_side_pressure, caption="The discrepancy here is a sort of compounding effect of the pressure drop rhtough the cooling channels being underestimated. When pressure drop rises over cooling channels, higher pressure rise is needed across pump, which again means higher pressure drop across turbine. I decided to leave it in because I do not actually know exactly why the pressure drop in the channels is lower than expected." )
+tab_sizer.add_figure(fig_fuel_side_temperature, caption="Unknown why the reference data has a lower temperature rise than Pyskyfire. If you look at the temperature rise comparison in the regenerative cooling results they are not this excessive. ")
+tab_sizer.add_figure(fig_fuel_side_mdot, caption="The discrepancies all over the board is exacerbated by the fact that I am not correcting for ideal vs delivered Isp. This lowers mass flow which has an effect on the whole system. When better Isp estimates are made in the future, these predictions will improve. ")
 tab_sizer.add_figure(fig_ox_side_pressure)
 tab_sizer.add_figure(fig_ox_side_temperature)
 tab_sizer.add_figure(fig_ox_side_mdot)
@@ -203,6 +203,9 @@ html_network = psf.viz.render_engine_network(
     #height="900px",
 )
 
+text = "I can't figure out why the scaling is bad. I plan on rewriting the engine network visualiser anyways so I will leave this as is for now."
+
+tab_network.add_text(text)
 tab_network.add_raw_html(html_network)
 
 
@@ -477,25 +480,23 @@ tab3.add_figure(p4)
 tab3.add_figure(p5)
 tab3.add_figure(p6)
 
-# -------------- Built in charts ----------------
-tab4 = report.add_tab("Lookup Tables")
-theta_v_epsilon = psf.viz.PlotThetaVsEpsilon()
-tab4.add_figure(theta_v_epsilon)
-
-moody_diagram = psf.viz.PlotMoodyDiagram()
-tab4.add_figure(moody_diagram)
-
 # -------------- Thermal Gradient Charts ---------------
 tab5 = report.add_tab("Thermal Gradient")
+text = "This thermal boundary layer function is a little experimental. It's based on the 1/7 power law, which is only valid for prandtl numbers neat unity. So currently this is just a nice visual"
+
 chamber_gradient = psf.viz.PlotTemperatureProfile(cooling_data_b, thrust_chamber, 1, -0.2)
 throat_gradient = psf.viz.PlotTemperatureProfile(cooling_data_b, thrust_chamber, 1, 0)
 exit_gradient = psf.viz.PlotTemperatureProfile(cooling_data_b, thrust_chamber, 1, 1.05)
+
+tab5.add_text(text)
 tab5.add_figure(chamber_gradient)
 tab5.add_figure(throat_gradient)
 tab5.add_figure(exit_gradient)
 
 # -------------- Combustion Transport ----------------
 tab6 = report.add_tab("Combustion")
+text = "More granular simulation is possible, but have very minor effects on the results. At this resolution you get good results with very small computational overhead. "
+
 M = psf.viz.PlotTransportProperty(thrust_chamber.combustion_transport, prop="M")
 gamma = psf.viz.PlotTransportProperty(thrust_chamber.combustion_transport, prop="gamma")
 T = psf.viz.PlotTransportProperty(thrust_chamber.combustion_transport, prop="T")
@@ -508,6 +509,7 @@ Pr = psf.viz.PlotTransportProperty(thrust_chamber.combustion_transport, prop="Pr
 rho = psf.viz.PlotTransportProperty(thrust_chamber.combustion_transport, prop="rho")
 a = psf.viz.PlotTransportProperty(thrust_chamber.combustion_transport, prop="a")
 
+tab6.add_text(text)
 tab6.add_figure(M)
 tab6.add_figure(gamma)
 tab6.add_figure(T)

@@ -105,7 +105,7 @@ def setup_thrust_chamber(params):
 
 
     cross_section = psf.regen.CrossSectionRounded()
-    LH2_transport = psf.skycea.CoolantTransport(params["coolprop_fu"])
+    LH2_transport = psf.skycea.CoolantTransport(params["coolant_fu"])
 
     half_pass = psf.regen.CoolingCircuit(name="Half Pass", 
                                         contour=contour, 
@@ -324,6 +324,7 @@ def main():
         # Propellants
         "cea_fu": psf.common.Fluid(type="fuel", propellants=["H2"], fractions=[1.0]),
         "cea_ox": psf.common.Fluid(type="oxidizer", propellants=["O2(L)"], fractions=[1.0]),
+        "coolant_fu": psf.common.Fluid(type="fuel", propellants=["Hydrogen"], fractions=[1.0]),
         "coolprop_fu": "hydrogen",
         "coolprop_ox": "oxygen",
 

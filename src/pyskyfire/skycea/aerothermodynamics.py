@@ -85,9 +85,67 @@ class Aerothermodynamics:
         return cls(optimum)
 
     @classmethod
-    def from_F_pamb_Lstar():
-        """Calculate optimal values using thrust, area ratio and L-star"""
-        print("not implemented yet")
+    def from_F_Isp_eps_Lstar(cls, fu, ox, Isp, MR, p_c, F, eps, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, npts=15):
+        """Calculate optimal values using thrust, exit pressure and L-star"""
+
+        fus = []
+        oxs = []
+        for prop, frac in zip(fu.propellants, fu.fractions):
+            fus.append(cea.Fuel(prop, wt=frac, temp=T_fu_in))
+
+        for prop, frac in zip(ox.propellants, ox.fractions):
+            oxs.append(cea.Oxidizer(prop, wt=frac, temp=T_ox_in))
+        
+        rp = cea.RocketProblem(o_f = MR, 
+                               pressure=p_c*0.000145038, # Convert Pa to psi
+                               materials=[*oxs, *fus], 
+                               sup=eps) 
+        R = rp.run()
+        
+        #names = cea.ThermoInterface.keys()
+        #print(names)
+
+
+        c_star = float(getattr(R, "cstar"))           
+        Isp_ideal_amb = float(getattr(R, "isp"))      # perfectly expanded Isp
+        Isp_vac = float(getattr(R, "ivac"))           
+        rho_c = float(getattr(R, "c_rho"))
+        T_c = float(getattr(R, "c_t"))
+
+        Isp_vac = Isp # interject
+
+        g = 9.81
+        p_SL = 1.01325e5 # sea level pressure
+        mdot = F/(Isp_vac*g)
+        mdot_fu = mdot/(1+MR)
+        mdot_ox = mdot - mdot_fu
+
+        A_t = c_star*mdot/p_c
+        r_t = np.sqrt(A_t/np.pi)
+        t_stay = L_star*A_t*rho_c/mdot
+        V_c = mdot*t_stay/rho_c
+
+        A_e = A_t*eps
+        r_e = np.sqrt(A_e/np.pi)
+
+        # calculate ambient Isp
+        CF_vac = Isp_vac * g / c_star
+        CF_amb = CF_vac - (p_amb / p_c) * (A_e/A_t)
+        Isp_amb = CF_amb*c_star/g
+
+        CF_SL = CF_vac - (p_SL / p_c) * (A_e/A_t)
+        Isp_SL = CF_SL*c_star/g
+
+
+        optimum = dict(
+            fu=fu, ox=ox, MR=MR, p_c=p_c, T_c=T_c, F=F, eps=eps, L_star=L_star, c_star=c_star,
+            p_amb=p_amb, Isp_ideal_amb=Isp_ideal_amb, Isp_vac=Isp_vac, Isp_amb=Isp_amb,
+            Isp_SL=Isp_SL, CF_vac=CF_vac, CF_amb=CF_amb, CF_SL=CF_SL, mdot=mdot,
+            mdot_fu=mdot_fu, mdot_ox=mdot_ox, t_stay=t_stay, A_t=A_t, A_e=A_e,
+            r_t=r_t, r_e=r_e, V_c=V_c, T_fu_in=T_fu_in, T_ox_in=T_ox_in, npts=npts,
+        )
+
+        return cls(optimum)
 
     def compute_aerothermodynamics(self, contour, Nt: int = 64):
         """Create 2-D property maps on (x, T). Column 0 = equilibrium at that x."""

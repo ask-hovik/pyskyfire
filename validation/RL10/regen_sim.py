@@ -145,8 +145,6 @@ cooling_data_b = psf.regen.steady_heating_analysis(thrust_chamber,
 script_dir = os.path.dirname(os.path.abspath(__file__))
 out_path = os.path.join(script_dir, "regen_results.pkl")
 
-print(cooling_data_b)
-
 res = psf.common.Results()
 res.add(name="params", obj=params)
 res.add(name="thrust_chamber", obj=thrust_chamber)

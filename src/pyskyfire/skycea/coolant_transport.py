@@ -1,3 +1,5 @@
+from pyskyfire.common.fluids import Fluid
+
 class TransportProperties:
     def __init__(self, Pr, mu, k, cp = None, rho = None, gamma_coolant = None):
         """
@@ -136,26 +138,26 @@ class TransportProperties:
 import CoolProp.CoolProp as CP       
 
 class CoolantTransport:
-    def __init__(self, propellant):
-        self.propellant = propellant
+    def __init__(self, fluid: Fluid):
+        self.fluid = fluid.coolprop_string()
         
     def get_Pr(self, T, p):
-        return CP.PropsSI("PRANDTL", "T", T, "P", p, self.propellant)
+        return CP.PropsSI("PRANDTL", "T", T, "P", p, self.fluid)
 
     def get_mu(self, T, p):
-        return CP.PropsSI("VISCOSITY", "T", T, "P", p, self.propellant)
+        return CP.PropsSI("VISCOSITY", "T", T, "P", p, self.fluid)
 
     def get_k(self, T, p):
-        return CP.PropsSI("CONDUCTIVITY", "T", T, "P", p, self.propellant)
+        return CP.PropsSI("CONDUCTIVITY", "T", T, "P", p, self.fluid)
 
     def get_cp(self, T, p):
-        return CP.PropsSI("CPMASS", "T", T, "P", p, self.propellant)
+        return CP.PropsSI("CPMASS", "T", T, "P", p, self.fluid)
 
     def get_rho(self, T, p):
-        return CP.PropsSI("DMASS", "T", T, "P", p, self.propellant)
+        return CP.PropsSI("DMASS", "T", T, "P", p, self.fluid)
     
     def get_cv(self, T, p):
-        return CP.PropsSI("CVMASS", "T", T, "P", p, self.propellant)
+        return CP.PropsSI("CVMASS", "T", T, "P", p, self.fluid)
     
     def get_gamma(self, T, p):
-        return CP.PropsSI("ISENTROPIC_EXPONENT", "T", T, "P", p, self.propellant)
+        return CP.PropsSI("ISENTROPIC_EXPONENT", "T", T, "P", p, self.fluid)
