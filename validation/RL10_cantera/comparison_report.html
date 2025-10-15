@@ -1,0 +1,177 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>RL10 comparison</title>
+<link rel="preconnect" href="https://cdn.plot.ly">
+<style>
+:root {
+  --sidebar-w: 260px;
+  --bg: #ffffff;
+  --fg: #111;
+  --muted: #666;
+  --border: #ddd;
+  --accent: #0d6efd;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+.header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 20px;
+  font-weight: 600;
+}
+.container {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  min-height: calc(100vh - 58px);
+}
+.sidebar {
+  border-right: 1px solid var(--border);
+  padding: 12px 0;
+  overflow: auto;
+}
+.tab-btn {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  outline: none;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: var(--fg);
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+.tab-btn:hover {
+  background: #f6f8fa;
+}
+.tab-btn.active {
+  background: #eef4ff;
+  border-left-color: var(--accent);
+  color: #0a58ca;
+  font-weight: 600;
+}
+.content {
+  padding: 18px 22px 40px;
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+/* Blocks */
+.psf-block { margin: 16px 0; }
+.psf-text { line-height: 1.5; color: var(--fg); }
+.psf-figure { margin: 12px 0; }
+.psf-caption { font-size: 12px; color: var(--muted); margin-top: 4px; }
+/* Make Plotly plots use available width */
+.psf-figure .plotly-graph-div { width: 100% !important; }
+/* --- Key/Value tables --- */
+.psf-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+.psf-table th, .psf-table td {
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  vertical-align: top;
+}
+.psf-table th {
+  background: #f7f9fb;
+  text-align: left;
+  width: 34%;
+}
+.psf-table caption {
+  text-align: left;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+}
+</style>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script>
+function psfActivateTab(idx) {
+  const btns = document.querySelectorAll('.tab-btn');
+  const panels = document.querySelectorAll('.tab-panel');
+  btns.forEach((b, i) => {
+    if (i === idx) b.classList.add('active'); else b.classList.remove('active');
+  });
+  panels.forEach((p, i) => {
+    if (i === idx) p.classList.add('active'); else p.classList.remove('active');
+  });
+  // Persist selection
+  try { localStorage.setItem('psf_active_tab', String(idx)); } catch(e) {}
+}
+window.addEventListener('DOMContentLoaded', () => {
+  // Restore last active tab
+  let idx = 0;
+  try {
+    const s = localStorage.getItem('psf_active_tab');
+    if (s !== null) idx = Math.max(0, parseInt(s, 10) || 0);
+  } catch(e) {}
+  psfActivateTab(idx);
+});
+</script>
+</head>
+<body>
+<div class="header">RL10 comparison</div>
+<div class="container">
+  <nav class="sidebar">
+<button class="tab-btn" onclick="psfActivateTab(0)">Parameters</button>
+  </nav>
+  <main class="content">
+<section class="tab-panel" id="psf-tab-0">
+<div class="psf-block"><table class='psf-table'>
+<caption>Cantera Optimum</caption>
+<thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+<tbody>
+<tr><th>T_c</th><td>2.07e+03</td></tr>
+<tr><th>T_t</th><td>298</td></tr>
+<tr><th>p_t</th><td>3.28e+04</td></tr>
+</tbody></table></div>
+<div class="psf-block"><table class='psf-table'>
+<caption>CEA Optimum</caption>
+<thead><tr><th>Parameters</th><th>Value</th></tr></thead>
+<tbody>
+<tr><th>fu</th><td>H2 (100%)</td></tr>
+<tr><th>ox</th><td>O2 (100%)</td></tr>
+<tr><th>MR</th><td>2</td></tr>
+<tr><th>p_c</th><td>3275010</td></tr>
+<tr><th>p_t</th><td>18</td></tr>
+<tr><th>T_c</th><td>2.07e+03</td></tr>
+<tr><th>T_t</th><td>1.82e+03</td></tr>
+<tr><th>F</th><td>73400</td></tr>
+<tr><th>eps</th><td>56.1</td></tr>
+<tr><th>L_star</th><td>0.95</td></tr>
+<tr><th>c_star</th><td>2.55e+03</td></tr>
+<tr><th>p_amb</th><td>100000</td></tr>
+<tr><th>Isp_ideal_amb</th><td>453</td></tr>
+<tr><th>Isp_vac</th><td>464</td></tr>
+<tr><th>Isp_amb</th><td>18.9</td></tr>
+<tr><th>Isp_SL</th><td>13</td></tr>
+<tr><th>CF_vac</th><td>1.79</td></tr>
+<tr><th>CF_amb</th><td>0.0726</td></tr>
+<tr><th>CF_SL</th><td>0.0499</td></tr>
+<tr><th>mdot</th><td>16.1</td></tr>
+<tr><th>mdot_fu</th><td>5.38</td></tr>
+<tr><th>mdot_ox</th><td>10.8</td></tr>
+<tr><th>t_stay</th><td>0.000849</td></tr>
+<tr><th>A_t</th><td>0.0126</td></tr>
+<tr><th>A_e</th><td>0.704</td></tr>
+<tr><th>r_t</th><td>0.0632</td></tr>
+<tr><th>r_e</th><td>0.473</td></tr>
+<tr><th>V_c</th><td>0.0119</td></tr>
+<tr><th>T_fu_in</th><td>298</td></tr>
+<tr><th>T_ox_in</th><td>298</td></tr>
+<tr><th>npts</th><td>15</td></tr>
+</tbody></table></div>
+</section>
+  </main>
+</div>
+</body>
+</html>

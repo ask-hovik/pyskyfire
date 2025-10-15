@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.2] - 08-09-25
+## Added
+- Adding Cantera back in as a possible combustion backend model. CEA_Wrap will live on as an option when propellants not supported by cantera is needed. This will be used for all advanced implementations, including actual delivered isp estimates. 
+
+---
+
+## [0.2.1] - 08-09-25
+## Added
+- Various bug fixes
+
+---
+
 ## [0.2.0] - 08-09-25
 ## Added
 - New combustion properties driver CEA_Wrap, replaces RocketCEA and Cantera. The old interface to RocketCEA and Cantera, CombustionTransport, is replaced with Aerothermodynamics. Leverages the large amount of work that has gone into the NASA CEA database. This means that all of NASA CEAs propellants are now supported! Legacy CombustionTransport depricated. 

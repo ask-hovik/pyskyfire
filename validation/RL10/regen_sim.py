@@ -17,6 +17,7 @@ params = dict(
     # Fuel/oxidizer parameters
     cea_fu = psf.common.Fluid(type="fuel", propellants=["H2"], fractions=[1.0]),
     cea_ox = psf.common.Fluid(type="oxidizer", propellants=["O2(L)"], fractions=[1.0]),
+    coolant_fu =  psf.common.Fluid(type="fuel", propellants=["Hydrogen"], fractions=[1.0]),
     coolprop_fu = "hydrogen",
     coolprop_ox = "oxygen",
     T_gas_fu_in = 200,  # Adjusted by a few kelvin to fall within NASA CEA tables
@@ -81,13 +82,13 @@ channel_height_fn = psf.regen.make_channel_height_fn(
     contour=contour, 
     region_fractions=[-1.0, 0.25, 1.0], 
     flat_heights= [0.0032, 0.00134], 
-    pinch_factors= [0.7, -5.0], 
+    pinch_factors= [0.6, -5.0], 
     transition_widths=[0.1]
 ) # total coolant volume should be ca 0.015831543m3
 
 
 cross_section = psf.regen.CrossSectionRounded()
-LH2_transport = psf.skycea.CoolantTransport(params["coolprop_fu"])
+LH2_transport = psf.skycea.CoolantTransport(params["coolant_fu"])
 
 half_pass = psf.regen.CoolingCircuit(name="Half Pass", 
                                      contour=contour, 
