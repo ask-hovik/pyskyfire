@@ -1,12 +1,33 @@
-# pyskyfire
+# Start Here
 
-A simulation framework for regeneratively cooled liquid-propellant rocket engines.
+An explanation of the package and how the documentation page works. (To be filled out) 
+
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 1
+Start here <self>
 
-getting-started
-usage
+:maxdepth: 2
+:caption: Tutorials
+
+tutorials/minimal-simulation
+
+:maxdepth: 2
+:caption: How-to guides
+
+howto/engine-optimization
+howto/making-validation-case
+
+:maxdepth: 2
+:caption: Reference
+
 api/index
-changelog
+
+:maxdepth: 2
+:caption: Explanations
+
+explanations/capabilities
+explanations/package-structure
+explanations/regenerative-heat_transfer
 ```
+
