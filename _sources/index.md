@@ -1,33 +1,39 @@
 # Start Here
 
-An explanation of the package and how the documentation page works. (To be filled out) 
-
+An explanation of the package and how the documentation page works. (To be filled out)
 
 ```{toctree}
+:hidden:
 :maxdepth: 1
-Start here <self>
+:titlesonly:
 
-:maxdepth: 2
-:caption: Tutorials
-
-tutorials/minimal-simulation
-
-:maxdepth: 2
-:caption: How-to guides
-
-howto/engine-optimization
-howto/making-validation-case
-
-:maxdepth: 2
-:caption: Reference
-
-api/index
-
-:maxdepth: 2
-:caption: Explanations
-
-explanations/capabilities
-explanations/package-structure
-explanations/regenerative-heat_transfer
+self
 ```
 
+```{toctree}
+:maxdepth: 2
+:titlesonly:
+
+tutorials/index
+```
+
+```{toctree}
+:maxdepth: 2
+:titlesonly:
+
+howto/index
+```
+
+```{toctree}
+:maxdepth: 2
+:titlesonly:
+
+api/index
+```
+
+```{toctree}
+:maxdepth: 2
+:titlesonly:
+
+explanations/index
+```
