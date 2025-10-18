@@ -14,3 +14,5 @@ pip install pyskyfire
 import pyskyfire as psf
 # TODO: add a tiny example once imports are stable
 ```
+
+## New title
