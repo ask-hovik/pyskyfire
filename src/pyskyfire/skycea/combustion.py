@@ -299,10 +299,10 @@ class CombustionReaction:
         h_t = gas_t.enthalpy_mass
         u_t = (2*(h0 - h_t))**0.5 # equals a_t (within numerics)
         rho_t = gas_t.density
-        G_t = rho_t * u_t"""
+        G_t = rho_t * u_t
 
 
-        """# 3) Expand to exit area ratio eps (isentropic + equilibrium)
+        # 3) Expand to exit area ratio eps (isentropic + equilibrium)
         p_e, g_e, u_e = _find_exit_for_eps(gas_c, p_c, h0, s0, eps, p_star, g_star, u_star)
         T_e, rho_e = g_e.T, g_e.density
 

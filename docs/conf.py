@@ -29,6 +29,11 @@ napoleon_numpy_docstring = True
 napoleon_use_param = True
 napoleon_use_rtype = True
 
+# Type hints: in the signature + description
+typehints_fully_qualified = False
+always_document_param_types = True
+
+
 # Cross-link to common libs
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
@@ -40,9 +45,23 @@ intersphinx_mapping = {
 myst_enable_extensions = [
     "colon_fence", "deflist", "substitution", "tasklist", "attrs_inline"
 ]
+
+# Autodoc defaults (good starting point)
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": False,
+    "inherited-members": True,
+    "show-inheritance": True,
+}
+autoclass_content = "class"  # or "both" to include __init__ docstrings, too
+
+
 source_suffix = {".md": "markdown", ".rst": "restructuredtext"}
 
 html_theme = "furo"
 html_title = "pyskyfire"
 html_static_path = ["_static"]
 templates_path = ["_templates"]
+
+import os, sys
+sys.path.insert(0, os.path.abspath(".."))  # if docs/ is next to package root
