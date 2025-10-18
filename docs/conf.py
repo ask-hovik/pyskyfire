@@ -65,3 +65,4 @@ templates_path = ["_templates"]
 
 import os, sys
 sys.path.insert(0, os.path.abspath(".."))  # if docs/ is next to package root
+sys.path.insert(0, os.path.abspath("../src"))
