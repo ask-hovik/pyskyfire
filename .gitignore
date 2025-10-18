@@ -79,6 +79,20 @@ Thumbs.db
 *~
 *.dll
 
+# built docs
+docs/_build/
+
+# Non-public data
+/validation/Heimdall
+
+# Specific test scripts
+count_lines.py
+test_cantera_2.py
+test_cantera_3.py
+test_cantera_4.py
+test_cantera.py
+update_docs.txt
+
 # If you don't want to track your dill folder or any generated data, uncomment:
 # dills/
 
