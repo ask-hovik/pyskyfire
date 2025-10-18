@@ -3,37 +3,49 @@
 An explanation of the package and how the documentation page works. (To be filled out)
 
 ```{toctree}
-:hidden:
 :maxdepth: 1
 :titlesonly:
+:hidden:
 
 self
 ```
 
 ```{toctree}
-:maxdepth: 2
+:caption: Tutorials
+:maxdepth: 1
 :titlesonly:
+:hidden:
 
-tutorials/index
+tutorials/minimal-simulation
+tutorials/advanced-simulation
 ```
 
 ```{toctree}
-:maxdepth: 2
+:caption: How-to Guides
+:maxdepth: 1
 :titlesonly:
+:hidden:
 
-howto/index
+howto/engine-optimization
+howto/making-validation-case
 ```
 
 ```{toctree}
-:maxdepth: 2
+:caption: Explanations
+:maxdepth: 1
 :titlesonly:
+:hidden:
+
+explanations/capabilities
+explanations/package-structure
+explanations/regenerative-heat-transfer
+```
+
+```{toctree}
+:caption: Reference
+:maxdepth: 1
+:titlesonly:
+:hidden:
 
 api/index
-```
-
-```{toctree}
-:maxdepth: 2
-:titlesonly:
-
-explanations/index
 ```

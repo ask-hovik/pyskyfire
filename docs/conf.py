@@ -42,7 +42,7 @@ myst_enable_extensions = [
 ]
 source_suffix = {".md": "markdown", ".rst": "restructuredtext"}
 
-html_theme = "sphinx_book_theme"
+html_theme = "furo"
 html_title = "pyskyfire"
 html_static_path = ["_static"]
 templates_path = ["_templates"]
