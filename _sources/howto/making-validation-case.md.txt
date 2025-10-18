@@ -1,0 +1,3 @@
+# Making a Validation Case in Pyskyfire
+
+Users of Pyskyfire might want to make a validation case where they compare the outputs of Pyskyfire with other simulation software or test data. This howto shows you how validation cases can be set up within the Pyskyfire framework, to align with the other validation cases, and to showcase to others in a transparent way the performance of the Pyskyfire simulation. 
