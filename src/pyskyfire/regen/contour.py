@@ -27,24 +27,30 @@ from pyskyfire.regen.thrust_chamber import Contour
 
 
 def get_theta_e_n(length_fraction, epsilon_value):
-    """
-    This function takes in length fraction and area ratio, and two internally defined json files, 
-    theta_n.json and theta_e.json. These two files define the angles of the nozzle near the throat 
-    and the exit of the nozzle. The code interpolates twice for each angle in the length fraction, 
-    area ratio, theta space to yield the angles. 
+    """Interpolate exit and throat angles from tabulated JSON data.
 
-    Args:
-        length_fraction (float): The fractional length of the nozzle compared to a conical nozzle. A number between 0.60 and 1.00),
-        epsilon_value (float): Area ratio of the nozzle
-    Returns:
-        tuple: A tuple (theta_e, theta_n), both in radians.
-            theta_e (float): Interpolated exit angle in radians.
-            theta_n (float): Interpolated throat angle in radians.
+    Parameters
+    ----------
+    length_fraction : float
+        Normalized nozzle length fraction in ``[0.60, 1.00]``.
+    epsilon_value : float
+        Nozzle area ratio :math:`\\epsilon = A_e / A_t`.
 
-    Returns:
-        (theta_e, theta_n) after performing two-stage 1D interpolation:
-         1) For each bounding fraction dataset, interpolate across epsilon.
-         2) Interpolate those results across the bounding fractions for the final answer.
+    Returns
+    -------
+    tuple[float, float]
+        ``(theta_e, theta_n)`` in **radians**, where ``theta_e`` is the exit
+        angle and ``theta_n`` is the throat (diverging-side) angle.
+
+    Notes
+    -----
+    The function performs a two-stage interpolation:
+
+    1. For each bracketing length fraction dataset, linearly interpolate
+       angle vs. area ratio.
+    2. Interpolate those two results across length fraction.
+
+    JSON files are read from ``<this module>/data/{theta_e,theta_n}.json``.
     """
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -113,37 +119,50 @@ def get_theta_e_n(length_fraction, epsilon_value):
 
 
 def get_contour_internal(r_c, r_t, area_ratio, L_c, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz):
-    """
-    Generate the full nozzle contour coordinates based on geometric parameters.
+    """Generate the full nozzle contour coordinates from geometric inputs.
 
-    This function calculates the x-coordinates and radii (ys) forming the nozzle contour
-    for a thrust chamber. It performs several operations:
-      - Computes the entrant and exit throat curves using the provided curvature factors.
-      - Constructs the chamber contour, with or without a fillet depending on R_2f.
-      - Constructs the nozzle contour based on the specified nozzle type ("rao" or "conical").
-      - Concatenates all segments and then processes them to ensure the x-values are strictly increasing.
+    Builds chamber and nozzle segments (with optional chamber fillet), throat
+    arcs (entrant/exit), and either a conical or Rao-type nozzle, then joins
+    and post-processes them to ensure strictly increasing ``x`` values.
 
-    Args:
-        r_c (float): Chamber radius.
-        r_t (float): Throat radius.
-        area_ratio (float): Nozzle area ratio.
-        L_c (float): Chamber length.
-        theta_conv (float): Convergence angle (in radians).
-        theta_div (float): Divergence angle (in radians).
-        nozzle (str): Specifies the nozzle type, either "rao" or "conical".
-        R_1f (float): Scaling factor for the throat entrant curvature radius.
-        R_2f (float or None): Scaling factor for the chamber fillet radius. Use 0 or None for a hard corner.
-        R_3f (float): Scaling factor for the throat exit curvature radius.
-        length_fraction (float): A value between 0.60 and 1.00 used for interpolation.
+    Parameters
+    ----------
+    r_c : float
+        Chamber radius [m].
+    r_t : float
+        Throat radius [m].
+    area_ratio : float
+        Nozzle area ratio :math:`\\epsilon = A_e/A_t`.
+    L_c : float
+        Chamber length [m].
+    theta_conv : float
+        Convergence angle (radians).
+    theta_div : float
+        Divergence angle (radians). Used for conical nozzle and fallback.
+    nozzle : str
+        ``"rao"`` or ``"conical"``.
+    R_1f : float
+        Scale factor for throat entrant curvature radius (multiplies ``r_t``).
+    R_2f : float or None
+        Scale factor for chamber fillet radius (``0``/``None`` → hard corner).
+    R_3f : float
+        Scale factor for throat exit curvature radius (multiplies ``r_t``).
+    length_fraction : float
+        Normalized Rao length fraction in ``[0.60, 1.00]``.
+    export_tikz : bool
+        (Unused here) placeholder for downstream export.
 
-    Returns:
-        tuple: A tuple (xs, ys) where:
-            xs (numpy.ndarray): Array of x-coordinates for the nozzle contour.
-            ys (numpy.ndarray): Array of corresponding radii for the nozzle contour.
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        ``(xs, ys)`` where ``xs`` are axial coordinates [m] and ``ys`` are
+        radii [m], strictly increasing in ``x``.
 
-    Raises:
-        ValueError: If the nozzle type is not 'rao' or 'conical', or if contour processing fails due to 
-                    non-monotonic (non-increasing) x-values.
+    Raises
+    ------
+    ValueError
+        If ``nozzle`` is not ``"rao"`` or ``"conical"``, or if post-processing
+        detects non-monotonic ``x`` ordering that cannot be repaired.
     """
     
     # create containers for the chamber contour
@@ -352,19 +371,27 @@ def get_contour_internal(r_c, r_t, area_ratio, L_c, theta_conv, theta_div, nozzl
     plt.show()"""
 
 def compute_chamber_volume(xs, rs):
-    """
-    Compute the chamber volume by revolving the contour around the x-axis.
+    """Compute chamber volume by revolving the contour about the x-axis.
 
-    This function calculates the volume of the chamber by integrating the square of the radii 
-    (representing a circular cross-section) from the left boundary of the contour up to the throat, 
-    which is defined as the point with the minimum radius.
+    Integrates :math:`\\pi r(x)^2` from the left boundary up to the throat
+    (the minimum radius).
 
-    Args:
-        xs (array-like): Sorted array of x-coordinates defining the contour (must be in ascending order).
-        rs (array-like): Array of radii corresponding to the x-coordinates.
+    Parameters
+    ----------
+    xs : array_like
+        Monotone-increasing axial coordinates [m].
+    rs : array_like
+        Radii [m] corresponding to ``xs``.
 
-    Returns:
-        float: The computed chamber volume, calculated as π times the integral of r² with respect to x.
+    Returns
+    -------
+    float
+        Volume [m³].
+
+    Notes
+    -----
+    Uses :func:`numpy.trapezoid` for the integral. If the throat occurs at the
+    first point, returns ``0.0``.
     """
     
     xs = np.array(xs)
@@ -405,44 +432,60 @@ def get_contour(
     angle_input="degrees",
     export_tikz=False 
 ):
-    """
-    Generate the nozzle contour (xs, ys) using one of four valid input combinations.
+    """High-level API to generate a nozzle contour using four input modes.
 
-    This function computes the nozzle contour for a thrust chamber using one of the following input methods:
-      1. **Direct inputs**: Provide both chamber radius (r_c) and chamber length (L_c).
-      2. **Volume & eps**: Provide chamber volume (V_c) and epsilon (eps_c). The chamber radius is computed from eps_c.
-      3. **Volume & AR**: Provide chamber volume (V_c) and area ratio (AR_c). The chamber radius is computed 
-         from the relation r_c = (L_c * AR_c) / 2. # TODO: I need to update the aspect ratio definition to something more sensible
-      4. **Volume & chamber radius**: Provide chamber volume (V_c) and chamber radius (r_c); L_c is determined by minimization.
+    Exactly one of the following input combinations must be provided:
 
-    The input angles (theta_conv and theta_div) are expected in degrees if `angle_input` is "degrees" 
-    and are converted to radians internally.
+    1. **Direct**: ``r_c`` and ``L_c``.
+    2. **Volume+eps**: ``V_c`` and ``eps_c`` → solve for ``r_c`` then for ``L_c``.
+    3. **Volume+AR**: ``V_c`` and ``AR_c`` → solve for ``r_c`` then for ``L_c``.
+    4. **Volume+r_c**: ``V_c`` and ``r_c`` → solve for ``L_c``.
 
-    Args:
-        r_t (float): Throat radius.
-        area_ratio (float): Nozzle area ratio (epsilon).
-        r_c (float, optional): Chamber radius.
-        L_c (float, optional): Chamber length.
-        V_c (float, optional): Chamber volume.
-        eps_c (float, optional): Epsilon value used to compute the chamber radius.
-        AR_c (float, optional): Area ratio used with V_c to compute dimensions.
-        theta_conv (float, optional): Convergence angle in degrees (default is 45).
-        theta_div (float, optional): Divergence angle in degrees (default is 15).
-        nozzle (str, optional): Nozzle type; should be either "rao" or "conical" (default is "rao").
-        R_1f (float, optional): Scaling factor for throat entrant curvature (default is 1.5).
-        R_2f (float or None, optional): Scaling factor for chamber fillet curvature. Defaults to 0 if None.
-        R_3f (float, optional): Scaling factor for throat exit curvature (default is 0.382).
-        length_fraction (float, optional): A value between 0.60 and 1.00 used for interpolation (default is 0.8).
-        angle_input (str, optional): Unit for theta_conv and theta_div ("degrees" or "radians"). Default is "degrees".
+    Parameters
+    ----------
+    r_t : float
+        Throat radius [m].
+    area_ratio : float
+        Nozzle area ratio :math:`\\epsilon = A_e/A_t`.
+    r_c, L_c : float, optional
+        Chamber radius/length [m] (Direct mode).
+    V_c : float, optional
+        Chamber volume target [m³].
+    eps_c : float, optional
+        Chamber area ratio (used with ``V_c`` to infer ``r_c``).
+    AR_c : float, optional
+        Chamber aspect ratio target (used with ``V_c`` to infer ``r_c``).
+    theta_conv, theta_div : float, optional
+        Convergence/divergence angles (degrees if ``angle_input='degrees'``).
+    nozzle : {'rao', 'conical'}, optional
+        Nozzle geometry. Default ``'rao'``.
+    R_1f, R_2f, R_3f : float, optional
+        Throat/chamber fillet/exit curvature scale factors (× ``r_t``).
+        ``R_2f=0`` or ``None`` gives a hard corner.
+    length_fraction : float, optional
+        Rao length fraction in ``[0.60, 1.00]`` (Default ``0.8``).
+    angle_input : {'degrees', 'radians'}, optional
+        Units for ``theta_conv``/``theta_div``. Default ``'degrees'``.
+    export_tikz : bool, optional
+        Placeholder flag for downstream export.
 
-    Returns:
-        tuple: A tuple (xs, ys) where:
-            xs (numpy.ndarray): Array of x-coordinates for the nozzle contour.
-            ys (numpy.ndarray): Array of corresponding radii for the nozzle contour.
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        ``(xs, ys)`` arrays defining the contour.
 
-    Raises:
-        ValueError: If the provided input combination is invalid or if minimization fails 
-                    for calculating L_c.
+    Raises
+    ------
+    ValueError
+        If the input combination is invalid, or the internal minimization/root
+        solve fails to produce a consistent chamber length.
+
+    See Also
+    --------
+    get_contour_internal
+        Low-level builder used by all modes.
+    compute_chamber_volume
+        Volume integral used by modes that solve for ``L_c``.
     """
 
     # TODO: Something big here. So the aspect ratio input is the best input for running an optimizer, because it gives
@@ -583,32 +626,29 @@ from scipy.integrate import cumulative_trapezoid
 from scipy.interpolate import interp1d
 
 def compute_cutoff_length(V_goal, xs_chamber, ys_chamber):
-    """
-    Given a target volume V_goal, and arrays xs_chamber, ys_chamber
-    (where xs_chamber runs from some negatives up through positives),
-    return L_c = |x_cutoff| such that the volume of revolution about
-    the x-axis from x=0 out to x=x_cutoff just reaches V_goal.
+    """Find ``L_c`` such that the chamber volume from 0 to ``-L_c`` equals ``V_goal``.
 
     Parameters
     ----------
     V_goal : float
-        Desired volume (same units as π * ∫ y^2 dx).
+        Target volume [m³].
     xs_chamber : array_like, shape (N,)
-        x-coordinates, must cover the range from negative up to positive.
+        Axial coordinates; must include non-positive values.
     ys_chamber : array_like, shape (N,)
-        y-values (assumed ≥0) corresponding to xs_chamber.
+        Radii corresponding to ``xs_chamber``.
 
     Returns
     -------
-    L_c : float
-        The absolute distance |x_cutoff| from the origin where the
-        cumulative volume first reaches V_goal.
+    float
+        ``L_c = |x_cutoff|`` where the cumulative volume first reaches ``V_goal``.
 
     Raises
     ------
     ValueError
-        If V_goal is negative, or larger than the total volume available.
+        If ``V_goal < 0``, no non-positive ``x`` are available, or the target
+        volume exceeds the total available volume.
     """
+
     xs = np.asarray(xs_chamber)
     ys = np.asarray(ys_chamber)
     if V_goal < 0:
@@ -644,27 +684,27 @@ def compute_cutoff_length(V_goal, xs_chamber, ys_chamber):
 
 
 def integrate_area(L_c, xs_chamber, ys_chamber):
-    """
-    Integrate the area under y(x) from x=0 down to x=-L_c.
+    """Integrate the area under ``y(x)`` from ``x=0`` down to ``x=-L_c``.
 
     Parameters
     ----------
     L_c : float
-        Positive cutoff length. The integration runs from x=0 to x=-L_c.
+        Positive cutoff length (m).
     xs_chamber : array_like, shape (N,)
-        x-coordinates, must cover the range from negative up through positive.
+        Axial coordinates; must include non-positive values.
     ys_chamber : array_like, shape (N,)
-        y-values corresponding to xs_chamber.
+        Radii corresponding to ``xs_chamber``.
 
     Returns
     -------
-    area : float
-        The area ∫_{0}^{-L_c} y(x) dx, returned as a positive number.
+    float
+        Area :math:`\\int_0^{-L_c} y(x)\\,dx` (returned as a positive number).
 
     Raises
     ------
     ValueError
-        If L_c is negative, or if -L_c lies outside the negative portion of xs_chamber.
+        If ``L_c < 0`` or ``-L_c`` lies outside the negative portion of
+        ``xs_chamber``.
     """
     xs = np.asarray(xs_chamber)
     ys = np.asarray(ys_chamber)

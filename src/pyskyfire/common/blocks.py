@@ -9,17 +9,53 @@ from typing import Dict, List
 from pyskyfire.common.engine_network import Station
 from pyskyfire.regen.solver import BoundaryConditions, steady_heating_analysis
 
-g0 = 9.81 # TODO: implement shared constants regisry
-
 class FluidBlock(ABC):
-    # metadata
-    station_inputs : list[str];  station_outputs : list[str]
-    signal_inputs  : list[str];  signal_outputs  : list[str]
+    """Abstract base for blocks that transform **fluid** states.
+
+    Each :class:`FluidBlock` consumes and/or produces :class:`Station`
+    objects and may also consume or emit scalar *signals*
+    (e.g., power, pressure drop).
+
+    Parameters
+    ----------
+    medium : str
+        CoolProp fluid identifier used for property calls
+        (e.g., ``"N2O"`` or ``"Water"``).
+
+    Attributes
+    ----------
+    station_inputs : list[str]
+        Names of input station keys expected by the block.
+    station_outputs : list[str]
+        Names of output station keys produced by the block.
+    signal_inputs : list[str]
+        Names of scalar signal keys read by the block.
+    signal_outputs : list[str]
+        Names of scalar signal keys written by the block.
+    medium : str
+        CoolProp fluid string used by this instance.
+
+    See Also
+    --------
+    :class:`~pyskyfire.common.engine_network.Station`
+        Thermodynamic state container used by the network.
+    :class:`~pyskyfire.common.blocks.SignalBlock`
+        Abstract base for blocks that operate on **scalar signals** only.
+
+    Notes
+    -----
+    .. note::
+        Subclasses must implement :meth:`compute`. Missing declared inputs
+        should be treated as an error; the engine network orchestrator is
+        responsible for providing them.
+    """
+
+    station_inputs: list[str]
+    station_outputs: list[str]
+    signal_inputs: list[str]
+    signal_outputs: list[str]
 
     def __init__(self, medium: str):
-        """
-        Base constructor for fluid-processing blocks.
-        """
         super().__init__()
         self.medium = medium
 
@@ -29,10 +65,26 @@ class FluidBlock(ABC):
         stations_in : dict[str, Station],
         signals_in  : dict[str, float]
     ) -> tuple[dict[str, Station], dict[str, float]]:
-        """
-        Return two dicts:
-            • updated/created Station objects
-            • updated/created scalar signals
+        """Compute one pass of the block.
+
+        Parameters
+        ----------
+        stations_in : dict[str, Station]
+            Input network stations keyed by name.
+        signals_in : dict[str, float]
+            Input scalar signals keyed by name.
+
+        Returns
+        -------
+        stations_out : dict[str, Station]
+            Updated or newly created stations produced by the block.
+        signals_out : dict[str, float]
+            Updated or newly created scalar signals produced by the block.
+
+        Notes
+        -----
+        .. Note::
+            Implementations should treat missing inputs as an error. The engine network orchestrator is expected to provide the declared inputs.
         """
     
     def post_process(
@@ -40,10 +92,43 @@ class FluidBlock(ABC):
         stations: dict[str, "Station"],
         signals : dict[str, float],
     ) -> dict[str, any]:
-        """Called once after convergence; override when you have extras."""
+        """Optional finalization hook run **after convergence**.
+
+        Parameters
+        ----------
+        stations : dict[str, Station]
+            Final converged stations.
+        signals : dict[str, float]
+            Final converged scalar signals.
+
+        Returns
+        -------
+        dict[str, Any]
+            Arbitrary post-processed results to be collected by
+            the network (e.g., axial profiles, derived scalars). Default is empty.
+        """
         return {}
 
 class SignalBlock(ABC):
+    """Abstract base for blocks that operate on **scalar signals** only.
+
+    Attributes
+    ----------
+    station_inputs : list[str]
+        Always empty for pure signal blocks.
+    station_outputs : list[str]
+        Always empty for pure signal blocks.
+    signal_inputs : list[str]
+        Names of scalar signal keys read by the block.
+    signal_outputs : list[str]
+        Names of scalar signal keys written by the block.
+
+    See Also
+    --------
+    FluidBlock
+        Base class for blocks that read/write fluid *stations*.
+    """
+        
     # metadata
     station_inputs : list[str];  station_outputs : list[str]
     signal_inputs  : list[str];  signal_outputs  : list[str]
@@ -54,10 +139,21 @@ class SignalBlock(ABC):
         stations_in : dict[str, Station],
         signals_in  : dict[str, float]
     ) -> tuple[dict[str, Station], dict[str, float]]:
-        """
-        Return two dicts:
-            • updated/created Station objects
-            • updated/created scalar signals
+        """Compute one pass of the block (signals only).
+
+        Parameters
+        ----------
+        stations_in : dict[str, Station]
+            Unused for pure signal blocks (present for interface uniformity).
+        signals_in : dict[str, float]
+            Input scalar signals keyed by name.
+
+        Returns
+        -------
+        stations_out : dict[str, Station]
+            Always empty for pure signal blocks.
+        signals_out : dict[str, float]
+            Signals produced by the block.
         """
     
     def post_process(
@@ -65,23 +161,67 @@ class SignalBlock(ABC):
         stations: dict[str, "Station"],
         signals : dict[str, float],
     ) -> dict[str, any]:
-        """Called once after convergence; override when you have extras."""
+        """Optional finalization hook run **after convergence**.
+
+        Parameters
+        ----------
+        stations : dict[str, Station]
+            Final converged stations (unused).
+        signals : dict[str, float]
+            Final converged scalar signals (unused).
+
+        Returns
+        -------
+        dict[str, Any]
+            Arbitrary post-processed results. Default is empty.
+        """
         return {}
 
 
 class PumpBlock(FluidBlock):
-    """
-    Encapsulates pump sizing and performance logic.
+    """Centrifugal/positive-displacement pump model (lumped).
+
+    The block raises inlet pressure to meet a target set by the load
+    (sum of downstream pressure drops) and computes shaft power and outlet state.
+
+    Parameters
+    ----------
+    name : str
+        Block name used to form signal keys (e.g., ``P_{name}``).
+    st_in : str
+        Inlet station key.
+    st_out : str
+        Outlet station key.
+    overcome : list[str]
+        Names of blocks whose ``dp_*`` signals form the load to overcome.
+    p_base : float
+        Baseline pressure added to the load [Pa].
+    input_p : float
+        Upstream pressure offset already present [Pa].
+    load_fraction : float
+        Fraction of total load to apply in this pump (0..1).
+    n : float
+        Rotational speed (metadata).
+    eta : float
+        Pump efficiency (0..1).
+    medium : str
+        CoolProp fluid string.
+
+    Attributes
+    ----------
+    dp_key : str
+        Name of emitted power signal (``P_{name}``).
+    station_inputs, station_outputs, signal_inputs, signal_outputs : list[str]
+        Network I/O metadata.
+
+    See Also
+    --------
+    TurbineBlock
+        Consumes power to satisfy aggregate shaft load.
     """
 
     def __init__(self, name, st_in, st_out, overcome, p_base, input_p, load_fraction, n, eta, medium):
-        """
-        params is a dictionary containing keys like:
-          - n_fu (pump rotational speed)
-          - eta_pump_fu (pump efficiency)
-          - rho_fu_tank (liquid density)
-          ...
-        """
+
         self.overcome      = overcome
         self.load_fraction = load_fraction
         self.p_base = p_base
@@ -104,14 +244,31 @@ class PumpBlock(FluidBlock):
 
 
     def compute(self, stations, signals):
-        """
-        Given pump inlet/outlet conditions, compute the required power, 
-        outlet temperature, mass, etc.
+        """Compute outlet state and required pump power.
 
-        Returns a dict with keys:
-          'P_pump' (pump power, W)
-          'T_pump_out' (pump outlet temperature, K)
+        Parameters
+        ----------
+        stations : dict[str, Station]
+            Network stations (must contain ``st_in``).
+        signals : dict[str, float]
+            Scalar signals (must contain all ``dp_{blk}`` listed in ``overcome``).
 
+        Returns
+        -------
+        stations_out : dict[str, Station]
+            ``{st_out: Station}`` with updated pressure and temperature.
+        signals_out : dict[str, float]
+            ``{f"P_{name}": float}`` required pump power [W].
+
+        Raises
+        ------
+        KeyError
+            If required stations or signals are missing.
+
+        Notes
+        -----
+        Temperature property calls are offset by ``1e-3 K`` to avoid
+        saturation-line singularities in CoolProp.
         """
 
         st_i = stations[self.st_in]           # Station object from upstream
@@ -143,21 +300,32 @@ class PumpBlock(FluidBlock):
 
     
 class RegenBlock(FluidBlock):
-    """
-    Regenerative-cooling segment (single circuit).
+    """Regenerative-cooling segment (single circuit).
+
+    Runs a 1-D steady heating analysis for a specified cooling circuit and
+    returns the outlet state and the pressure drop across the circuit.
 
     Parameters
     ----------
     name : str
-        Unique tag; used to form the scalar Δp key.
+        Block name; used to form ``dp_{name}``.
     st_in : str
-        Station key for coolant entering the circuit.
+        Inlet station key (coolant entering the circuit).
     st_out : str
-        Station key written back to the network (exit of circuit).
+        Outlet station key (coolant leaving the circuit).
     circuit_index : int
-        Which cooling circuit of the engine model this block represents.
-    engine : Engine
-        Your pre-built rocket engine object (geometry + prop data).
+        Index of the cooling circuit to simulate.
+    thrust_chamber
+        Geometry/physics object passed to the solver.
+    medium : str
+        CoolProp fluid string for the coolant.
+
+    Attributes
+    ----------
+    dp_key : str
+        Name of the emitted pressure-drop signal.
+    station_inputs, station_outputs, signal_inputs, signal_outputs : list[str]
+        Network I/O metadata.
     """
 
     def __init__(self,
@@ -188,6 +356,23 @@ class RegenBlock(FluidBlock):
                 stations: dict[str, "Station"],
                 signals : dict[str, float]
                ) -> tuple[dict[str, "Station"], dict[str, float]]:
+        
+        """Run steady heating analysis and emit outlet state and Δp.
+
+        Parameters
+        ----------
+        stations : dict[str, Station]
+            Network stations (must contain ``st_in``).
+        signals : dict[str, float]
+            Scalar signals (unused).
+
+        Returns
+        -------
+        stations_out : dict[str, Station]
+            ``{st_out: Station}`` at circuit exit.
+        signals_out : dict[str, float]
+            ``{dp_key: float}`` pressure loss across the circuit [Pa].
+        """
 
         st_i = stations[self.st_in]           # Station object from upstream
         p_in = st_i.p
@@ -239,6 +424,22 @@ class RegenBlock(FluidBlock):
         stations: dict[str, "Station"],
         signals : dict[str, float],
     ) -> dict[str, any]:
+        
+        """Re-run the solver on a finer grid to collect detailed outputs.
+
+        Parameters
+        ----------
+        stations : dict[str, Station]
+            Final converged stations.
+        signals : dict[str, float]
+            Final converged scalars.
+
+        Returns
+        -------
+        dict[str, Any]
+            Solver output dictionary (profiles and scalars) suitable
+            for reporting/plotting.
+        """
 
         st_i = stations[self.st_in]
 
@@ -268,10 +469,37 @@ class RegenBlock(FluidBlock):
 #  TURBINE
 # ---------------------------------------------------------------------------
 class TurbineBlock(FluidBlock):
-    """
-    Single-stage impulse/expander turbine.
-    Produces an outlet Station and its pressure drop; consumes the
-    shaft-power demand that the TransmissionBlock summed.
+    """Single-stage turbine model.
+
+    Consumes a required shaft-power signal and computes an outlet state
+    that provides that work at given efficiency.
+
+    Parameters
+    ----------
+    name : str
+        Block name.
+    st_in : str
+        Inlet station key.
+    st_out : str
+        Outlet station key.
+    P_req_key : str
+        Name of the required power signal [W].
+    eta : float
+        Turbine isentropic efficiency (0..1).
+    medium : str
+        CoolProp fluid string.
+
+    Attributes
+    ----------
+    dp_key : str
+        Name of the emitted pressure-drop signal.
+    station_inputs, station_outputs, signal_inputs, signal_outputs : list[str]
+        Network I/O metadata.
+
+    See Also
+    --------
+    TransmissionBlock
+        Aggregates power demands into the required shaft power.
     """
 
     def __init__(self,
@@ -281,6 +509,7 @@ class TurbineBlock(FluidBlock):
                  P_req_key: str,
                  eta: float,
                  medium: str):
+
         self.name       = name
         self.st_in      = st_in
         self.st_out     = st_out
@@ -300,6 +529,28 @@ class TurbineBlock(FluidBlock):
                 stations: Dict[str, "Station"],
                 signals : Dict[str, float]
                ) -> tuple[Dict[str, "Station"], Dict[str, float]]:
+        
+        """Compute outlet state delivering the requested shaft power.
+
+        Parameters
+        ----------
+        stations : dict[str, Station]
+            Network stations (must contain ``st_in``).
+        signals : dict[str, float]
+            Scalar signals (must contain ``P_req_key``).
+
+        Returns
+        -------
+        stations_out : dict[str, Station]
+            ``{st_out: Station}`` with updated pressure and temperature.
+        signals_out : dict[str, float]
+            ``{dp_key: float}`` pressure drop across the turbine [Pa].
+
+        Raises
+        ------
+        ValueError
+            If inlet mass flow is non-positive.
+        """
 
         st_i   = stations[self.st_in]
         P_req  = signals[self.P_req_key]           # [W]
@@ -337,9 +588,35 @@ class TurbineBlock(FluidBlock):
 #  SIMPLE DUCT
 # ---------------------------------------------------------------------------
 class SimpleDuctBlock(FluidBlock):
-    """
-    Applies a fixed efficiency η to simulate a homogeneous duct loss:
-        p_out = η · p_in
+    """Homogeneous duct loss model with fixed efficiency.
+
+    Applies a fixed pressure efficiency :math:`\\eta` via
+    ``p_out = η * p_in`` while keeping temperature unchanged.
+
+    Parameters
+    ----------
+    name : str
+        Block name.
+    st_in : str
+        Inlet station key.
+    st_out : str
+        Outlet station key.
+    eta : float
+        Pressure efficiency (``0 < η ≤ 1``).
+    medium : str
+        CoolProp fluid string.
+
+    Attributes
+    ----------
+    dp_key : str
+        Name of the emitted pressure-drop signal.
+    station_inputs, station_outputs, signal_inputs, signal_outputs : list[str]
+        Network I/O metadata.
+
+    Raises
+    ------
+    ValueError
+        If ``eta`` is not in ``(0, 1]``.
     """
 
     def __init__(self,
@@ -370,6 +647,23 @@ class SimpleDuctBlock(FluidBlock):
                 signals : Dict[str, float]
                ) -> tuple[Dict[str, "Station"], Dict[str, float]]:
 
+        """Apply fixed loss and emit outlet station and Δp.
+
+        Parameters
+        ----------
+        stations : dict[str, Station]
+            Network stations (must contain ``st_in``).
+        signals : dict[str, float]
+            Scalar signals (unused).
+
+        Returns
+        -------
+        stations_out : dict[str, Station]
+            ``{st_out: Station}`` with ``p_out = η * p_in`` and unchanged ``T``.
+        signals_out : dict[str, float]
+            ``{dp_key: float}`` with ``dp = p_in - p_out`` [Pa].
+        """
+
         st_i = stations[self.st_in]
         p_in, T_in, mdot = st_i.p, st_i.T, st_i.mdot
 
@@ -383,410 +677,37 @@ class SimpleDuctBlock(FluidBlock):
         return {self.st_out: st_o}, {self.dp_key: dp}
 
 
-class FractionalMassFlowLossBlock(FluidBlock):
-    """
-    Peel off a fixed fraction of mdot from st_in and inject it into st_out
-    *without* showing the underlying split / merge to normal users.
-
-    Visible metadata:
-        station_inputs  = [st_in, st_out]
-        station_outputs = [st_in, st_out]
-    Internally:
-        ┌─ MassFlowSplitterBlock ─┐
-        │  st_in  ──► main + bleed│
-        └─────────────────────────┘
-                         │
-                         ▼
-        ┌─ MassFlowMergerBlock  ─┐
-        │  st_out + bleed ──► out│
-        └─────────────────────────┘
-    """
-
-    def __init__(self, *, name: str,
-                 st_in: str, st_out: str,
-                 fraction: float, medium: str):
-
-        if not 0.0 < fraction < 1.0:
-            raise ValueError("fraction must be between 0 and 1 (exclusive)")
-
-        self.name      = name
-        self.st_in     = st_in
-        self.st_out    = st_out
-        self.fraction  = fraction
-        super().__init__(medium)
-
-        # hidden station keys
-        self._st_main   = f"{st_in}__remain__{name}"
-        self._st_bleed  = f"{st_out}__bleed__{name}"
-        self._st_merged = f"{st_out}__merged__{name}"
-
-        # hidden blocks
-        self._splitter = MassFlowSplitterBlock(
-            name      = f"{name}__split",
-            st_in     = st_in,
-            st_out    = [self._st_main, self._st_bleed],
-            fractions = [1.0 - fraction, fraction],
-            medium = medium
-        )
-
-        self._merger   = MassFlowMergerBlock(
-            name   = f"{name}__merge",
-            st_in  = [st_out, self._st_bleed],
-            st_out = self._st_merged,
-            medium = medium,
-        )
-
-        # what the *network* sees
-        self.station_inputs   = [st_in, st_out]
-        self.station_outputs  = [st_in, st_out]   # same keys as the user
-        self.signal_inputs    = []
-        self.signal_outputs   = []
-
-    # --------------------------------------------------------------
-    def compute(self, stations, signals):
-
-        # 1. split the inlet stream
-        d_st, _  = self._splitter.compute(stations, signals)
-
-        # 2. overwrite original inlet key with the remaining flow
-        d_st[self.st_in] = d_st.pop(self._st_main)
-
-        # 3. merge bleed into st_out
-        d_st2, _ = self._merger.compute({**stations, **d_st}, signals)
-
-        # 4. overwrite original outlet key with merged result
-        d_st[self.st_out] = d_st2[self._st_merged]
-
-        return d_st, {}
-
-
-
-# not updated bellow
-
-# ──────────────────────────────────────────────────────────────────
-# ---------------------------------------------------------------------------
-#  ORIFICE PLATE
-# ---------------------------------------------------------------------------
-class OrificePlateBlock(FluidBlock):
-    r"""
-    Thin-plate orifice with a *permanent* pressure loss.
-
-    The usual incompressible relation is applied
-
-        ṁ = C_d · A · √(2 ρ Δp)   ⟹   Δp = (ṁ / (C_d A))² / (2 ρ)
-
-    Parameters
-    ----------
-    name        : str
-        Unique tag – shows up in the network’s scalar list as ``dp_<name>``.
-    st_in, st_out : str
-        Keys of the inlet and outlet *Station* objects.
-    Cd          : float
-        Discharge coefficient (0 < Cₙ ≤ 1).  Typical sharp-edged orifice ≈ 0.6.
-    A           : float
-        Flow area of the hole [m²].
-    medium      : str
-        CoolProp fluid identifier – must match the other stations.
-    """
-
-    def __init__(self, *, name: str,
-                 st_in: str, st_out: str,
-                 Cd: float, A: float,
-                 medium: str):
-
-        if Cd <= 0.0:
-            raise ValueError("Cd must be > 0")
-        if A  <= 0.0:
-            raise ValueError("A must be > 0")
-
-        self.name   = name
-        self.st_in  = st_in
-        self.st_out = st_out
-        self.Cd     = Cd
-        self.A      = A
-
-        super().__init__(medium)
-
-        # ─── metadata for EngineNetwork ────────────────────────────
-        self.station_inputs   = [st_in]
-        self.station_outputs  = [st_out]
-        self.signal_inputs    = []
-        self.dp_key           = f"dp_{name}"
-        self.signal_outputs   = [self.dp_key]
-
-    # ------------------------------------------------------------------
-    def compute(self, stations: dict[str, "Station"],
-                signals : dict[str, float]
-               ) -> tuple[dict[str, "Station"], dict[str, float]]:
-
-        st_i = stations[self.st_in]
-        p_in, T_in, mdot = st_i.p, st_i.T, st_i.mdot
-
-        if mdot <= 0.0:
-            raise ValueError(f"{self.name}: mdot must be positive")
-
-        # density at the *upstream* stagnation state
-        rho = CP.PropsSI("Dmass", "T", T_in - 1.0e-3, "P", p_in, self.medium)  # small T offset keeps CoolProp away from the sat. line
-
-        # incompressible orifice formula
-        dp = (mdot / (self.Cd * self.A)) ** 2 / (2.0 * rho)         # Pa
-        p_out = p_in - dp
-        if p_out <= 0.0:
-            raise RuntimeError(f"{self.name}: computed p_out ≤ 0 Pa – geometry/Cd/mdot inconsistent?")
-
-        st_o = Station(p=p_out, T=T_in, mdot=mdot)
-
-        return {self.st_out: st_o}, {self.dp_key: dp}
-
-
-class JunctionBlock(FluidBlock):
-    """A generalised mass‑flow junction.
-
-    The block can *merge* an arbitrary number of inlet streams and *split*
-    the combined flow into an arbitrary number of outlet streams **without**
-    hard‑coded mass‑flow ratios.  Instead, a small one‑dimensional root‑finder
-    allocates the branch mass‑flows such that user‑supplied pressure
-    constraints (or pressure equalisation between the branches) are met.
-
-    Parameters
-    ----------
-    name
-        A human‑readable unique tag – used only for bookkeeping.
-    st_in
-        List of input *Station* keys that feed the junction.
-    st_out
-        List of output *Station* keys produced by the junction.  Each element
-        must also appear as a key in *equilibrate*.
-    medium
-        CoolProp fluid name – *all* inlets are assumed to be of identical
-        composition.
-    equilibrate
-        Defines how the total mass‑flow is distributed among the outlets.  It
-        is a list of one‑element dictionaries so that *order* is preserved::
-
-            [
-                {"fu_leg": ["duct_fu", "turbine"]},
-                {"by_leg": "diff"}
-            ]
-
-        • If the *value* is ``"diff"`` the branch simply receives whatever is
-          left after the other branches have been solved.
-        • Otherwise, the value must be a *list of block names* that constitute
-          the hydraulic path of that branch **in the EngineNetwork’s block
-          order**.  During *compute* the junction varies the branch mass‑flow
-          until the exit‑pressure of the final block matches the *current*
-          network pressure of its outlet station.
-
-        If *two* branches meet again downstream (→ equal outlet station), pass
-        two dictionaries, both with a *list* of blocks.  The solver will then
-        iterate to make the *exit pressures equal* between the two branches.
-    block_lookup
-        Mapping *block‑name → block‑instance* so that the junction can call
-        ``block.compute`` internally while it searches for a pressure match.
-        The simplest way is to build ``{blk.name: blk for blk in blocks}`` once
-        when assembling the network and pass it to every *JunctionBlock*.
-    tol
-        Relative tolerance used by the in‑house bisection routine.
-    """
-
-    # ------------------------------------------------------------------
-    def __init__(self, *, name: str, st_in: Sequence[str], st_out: Sequence[str],
-                 medium: str, equilibrate: List[Dict[str, Any]] | None = None,
-                 block_lookup: Dict[str, "FluidBlock"] | None = None,
-                 tol: float = 1e-6):
-
-        if equilibrate is None:
-            # default: split *equally* between the outlets
-            equilibrate = [{k: "diff"} for k in st_out]
-        else:
-            # sanity: every outlet must appear once and only once
-            eq_keys = [list(d.keys())[0] for d in equilibrate]
-            if sorted(eq_keys) != sorted(st_out):
-                raise ValueError("every st_out must appear once in *equilibrate*")
-
-        self.name = name
-        self._st_in = list(st_in)
-        self._st_out = list(st_out)
-        self._medium = medium
-        self._equilibrate = equilibrate
-        self._blkmap = block_lookup or {}
-        self._tol = tol
-
-        super().__init__(medium)
-
-        # ───── metadata expected by *EngineNetwork* ──────────────────
-        self.station_inputs = list(st_in)
-        self.station_outputs = list(st_out)
-        self.signal_inputs: List[str] = []
-        self.signal_outputs: List[str] = []
-
-    # ------------------------------------------------------------------
-    #  PRIVATE HELPERS
-    # ------------------------------------------------------------------
-    def _enthalpy(self, T: float, p: float) -> float:
-        """Convenience wrapper around CoolProp."""
-        return CP.PropsSI("Hmass", "T", T - 1.0e-3, "P", p, self._medium)
-
-    # .................................................................
-    def _simulate_path(self, blk_names: List[str], st_key: str, p_mix: float,
-                        T_mix: float, mdot: float, stations: Dict[str, "Station"],
-                        signals: Dict[str, float]) -> float:
-        """Return the *exit pressure* of one branch for a trial mdot.
-
-        A deep‑copy of the dictionaries isolates the internal probe from the
-        live network state.  Only the *p* field of **all** stations that the
-        blocks touch is needed, so we keep the implementation lightweight.
-        """
-
-        # check that all block names are known
-        try:
-            path_blocks = [self._blkmap[n] for n in blk_names]
-        except KeyError as missing:
-            raise KeyError(f"JunctionBlock '{self.name}': unknown block '{missing.args[0]}'")
-
-        loc_st = deepcopy(stations)
-        loc_sg = deepcopy(signals)
-
-        loc_st[st_key] = Station(p=p_mix, T=T_mix, mdot=mdot)
-
-        for blk in path_blocks:
-            ds, sg = blk.compute(loc_st, loc_sg)
-            loc_st.update(ds)
-            loc_sg.update(sg)
-
-        # the final block’s first advertised outlet is taken as the branch exit
-        end_key = path_blocks[-1].station_outputs[0]
-        return loc_st[end_key].p
-
-    # .................................................................
-    def _bisect(self, func, lo: float, hi: float, *, max_iter: int = 60) -> float:
-        f_lo = func(lo)
-        f_hi = func(hi)
-        if f_lo == 0.0:
-            return lo
-        if f_hi == 0.0:
-            return hi
-        if f_lo * f_hi > 0.0:
-            raise RuntimeError("Bisection failing to bracket the root.")
-
-        for _ in range(max_iter):
-            mid = 0.5 * (lo + hi)
-            f_mid = func(mid)
-            if abs(f_mid) < self._tol:
-                return mid
-            if f_lo * f_mid < 0.0:
-                hi, f_hi = mid, f_mid
-            else:
-                lo, f_lo = mid, f_mid
-        return 0.5 * (lo + hi)  # best effort
-
-    # ------------------------------------------------------------------
-    #  MAIN ENTRY POINT
-    # ------------------------------------------------------------------
-    def compute(self, stations: Dict[str, "Station"],
-                signals: Dict[str, float]):
-
-        # ─── 1. *merge* all inlet streams ────────────────────────────
-        mdot_tot = 0.0
-        h_sum = 0.0
-        p_mix = min(stations[k].p for k in self._st_in)
-
-        for k in self._st_in:
-            st = stations[k]
-            mdot_tot += st.mdot
-            h_sum += st.mdot * self._enthalpy(st.T, st.p)
-
-        if mdot_tot <= 0.0:
-            raise ValueError(f"{self.name}: total mdot must be positive")
-
-        h_mix = h_sum / mdot_tot
-        T_mix = CP.PropsSI("T", "Hmass", h_mix, "P", p_mix, self._medium)
-
-        # ─── 2. decide *split* of mdot_tot across the outlets ────────
-        # classify branches
-        cfg_by_out = {list(d.keys())[0]: list(d.values())[0] for d in self._equilibrate}
-
-        branch_mdots: Dict[str, float] = {}
-
-        # CASE A – exactly two *hydraulic* branches that re‑merge further
-        lists = [v for v in cfg_by_out.values() if isinstance(v, list)]
-        if len(lists) == 2 and "diff" not in cfg_by_out.values():
-            # equalise exit pressure between the two lists
-            out1, out2 = [k for k, v in cfg_by_out.items() if isinstance(v, list)]
-            blks1, blks2 = cfg_by_out[out1], cfg_by_out[out2]
-
-            def g(m1):
-                p1 = self._simulate_path(blks1, out1, p_mix, T_mix, m1, stations, signals)
-                p2 = self._simulate_path(blks2, out2, p_mix, T_mix, mdot_tot - m1, stations, signals)
-                return p1 - p2
-
-            # bracket by forcing m1→0 and m1→mdot_tot
-            m1 = self._bisect(g, 1.0e-12, mdot_tot - 1.0e-12)
-            branch_mdots[out1] = m1
-            branch_mdots[out2] = mdot_tot - m1
-
-        # CASE B – one hydraulic list + remainder branch(es) marked "diff"
-        else:
-            mdot_left = mdot_tot
-            diff_outlets = []
-            for out_key, method in cfg_by_out.items():
-                if isinstance(method, list):
-                    blks = method
-                    p_target = stations[out_key].p  # current pressure of downstream node
-
-                    def f(m):
-                        p_exit = self._simulate_path(blks, out_key, p_mix, T_mix, m, stations, signals)
-                        return p_exit - p_target
-
-                    try:
-                        m_solution = self._bisect(f, 1.0e-12, mdot_tot)
-                    except RuntimeError:
-                        m_solution = 0.5 * mdot_tot  # fall back to half‑split
-                    branch_mdots[out_key] = m_solution
-                    mdot_left -= m_solution
-                else:  # "diff"
-                    diff_outlets.append(out_key)
-
-            # spread remaining flow over the diff branches (usually just one)
-            if diff_outlets:
-                share = mdot_left / len(diff_outlets)
-                for o in diff_outlets:
-                    branch_mdots[o] = share
-            if abs(sum(branch_mdots.values()) - mdot_tot) / mdot_tot > 1e-6:
-                raise RuntimeError("mass‑flow bookkeeping error inside JunctionBlock")
-
-        # ─── 3. build output Station objects ─────────────────────────
-        st_out = {}
-        for out_key, m in branch_mdots.items():
-            st_out[out_key] = Station(p=p_mix, T=T_mix, mdot=m)
-
-        # this block does not emit scalar signals
-        return st_out, {}
-
-    # ------------------------------------------------------------------
-    def post_process(self, stations, signals):
-        return {}  # nothing special here
- 
-
 class MassFlowSplitterBlock(FluidBlock):
-    """
-    Split one incoming stream into N outgoing branches.
+    """Split a single inlet stream into multiple outlet branches.
+
+    Fractions can be fixed (sum to 1.0) or read each pass from scalar
+    signals to enable dynamic splits.
 
     Parameters
     ----------
-    name        : str
-                 Unique tag.  Used only for bookkeeping.
-    st_in       : str
-                 Key of the inlet Station.
-    st_outs     : list[str]
-                 Keys of the outlet Stations (length = N).
-    fractions   : list[float] | None
-                 Fixed mass-flow fractions that sum to 1.0, OR
-                 None if you want to supply them at run-time
-                 through scalar signals (see *dynamic split* below).
-    frac_keys   : list[str] | None
-                 If you choose a dynamic split, give one signal key
-                 per outlet.  The network will read those each pass.
+    name : str
+        Block name.
+    st_in : str
+        Inlet station key.
+    st_out : list[str]
+        Outlet station keys.
+    medium : str
+        CoolProp fluid string.
+    fractions : list[float] | None, optional
+        Fixed fractions (sum to 1.0) if provided.
+    frac_keys : list[str] | None, optional
+        Signal keys providing fractions at runtime.
+
+    Attributes
+    ----------
+    station_inputs, station_outputs, signal_inputs, signal_outputs : list[str]
+        Network I/O metadata.
+
+    Raises
+    ------
+    ValueError
+        If both or neither of ``fractions`` and ``frac_keys`` are given,
+        or if fixed ``fractions`` do not sum to 1.0.
     """
 
     def __init__(self,
@@ -797,6 +718,7 @@ class MassFlowSplitterBlock(FluidBlock):
                  fractions : list[float] | None = None,
                  frac_keys : list[str] | None = None, 
                  ):
+        
 
         if (fractions is None) == (frac_keys is None):
             raise ValueError("Specify *either* fixed fractions *or* "
@@ -825,6 +747,28 @@ class MassFlowSplitterBlock(FluidBlock):
     # --------------------------------------------------------------
     def compute(self, stations, signals):
 
+        """Create one outlet station per branch based on split fractions.
+
+        Parameters
+        ----------
+        stations : dict[str, Station]
+            Network stations (must contain ``st_in``).
+        signals : dict[str, float]
+            Scalar signals supplying fractions when ``frac_keys`` is used.
+
+        Returns
+        -------
+        stations_out : dict[str, Station]
+            Output stations for each branch.
+        signals_out : dict[str, float]
+            Empty dict (no signals produced).
+
+        Raises
+        ------
+        ValueError
+            If dynamic fractions do not sum to 1.0.
+        """
+
         st_i = stations[self.st_in]
         mdot = st_i.mdot
 
@@ -849,10 +793,26 @@ class MassFlowSplitterBlock(FluidBlock):
         return stations_out, {}
 
 class MassFlowMergerBlock(FluidBlock):
-    """
-    Combine multiple inlet streams into one outlet.
+    """Merge multiple inlet streams into a single outlet.
 
-    NOTE:  Assumes identical fluid species.
+    Assumes identical fluid species and mixes by enthalpy at a reference
+    pressure equal to the minimum inlet pressure.
+
+    Parameters
+    ----------
+    name : str
+        Block name.
+    st_in : list[str]
+        Inlet station keys.
+    st_out : str
+        Outlet station key.
+    medium : str
+        CoolProp fluid string.
+
+    Attributes
+    ----------
+    station_inputs, station_outputs, signal_inputs, signal_outputs : list[str]
+        Network I/O metadata.
     """
 
     def __init__(self, name: str, st_in: list[str], st_out: str, medium):
@@ -870,6 +830,33 @@ class MassFlowMergerBlock(FluidBlock):
 
     # --------------------------------------------------------------
     def compute(self, stations, signals):
+
+        """Mix inlet streams by mass and enthalpy to produce the outlet.
+
+        Parameters
+        ----------
+        stations : dict[str, Station]
+            Network stations (must contain all in ``st_in``).
+        signals : dict[str, float]
+            Scalar signals (unused).
+
+        Returns
+        -------
+        stations_out : dict[str, Station]
+            Outlet station dict.
+        signals_out : dict[str, float]
+            Empty dict.
+
+        Raises
+        ------
+        ValueError
+            If the merged total mass flow is non-positive.
+
+        Notes
+        -----
+        .. Note::
+            Property calls use a small temperature offset (``-1e-3 K``) to avoid saturation issues in CoolProp.
+        """
 
         mdot_tot = 0.0
         h_sum    = 0.0
@@ -897,8 +884,28 @@ class MassFlowMergerBlock(FluidBlock):
 
 # Signal blocks
 class TransmissionBlock(SignalBlock):
-    """Sums shaft-power keys → one P_required key for the turbine."""
+    """Sum multiple shaft-power signals into one required-power signal.
+
+    Useful for aggregating pump/compressor power demands prior to a turbine
+    block that must supply the total shaft power.
+
+    Parameters
+    ----------
+    name : str
+        Block name.
+    sink_keys : list[str]
+        Input power signal keys to sum.
+    out_key : str, optional
+        Output key for the total required power (default ``"P_required"``).
+
+    Attributes
+    ----------
+    station_inputs, station_outputs, signal_inputs, signal_outputs : list[str]
+        Network I/O metadata.
+    """
+
     def __init__(self, name, sink_keys, out_key="P_required"): # TODO: don't hardcode P_required
+                
         self.station_inputs   = []
         self.station_outputs  = []
         self.signal_inputs    = list(sink_keys)
@@ -908,6 +915,23 @@ class TransmissionBlock(SignalBlock):
         self.name=name
 
     def compute(self, st, sg):
+        """Sum input power signals.
+
+        Parameters
+        ----------
+        st : dict[str, Station]
+            Stations dict (unused).
+        sg : dict[str, float]
+            Signals dict containing all ``sink_keys`` [W].
+
+        Returns
+        -------
+        stations_out : dict[str, Station]
+            Empty dict.
+        signals_out : dict[str, float]
+            ``{out_key: total_power}`` in watts.
+        """
+                
         P = sum(sg[k] for k in self.sink_keys)
         return {}, {self.out_key: P}
 

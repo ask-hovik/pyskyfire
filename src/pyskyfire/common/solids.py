@@ -12,27 +12,101 @@ ArrayLike = Union[float, int, np.ndarray]
 
 # Base Property Model Class
 class PropertyModel:
+    """Abstract base class for temperature-dependent property models.
+
+    All subclasses must implement ``__call__(T) -> np.ndarray``.
+
+    See Also
+    --------
+    ConstantModel
+        Fixed value, independent of temperature.
+    PolynomialModel
+        Ordinary polynomial :math:`y = \sum_i c_i T^i`.
+    Log10PolynomialModel
+        Log-polynomial of :math:`T` as used in cryogenic data.
+    TabulatedModel
+        Linear interpolation from discrete data points.
+    SumOfGaussiansModel
+        Smooth empirical fit as a sum of Gaussian peaks.
+    PiecewiseModel
+        Combines multiple sub-models over temperature segments.
+    """
     def __call__(self, T: ArrayLike) -> np.ndarray:
         raise NotImplementedError
 
 # Simple Constant Model
 @dataclass
 class ConstantModel(PropertyModel):
+    """Constant property model returning a fixed value.
+
+    Parameters
+    ----------
+    value : float
+        Constant property value.
+
+    Examples
+    --------
+    >>> ConstantModel(10.0)([1, 2, 3])
+    array([10., 10., 10.])
+    """
     value: float
     def __call__(self, T: ArrayLike) -> np.ndarray:
+        """Return a constant array equal to :attr:`value`.
+
+        Parameters
+        ----------
+        T : ArrayLike
+            Temperature array (ignored).
+
+        Returns
+        -------
+        np.ndarray
+            Array of same shape as ``T`` filled with :attr:`value`.
+        """
         T = np.asarray(T, dtype=float)
         return np.full_like(T, self.value, dtype=float)
 
 # Ordinary Polynomial Model
 @dataclass
 class PolynomialModel(PropertyModel):
-    """y = c0 + c1*T + c2*T^2 + ...  (no bounds unless provided)"""
+    """Ordinary polynomial property model.
+
+    Implements :math:`y = c_0 + c_1 T + c_2 T^2 + ...`.
+
+    Parameters
+    ----------
+    coeffs : Iterable[float]
+        Polynomial coefficients ``[c0, c1, c2, ...]``.
+    Tmin, Tmax : float, optional
+        Optional temperature bounds for validity.
+    enforce_bounds : bool, optional
+        If ``True``, out-of-range temperatures raise :class:`ValueError`.
+        Default is ``False``.
+
+    Notes
+    -----
+    When used inside :class:`PiecewiseModel`, range policy is typically handled
+    externally.
+    """
     coeffs: Iterable[float]
     Tmin: Optional[float] = None
     Tmax: Optional[float] = None
     enforce_bounds: bool = False  # keep False for sub-models; Piecewise handles policy
 
     def __call__(self, T: ArrayLike) -> np.ndarray:
+        """Evaluate the polynomial.
+
+        Parameters
+        ----------
+        T : ArrayLike
+            Temperature array.
+
+        Returns
+        -------
+        np.ndarray
+            Evaluated property values.
+        """
+
         T = np.asarray(T, dtype=float)
         if self.enforce_bounds and (self.Tmin is not None or self.Tmax is not None):
             if self.Tmin is not None and np.any(T < self.Tmin):
@@ -47,16 +121,51 @@ class PolynomialModel(PropertyModel):
 # Log-polynomial model (used in the NIST Cryo database)
 @dataclass
 class Log10PolynomialModel(PropertyModel):
+    """Log-polynomial model (NIST cryogenic form).
+
+    Implements :math:`y = 10^{P(\log_{10} T)}`,
+    where :math:`P(x) = \sum_i a_i x^i`.
+
+    Parameters
+    ----------
+    coeffs : Iterable[float]
+        Polynomial coefficients ``[a0, a1, a2, ...]``.
+    Tmin, Tmax : float, optional
+        Optional temperature bounds for validity.
+    enforce_bounds : bool, optional
+        If ``True``, out-of-range temperatures raise :class:`ValueError`.
+        Default is ``False``.
+
+    Notes
+    -----
+    Useful for fitting data that spans multiple orders of magnitude in
+    temperature or property values.
     """
-    y = 10 ** P(log10(T)), P(x) = sum a_i x^i
-    Bounds optional; leave unenforced and let Piecewise handle range policy.
-    """
+
     coeffs: Iterable[float]
     Tmin: Optional[float] = None
     Tmax: Optional[float] = None
     enforce_bounds: bool = False  # keep False; outer model manages clipping
 
     def __call__(self, T: ArrayLike) -> np.ndarray:
+        """Evaluate the log-polynomial model.
+
+        Parameters
+        ----------
+        T : ArrayLike
+            Temperature array (must be positive).
+
+        Returns
+        -------
+        np.ndarray
+            Evaluated property values.
+
+        Raises
+        ------
+        ValueError
+            If any ``T <= 0`` or bounds are violated.
+        """
+
         T = np.asarray(T, dtype=float)
         if np.any(T <= 0):
             raise ValueError("Log10PolynomialModel requires T > 0 K.")
@@ -74,6 +183,26 @@ class Log10PolynomialModel(PropertyModel):
 # Interpolate Data Model
 @dataclass
 class TabulatedModel(PropertyModel):
+    """Property model based on tabulated data.
+
+    Performs 1D linear interpolation between discrete (T, Y) points.
+
+    Parameters
+    ----------
+    Ts : array_like
+        Monotonic array of temperatures [K].
+    Ys : array_like
+        Property values corresponding to :attr:`Ts`.
+    enforce_bounds : bool, optional
+        If ``True``, out-of-range temperatures raise :class:`ValueError`.
+        Default is ``False``.
+
+    Raises
+    ------
+    ValueError
+        If ``Ts`` and ``Ys`` have mismatched shapes or are not strictly increasing.
+    """
+
     Ts: np.ndarray
     Ys: np.ndarray
     enforce_bounds: bool = False  # let Piecewise handle warn&clip
@@ -87,6 +216,18 @@ class TabulatedModel(PropertyModel):
             raise ValueError("TabulatedModel: Ts must be strictly increasing.")
 
     def __call__(self, T: ArrayLike) -> np.ndarray:
+        """Interpolate the property at temperature ``T``.
+
+        Parameters
+        ----------
+        T : ArrayLike
+            Temperatures [K].
+
+        Returns
+        -------
+        np.ndarray
+            Interpolated property values.
+        """
         T = np.asarray(T, dtype=float)
         # No range policy here; Piecewise will pre-clip.
         return np.interp(T, self.Ts, self.Ys)
@@ -94,8 +235,30 @@ class TabulatedModel(PropertyModel):
 # Gaussian Sum Model 
 @dataclass
 class SumOfGaussiansModel(PropertyModel):
+    """Empirical model as a sum of Gaussian peaks.
+
+    Implements :math:`y(T) = \sum_i b_i \exp(-((T - c_i)/d_i)^2)`.
+
+    Parameters
+    ----------
+    params : list[tuple[float, float, float]]
+        List of triplets ``(b, c, d)`` representing amplitude, center, and width.
+    """
+
     params: List[Tuple[float, float, float]]  # list of (b, c, d)
     def __call__(self, T):
+        """Evaluate the Gaussian sum model.
+
+        Parameters
+        ----------
+        T : ArrayLike
+            Temperature array.
+
+        Returns
+        -------
+        np.ndarray
+            Property values.
+        """
         T = np.asarray(T, dtype=float)
         y = np.zeros_like(T)
         for b, c, d in self.params:
@@ -107,19 +270,30 @@ class SumOfGaussiansModel(PropertyModel):
 # ================================
 @dataclass
 class PiecewiseModel(PropertyModel):
-    """
-    Piecewise wrapper over sub-models defined on [T_lo, T_hi] segments.
+    """Combine multiple sub-models across temperature segments.
 
-    New rules:
-      • GAPS: if no segment covers T but T lies between two segments, linearly
-        interpolate between the *endpoint values* of those segments.
-      • OVERLAPS: if multiple segments cover T, evaluate all and return the average.
-      • OUT-OF-RANGE: clip to nearest edge; if 'warn_clip' in range_policy, warn.
+    Each segment is a tuple ``(T_lo, T_hi, model)`` where ``model`` is a callable
+    that returns property values. The segments must have strictly increasing
+    temperature bounds.
 
-    Notes:
-      • Sub-models must be callable: y = model(T).
-      • Segments are tuples: (T_lo, T_hi, model) with T_lo < T_hi (strict).
+    Parameters
+    ----------
+    segments : list[tuple[float, float, PropertyModel]]
+        Segment list defining temperature intervals and their models.
+    range_policy : str, optional
+        Range-handling mode: ``"warn_clip"`` (default), ``"clip"`` or ``"error"``.
+    blend : float, optional
+        Retained for API compatibility (unused in the new rules).
+
+    Notes
+    -----
+    The evaluation rules are:
+
+    - **Gaps:** linearly interpolate between the nearest segment endpoints.
+    - **Overlaps:** average results from all covering segments.
+    - **Out-of-range:** clip to the nearest valid edge (warns if ``"warn_clip"``).
     """
+
     segments: List[Tuple[float, float, PropertyModel]]
     range_policy: str = "warn_clip"  # 'warn_clip' or 'clip' or 'error'
     # 'blend' retained for API compatibility (unused under the new rules)
@@ -258,6 +432,41 @@ class PiecewiseModel(PropertyModel):
 # =====================
 @dataclass
 class Material:
+    """Container for material name and temperature-dependent properties.
+
+    Parameters
+    ----------
+    name : str
+        Material name.
+    k : PropertyModel, optional
+        Thermal conductivity model [W/m·K].
+    E : PropertyModel, optional
+        Young’s modulus model [Pa].
+    alpha : PropertyModel, optional
+        Thermal expansion coefficient model [1/K].
+    nu : PropertyModel, optional
+        Poisson’s ratio model.
+    rho : PropertyModel, optional
+        Density model [kg/m³].
+
+    Methods
+    -------
+    get_k(T)
+        Evaluate thermal conductivity.
+    get_E(T)
+        Evaluate Young’s modulus.
+    get_alpha(T)
+        Evaluate thermal expansion coefficient.
+    get_nu(T)
+        Evaluate Poisson’s ratio.
+    get_rho(T)
+        Evaluate density.
+
+    Notes
+    -----
+    Each getter raises :class:`AttributeError` if the property is not defined.
+    """
+
     name: str
     k: Optional[PropertyModel] = None
     E: Optional[PropertyModel] = None
@@ -266,26 +475,47 @@ class Material:
     rho: Optional[PropertyModel] = None
 
     def get_k(self, T: ArrayLike) -> np.ndarray:
+        """Evaluate thermal conductivity.
+
+        Parameters
+        ----------
+        T : ArrayLike
+            Temperature array [K].
+
+        Returns
+        -------
+        np.ndarray
+            Thermal conductivity [W/m·K].
+
+        Raises
+        ------
+        AttributeError
+            If no model is defined for :attr:`k`.
+        """
         if self.k is None:
             raise AttributeError(f"{self.name}: thermal conductivity not set.")
         return self.k(T)
 
     def get_E(self, T: ArrayLike) -> np.ndarray:
+        """Evaluate Young’s modulus."""
         if self.E is None:
             raise AttributeError(f"{self.name}: Young's modulus not set.")
         return self.E(T)
 
     def get_alpha(self, T: ArrayLike) -> np.ndarray:
+        """Evaluate coefficient of thermal expansion."""
         if self.alpha is None:
             raise AttributeError(f"{self.name}: thermal expansion not set.")
         return self.alpha(T)
 
     def get_nu(self, T: ArrayLike) -> np.ndarray:
+        """Evaluate Poisson’s ratio."""
         if self.nu is None:
             raise AttributeError(f"{self.name}: Poisson's ratio not set.")
         return self.nu(T)
 
     def get_rho(self, T: ArrayLike) -> np.ndarray:
+        """Evaluate density."""
         if self.rho is None:
             raise AttributeError(f"{self.name}: density not set.")
         return self.rho(T)

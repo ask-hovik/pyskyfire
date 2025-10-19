@@ -1,100 +1,88 @@
-from datetime import datetime
+# -- Minimal Sphinx config for pyskyfire using AutoAPI + NumPyDoc ------------
+from datetime import date
 import os
-import sys
 
-# Make the package importable for autodoc
-sys.path.insert(0, os.path.abspath(".."))
-sys.path.insert(0, os.path.abspath("../src"))
-
-ROOT = os.path.abspath(os.path.join(__file__, "..", ".."))
-SRC  = os.path.join(ROOT, "src")
-_AUTOSUMMARY_DIR = os.path.join(os.path.dirname(__file__), "api", "_generated")
-os.makedirs(_AUTOSUMMARY_DIR, exist_ok=True)
-
-project = "pyskyfire"
-author = "Ask Haugerud Hovik"
-copyright = f"{datetime.now():%Y}, {author}"
+project   = "pyskyfire"
+author    = "Ask Haugerud Hovik"
+copyright = f"{date.today().year}, {author}"
 
 extensions = [
     "myst_parser",
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.napoleon",          # Google/NumPy docstrings
+    "autoapi.extension",
+    "numpydoc",
     "sphinx.ext.intersphinx",
-    "sphinx_copybutton",
-    "sphinx_design",
-    "sphinx_autodoc_typehints",
-    "autoapi.extension"
+    "sphinx.ext.graphviz",
+    "sphinx.ext.inheritance_diagram",
+    # "sphinx.ext.autodoc.typehints",  # ← remove (or keep and set autodoc_typehints="none")
 ]
 
-autoapi_type = "python"
-autoapi_dirs = [SRC]              # points to your 'src' path
+ROOT = os.path.abspath(os.path.join(__file__, "..", ".."))
+SRC  = os.path.join(ROOT, "src")
+
+autoapi_type  = "python"
+autoapi_dirs  = [os.path.join(SRC, "pyskyfire")]
+autoapi_root  = "autoapi"
 autoapi_add_toctree_entry = True
-autoapi_root = "api"              # where to put the rendered API
-autoapi_keep_files = True         # keep intermediate .rst (useful for debugging/PRs)
-autoapi_python_class_content = "both"  # class + __init__ docstrings
+autoapi_keep_files = True
+autoapi_generate_api_docs = True
+autoapi_member_order = "groupwise"
+autoapi_python_class_content = "class"
+autoapi_own_page_level = "class"
+autoapi_python_use_implicit_namespaces = True
 autoapi_options = [
     "members",
     "undoc-members",
+    "private-members",
+    "special-members",
+    "imported-members",
     "show-inheritance",
-    "inherited-members",
-    "imported-members",  # show re-exported names (works with __all__)
+    "show-inheritance-diagram",
+    "show-module-summary",
 ]
 
-# Autodoc / Autosummary
-autosummary_generate = True
-autodoc_typehints = "description"   # cleaner signatures in docs
-napoleon_google_docstring = True
-napoleon_numpy_docstring = True
-napoleon_use_param = True
-napoleon_use_rtype = True
+# NumPyDoc
+numpydoc_show_class_members = True
+numpydoc_show_inherited_class_members = True
+numpydoc_class_members_toctree = False
+numpydoc_attributes_as_param_list = True
+numpydoc_xref_param_type = True
+# Optional: help short names link
+numpydoc_xref_aliases = {
+    "Station": "pyskyfire.common.engine_network.Station",
+    "SignalBlock": "pyskyfire.common.blocks.SignalBlock",
+}
 
-autodoc_mock_imports = [
-    "CoolProp",
-    "CEA_Wrap",
-    "cantera",
-    "centrifugal_pump",
-    "cloudpickle",
-    "gmsh",
-    "plotly",
-    "pyvis",
-]
+# If you decided to keep the typehints extension:
+# autodoc_typehints = "none"
 
+myst_enable_extensions = ["colon_fence", "deflist", "substitution", "attrs_inline", "tasklist"]
 
-# Type hints: in the signature + description
-typehints_fully_qualified = False
-always_document_param_types = True
-
-
-# Cross-link to common libs
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "numpy": ("https://numpy.org/doc/stable/", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+    "numpy":  ("https://numpy.org/doc/stable/", None),
+    "scipy":  ("https://docs.scipy.org/doc/scipy/", None),
 }
 
-# Markdown (MyST)
-myst_enable_extensions = [
-    "colon_fence", "deflist", "substitution", "tasklist", "attrs_inline"
-]
-
-# Autodoc defaults (good starting point)
-autodoc_default_options = {
-    "members": True,
-    "undoc-members": False,
-    "inherited-members": True,
-    "show-inheritance": True,
-}
-autoclass_content = "class"  # or "both" to include __init__ docstrings, too
-
+graphviz_output_format = "svg"
+graphviz_dot_args = ["-Gbgcolor=transparent", "-Gtransparent=true"]
 
 source_suffix = {".md": "markdown", ".rst": "restructuredtext"}
-
-html_theme = "furo"
-html_title = "pyskyfire"
-html_static_path = ["_static"]
+html_theme   = "furo"
+html_title   = "pyskyfire"
 templates_path = ["_templates"]
+html_static_path = ["_static"]
 
-import os, sys
-sys.path.insert(0, os.path.abspath(".."))  # if docs/ is next to package root
-sys.path.insert(0, os.path.abspath("../src"))
+# Python changes
+python_use_unqualified_type_names = True
+# Render modern short generics (list[int] not typing.List[int])
+python_display_short_literal_types = True
+
+def skip_autoapi_members(app, what, name, obj, skip, options):
+    if what == "attribute":
+        return True
+    if what == "method" and name.endswith(".__init__"):
+        return True
+    return skip
+
+def setup(app):
+    app.connect("autoapi-skip-member", skip_autoapi_members)

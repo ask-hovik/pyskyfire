@@ -47,5 +47,11 @@ explanations/regenerative-heat-transfer
 :titlesonly:
 :hidden:
 
-api/index
+autoapi/pyskyfire/common/index
+autoapi/pyskyfire/regen/index
+autoapi/pyskyfire/pump/index
+autoapi/pyskyfire/turbine/index
+autoapi/pyskyfire/skycea/index
+autoapi/pyskyfire/viz/index
+
 ```

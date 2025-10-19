@@ -4,12 +4,16 @@ import pyskyfire.regen.physics as physics
 from scipy.optimize import fsolve
 
 class BoundaryConditions:
-    """Object for storing boundary conditions for the solver.
-     
-    Args: 
-        T_coolant_in (float): Static(?) temperature of coolant at cooling channel inlet (K)
-        p_coolant_in (float): Static(?) pressure of coolant at cooling channel inlet (Pa)
-        mdot_coolant (float): mass flow rate of coolant through cooling channel inlet (kg/s)
+    """Boundary conditions for the coolant-side inlet.
+
+    Parameters
+    ----------
+    T_coolant_in : float
+        Coolant static temperature at the channel inlet [K].
+    p_coolant_in : float
+        Coolant static pressure at the channel inlet [Pa].
+    mdot_coolant : float
+        Coolant mass-flow rate through the cooling channel [kg s⁻¹].
     """
     def __init__(self, T_coolant_in, p_coolant_in, mdot_coolant):
         self.T_coolant_in = T_coolant_in
@@ -20,10 +24,19 @@ class BoundaryConditions:
 # Physics Class: Encapsulate the heat exchanger calculations
 # ================================================================
 class HeatExchangerPhysics:
-    """
-    Encapsulates the physical calculations for the heat exchanger.
-    This class is responsible for computing the heat fluxes and rates based
-    on the given engine properties and operating conditions.
+    """Encapsulate hot-side, wall, and coolant heat-transfer/pressure models.
+
+    This helper evaluates local heat transfer and pressure-loss terms for a
+    given thrust-chamber and cooling circuit.
+
+    Parameters
+    ----------
+    thrust_chamber : Any
+        Object exposing geometry and property models used by the solver
+        (e.g., ``contour``, ``combustion_transport``, ``cooling_circuit_group``,
+        ``wall_group``).
+    circuit_index : int
+        Index of the cooling circuit to use.
     """
     def __init__(self, thrust_chamber, circuit_index):
         self.thrust_chamber = thrust_chamber
@@ -31,8 +44,24 @@ class HeatExchangerPhysics:
         self.counter = 0
 
     def dQ_hot_dx(self, x, T_hw):
-        """
-        Computes the heat transfer rate from the hot gas to the wall. Bartz equation, for example
+        """Hot-side heat input per unit length using Bartz-style correlation.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+        T_hw : float
+            Hot-side wall temperature [K].
+
+        Returns
+        -------
+        float
+            ``dQ_hw/dx`` [W m⁻¹], positive when heating the wall.
+
+        Notes
+        -----
+        Implements an **enthalpy-driven** Bartz form. The gas-side coefficient
+        is evaluated with property data drawn from the chamber model at ``x``.
         """
         approach = "new"
         if approach == "new":
@@ -186,6 +215,28 @@ class HeatExchangerPhysics:
         return dQ_cond_dx"""
     
     def dQ_cond_dx(self, x, T_hw, T_cw):
+        """Conduction heat flow through the wall stack per unit length.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+        T_hw : float
+            Hot-side wall temperature [K].
+        T_cw : float
+            Coolant-side wall temperature [K].
+
+        Returns
+        -------
+        float
+            ``dQ_cond/dx`` [W m⁻¹].
+
+        Notes
+        -----
+        Treats each wall as a 1-D resistor in series:
+        :math:`R_j = L_j / (k_j A)` with ``A = dA_dx_hot`` per unit length.
+        """
+                
         # 1) get the local hot‐side area per unit length
         dA_dx_hot = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
 
@@ -198,8 +249,21 @@ class HeatExchangerPhysics:
         return dQ_cond_dx
 
     def dQ_cold_dx(self, x, T_cw, T_cool):
-        """
-        Computes the heat transfer rate from the wall to the coolant.
+        """Coolant-side heat removal per unit length.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+        T_cw : float
+            Coolant-side wall temperature [K].
+        T_cool : float
+            Bulk coolant temperature [K].
+
+        Returns
+        -------
+        float
+            ``dQ_cw/dx`` [W m⁻¹].
         """
         n_chan = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channel_positions*self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channels_per_leaf
 
@@ -243,8 +307,21 @@ class HeatExchangerPhysics:
         return dQ_cw_dx
 
     def coolant_temperature_rate(self, T_cool, p_cool, dQ_cold_dx):
-        """
-        Computes the rate of change of the coolant temperature.
+        """Axial rate of change of coolant temperature.
+
+        Parameters
+        ----------
+        T_cool : float
+            Coolant static temperature [K].
+        p_cool : float
+            Coolant static pressure [Pa].
+        dQ_cold_dx : float
+            Heat removed by coolant per unit length [W m⁻¹].
+
+        Returns
+        -------
+        float
+            ``dT_cool/dx`` [K m⁻¹].
         """
         n_chan = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channel_positions*self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channels_per_leaf
         mdot_c = self.thrust_chamber.combustion_transport.mdot_fu/n_chan # TODO: this is not actually the coolant flow, its the combustion reaction coolant flow!
@@ -264,8 +341,21 @@ class HeatExchangerPhysics:
     
 
     def coolant_pressure_rate(self, x, T_cool, p_cool):
-        """
-        Computes the rate of change of the coolant pressure due to frictional losses.
+        """Axial rates of static and stagnation pressure (friction + area change).
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+        T_cool : float
+            Coolant static temperature [K].
+        p_cool : float
+            Coolant static pressure [Pa].
+
+        Returns
+        -------
+        tuple[float, float]
+            ``(dp_static/dx, dp_stagnation/dx)`` in [Pa m⁻¹].
         """
         # get friction factor
         n_chan = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channel_positions*self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channels_per_leaf
@@ -337,9 +427,21 @@ class HeatExchangerPhysics:
         return dp_static_dx, dp_stagnation_dx
     
     def interface_temperatures(self, x, T_hw, T_cw):
-        """
-        Returns a list [T0, T1, ..., Tn] of wall-stack temperatures,
-        where T0=T_hw, Tn=T_cw, and in between are each wall interface.
+        """Wall-interface temperatures across the stack at position ``x``.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+        T_hw : float
+            Hot-side wall temperature [K].
+        T_cw : float
+            Coolant-side wall temperature [K].
+
+        Returns
+        -------
+        list[float]
+            Temperatures ``[T_hot, T_1, ..., T_cold]`` across interfaces.
         """
         # same area-per-length as above
         dA_dx_hot = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
@@ -359,22 +461,38 @@ class HeatExchangerPhysics:
     
 
 def solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, circuit_index, output, log_residuals=True):
-    """
-    Solve the 1D steady-state heat exchanger from x=0 to x=x_domain[-1].
+    """Solve 1-D steady heating with a marching Euler scheme.
 
-    Arguments:
-      engine       : your engine object containing geometry & property methods
-      n_nodes      : number of axial nodes along the thrust chamber
+    Parameters
+    ----------
+    thrust_chamber : Any
+        Chamber model exposing geometry and property methods.
+    boundary_conditions : BoundaryConditions
+        Inlet temperature/pressure/mass-flow conditions.
+    n_nodes : int
+        Number of axial nodes.
+    circuit_index : int
+        Which cooling circuit to simulate.
+    output : bool
+        If True, print progress to stdout.
+    log_residuals : bool, optional
+        If True, record local residuals each Newton iteration per cell.
 
-    Returns:
-      A dictionary with keys:
-         "x"          -> 1D array of axial positions
-         "T"          -> 2D array of temperatures, shape (n_nodes, 3):
-                         columns = [T_coolant, T_wall_cold_side, T_wall_hot_side]
-         "T_coolant"  -> 1D array of coolant temperatures
-         "p_coolant"  -> 1D array of coolant pressures
-         "dQ_dA"      -> 1D array of local heat fluxes (W/m^2)
-         "velocity"   -> 1D array of coolant velocities (m/s)
+    Returns
+    -------
+    dict
+        Results with keys:
+
+        - ``x`` : axial coordinates [m]
+        - ``T`` : temperatures array, shape ``(n_nodes, 1 + n_walls + 1)``
+          (coolant + reversed wall interfaces from cold→hot)
+        - ``T_static`` : coolant static temperature [K]
+        - ``T_stagnation`` : coolant stagnation temperature [K]
+        - ``p_static`` : coolant static pressure [Pa]
+        - ``p_stagnation`` : coolant stagnation pressure [Pa]
+        - ``dQ_dA`` : local heat flux [W m⁻²]
+        - ``velocity`` : coolant velocity [m s⁻¹]
+        - ``residuals`` : tuple of (global history, final-per-cell) or (None, None)
     """
 
     # 1) Build the axial grid in [x_min, x_max].
@@ -544,22 +662,25 @@ def solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, cir
     return cooling_data
 
 def analyse_residuals(residual_log, n_cells, p=2):
-    """
+    """Aggregate local solver residuals into global history and final per-cell vector.
+
     Parameters
     ----------
-    residual_log : list | None
-        The list returned by `solve_channel`.  If None, nothing happens.
+    residual_log : list or None
+        List of tuples ``(cell, iter, R1, R2)`` recorded during solves.
+        If ``None`` or empty, returns ``(None, None)``.
     n_cells : int
-        Number of axial nodes in the simulation.
-    p : int | float
-        Order of the global norm: 2 for RMS, np.inf for L∞, etc.
+        Number of axial cells.
+    p : int or float, optional
+        Norm order for global residual history: ``2`` for RMS,
+        ``np.inf`` for :math:`L_\\infty`, etc. Default is 2.
 
     Returns
     -------
-    history : (n_iter,) ndarray | None
-        Global residual norm per iteration 0..k_max.
-    final_per_cell : (n_cells,) ndarray | None
-        Residual magnitude in each cell at the last local iteration.
+    history : ndarray or None
+        Global residual norm for iterations ``0..k_max``, or ``None``.
+    final_per_cell : ndarray or None
+        Final residual magnitude per cell at its last local iteration, or ``None``.
     """
     if not residual_log:                          # catches [] and None
         return None, None
@@ -592,16 +713,27 @@ def analyse_residuals(residual_log, n_cells, p=2):
 
 
 def steady_heating_analysis(thrust_chamber, boundary_conditions, n_nodes=100, circuit_index=0, solver="newton", output=True):
-    """
-    Run the steady heating analysis.
-    
-    Parameters:
-      engine  : Engine object with geometry, boundary conditions, and physics.
-      n_nodes : Number of nodes (for Newton) or resolution for post-processing (for Radau).
-      solver  : String, currently only "newton" available
-    
-    Returns:
-      A dictionary with simulation results.
+    """Run the steady heating analysis.
+
+    Parameters
+    ----------
+    thrust_chamber : Any
+        Chamber model exposing the required geometry & property APIs.
+    boundary_conditions : BoundaryConditions
+        Coolant inlet boundary conditions.
+    n_nodes : int, optional
+        Number of axial nodes. Default is 100.
+    circuit_index : int, optional
+        Cooling-circuit index. Default is 0.
+    solver : {'newton'}, optional
+        Solver selector. Currently only ``'newton'`` is implemented.
+    output : bool, optional
+        If True, print progress. Default is True.
+
+    Returns
+    -------
+    dict
+        See :func:`solve_heat_exchanger_euler` for keys.
     """
     if solver.lower() == "newton":
         return solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, circuit_index, output)

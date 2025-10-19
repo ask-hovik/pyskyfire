@@ -93,6 +93,7 @@ test_cantera_4.py
 test_cantera.py
 update_docs.txt
 combustion.py
+old.py
 
 # If you don't want to track your dill folder or any generated data, uncomment:
 # dills/

@@ -6,20 +6,52 @@ from math import gcd
 from functools import reduce
 
 class Contour:
+    """Inner hot-gas contour of a bell-type rocket engine.
+
+    Represents the geometric wall line from the start of the chamber to
+    the nozzle exit, providing local areas, slopes, and radii.
+
+    Parameters
+    ----------
+    xs : array_like
+        Axial coordinates of the contour [m], strictly increasing.
+    rs : array_like
+        Corresponding wall radii [m].
+    name : str, optional
+        Identifier for this contour.
+
+    Attributes
+    ----------
+    xs : ndarray
+        Axial coordinates defining the wall line [m].
+    rs : ndarray
+        Radial coordinates corresponding to `xs` [m].
+    _dr_dx : ndarray
+        Precomputed derivative `dr/dx` for fast interpolation.
+    name : str or None
+        Optional descriptive name.
+    x_t, r_t, A_t : float
+        Axial position, radius, and area of the throat.
+    r_e, A_e : float
+        Radius and area at the exit plane.
+    r_c, A_c : float
+        Radius and area at the chamber start.
+    eps, eps_c : float
+        Nozzle and contraction area ratios.
+
+    Notes
+    -----
+    This class is used by higher-level objects such as
+    :class:`~pyskyfire.regen.cooling.CoolingCircuit` and
+    :class:`~pyskyfire.regen.thrust.ThrustChamber`.
+
+    See Also
+    --------
+    ContourToroidalAerospike : Dual-wall variant for toroidal aerospikes.
+    """
+
     def __init__(self, xs, rs, name = None):
-        """Class for representing the inner contour of a rocket engine, from the beginning of the combustion chamber to the nozzle exit.
 
-        Args:
-            xs (list): Array of x-positions, that the 'y' list corresponds to (m). Must be increasing values of x.
-            rs (list): Array, containing local engine radius (m).
-
-        Attributes:
-            x_t (float): x-position of the throat (m)
-            r_t (float): Throat radius (m)
-            A_t (float): Throat area (m2)
-            r_e (float): Exit radius (m)
-            A_e (float): Exit area (m2)
-            r_curvature_t (float): Radius of curvature at the throat (m) """
         self.xs = xs
         self.rs = rs
         self._dr_dx = np.gradient(rs, xs)
@@ -75,44 +107,70 @@ class Contour:
         return self.A_c/self.A_t
 
     def r(self, x):
-        """Get the distance from the centreline to the inner wall of the engine.
-        Args:
-            x (float): x position (m)
-        Returns:
-            float: Distance from engine centreline to edge of inner wall (m)"""
+        """
+        Return the local radius at axial position `x`.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+
+        Returns
+        -------
+        float
+            Distance from engine centerline to wall [m].
+        """
         r1 = np.interp(x, self.xs, self.rs)
         #print(f"r at that point: {r1}, input x: {x} ")
         return r1
     
     def dr_dx(self, x):
-        """Get the slope of the engine wall, dr/dx.
-        Args:
-            x (float): Axial position (m).
-        Returns:
-            float: Rate of change of contour radius with respect to position, dr/dx """
+        """
+        Return the local slope of the wall, :math:`dr/dx`.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+
+        Returns
+        -------
+        float
+            Radial slope at position `x`.
+        """
         return np.interp(x, self.xs, self._dr_dx)
 
     def A(self, x):
-        """Get the flow area for the exhaust gas
-        Args:
-            x (float): x position (m)
-        Returns:
-            float: Flow area (m2)"""
+        """
+        Return the local flow area.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+
+        Returns
+        -------
+        float
+            Flow area at that section [m²].
+        """
         Area = np.pi * self.r(x)**2
         #print(f"Area: {Area}")
         return Area
     
     def normal_angle(self, x): #TODO: check this function af
         """
-        Return the smaller angle [0..pi/2] between the outward normal to the
-        contour and the plane perpendicular to the x-axis (i.e. the 'vertical'
-        direction in this 2D cross-section).
+        Return the local wall normal angle with respect to the vertical plane.
 
-        Geometrically:
-          - Tangent: T = (1, dr/dx)
-          - Outward normal: N = (-dr/dx, 1)
-          - Plane perpendicular to x-axis ~ vertical direction, V = (0, 1)
-          - cos(theta) = (N dot V) / (|N| * |V|) = 1 / sqrt((dr/dx)^2 + 1).
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+
+        Returns
+        -------
+        float
+            Angle between the outward normal and the plane normal to the x-axis [rad].
         """
         slope = self.dr_dx(x)
         # Dot product: N • V = 1
@@ -128,25 +186,42 @@ class Contour:
     
 
 class ContourToroidalAerospike:
-    """
-    Minimum-viable toroidal-aerospike contour class.
+    """Axisymmetric contour describing a toroidal-aerospike geometry.
 
-    * All **single-radius** properties (`r_t`, `r_c`, etc.) refer to the **outer** wall so
-      existing bell-nozzle code keeps working.
-    * All **areas** are **annular**:  :math:`A = \pi (r_{o}^{2} - r_{i}^{2})`.
+    Defines both the inner and outer wall surfaces, allowing evaluation of
+    annular areas and local geometric derivatives.
 
     Parameters
     ----------
-    xs_outer : array-like
-        Axial sample points of the **outer** contour (m).
-    rs_outer : array-like
-        Outer radius at the given ``xs_outer`` (m).
-    xs_inner : array-like
-        Axial sample points of the **inner** contour (m).
-    rs_inner : array-like
-        Inner radius at the given ``xs_inner`` (m).
+    xs_outer, rs_outer : array_like
+        Axial and radial coordinates of the outer wall [m].
+    xs_inner, rs_inner : array_like
+        Axial and radial coordinates of the inner wall [m].
     name : str, optional
-        Human-readable identifier.
+        Identifier for this contour.
+
+    Attributes
+    ----------
+    xs_outer, rs_outer : ndarray
+        Outer wall geometry arrays [m].
+    xs_inner, rs_inner : ndarray
+        Inner wall geometry arrays [m].
+    _dr_dx_outer, _dr_dx_inner : ndarray
+        Local wall slope arrays for each surface.
+    name : str or None
+        Descriptive label.
+    A_t, A_c, A_e : float
+        Annular areas at throat, chamber, and exit [m²].
+    eps, eps_c : float
+        Expansion and contraction ratios (dimensionless).
+
+    Notes
+    -----
+    The inner radius is validated to always remain below the outer radius.
+
+    See Also
+    --------
+    Contour : Single-wall version used in standard bell-nozzle engines.
     """
 
     # -------------------------------------------------------------------------
@@ -218,7 +293,19 @@ class ContourToroidalAerospike:
     # Areas (annular)
     # -------------------------------------------------------------------------
     def A(self, x):
-        """Annular flow area at *x* (m²)."""
+        """
+        Return the local annular flow area.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+
+        Returns
+        -------
+        float
+            Annular cross-sectional area [m²].
+        """
         r_o = self._interp_outer(x)
         r_i = self._interp_inner(x)
         return np.pi * (r_o**2 - r_i**2)
@@ -263,7 +350,21 @@ class ContourToroidalAerospike:
     # Slopes & normals
     # -------------------------------------------------------------------------
     def dr_dx(self, x, which="outer"):
-        """Radial slope ``dr/dx`` at *x* on chosen wall."""
+        """
+        Return the wall slope :math:`dr/dx` at `x` for either wall.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+        which : {'outer', 'inner'}, optional
+            Which wall to evaluate. Default is 'outer'.
+
+        Returns
+        -------
+        float
+            Local slope of the selected wall.
+        """
         if which == "outer":
             return np.interp(x, self.xs_outer, self._dr_dx_outer)
         elif which == "inner":
@@ -272,7 +373,21 @@ class ContourToroidalAerospike:
             raise ValueError("which must be 'outer' or 'inner'")
 
     def normal_angle(self, x, which="outer"):
-        """Angle between outward normal and vertical plane (rad)."""
+        """
+        Return the normal-plane angle for either wall.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+        which : {'outer', 'inner'}, optional
+            Wall selector. Default 'outer'.
+
+        Returns
+        -------
+        float
+            Angle between outward normal and vertical plane [rad].
+        """
         slope = self.dr_dx(x, which=which)
         cos_ang = 1.0 / np.sqrt(slope**2 + 1.0)
         return np.arccos(np.clip(cos_ang, -1.0, 1.0))
@@ -313,14 +428,35 @@ class ContourToroidalAerospike:
         super().__setattr__(key, value)
 
 class Wall:
-    def __init__(self, material, thickness, name=None):
-        """Object for representing an engine wall.
+    """Single structural wall or coating layer in a thrust chamber.
 
-        Args:
-            name (str): Name of layer, for example "Chrome Coating" or "Main Wall"
-            material (Material): Material object to define the material the wall is made of.
-            thickness (float or callable): Thickness of the wall (m). Can be a constant float, or a function of position, i.e. t(x).
-        """
+    Encapsulates material and thickness information for heat-conduction
+    calculations.
+
+    Parameters
+    ----------
+    material : Material
+        Material object providing thermal conductivity and other data.
+    thickness : float or callable
+        Constant thickness [m] or function `t(x)` returning thickness.
+    name : str, optional
+        Descriptive label of the layer (e.g. “Copper liner”).
+
+    Attributes
+    ----------
+    material : Material
+        Thermal material definition.
+    _thickness : float or callable
+        Underlying storage for the thickness definition.
+    name : str or None
+        Optional descriptive name.
+
+    See Also
+    --------
+    WallGroup : Container combining multiple walls.
+    """
+    def __init__(self, material, thickness, name=None):
+
         self.name = name
         self.material = material
         self._thickness = thickness
@@ -328,13 +464,18 @@ class Wall:
         assert type(thickness) is float or type(thickness) is int or callable(thickness), "'thickness' input must be a float, int or callable"
 
     def thickness(self, x):
-        """Get the thickness of the wall at a position x.
+        """
+        Return the wall thickness at position `x`.
 
-        Args:
-            x (float): Axial position along the engine (m)
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
 
-        Returns:
-            float: Wall thickness (m)
+        Returns
+        -------
+        float
+            Wall thickness [m].
         """
         if callable(self._thickness):
             return self._thickness(x)
@@ -343,296 +484,108 @@ class Wall:
             return self._thickness
 
 class WallGroup:
-    def __init__(self, walls=None):
-        """
-        Class that manages multiple Wall objects.
+    """Container holding multiple :class:`Wall` layers.
 
-        Args:
-            walls (list): A list of Wall objects. If None, defaults to an empty list.
-        """
+    Provides cumulative quantities such as total wall thickness along the
+    engine contour.
+
+    Parameters
+    ----------
+    walls : list[Wall], optional
+        Collection of wall layers. Defaults to an empty list.
+
+    Attributes
+    ----------
+    walls : list[Wall]
+        Managed list of wall objects.
+
+    See Also
+    --------
+    ThrustChamber : Uses a `WallGroup` to compute wall-conduction resistance.
+    """
+    def __init__(self, walls=None):
         if walls is None:
             walls = []
         self.walls = walls
 
     def total_thickness(self, x):
         """
-        Returns the sum of the thicknesses of all walls at the given position x.
+        Compute total wall thickness at axial position `x`.
 
-        Args:
-            x (float): Axial position (m)
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
 
-        Returns:
-            float: The total thickness of all walls (m)
+        Returns
+        -------
+        float
+            Sum of all wall thicknesses [m].
         """
         return sum(wall.thickness(x) for wall in self.walls)
 
-'''class CoolingCircuit:
-    def __init__(self, name, contour, cross_section, span, placement, channel_height, coolant_transport): 
-        """ defines a cooling circuit, which is a section of cooling channel
-        
-        Args: 
-            contour (class): shape of combustion chamber hot wall
-            cross_section (class): shape of cooling channel cross section
-            n_channels_circuit (int): number of channels in circuit
-            span (list): span over which the cooling channel works in x
-        """
-        self.name = name
-        self.contour = contour
-        self.cross_section = cross_section
-        self.placement = placement
-        self.channel_height = channel_height
-        self.coolant_transport = coolant_transport
-
-        if span[0] > span[1]:
-            self.span = [span[1], span[0]]
-            self.direction = -1
-        else:
-            self.span = span
-            self.direction = 1
-
-    def precompute_thermal_properties(self):
-        centerline = self.centerlines[0]
-        x_vals = centerline[:, 0]
-        r_vals = centerline[:, 1]
-        theta_vals = centerline[:, 2]
-        
-        # Interpolate the derivative components at the given x using np.interp
-        dx_dx_val = self.centerline_deriv_list[0][:, 0]
-        dr_dx_val = self.centerline_deriv_list[0][:, 1]
-        dtheta_dx_val = self.centerline_deriv_list[0][:, 2]
-
-        prof = self._make_profiles(centerline, local_coords)
-        
-        # Compute the stretching factor along the channel:
-        #ds_dx = np.sqrt(dx_dx_val**2 + dr_dx_val**2 + (r_vals * dtheta_dx_val)**2) 
-        ds_dx = np.sqrt(1 + dr_dx_val**2) # TODO: Update this to actually use everything from the centerline. Currently whack.
-
-        # Compute the perimeter touching the hot exhaust gas
-        widths = self.channel_width
-        heights = self.channel_heights
-        ts_wall = self.t_wall_tot
-
-        hot_perimeter = self.cross_section.P_thermal(heights, widths, ts_wall, centerline) 
-        dA_dx_thermal_exhaust_vals = hot_perimeter * ds_dx
-
-        # ==== Hot gas thermal area ====
-        self.dA_dx_thermal_exhaust_vals = dA_dx_thermal_exhaust_vals
-
-        cold_perimiter = self.cross_section.P_coolant(heights, widths, ts_wall, centerline) 
-        dA_dx_thermal_coolant_vals = cold_perimiter * ds_dx
-
-        # ==== Coolant thermal area ====
-        self.dA_dx_thermal_coolant_vals = dA_dx_thermal_coolant_vals
-
-        A_coolant_vals = self.cross_section.A_coolant(heights, widths, ts_wall, centerline) 
-
-        # ==== Coolant cross section ====
-        self.A_coolant_vals = A_coolant_vals
-
-        # ==== Coolant cross section derivative ====
-        
-        self.dA_dx_coolant_vals = np.gradient(A_coolant_vals, x_vals)
-        
-
-        Dh_coolant_vals = self.cross_section.Dh_coolant(heights, widths, ts_wall, centerline)
-
-        # ==== Coolant hydraulic diameter ====
-        self.Dh_coolant_vals = Dh_coolant_vals
-        # TODO: reimplement radius of curvature somehow. 
-
-        radii = radius_of_curvature(centerline)
-        self.radius_of_curvature_vals = radii
-
-    def compute_volume(self):
-        """
-        Calculate the total volume of the cooling channel by integrating
-        the product of the cross-sectional area and the local stretching factor
-        (i.e. the differential arc length) along the x-direction.
-
-        Returns:
-            Total volume (float) of the cooling circuit.
-        """
-        # Use the primary centerline (assuming all channels are identical)
-        
-        centerline = self.centerlines[0]
-        x_vals = centerline[:, 0]
-        r_vals = centerline[:, 1]
-
-        # Extract the precomputed derivatives.
-        # Note: In set_centerline(), self.centerline_deriv stores [x, dr/dx, dtheta/dx]
-        dr_dx = self.centerline_deriv_list[0][:, 1]
-        dtheta_dx = self.centerline_deriv_list[0][:, 2]
-        
-        # Compute the full stretching factor (ds/dx) accounting for curvature:
-        ds_dx = np.sqrt(1 + dr_dx**2 + (r_vals * dtheta_dx)**2)
-        
-        # Integrate the coolant cross-sectional area multiplied by ds/dx.
-        # This gives the volume per channel.
-        volume_per_channel = np.trapezoid(self.A_coolant_vals * ds_dx, x_vals)
-        
-        # Multiply by the number of channels in the circuit.
-        total_volume = volume_per_channel * self.placement.n_channel_positions
-        self.volume = total_volume
-
-    def compute_geometry(self):
-        """
-        Compute the discretized cross-sectional point clouds along each channel's centerline.
-        For each centerline, the cross_section.compute_point_cloud method is used with the current channel
-        geometrical parameters (channel heights, widths, wall thicknesses) and the corresponding local coordinate system.
-        
-        Results are stored in self.point_cloud as a list of arrays, one per centerline.
-        """
-        all_point_clouds = []  # list to store point clouds for each centerline
-
-        # Assuming self.channel_heights, self.channel_width, and self.t_wall_tot are arrays
-        # defined on the circuit's x-domain that apply to all centerlines.
-        for i, centerline in enumerate(self.centerlines):
-            # If you stored local coordinate systems for each centerline during set_centerline
-            # e.g., self.local_coords_list; if not, consider storing them similarly as in set_centerline.
-            local_coords = self.local_coords_list[i]
-
-            # Compute the point cloud for this centerline.
-            point_cloud = self.cross_section.compute_point_cloud(
-                self.channel_heights,  # h values along the x-domain
-                self.channel_width,    # channel angular width (theta) along the x-domain
-                self.t_wall_tot,       # total wall thickness along the x-domain
-                centerline,            # current centerline (Nx3 array)
-                local_coords
-            )
-            all_point_clouds.append(point_cloud)
-
-        # For backward compatibility, you could choose to also set self.point_cloud
-        # to be that computed for the first centerline.
-        self.point_cloud = all_point_clouds  # now a list of point clouds, one per channel
-
-    
-    def dA_dx_thermal_exhaust(self, x):
-        """Return precomputed dA/dx thermal exhaust value at axial position x."""
-        return np.interp(x, self.x_domain, self.dA_dx_thermal_exhaust_vals)
-    
-    def dA_dx_thermal_coolant(self, x):
-        """Return precomputed dA/dx thermal coolant value at axial position x."""
-        return np.interp(x, self.x_domain, self.dA_dx_thermal_coolant_vals)
-    
-    def A_coolant(self, x):
-        """Return precomputed coolant channel cross-sectional area at axial position x."""
-        return np.interp(x, self.x_domain, self.A_coolant_vals)
-    
-    def dA_dx_coolant(self, x):
-        """Return precomputed derivative of coolant channel area at axial position x."""
-        return np.interp(x, self.x_domain, self.dA_dx_coolant_vals)
-    
-    def Dh_coolant(self, x):
-        """Return precomputed hydraulic diameter of the coolant channel at axial position x."""
-        return np.interp(x, self.x_domain, self.Dh_coolant_vals)
-    
-    def radius_of_curvature(self, x):
-        """Return precomputed local radius of curvature at axial position x."""
-        return np.interp(x, self.x_domain, self.radius_of_curvature_vals)
-
-    def set_centerline(self, centerline_list):
-        """
-        Store a list of centerlines (each given in cylindrical coordinates (x, r, theta))
-        and precompute several quantities for each:
-        - The 3D coordinates (converted using x, y = r*cos(theta), z = r*sin(theta)).
-        - The local tangent vectors (by differentiating the 3D points).
-        - The local "normal" vectors computed such that each is perpendicular to the tangent 
-            and (if extended) points toward the x-axis.
-        - The cylindrical derivatives (dr/dx, dtheta/dx).
-        
-        Args:
-            centerline_list (list of numpy arrays): Each element is an Nx3 array 
-                representing a single channel's (x, r, theta) in cylindrical coordinates.
-        """
-        self.centerlines = centerline_list
-
-        # Create lists to hold computed properties for each centerline.
-        #self.centerline_3d_list = []
-        #self.
-        #self.normal_vectors_list = []
-        #self.binormal_vectors_list = []
-        self.local_coords_list = []
-        self.centerline_deriv_list = []
-
-        # Loop over every centerline and compute properties.
-        #tangent_vectors_list = []
-        for centerline in centerline_list:
-            x_vals = centerline[:, 0]
-            r_vals = centerline[:, 1]
-            theta_vals = centerline[:, 2]
-
-            # Convert cylindrical to Cartesian coordinates.
-            points_3d = np.column_stack((x_vals, r_vals * np.cos(theta_vals), r_vals * np.sin(theta_vals)))#np.column_stack((x_vals, r_vals, theta_vals)) #
-            #self.centerline_3d_list.append(points_3d)
-
-            # Compute tangent vectors in 3D via finite differences.
-            tangent_vectors = np.zeros_like(points_3d)
-            for i in range(3):
-                tangent_vectors[:, i] = np.gradient(points_3d[:, i], x_vals)
-            # Normalize the tangent vectors.
-            norms = np.linalg.norm(tangent_vectors, axis=1, keepdims=True)
-            tangent_vectors = tangent_vectors / norms
-            #tangent_vectors_list.append(tangent_vectors)
-
-            # Compute "normal" vectors for each point.
-            normals = np.zeros_like(points_3d)
-            for i, (P, t) in enumerate(zip(points_3d, tangent_vectors)):
-                x, y, z = P
-                t_x, t_y, t_z = t
-                if abs(t_x) < 1e-6:
-                    candidate = np.array([0, -y, -z])
-                else:
-                    candidate = np.array([(y * t_y + z * t_z) / t_x, -y, -z])
-                candidate_norm = np.linalg.norm(candidate)
-                if candidate_norm > 1e-6:
-                    candidate = candidate / candidate_norm
-                else:
-                    candidate = np.array([0.0, 0.0, 0.0])
-                normals[i] = candidate
-            #self.normal_vectors_list.append(normals)
-
-            # Compute binormal vectors and stack local coordinate systems.
-            binormal_vectors = np.cross(tangent_vectors, normals)
-            #self.binormal_vectors_list.append(binormal_vectors)
-            local_coords = np.stack((tangent_vectors, normals, binormal_vectors), axis=1)
-            self.local_coords_list.append(local_coords)
-
-            # Compute cylindrical derivatives: dr/dx and dtheta/dx.
-            dr_dx = np.gradient(r_vals, x_vals)
-            dtheta_dx = np.gradient(theta_vals, x_vals)
-            centerline_deriv = np.column_stack((x_vals, dr_dx, dtheta_dx))
-            self.centerline_deriv_list.append(centerline_deriv)
-
-    def set_channel_width(self, widths):
-        """
-        Set the channel width (in radians) for this cooling circuit.
-        
-        Args:
-            widths (numpy.ndarray): An array of channel widths computed along the axial domain.
-        """
-        self.channel_width = widths
-    
-    def set_channel_height(self, heights):
-        """
-        Set the channel width (in radians) for this cooling circuit.
-        
-        Args:
-            widths (numpy.ndarray): An array of channel widths computed along the axial domain.
-        """
-        self.channel_heights = heights
-
-    def set_t_wall_tot(self, t_wall_tot):
-        self.t_wall_tot = t_wall_tot
-
-    def set_x_domain(self, x_domain):
-        self.x_domain = x_domain
-
-    def finalize(self):
-        self.precompute_thermal_properties()
-        self.compute_volume()
-        #self.compute_geometry()'''
 
 class CoolingCircuit:
+    """Representation of a cooling circuit following the chamber contour.
+
+    Each circuit defines the geometry of one group of coolant channels,
+    including their cross-sectional shape, span, and placement relative to
+    the hot wall.
+
+    Parameters
+    ----------
+    name : str
+        Identifier of the circuit.
+    contour : Contour
+        Hot-gas wall geometry defining the outer boundary.
+    cross_section : ChannelSection
+        Cross-sectional geometry model providing A, Dh, and perimeters.
+    span : tuple[float, float]
+        Normalized start and end of circuit (-1 = chamber inlet, +1 = nozzle exit).
+    placement : ChannelPlacement
+        Strategy describing how channel centerlines are positioned.
+    channel_height : callable
+        Function returning the local channel height [m].
+    coolant_transport : object
+        Object providing coolant thermophysical properties.
+    blockage_ratio : float or array_like, optional
+        Fraction of the sector blocked by solid wall or rib.
+
+    Attributes
+    ----------
+    name : str
+        Circuit name.
+    contour : Contour
+        Reference hot-gas contour.
+    cross_section : ChannelSection
+        Shape model used for thermal and hydraulic quantities.
+    placement : ChannelPlacement
+        Placement rule describing angular and radial positioning.
+    channel_height : callable
+        Function returning height as a function of x.
+    coolant_transport : object
+        Provides coolant properties (k, μ, Cp, ρ, etc.).
+    span : (float, float)
+        Normalized start/end bounds.
+    direction : int
+        +1 if flow is forward (increasing x), −1 if reversed.
+    A_coolant_vals, Dh_coolant_vals : ndarray
+        Precomputed local coolant area and hydraulic diameter.
+    dA_dx_thermal_exhaust_vals, dA_dx_thermal_coolant_vals : ndarray
+        Surface-area differentials on hot and cold sides.
+    radius_of_curvature_vals : ndarray
+        Local curvature radius for each axial node.
+
+    Notes
+    -----
+    The circuit precomputes local geometric properties for fast interpolation
+    during steady-state or transient simulations.
+
+    See Also
+    --------
+    CoolingCircuitGroup : Groups multiple cooling circuits.
+    SectionProfiles : Bundles local geometry inputs for cross-section methods.
+    """
     def __init__(self, name, contour, cross_section, span, placement, channel_height, coolant_transport, blockage_ratio=None): 
         self.name = name
         self.contour = contour
@@ -651,6 +604,21 @@ class CoolingCircuit:
 
     # --- minimal helper: wrap the SAME params you used to pass before -----------
     def _prof(self, centerline, local_coords):
+        """
+        Assemble a `SectionProfiles` object for a given centerline.
+
+        Parameters
+        ----------
+        centerline : ndarray, shape (N, 3)
+            Channel centerline coordinates (x, r, θ).
+        local_coords : ndarray, shape (N, 3, 3)
+            Local coordinate frames.
+
+        Returns
+        -------
+        SectionProfiles
+            Ready-to-use profile bundle for cross-section routines.
+        """
         N = centerline.shape[0]
         br = getattr(self, "blockage_ratio", None)
 
@@ -672,6 +640,12 @@ class CoolingCircuit:
         )
 
     def precompute_thermal_properties(self):
+        """
+        Precompute all cross-section-dependent thermal geometry arrays.
+
+        Calculates effective surface-area derivatives, hydraulic diameter, and
+        radius of curvature for interpolation during simulation.
+        """
         centerline   = self.centerlines[0]
         local_coords = self.local_coords_list[0]
         x_vals       = centerline[:, 0]
@@ -702,6 +676,14 @@ class CoolingCircuit:
         self.radius_of_curvature_vals = radius_of_curvature(centerline)
 
     def compute_volume(self):
+        """
+        Compute total circuit volume by integrating local area along its centerline.
+
+        Returns
+        -------
+        float
+            Total coolant volume [m³].
+        """
         centerline = self.centerlines[0]
         x_vals = centerline[:, 0]
         r_vals = centerline[:, 1]
@@ -715,6 +697,11 @@ class CoolingCircuit:
         self.volume = total_volume
 
     def compute_single_centerline(self):
+        """
+        Generate OCC wire objects for each station along the first centerline.
+
+        Intended for CAD or meshing visualization.
+        """
         list_of_wires = []
         centerl = self.centerlines[0]
         for i in range(len(centerl)):
@@ -725,6 +712,12 @@ class CoolingCircuit:
         self.wires = list_of_wires
 
     def compute_geometry(self):
+        """
+        Generate full 3D point-cloud representations for all channel centerlines.
+
+        Each point cloud corresponds to one physical cooling channel.
+        """
+
         all_point_clouds = []
         for i, centerline in enumerate(self.centerlines):
             local_coords = self.local_coords_list[i]
@@ -881,28 +874,6 @@ class CoolingCircuit:
             centerline_deriv = np.column_stack((x_vals, dr_dx, dtheta_dx))
             self.centerline_deriv_list.append(centerline_deriv)
 
-        # === Debug plot of frames in 3D ===
-        """fig = plt.figure(figsize=(8, 6))
-        ax = fig.add_subplot(111, projection="3d")
-        ax.plot(points_3d[:, 0], points_3d[:, 1], points_3d[:, 2], "k-", label="centerline")
-
-        scale = 0.05 * np.max(r_vals)  # arrow length scaling
-        for P, t, n, b in zip(points_3d, tangent_vectors, normals, binormal_vectors):
-            ax.quiver(*P, *(t * scale), color="r", linewidth=0.5)
-            ax.quiver(*P, *(n * scale), color="g", linewidth=0.5)
-            ax.quiver(*P, *(b * scale), color="b", linewidth=0.5)
-
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-        ax.set_zlabel("Z")
-        ax.set_title("Local coordinate frames along centerline")
-        ax.legend()
-        ax.set_box_aspect([1,1,1])
-        plt.show()"""
-
-
-
-
     def set_channel_width(self, widths_rad):
         self.channel_width = widths_rad
     
@@ -923,90 +894,6 @@ class CoolingCircuit:
         self.precompute_thermal_properties()
         self.compute_volume()
         # self.compute_geometry()
-
-
-"""def plot_local_frames(points_3d, tangents, normals, vec_len=0.05):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    X, Y, Z = points_3d[:, 0], points_3d[:, 1], points_3d[:, 2]
-
-    # Tangents
-    ax.quiver(X, Y, Z,
-              tangents[:, 0], tangents[:, 1], tangents[:, 2],
-              length=vec_len, normalize=True, linewidth=0.5)
-
-    # Normals
-    ax.quiver(X, Y, Z,
-              normals[:, 0], normals[:, 1], normals[:, 2],
-              length=vec_len, normalize=True, linewidth=0.5)
-
-    # Plot the x-axis for reference
-    x_min, x_max = np.min(X), np.max(X)
-    ax.plot([x_min, x_max], [0, 0], [0, 0], linestyle='--', linewidth=1)
-
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel('z')
-    ax.set_box_aspect((x_max - x_min + 1e-9,
-                       np.ptp(Y) + 1e-9,
-                       np.ptp(Z) + 1e-9))
-    plt.tight_layout()
-    plt.show()"""
-
-
-def old_radius_of_curvature(points): # TODO: not sure where this function should live
-    """
-    Calculate the radius of curvature along a line given by an array of points.
-    Points: numpy array of shape (N, 3) representing [x, r, theta]
-    Returns:
-        radii: numpy array of radius of curvature at each point (length N)
-    """
-    def circle_radius(p1, p2, p3):
-        # Convert cylindrical (x, r, theta) to Cartesian coordinates (assuming symmetry around x-axis)
-        def cyl_to_cart(p):
-            x, r, theta = p
-            return np.array([x, r * np.cos(theta), r * np.sin(theta)])
-
-        a = cyl_to_cart(p1)
-        b = cyl_to_cart(p2)
-        c = cyl_to_cart(p3)
-
-        # Calculate vectors
-        ab = b - a
-        bc = c - b
-        ca = a - c
-
-        # Triangle side lengths
-        A = np.linalg.norm(bc)
-        B = np.linalg.norm(ca)
-        C = np.linalg.norm(ab)
-
-        # Semi-perimeter
-        s = (A + B + C) / 2
-
-        # Area of triangle via Heron's formula
-        area = np.sqrt(max(s * (s - A) * (s - B) * (s - C), 1e-12))  # small epsilon to avoid zero division
-
-        # Circumradius formula
-        radius = (A * B * C) / (4 * area)
-        return radius
-
-    N = len(points)
-    radii = np.zeros(N)
-
-    for i in range(N):
-        if i == 0:
-            p1, p2, p3 = points[i], points[i + 1], points[i + 2]
-        elif i == N - 1:
-            p1, p2, p3 = points[i - 2], points[i - 1], points[i]
-        else:
-            p1, p2, p3 = points[i - 1], points[i], points[i + 1]
-
-        radii[i] = circle_radius(p1, p2, p3)
-
-    return radii
-
-
 
 def radius_of_curvature(
     points: np.ndarray,
@@ -1057,6 +944,28 @@ def radius_of_curvature(
     return R
 
 class CoolingCircuitGroup:
+    """Collection of :class:`CoolingCircuit` objects forming the full cooling system.
+
+    Used by :class:`ThrustChamber` to coordinate multi-segment cooling
+    layouts, manage overlap, and query active channels along the contour.
+
+    Parameters
+    ----------
+    circuit_list : list[CoolingCircuit]
+        List of circuit instances.
+    configuration : str, optional
+        Optional label or configuration identifier.
+
+    Attributes
+    ----------
+    circuits : list[CoolingCircuit]
+        All active cooling circuits.
+
+    See Also
+    --------
+    CoolingCircuit
+    ThrustChamber
+    """
     def __init__(self, circuit_list, configuration=None):
         self.circuits = circuit_list
         # TODO: implement checks for validity of circuits 
@@ -1065,13 +974,19 @@ class CoolingCircuitGroup:
     
     def number_of_channels(self, x, *, occluding_only=False):
         """
-        Return the total number of cooling channels active at a given x position.
-        
-        Args:
-            x (float): The axial x position along the engine.
-        
-        Returns:
-            int: Total number of cooling channels active at the given x position.
+        Return the total number of active channels at position `x`.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+        occluding_only : bool, optional
+            If True, count only circuits that occlude the wall surface.
+
+        Returns
+        -------
+        int
+            Total number of channels currently active at `x`.
         """
         total_channels = 0
         for circuit in self.circuits:
@@ -1089,6 +1004,34 @@ class CoolingCircuitGroup:
 
 
 class ChannelPlacement(ABC):
+    """Abstract base class defining how coolant channels are positioned.
+
+    Subclasses implement different placement strategies (surface, internal)
+    that compute the radial coordinate of the channel centerline.
+
+    Parameters
+    ----------
+    n_channel_positions : int
+        Number of circumferential channel locations (“leaves”).
+    channel_width : callable or None, optional
+        Function returning angular width [rad]. May be `None` if uniform.
+    occludes : bool, optional
+        Whether this placement blocks part of the wall from hot gas view.
+
+    Attributes
+    ----------
+    n_channel_positions : int
+        Number of circumferential positions.
+    channel_width : callable or None
+        Angular width function or constant.
+    occludes : bool
+        Whether the placement occludes hot surface area.
+
+    See Also
+    --------
+    SurfacePlacement
+    InternalPlacement
+    """
     def __init__(self, n_channel_positions: int, channel_width=None, occludes: bool = True):
         self.n_channel_positions = n_channel_positions   # << new home
         self.channel_width = channel_width
@@ -1100,27 +1043,112 @@ class ChannelPlacement(ABC):
                                   contour,
                                   wall_group) -> float:
         """
-        Given axial coordinate x, the hot-gas contour and the wall stack,
-        return the r-coordinate of the coolant channel centerline.
+        Return the radial coordinate of the coolant-channel centerline.
+
+        Parameters
+        ----------
+        x : float
+            Axial position [m].
+        contour : Contour
+            Hot-gas contour object.
+        wall_group : WallGroup
+            Wall stack describing total thickness.
+
+        Returns
+        -------
+        float
+            Radius of the channel centerline [m].
         """
 
     def channel_count(self) -> int:
         return self.n_channel_positions
 
 class SurfacePlacement(ChannelPlacement):
+    """Placement model for surface-mounted cooling channels.
+
+    Channels are positioned just outside the main wall stack,
+    offset by total thickness and corrected for local contour angle.
+
+    Parameters
+    ----------
+    n_channel_positions : int
+        Number of channels around the circumference.
+
+    Attributes
+    ----------
+    n_channel_positions : int
+        Number of circumferential leaves.
+    n_channels_per_leaf : int
+        Fixed to 1 for surface channels.
+    occludes : bool
+        Always True — these channels block hot-side area.
+
+    See Also
+    --------
+    ChannelPlacement
+    InternalPlacement
+    """
     def __init__(self, n_channel_positions: int):
         self.n_channels_per_leaf = 1
         super().__init__(n_channel_positions, channel_width = None, occludes=True)
 
     def compute_centerline_radius(self, x, contour, wall_group):
+        """
+        Compute the centerline radius for a surface-mounted channel.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+        contour : Contour
+            Hot-gas contour of the chamber/nozzle.
+        wall_group : WallGroup
+            Wall stack through which the channel is offset.
+
+        Returns
+        -------
+        float
+            Channel centerline radius [m].
+        """
         r_hot   = contour.r(x)
         alpha       = contour.normal_angle(x)
         t_total = wall_group.total_thickness(x)
         return r_hot + t_total/np.cos(alpha)
 
 class InternalPlacement(ChannelPlacement):
-    """ In-chamber heat-exchanger channels.  May have their own width law. """
-       
+    """Placement model for in-wall or in-chamber heat-exchanger channels.
+
+    Allows multiple stacked channels per angular leaf and optional
+    user-defined width laws.
+
+    Parameters
+    ----------
+    n_channel_positions : int
+        Number of circumferential leaves.
+    n_channels_per_leaf : int
+        Channels stacked radially per leaf.
+    channel_width : callable
+        Function returning angular spacing between channel rows [rad].
+    occludes : bool, optional
+        Whether this placement occludes the hot-side wall. Default False.
+
+    Attributes
+    ----------
+    n_channel_positions : int
+        Number of circumferential leaves.
+    n_channels_per_leaf : int
+        Channels per leaf.
+    channel_width : callable
+        Angular spacing function.
+    occludes : bool
+        Occlusion flag.
+
+    See Also
+    --------
+    SurfacePlacement
+    ChannelPlacement
+    """
+
     def __init__(self,
                     n_channel_positions: int,          # leaves
                     n_channels_per_leaf: int,          # radial stack in each leaf
@@ -1142,15 +1170,65 @@ class InternalPlacement(ChannelPlacement):
         return self.n_channel_positions# * self.n_channels_per_leaf"""
 
 class ThrustChamber:
+    """Full thrust-chamber assembly combining geometry, cooling, and combustion models.
+
+    Acts as the top-level container linking the hot-gas contour, wall stack,
+    and cooling circuits into a coherent physical representation.
+
+    Parameters
+    ----------
+    contour : Contour
+        Hot-gas contour defining inner geometry.
+    wall_group : WallGroup
+        Structural wall stack.
+    cooling_circuit_group : CoolingCircuitGroup
+        Collection of cooling circuits.
+    combustion_transport : object
+        Provides combustion-gas properties and flow variables.
+    optimal_values : dict, optional
+        Optional dictionary of reference operating conditions.
+    roughness : float or callable, optional
+        Effective roughness height of coolant walls [m].
+    K_factor : float, optional
+        Curvature-loss coefficient.
+    n_nodes : int, optional
+        Number of discrete axial samples.
+    h_gas_corr, h_cold_corr : float, optional
+        Empirical correction factors for gas- and coolant-side correlations.
+
+    Attributes
+    ----------
+    contour : Contour
+        Geometric shape of the chamber/nozzle.
+    wall_group : WallGroup
+        Walls through which conduction occurs.
+    cooling_circuit_group : CoolingCircuitGroup
+        All defined cooling circuits.
+    combustion_transport : object
+        Hot-gas property model.
+    n_nodes : int
+        Number of discretization points.
+    K_factor : float
+        Curvature loss coefficient.
+    h_gas_corr, h_cold_corr : float
+        Correction multipliers.
+    _roughness : float or callable
+        Underlying roughness definition.
+
+    Notes
+    -----
+    The `ThrustChamber` automatically initializes derived circuit geometry
+    and may call combustion-transport property generation at construction.
+
+    See Also
+    --------
+    CoolingCircuit
+    WallGroup
+    Contour
+    """
+
     def __init__(self, contour, wall_group, cooling_circuit_group, combustion_transport, optimal_values=None, roughness=0.015e-3, K_factor=0.3, n_nodes=50, h_gas_corr=1.0, h_cold_corr=1.0):
-        """
-        Args:
-            contour (Contour): The hot-gas contour of the engine
-            walls (WallCollection): Collection of walls, must have walls.total_thickness(x)
-            cooling_circuits (CircuitMaster): Master container that holds individual CoolingCircuit objects
-            channel_height (callable): A function returning the channel height h(x)
-            n_nodes (int): Number of axial subdivisions to use for constructing centerlines
-        """
+
         self.contour = contour
         self.wall_group = wall_group
         self.cooling_circuit_group = cooling_circuit_group   # e.g. cooling_circuits.circuits -> list of CoolingCircuit
@@ -1260,46 +1338,6 @@ class ThrustChamber:
                         chain.append([x_, r_ctr, theta_])
                     local_centerlines.append(np.asarray(chain))
             circuit.set_centerline(local_centerlines)
-
-    """def build_channel_centerlines(self, mode="sim"):
-        
-        Build centerline splines for each CoolingCircuit.
-        For each circuit, use its pre-built x_domain.
-        Each circuit is assigned angles in an interleaved fashion.
-        
-        # Determine interleaving of channel angles across circuits.
-        if mode == "sim":
-        # Create a list with one channel per circuit.
-            circuit_counts = [1 for _ in self.cooling_circuit_group.circuits]
-        elif mode == "plot":
-            circuit_counts = [c.n_channels_circuit for c in self.cooling_circuit_group.circuits]
-        else:
-            raise ValueError("Mode must be either 'sim' or 'plot'.")
-        
-        owners = interleaved_indices(circuit_counts) # TODO: do I need interleaved indecies with this config?
-        total_channels = sum(circuit_counts)
-        all_angles = np.linspace(0, 2*np.pi, total_channels, endpoint=False)
-
-        # For each circuit, build its centerlines.
-        for circuit_index, circuit in enumerate(self.cooling_circuit_group.circuits):
-            xs_circuit = circuit.x_domain  # use pre-built x-domain
-            my_indices = np.where(owners == circuit_index)[0]
-            my_angles = all_angles[my_indices]
-            local_centerlines = []
-            for theta_ in my_angles:
-                single_centerline = []
-                for x_ in xs_circuit:
-                    r_contour = self.contour.r(x_)
-                    alpha = self.contour.normal_angle(x_)
-                    t_wall = self.wall_group.total_thickness(x_)
-                    r_centerline = r_contour + t_wall / np.cos(alpha)
-
-                    # Each channel point: [x, radius, angle]
-                    single_centerline.append([x_, r_centerline, theta_])
-                local_centerlines.append(np.array(single_centerline))
-            circuit.set_centerline(local_centerlines)"""
-
-    # build channel centerlines obviously needs to move to the new class
 
     def build_channel_widths(self):
         """

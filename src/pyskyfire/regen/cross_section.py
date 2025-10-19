@@ -5,7 +5,31 @@ import numpy as np
 
 @dataclass(frozen=True)
 class SectionProfiles:
-    """All geometry profiles along the centerline (length N)."""
+    """All geometry profiles along the cooling-channel centerline.
+
+    Each array must have consistent length ``N`` (number of stations).
+
+    Attributes
+    ----------
+    h : np.ndarray
+        Channel height array [m, shape (N,)].
+    theta : np.ndarray
+        Included wedge angle at each station [rad, shape (N,)].
+    t_wall : np.ndarray
+        Wall thickness between coolant and hot-gas side [m, shape (N,)].
+    centerline : np.ndarray
+        Centerline coordinates ``(x, r, θ)`` or equivalent system [shape (N, 3)].
+    local_coords : np.ndarray
+        Local orthonormal frames ``(t, n, b)`` at each station [shape (N, 3, 3)].
+    blockage_ratio : np.ndarray
+        Fraction [0–1] describing coolant blockage (1 = fully blocked).
+
+    Raises
+    ------
+    ValueError
+        If any array length or shape is inconsistent.
+    """
+
     h: np.ndarray            # channel height [N]
     theta: np.ndarray        # included angle [rad, N]
     t_wall: np.ndarray       # wall thickness [N]
@@ -25,7 +49,17 @@ class SectionProfiles:
             raise ValueError("local_coords must be (N,3,3)")
 
 class ChannelSection(ABC):
-    """Common interface all cross-section shapes must implement."""
+    """Abstract base class for cooling-channel cross-section definitions.
+
+    Derived classes must provide analytical expressions for coolant area,
+    hydraulic diameter, wetted perimeters, and optionally geometry export.
+
+    Parameters
+    ----------
+    n_points : int, optional
+        Resolution hint for discretized representations. Default is 16.
+    """
+
     def __init__(self, n_points: int = 16):
         self.n_points = int(n_points)
 
@@ -44,13 +78,17 @@ class ChannelSection(ABC):
 
 # ===================== Squared implementation ===============================
 class CrossSectionSquared(ChannelSection):
+    """Simplified rectangular channel section (wedge-sector approximation)."""
+
     def __init__(self, n_points: int = 8):
         super().__init__(n_points=n_points)
 
     def _theta_real(self, prof: SectionProfiles) -> np.ndarray:
+        """Apply blockage ratio to effective included angle."""
         return prof.theta * (1 - prof.blockage_ratio)
 
     def A_coolant(self, prof: SectionProfiles) -> np.ndarray:
+        """Compute coolant cross-sectional area [m²]."""
         r = prof.centerline[:, 1]
         r_inner = r + prof.t_wall
         r_outer = r + prof.t_wall + prof.h
@@ -59,6 +97,7 @@ class CrossSectionSquared(ChannelSection):
         return A_sector
 
     def Dh_coolant(self, prof: SectionProfiles) -> np.ndarray:
+        """Compute hydraulic diameter [m]."""
         A = self.A_coolant(prof)
         r = prof.centerline[:, 1]
         r_inner = r + prof.t_wall
@@ -68,23 +107,40 @@ class CrossSectionSquared(ChannelSection):
         return 4.0 * A / P
 
     def P_thermal(self, prof: SectionProfiles) -> np.ndarray:
+        """Return thermal-contact perimeter [m]."""
         r = prof.centerline[:, 1]
         th = self._theta_real(prof)
         return r * th
 
     def P_coolant(self, prof: SectionProfiles) -> np.ndarray:
+        """Return coolant-wetted perimeter [m]."""
         r = prof.centerline[:, 1]
         th = self._theta_real(prof)
         r_inner = r + prof.t_wall
         return r_inner * th
 
     def compute_cross_section(self, prof: SectionProfiles, i: int):
-        """
-        Build a closed OCC wire (int tag) for station i by:
-        1) creating a circle EDGE in XY@origin,
-        2) applying an affine transform to place it at (P_i, t_i, n_i, b_i),
-        3) wrapping the transformed edge into a wire.
-        NOTE: gmsh must be initialized and a model added by the caller.
+        """Construct a gmsh OCC wire representing the rectangular section.
+
+        Builds a closed wire via arcs and straight walls positioned at the
+        specified centerline station.
+
+        Parameters
+        ----------
+        prof : SectionProfiles
+            Full section profile data.
+        i : int
+            Station index to build.
+
+        Returns
+        -------
+        int
+            gmsh OCC wire tag.
+
+        Notes
+        -----
+        Requires an initialized gmsh model. Only geometric primitives are
+        created; meshing is up to the caller.
         """
         import gmsh # lazy import gmsh
         # -------- station data --------
@@ -142,15 +198,18 @@ class CrossSectionSquared(ChannelSection):
 
 # ===================== Rounded implementation ===============================
 class CrossSectionRounded(ChannelSection):
+    """Rounded cooling-channel geometry with curved sidewalls."""
     def __init__(self, n_points: int = 16): # TODO: Does n-points have any funcion left? 
         super().__init__(n_points=n_points)
 
     def _beta_alpha(self, theta: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Return the inner (β) and outer (α) complementary angles."""
         beta = (np.pi - theta) * 0.5
         alpha = np.pi - beta
         return beta, alpha
 
     def A_coolant(self, prof: SectionProfiles) -> np.ndarray:
+        """Compute effective coolant cross-sectional area [m²]."""
         r = prof.centerline[:, 1]
         r1 = r * np.sin(prof.theta/2)
         r2 = (r + prof.h) * np.sin(prof.theta/2)
@@ -164,6 +223,7 @@ class CrossSectionRounded(ChannelSection):
         return A1 + A2 + S1 + S2
 
     def Dh_coolant(self, prof: SectionProfiles) -> np.ndarray:
+        """Compute hydraulic diameter [m]."""
         A = self.A_coolant(prof)
         r = prof.centerline[:, 1]
         r1 = r * np.sin(prof.theta/2)
@@ -176,24 +236,40 @@ class CrossSectionRounded(ChannelSection):
         return 4.0 * A / P
 
     def P_thermal(self, prof: SectionProfiles) -> np.ndarray:
+        """Compute thermal-contact perimeter [m]."""
         r = prof.centerline[:, 1]
         r1 = r * np.sin(prof.theta/2)
         angle = np.radians(112.0)     # your chosen effective contact angle
         return r1 * angle
 
     def P_coolant(self, prof: SectionProfiles) -> np.ndarray:
+        """Compute coolant-wetted perimeter [m]."""
         r = prof.centerline[:, 1]
         r1 = r * np.sin(prof.theta/2)
         angle = np.radians(112.0)
         return (r1 - prof.t_wall) * angle
     
     def compute_cross_section(self, prof: SectionProfiles, i: int) -> int:
-        """
-        Build a closed OCC wire (int tag) for station i by:
-        1) creating a circle EDGE in XY@origin,
-        2) applying an affine transform to place it at (P_i, t_i, n_i, b_i),
-        3) wrapping the transformed edge into a wire.
-        NOTE: gmsh must be initialized and a model added by the caller.
+        """Construct a gmsh OCC wire representing the rounded section.
+
+        Parameters
+        ----------
+        prof : SectionProfiles
+            Section profiles along the cooling circuit.
+        i : int
+            Station index to build.
+
+        Returns
+        -------
+        int
+            gmsh OCC wire tag.
+
+        Notes
+        -----
+        Requires that a gmsh model is active. The geometry is constructed
+        from circle arcs and wall segments in a local coordinate frame,
+        then transformed into global coordinates using the provided
+        orthonormal basis at station ``i``.
         """
         import gmsh # lazy import
         # -------- station data --------

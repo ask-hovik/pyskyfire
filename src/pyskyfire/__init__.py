@@ -2,9 +2,12 @@
 pyskyfire - A Python library for rocket engine simulation and design.
 
 Subpackages:
+    common  - Functionality combining other subpackages. 
     regen   - Regenerative cooling analysis.
     pump    - Pump design and performance calculations.
     turbine - Turbine design and analysis.
+    skycea  - Chemical equilibrium wrapper
+    viz     - Visualisation
 """
 
 try:
