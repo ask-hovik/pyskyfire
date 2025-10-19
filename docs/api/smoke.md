@@ -1,0 +1,5 @@
+# Smoke
+
+```{automodule} pyskyfire
+:members:
+```

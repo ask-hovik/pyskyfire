@@ -6,6 +6,11 @@ import sys
 sys.path.insert(0, os.path.abspath(".."))
 sys.path.insert(0, os.path.abspath("../src"))
 
+ROOT = os.path.abspath(os.path.join(__file__, "..", ".."))
+SRC  = os.path.join(ROOT, "src")
+_AUTOSUMMARY_DIR = os.path.join(os.path.dirname(__file__), "api", "_generated")
+os.makedirs(_AUTOSUMMARY_DIR, exist_ok=True)
+
 project = "pyskyfire"
 author = "Ask Haugerud Hovik"
 copyright = f"{datetime.now():%Y}, {author}"
@@ -19,6 +24,21 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_design",
     "sphinx_autodoc_typehints",
+    "autoapi.extension"
+]
+
+autoapi_type = "python"
+autoapi_dirs = [SRC]              # points to your 'src' path
+autoapi_add_toctree_entry = True
+autoapi_root = "api"              # where to put the rendered API
+autoapi_keep_files = True         # keep intermediate .rst (useful for debugging/PRs)
+autoapi_python_class_content = "both"  # class + __init__ docstrings
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "show-inheritance",
+    "inherited-members",
+    "imported-members",  # show re-exported names (works with __all__)
 ]
 
 # Autodoc / Autosummary
@@ -28,6 +48,18 @@ napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 napoleon_use_param = True
 napoleon_use_rtype = True
+
+autodoc_mock_imports = [
+    "CoolProp",
+    "CEA_Wrap",
+    "cantera",
+    "centrifugal_pump",
+    "cloudpickle",
+    "gmsh",
+    "plotly",
+    "pyvis",
+]
+
 
 # Type hints: in the signature + description
 typehints_fully_qualified = False
