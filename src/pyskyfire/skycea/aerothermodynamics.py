@@ -17,6 +17,109 @@ from bisect import bisect_left
 
 
 class Aerothermodynamics:  
+    """Aerothermodynamic property precomputation and lookup along an engine contour.
+
+    This class computes 2-D thermo/fluid property maps along a prescribed
+    nozzle/combustor contour using **CEA_Wrap** and exposes fast interpolating
+    getters. At each axial position ``x`` the equilibrium state (column 0) is
+    evaluated at the local area ratio; additional columns tabulate thermodynamic
+    properties over a temperature grid at **fixed local static pressure**. Lookups
+    support:
+    - equilibrium at a given ``x`` (no ``T``/``h`` provided),
+    - TP evaluation at specified ``T`` and local pressure ``p(x)``,
+    - HP evaluation at specified mixture enthalpy ``h`` and local pressure ``p(x)``
+    (using an adjustable-enthalpy reactant representation).
+
+    Parameters
+    ----------
+    optimum : dict[str, float | str]
+        Calibrated/derived inputs (e.g., ``fu``, ``ox``, ``MR``, ``p_c``, ``F``,
+        ``eps``, ``L_star``, ``c_star``, inlet temperatures, etc.). Typically
+        produced by :meth:`from_F_eps_Lstar`.
+    chemrep_map : dict[str, str], optional
+        Mapping from reactant *names* to ``chemical_representation`` strings used by
+        CEA for HP evaluations with enthalpy offsets (exploded formula like
+        ``"C 2 H 6 O 1"``). Required only when calling HP-based getters (``h=...``).
+
+    Attributes
+    ----------
+    # Inputs / design-point scalars
+    fu : Any
+        User’s fuel specification (mixture container understood by CEA_Wrap).
+    ox : Any
+        User’s oxidizer specification (mixture container understood by CEA_Wrap).
+    MR : float
+        Mixture ratio ``m_ox / m_fu`` [-].
+    p_c : float
+        Chamber pressure [Pa].
+    F : float
+        Target thrust [N].
+    eps : float
+        Exit-to-throat area ratio ``A_e/A_t`` [-].
+    L_star : float
+        Characteristic chamber length [m].
+    T_fu_in, T_ox_in : float
+        Inlet temperatures for fuel/oxidizer [K].
+    p_amb : float
+        Ambient/static back pressure used for CF/Isp_amb calculations [Pa].
+    npts : int
+        Number of axial nodes used for precomputation along the contour [-].
+
+    # Derived performance at design point
+    c_star : float
+        Characteristic velocity [m/s].
+    Isp_vac, Isp_amb, Isp_SL, Isp_ideal_amb : float
+        Vacuum / ambient / sea-level / perfectly expanded specific impulses [s].
+    CF_vac, CF_amb, CF_SL : float
+        Thrust coefficients [-].
+    mdot, mdot_fu, mdot_ox : float
+        Total/fuel/oxidizer mass flows [kg/s].
+    A_t, A_e : float
+        Throat and exit areas [m²].
+    r_t, r_e : float
+        Throat and exit radii [m].
+    V_c : float
+        Chamber volume estimated from ``L_star`` [m³].
+    t_stay : float
+        Mean residence time in chamber [s].
+
+    # Precomputed grids (after :meth:`compute_aerothermodynamics`)
+    x_nodes : ndarray
+        Monotone axial grid spanning ``contour.xs[0]`` → ``contour.xs[-1]`` [m].
+    Nt : int
+        Number of temperature samples per axial station [-].
+    T_grid : ndarray, shape (Nx, Nt)
+        Temperature grid per axial row [K] (col 0 equals local equilibrium T).
+    M_map, T_map, p_map, rho_map, cp_map, gamma_map, h_map, a_map, mu_map, k_map, Pr_map : ndarray
+        Property maps; column 0 is the local equilibrium; remaining columns are TP
+        samples at fixed local pressure. Units: M [-], T [K], p [bar], rho [kg/m³],
+        cp [kJ/kg-K], gamma [-], h [kJ/kg], a [m/s], mu [Pa·s], k [W/m-K], Pr [-].
+    X_map : list[dict[str, float]]
+        Equilibrium product mole fractions per axial node (unnormalized dicts).
+
+    See Also
+    --------
+    CEA_Wrap.RocketProblem
+        Equilibrium nozzle/chamber solves used for the equilibrium column.
+    CEA_Wrap.TPProblem
+        Temperature-pressure state solves used for the TP columns and fallbacks.
+    CEA_Wrap.HPProblem
+        Enthalpy-pressure equilibrium solves used when ``h`` is specified.
+
+    Notes
+    -----
+    - **Units:** Inputs use SI (Pa, K, N). CEA_Wrap expects/returns some fields in
+    *psi* / *bar*; all conversions are handled internally. Stored ``p_map`` is in
+    **bar** (matching CEA); :meth:`get_p` returns **Pa**.
+    - **Equilibrium column:** column 0 in each map corresponds to the equilibrium
+    state at the local area ratio (subsonic for ``x < 0``; supersonic for
+    ``x >= 0`` with your sign convention).
+    - **Interpolation:** Lookups first try a bilinear map interpolation on
+    ``(x, T)``. If the requested ``T`` falls outside the tabulated range, a live
+    TP solve at ``p(x)`` is performed. For ``h`` queries an HP solve at ``p(x)``
+    is performed and requires valid ``chemrep_map`` entries for all reactants.
+    """
+
     def __init__(self, optimum: dict[str, float | str], chemrep_map: Optional[dict[str, str]] = None):
         """Add all values in the optimum dict to self"""
         for key, value in optimum.items():
@@ -26,7 +129,50 @@ class Aerothermodynamics:
 
     @classmethod
     def from_F_eps_Lstar(cls, fu, ox, MR, p_c, F, eps, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, npts=15):
-        """Calculate optimal values using thrust, exit pressure and L-star"""
+        """Construct from thrust, area ratio, and L* at a given chamber pressure.
+
+        This helper solves a CEA rocket problem at the specified design point and
+        assembles the ``optimum`` dict used to initialize :class:`Aerothermodynamics`.
+
+        Parameters
+        ----------
+        fu : Any
+            Fuel mixture descriptor (must expose ``propellants`` and ``fractions`` and
+            be consumable by ``CEA_Wrap.Fuel``).
+        ox : Any
+            Oxidizer mixture descriptor (same structural expectations as ``fu``).
+        MR : float
+            Mixture ratio ``m_ox / m_fu`` [-].
+        p_c : float
+            Chamber pressure [Pa].
+        F : float
+            Target thrust [N].
+        eps : float
+            Nozzle area ratio ``A_e / A_t`` [-].
+        L_star : float
+            Characteristic chamber length [m].
+        T_fu_in : float, default 298.15
+            Fuel inlet temperature [K].
+        T_ox_in : float, default 298.15
+            Oxidizer inlet temperature [K].
+        p_amb : float, default 1.013e5
+            Ambient/static pressure for CF/Isp_amb calculations [Pa].
+        npts : int, default 15
+            Number of axial stations to precompute along the contour.
+
+        Returns
+        -------
+        Aerothermodynamics
+            Initialized instance with populated design-point performance and all fields
+            necessary for :meth:`compute_aerothermodynamics`.
+
+        Notes
+        -----
+        - The CEA call assumes perfect expansion for ``Isp_vac`` and uses standard
+        thrust-coefficient relations to compute ``Isp_amb`` and ``Isp_SL``.
+        - Areas and chamber volume are derived from ``c_star``, mass flow, ``L_star``,
+        and mixture density at chamber conditions.
+        """
 
         fus = []
         oxs = []
@@ -86,7 +232,39 @@ class Aerothermodynamics:
         return cls(optimum)
 
     def compute_aerothermodynamics(self, contour, Nt: int = 64):
-        """Create 2-D property maps on (x, T). Column 0 = equilibrium at that x."""
+        """Precompute 2-D property maps along the supplied contour.
+
+        Builds axial nodes and, for each node, computes:
+        1) the **equilibrium** state at the local area ratio (column 0), and
+        2) a **TP temperature sweep** at fixed local pressure (remaining columns).
+        The results populate ``x_nodes``, ``T_grid``, ``Nt``, and all ``*_map`` arrays,
+        plus ``X_map`` with equilibrium compositions.
+
+        Parameters
+        ----------
+        contour : Any
+            Geometry wrapper providing:
+            - ``xs`` : array-like of axial positions [m] (monotone increasing),
+            - ``A_t`` : float throat area [m²],
+            - ``A(x)`` : callable returning local area [m²] for a given ``x``.
+        Nt : int, default 64
+            Number of temperature samples per axial node (columns). Column 0 is the
+            equilibrium point, columns ``1..Nt-1`` are TP samples.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        - ``p_map`` is stored in **bar** to match CEA output; :meth:`get_p` converts to
+        **Pa** on access.
+        - If the requested temperature later lies outside the tabulated range,
+        getters will fall back to on-the-fly TP solves at the local pressure.
+        - For ``x < 0`` the equilibrium call uses subsonic mode; for ``x >= 0`` it uses
+        supersonic mode, matching common nozzle sign conventions.
+        """
+
         # ---- x grid ----
         self.x_nodes = np.linspace(contour.xs[0], contour.xs[-1], self.npts)
         A_t = float(contour.A_t)
