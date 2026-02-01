@@ -8,7 +8,7 @@
 # plotting functionality. 
 
 # The example is meant to showcase the capabilities of the Pyskyfire
-# library in the simplest way possible, not being a good engine 
+# library in the simplest way possible, and doesn't focus on engine
 # design. Please follow proper design principles when designing
 # your engine. 
 
@@ -18,9 +18,9 @@ import pyskyfire as psf
 # Input parameters for your engine
 params = dict(
     # Chamber parameters
-    p_c    = 20e5, # 20 bar chamber pressure
+    p_c    = 50e5, # 20 bar chamber pressure
     F      = 5e3,  # 5kN thrust
-    eps    = 4,    # Nozzle area ratio
+    eps    = 10,    # Nozzle area ratio
     L_star = 1.2,  # Ratio of chamber volume to throat area
     MR     = 2.8,  # Mixture ratio of the combustion reaction
     AR_c   = 1.8,  # Chamber aspect ratio. Engines typically have a value between 1 and 2
@@ -28,15 +28,16 @@ params = dict(
     # Propellants for the two underlying codes, NASA CEA and coolprop, has to be loaded
     cea_fu = psf.common.Fluid(type="fuel", propellants=["C2H5OH"], fractions=[1.0]),
     cea_ox = psf.common.Fluid(type="oxidizer", propellants=["N2O"], fractions=[1.0]),
-    coolprop_fu = "ethanol",
+    coolprop_fu = psf.common.Fluid(type="fuel", propellants=["ethanol"], fractions=[1.0]),
+    #coolprop_fu = "ethanol",
     T_coolant_in = 298.15, # The temperature of the fuel as it enters the cooling channels
     p_coolant_in = 23e5, # The pressure of the fuel as it enters the cooling channels. 
 
     # Cooling system properties
     material = psf.common.solids.StainlessSteel304, # There is built in support for a few different materials
     wall_thickness = 0.5e-3, # Half a millimeter wall thickness between the coolant and the combustion reaction
-    n_channels = 80, # Number of cooling channels distributed around the engine
-    blockage_ratio = 0.2, # This is a fraction that describes how many percent of the chamber cross section that are used up by ribs (20% in this case)
+    n_channels = 60, # Number of cooling channels distributed around the engine
+    blockage_ratio = 0.0, # This is a fraction that describes how many percent of the chamber cross section that are used up by ribs (20% in this case)
     roughness_height = 10e-6 # This is the average roughness height of the surface on the inside of the cooling channel. Here 10 micrometers
 )  
 
@@ -64,8 +65,11 @@ coolant_transport = psf.skycea.CoolantTransport(params["coolprop_fu"])
 xs, rs = psf.regen.contour.get_contour(V_c=params["V_c"],
                                        AR_c=params["AR_c"],
                                        r_t=params["r_t"],
-                                       area_ratio=params["eps"], 
-                                       nozzle = "conical", 
+                                       area_ratio=params["eps"],
+                                       nozzle = "rao",
+                                       R_1f=1,
+                                       R_2f=2,
+                                       R_3f=0.3,
                                        )
 
 # The raw contour data is encapsulated in a Contour object, which calculates a lot of the properties of the engine contour created
@@ -75,14 +79,11 @@ contour = psf.regen.Contour(xs, rs, name = "Minimal Contour")
 wall = psf.regen.Wall(material  = params["material"],
                       thickness = params["wall_thickness"]) 
 
-# Support for multiple layered walls is implemented, therefore a wall group object has to be created to calculate the properties of the 
-# entire wall stack. For this simulationi a single wall with no coatings or multiple materials is used. 
-wall_group = psf.regen.WallGroup(walls=[wall])
 
 # The cooling channels can have multiple different cross sectional shapes. Examples of this are rounded cooling 
 # channels like the RL10 engine, or squared/rectangular cooling channels like on the Vulcain engine. 
 # For this simulation, a squared cooling channel will be used.
-cross_section = psf.regen.CrossSectionSquared()
+cross_section_squared = psf.regen.CrossSectionSquared(blockage_ratio = params["blockage_ratio"])
 
 # A channel height function has to be supplied, to let the geometry creation code know how "tall" 
 # the cooling channel is at any point. For this sim we will just create a constant function
@@ -95,7 +96,11 @@ def channel_height_function(x):
 # Channels could even be placed inside the chamber or outside the chamber for various reasons. This is encapsulated in this class. 
 # For this simulation, we are using a simple vertical channel configuration. The number of channel positions just means how many channels
 # are distributed around the engine. 
-surface_placement = psf.regen.SurfacePlacement(n_channel_positions=params["n_channels"])
+
+def helix_fn(x):
+    return 45*3.14/180 # 45 degrees in radians
+
+helical_placement = psf.regen.SurfacePlacement(n_channel_positions=59, helix_angle=helix_fn)
 
 # Now a cooling channel circuit has to be made. The cooling circuit object takes responsibility to supply information about
 # the geometry and contents of the cooling channel. Pyskyfire supports placing multiple cooling circuits around a single engine.
@@ -104,28 +109,34 @@ surface_placement = psf.regen.SurfacePlacement(n_channel_positions=params["n_cha
 cooling_circuit = psf.regen.CoolingCircuit(name="Cooling Pass", 
                                      contour=contour, # The contour we created earlier
                                      coolant_transport=coolant_transport, # Coolant properties we establised earlier
-                                     cross_section=cross_section, # The type of cross section we are using (rounded/squared)
+                                     cross_section=cross_section_squared, # The type of cross section we are using (rounded/squared)
                                      span = [1.0, -1.0], # This is over what span of the contour this particular circuit is placed. [1.0, -1.0] means the cooling circuit goes from the bottom of the nozzle to the top of the chamber.
-                                     placement=surface_placement, # Surface placement is a class that describe how the thrust chamber is wrapped in channels
+                                     placement=helical_placement, # Surface placement is a class that describe how the thrust chamber is wrapped in channels
+                                     walls = [wall],
+                                     roughness= params["roughness_height"],
                                      channel_height=channel_height_function, # Channel height as a function of x
-                                     blockage_ratio=params["blockage_ratio"]) # How many percent of the circumference of the engine is taken up by ribs, only needed for certain cross sections, like the squared cross section. 
+                                     )
 
-# In the case multiple cooling circuits are created, they are grouped together in this group object. 
-cooling_circuit_group = psf.regen.CoolingCircuitGroup(circuit_list=[cooling_circuit])
+
+
 
 # The thrust chamber object is an umbrella class that takes in and consolidates all the objects we have created into a complete thrust chamber
 # It calculates values that are only completely defined when all pieces of the puzzle are present, and then exposes those properties to you
 thrust_chamber = psf.regen.ThrustChamber(contour=contour, 
-                                         wall_group=wall_group,
                                          combustion_transport=aerothermodynamics,  
-                                         cooling_circuit_group=cooling_circuit_group,
-                                         roughness=params["roughness_height"])
+                                         cooling_circuits=[cooling_circuit],
+                                         n_nodes = 150)
 
 
 # We now have a thrust chamber. At this point it might be useful to plot the contour and export a 3d-model of the 
 # thrust chamber. You can experiment with that as you design your own engine. Plotting will however be a major 
 # theme later in this example. The most interesting thing that can be done with this thrust chamber is to simulate
 # the regenerative cooling of this chamber at steady state during a firing. 
+
+# We can plot the thrust chamber cooling channels by using the following function: 
+"""plot_3d, viewer = psf.viz.make_engine_3d(thrust_chamber, )
+plot_3d.show()
+del plot_3d """
 
 # If we imagine that all the fuel that are flowing through the cooling channels end up in the chamber
 # then the mass flow is the same between the two, and we can pull the fuel mass flow from the combustion object. 
@@ -140,8 +151,9 @@ cooling_data = psf.regen.steady_heating_analysis(thrust_chamber,
                                                  n_nodes = 100, # Number of simulation nodes
                                                  circuit_index=0, # If there were more circuits, this index would indicate which one is being simulated
                                                  boundary_conditions=boundary_conditions, 
-                                                 solver="newton", # The newton solver is the only one implemented at the moment
+                                                 #solver="newton", # The newton solver is the only one implemented at the moment
                                                  output=True) # Prints simulation progres
+
 
 
 # At this point we have obtained the regenerative cooling result for the engine we just designed. We have created
@@ -169,11 +181,11 @@ tab_params.add_table(optimal_values, caption="Optimal Values", key_title="Parame
 
 # Engine Overview
 tab_overview = report.add_tab("Engine Overview")
-stl_path = os.path.join(script_dir, "engine_channels.stl") # save path and export filetype (all gmsh output filetypes available, including step)
-psf.viz.make_engine_gmsh(thrust_chamber, filename=stl_path) # Generates an STL of the engine and saves it in the script folder
-fig_cooling_channel_stl = psf.viz.EmbedSTL(stl_path) # Makes an embedable object out of an stl
+#stl_path = os.path.join(script_dir, "engine_channels.stl") # save path and export filetype (all gmsh output filetypes available, including step)
+#psf.viz.make_engine_gmsh(thrust_chamber, filename=stl_path) # Generates an STL of the engine and saves it in the script folder
+#fig_cooling_channel_stl = psf.viz.EmbedSTL(stl_path) # Makes an embedable object out of an stl
 fig_engine_contour = psf.viz.PlotContour(thrust_chamber.contour) # Plots the engine contour
-tab_overview.add_figure(fig_cooling_channel_stl)
+#tab_overview.add_figure(fig_cooling_channel_stl)
 tab_overview.add_figure(fig_engine_contour)
 
 # Cooling Data 

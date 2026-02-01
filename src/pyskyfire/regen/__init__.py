@@ -5,4 +5,5 @@ from .solver import *
 from .cross_section import *
 from .channel_height import *
 from .contour import *
+from .channel_placement import *
 

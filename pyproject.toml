@@ -50,8 +50,7 @@ docs = [
   "sphinx-autodoc-typehints",
   "sphinx-copybutton",
   "sphinx-design",
-  "autoapi
+  "autoapi",
+  "numpydoc",
+  "pyvista[jupyter],
 ]
-
-[project.optional-dependencies]
-docs = ["sphinx", "furo", "myst-parser", "autoapi", "numpydoc"]

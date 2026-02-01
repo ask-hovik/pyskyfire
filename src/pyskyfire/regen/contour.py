@@ -23,7 +23,428 @@ import os
 import json
 import bisect
 
-from pyskyfire.regen.thrust_chamber import Contour
+class Contour:
+    """Inner hot-gas contour of a bell-type rocket engine.
+
+    Represents the geometric wall line from the start of the chamber to
+    the nozzle exit, providing local areas, slopes, and radii.
+
+    Parameters
+    ----------
+    xs : array_like
+        Axial coordinates of the contour [m], strictly increasing.
+    rs : array_like
+        Corresponding wall radii [m].
+    name : str, optional
+        Identifier for this contour.
+
+    Attributes
+    ----------
+    xs : ndarray
+        Axial coordinates defining the wall line [m].
+    rs : ndarray
+        Radial coordinates corresponding to `xs` [m].
+    _dr_dx : ndarray
+        Precomputed derivative `dr/dx` for fast interpolation.
+    name : str or None
+        Optional descriptive name.
+    x_t, r_t, A_t : float
+        Axial position, radius, and area of the throat.
+    r_e, A_e : float
+        Radius and area at the exit plane.
+    r_c, A_c : float
+        Radius and area at the chamber start.
+    eps, eps_c : float
+        Nozzle and contraction area ratios.
+
+    Notes
+    -----
+    This class is used by higher-level objects such as
+    :class:`~pyskyfire.regen.cooling.CoolingCircuit` and
+    :class:`~pyskyfire.regen.thrust.ThrustChamber`.
+
+    See Also
+    --------
+    ContourToroidalAerospike : Dual-wall variant for toroidal aerospikes.
+    """
+
+    def __init__(self, xs, rs, name = None):
+
+        self.xs = xs
+        self.rs = rs
+        self._dr_dx = np.gradient(rs, xs)
+        self.name = name
+
+    def __setattr__(self, name, value):
+        # If the user tries to set 'xs' or 'rs', we need to recalculate self.dr_dx
+        if name == "xs" and hasattr(self, "rs"):
+            self._dr_dx = np.gradient(self.rs, value)
+
+        elif name == "rs" and hasattr(self, "xs"):
+            self._dr_dx = np.gradient(value, self.xs)
+
+        super(Contour, self).__setattr__(name, value)
+    
+    @property
+    def x_t(self):
+        return self.xs[np.argmin(self.rs)]
+
+    @property
+    def r_t(self):
+        return min(self.rs)
+
+    @property
+    def A_t(self):
+        return np.pi * self.r_t**2
+
+    @property
+    def r_e(self):
+        return self.rs[-1]
+    
+    @property
+    def r_c(self):
+        return self.rs[0]
+    
+    @property
+    def A_e(self):
+        return np.pi * self.r_e**2
+    
+    @property
+    def A_c(self):
+        return np.pi * self.r_c**2
+    
+    @property
+    def eps(self):
+        return self.A_e/self.A_t
+
+    @property
+    def eps_c(self): 
+        """ Get the contraction ratio for the chamber
+        Returns: 
+            (float): contraction ratio """
+        return self.A_c/self.A_t
+
+    def r(self, x):
+        """
+        Return the local radius at axial position `x`.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+
+        Returns
+        -------
+        float
+            Distance from engine centerline to wall [m].
+        """
+        r1 = np.interp(x, self.xs, self.rs)
+        #print(f"r at that point: {r1}, input x: {x} ")
+        return r1
+    
+    def dr_dx(self, x):
+        """
+        Return the local slope of the wall, :math:`dr/dx`.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+
+        Returns
+        -------
+        float
+            Radial slope at position `x`.
+        """
+        return np.interp(x, self.xs, self._dr_dx)
+
+    def A(self, x):
+        """
+        Return the local flow area.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+
+        Returns
+        -------
+        float
+            Flow area at that section [m²].
+        """
+        Area = np.pi * self.r(x)**2
+        #print(f"Area: {Area}")
+        return Area
+    
+    def normal_angle(self, x): #TODO: check this function af
+        """
+        Return the local wall normal angle with respect to the vertical plane.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+
+        Returns
+        -------
+        float
+            Angle between the outward normal and the plane normal to the x-axis [rad].
+        """
+        slope = self.dr_dx(x)
+        # Dot product: N • V = 1
+        # |N| = sqrt(slope^2 + 1), |V| = 1
+        cos_angle = 1.0 / np.sqrt(slope**2 + 1.0)
+        # Numerically clamp in case of tiny floating errors
+        cos_angle = max(-1.0, min(1.0, cos_angle))
+
+        angle = np.arccos(cos_angle)
+        # arccos(...) is already in [0..pi]. Because slope^2 >= 0,
+        # cos_angle is in (0..1], so angle is in [0..pi/2].
+        return angle
+    
+
+class ContourToroidalAerospike:
+    """Axisymmetric contour describing a toroidal-aerospike geometry.
+
+    Defines both the inner and outer wall surfaces, allowing evaluation of
+    annular areas and local geometric derivatives.
+
+    Parameters
+    ----------
+    xs_outer, rs_outer : array_like
+        Axial and radial coordinates of the outer wall [m].
+    xs_inner, rs_inner : array_like
+        Axial and radial coordinates of the inner wall [m].
+    name : str, optional
+        Identifier for this contour.
+
+    Attributes
+    ----------
+    xs_outer, rs_outer : ndarray
+        Outer wall geometry arrays [m].
+    xs_inner, rs_inner : ndarray
+        Inner wall geometry arrays [m].
+    _dr_dx_outer, _dr_dx_inner : ndarray
+        Local wall slope arrays for each surface.
+    name : str or None
+        Descriptive label.
+    A_t, A_c, A_e : float
+        Annular areas at throat, chamber, and exit [m²].
+    eps, eps_c : float
+        Expansion and contraction ratios (dimensionless).
+
+    Notes
+    -----
+    The inner radius is validated to always remain below the outer radius.
+
+    See Also
+    --------
+    Contour : Single-wall version used in standard bell-nozzle engines.
+    """
+
+    # -------------------------------------------------------------------------
+    # Constructor & validation
+    # -------------------------------------------------------------------------
+    def __init__(self, xs_outer, rs_outer, xs_inner, rs_inner, *, name=None):
+        # -- convert & basic checks --------------------------------------------------
+        self.xs_outer = np.asarray(xs_outer, dtype=float)
+        self.rs_outer = np.asarray(rs_outer, dtype=float)
+        self.xs_inner = np.asarray(xs_inner, dtype=float)
+        self.rs_inner = np.asarray(rs_inner, dtype=float)
+
+        for tag, xs in ("xs_outer", self.xs_outer), ("xs_inner", self.xs_inner):
+            if xs.ndim != 1:
+                raise ValueError(f"{tag} must be 1-D")
+            if xs.size < 2:
+                raise ValueError(f"{tag} needs at least two points")
+            if not np.all(np.diff(xs) > 0):
+                raise ValueError(f"{tag} must be strictly increasing")
+
+        if self.xs_outer.shape != self.rs_outer.shape:
+            raise ValueError("xs_outer and rs_outer must have the same length")
+        if self.xs_inner.shape != self.rs_inner.shape:
+            raise ValueError("xs_inner and rs_inner must have the same length")
+        if np.any(self.rs_inner > np.interp(self.xs_inner, self.xs_outer, self.rs_outer, left=np.inf, right=np.inf)):
+            raise ValueError("Inner radius exceeds outer radius somewhere")
+
+        # -- derivatives along each wall -------------------------------------------
+        self._dr_dx_outer = np.gradient(self.rs_outer, self.xs_outer)
+        self._dr_dx_inner = np.gradient(self.rs_inner, self.xs_inner)
+
+        self.name = name  # last so that __setattr__ doesn’t re-enter validation
+
+    # -------------------------------------------------------------------------
+    # Helpers – interpolation on each wall
+    # -------------------------------------------------------------------------
+    def _interp_outer(self, x):
+        """Linear interpolation of outer radius at *x*."""
+        return np.interp(x, self.xs_outer, self.rs_outer)
+
+    def _interp_inner(self, x):
+        """Linear interpolation of inner radius at *x*."""
+        return np.interp(x, self.xs_inner, self.rs_inner)
+
+    # -------------------------------------------------------------------------
+    # Outward-facing geometric API (outer wall when ambiguous)
+    # -------------------------------------------------------------------------
+    @property
+    def x_t(self):
+        """Axial location of the **outer** throat (m)."""
+        return self.xs_outer[np.argmin(self.rs_outer)]
+
+    @property
+    def r_t(self):
+        """Throat radius of the **outer** wall (m)."""
+        return np.min(self.rs_outer)
+
+    @property
+    def r_e(self):
+        """Outer radius at exit (m)."""
+        return self.rs_outer[-1]
+
+    @property
+    def r_c(self):
+        """Outer radius at chamber start (m)."""
+        return self.rs_outer[0]
+
+    # -------------------------------------------------------------------------
+    # Areas (annular)
+    # -------------------------------------------------------------------------
+    def A(self, x):
+        """
+        Return the local annular flow area.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+
+        Returns
+        -------
+        float
+            Annular cross-sectional area [m²].
+        """
+        r_o = self._interp_outer(x)
+        r_i = self._interp_inner(x)
+        return np.pi * (r_o**2 - r_i**2)
+
+    @property
+    def A_t(self):
+        """Annular area at the throat (m²)."""
+        idx = np.argmin(self.rs_outer)
+        r_o = self.rs_outer[idx]
+        # need r_i at *same axial position* of throat (outer x). interpolate inner
+        x_throat = self.xs_outer[idx]
+        r_i = self._interp_inner(x_throat)
+        return np.pi * (r_o**2 - r_i**2)
+
+    @property
+    def A_e(self):
+        r_o = self.r_e
+        # inner radius at outer-contour exit station (assume xs_outer[-1])
+        r_i = self._interp_inner(self.xs_outer[-1])
+        return np.pi * (r_o**2 - r_i**2)
+
+    @property
+    def A_c(self):
+        r_o = self.r_c
+        r_i = self._interp_inner(self.xs_outer[0])
+        return np.pi * (r_o**2 - r_i**2)
+
+    # -------------------------------------------------------------------------
+    # Ratios
+    # -------------------------------------------------------------------------
+    @property
+    def eps(self):
+        """Area ratio exit / throat."""
+        return self.A_e / self.A_t
+
+    @property
+    def eps_c(self):
+        """Chamber contraction ratio."""
+        return self.A_c / self.A_t
+
+    # -------------------------------------------------------------------------
+    # Slopes & normals
+    # -------------------------------------------------------------------------
+    def dr_dx(self, x, which="outer"):
+        """
+        Return the wall slope :math:`dr/dx` at `x` for either wall.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+        which : {'outer', 'inner'}, optional
+            Which wall to evaluate. Default is 'outer'.
+
+        Returns
+        -------
+        float
+            Local slope of the selected wall.
+        """
+        if which == "outer":
+            return np.interp(x, self.xs_outer, self._dr_dx_outer)
+        elif which == "inner":
+            return np.interp(x, self.xs_inner, self._dr_dx_inner)
+        else:
+            raise ValueError("which must be 'outer' or 'inner'")
+
+    def normal_angle(self, x, which="outer"):
+        """
+        Return the normal-plane angle for either wall.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+        which : {'outer', 'inner'}, optional
+            Wall selector. Default 'outer'.
+
+        Returns
+        -------
+        float
+            Angle between outward normal and vertical plane [rad].
+        """
+        slope = self.dr_dx(x, which=which)
+        cos_ang = 1.0 / np.sqrt(slope**2 + 1.0)
+        return np.arccos(np.clip(cos_ang, -1.0, 1.0))
+
+    # -------------------------------------------------------------------------
+    # Compatibility helpers / aliases (outer wall)
+    # -------------------------------------------------------------------------
+    def r(self, x):
+        """Return **outer** radius at *x* (m). Provided for API compatibility."""
+        return self._interp_outer(x)
+
+    # -------------------------------------------------------------------------
+    # Self-updating gradients if arrays mutate after construction
+    # -------------------------------------------------------------------------
+    def __setattr__(self, key, value):
+        # Keep gradients coherent when arrays are replaced
+        if key == "xs_outer":
+            object.__setattr__(self, key, value)
+            if hasattr(self, "rs_outer"):
+                self._dr_dx_outer = np.gradient(self.rs_outer, value)
+            return
+        if key == "rs_outer":
+            object.__setattr__(self, key, value)
+            if hasattr(self, "xs_outer"):
+                self._dr_dx_outer = np.gradient(value, self.xs_outer)
+            return
+        if key == "xs_inner":
+            object.__setattr__(self, key, value)
+            if hasattr(self, "rs_inner"):
+                self._dr_dx_inner = np.gradient(self.rs_inner, value)
+            return
+        if key == "rs_inner":
+            object.__setattr__(self, key, value)
+            if hasattr(self, "xs_inner"):
+                self._dr_dx_inner = np.gradient(value, self.xs_inner)
+            return
+
+        super().__setattr__(key, value)
+
 
 
 def get_theta_e_n(length_fraction, epsilon_value):

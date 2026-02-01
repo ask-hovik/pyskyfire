@@ -19,6 +19,10 @@ cooling_data_b = res.cooling_data[1]
 cooling_data_a["name"] = "Pyskyfire"
 cooling_data_b["name"] = "Pyskyfire" # TODO: maybe bake this into the simulation process itself?
 
+print("started making engine")
+#psf.viz.make_engine_3d(thrust_chamber)
+#psf.viz.make_engine_3d_pyvista(thrust_chamber)
+#input()
 # fetching interesting values from aerothermo TODO: It seems a bit unpractical that these values are only stored in aerothermodynamics self
 
 optimal_values = dict(

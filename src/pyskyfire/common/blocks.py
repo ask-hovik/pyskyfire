@@ -904,14 +904,14 @@ class TransmissionBlock(SignalBlock):
         Network I/O metadata.
     """
 
-    def __init__(self, name, sink_keys, out_key="P_required"): # TODO: don't hardcode P_required
+    def __init__(self, name, sink_keys, source_keys): # TODO: don't hardcode P_required
                 
         self.station_inputs   = []
         self.station_outputs  = []
         self.signal_inputs    = list(sink_keys)
-        self.signal_outputs   = [out_key]
+        self.signal_outputs   = [source_keys]
         self.sink_keys = sink_keys
-        self.out_key   = out_key
+        self.source_keys = source_keys
         self.name=name
 
     def compute(self, st, sg):
@@ -933,5 +933,5 @@ class TransmissionBlock(SignalBlock):
         """
                 
         P = sum(sg[k] for k in self.sink_keys)
-        return {}, {self.out_key: P}
+        return {}, {self.source_keys[0]: P}
 

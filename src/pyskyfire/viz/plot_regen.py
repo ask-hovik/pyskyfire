@@ -299,7 +299,7 @@ class PlotVelocity(PlotBase):
 IndexLike = Optional[Union[int, Iterable[int]]]
 
 def _normalize_indices(thrust_chamber, circuit_index: IndexLike):
-    circuits = thrust_chamber.cooling_circuit_group.circuits
+    circuits = thrust_chamber.cooling_circuits
     n = len(circuits)
     if circuit_index is None:
         return list(range(n))
@@ -314,7 +314,7 @@ class PlotdAdxThermalHotGas(PlotBase):
         super().__init__(go.Figure())
         self.template("plotly_white")
 
-        circuits = thrust_chamber.cooling_circuit_group.circuits
+        circuits = thrust_chamber.cooling_circuits
         indices = _normalize_indices(thrust_chamber, circuit_index)
 
         for idx in indices:
@@ -337,7 +337,7 @@ class PlotdAdxThermalCoolant(PlotBase):
         super().__init__(go.Figure())
         self.template("plotly_white")
 
-        circuits = thrust_chamber.cooling_circuit_group.circuits
+        circuits = thrust_chamber.cooling_circuits
         indices = _normalize_indices(thrust_chamber, circuit_index)
 
         for idx in indices:
@@ -360,7 +360,7 @@ class PlotCoolantArea(PlotBase):
         super().__init__(go.Figure())
         self.template("plotly_white")
 
-        circuits = thrust_chamber.cooling_circuit_group.circuits
+        circuits = thrust_chamber.cooling_circuits
         indices = _normalize_indices(thrust_chamber, circuit_index)
 
         for idx in indices:
@@ -383,7 +383,7 @@ class PlotdAdxCoolantArea(PlotBase):
         super().__init__(go.Figure())
         self.template("plotly_white")
 
-        circuits = thrust_chamber.cooling_circuit_group.circuits
+        circuits = thrust_chamber.cooling_circuits
         indices = _normalize_indices(thrust_chamber, circuit_index)
 
         for idx in indices:
@@ -406,7 +406,7 @@ class PlotHydraulicDiameter(PlotBase):
         super().__init__(go.Figure())
         self.template("plotly_white")
 
-        circuits = thrust_chamber.cooling_circuit_group.circuits
+        circuits = thrust_chamber.cooling_circuits
         indices = _normalize_indices(thrust_chamber, circuit_index)
 
         for idx in indices:
@@ -429,7 +429,7 @@ class PlotRadiusOfCurvature(PlotBase):
         super().__init__(go.Figure())
         self.template("plotly_white")
 
-        circuits = thrust_chamber.cooling_circuit_group.circuits
+        circuits = thrust_chamber.cooling_circuits
         indices = _normalize_indices(thrust_chamber, circuit_index)
 
         for idx in indices:
@@ -494,7 +494,7 @@ class PlotTemperatureProfile(PlotBase):
         # ---- 4) wall layers (hot→coolant) ----
         Ts_rev   = results["T"][i, 1:]       # coolant-side → hot-side
         Ts_wall  = Ts_rev[::-1]              # hot-side → coolant-side (interfaces included)
-        walls    = thrust_chamber.wall_group.walls
+        walls    = thrust_chamber.cooling_circuits[circuit_index].walls
         thicknesses = [float(w.thickness(x0)) for w in walls]
         y_w = np.insert(np.cumsum(thicknesses), 0, 0.0) if thicknesses else np.array([0.0])
         wall_thickness = float(y_w[-1])
@@ -502,7 +502,7 @@ class PlotTemperatureProfile(PlotBase):
         # ---- 5) coolant BL (1/7th power law) ----
         p_static = float(results["p_static"][i])
         T_film   = 0.5 * (T_c + T_cw)
-        coolant  = thrust_chamber.cooling_circuit_group.circuits[circuit_index].coolant_transport
+        coolant  = thrust_chamber.cooling_circuits[circuit_index].coolant_transport
         k_c      = float(coolant.get_k(T_film, p_static))
         h_c      = qpp / max(T_cw - T_c, 1e-12)
         delta_c  = 7.0 * k_c / max(h_c, 1e-30)

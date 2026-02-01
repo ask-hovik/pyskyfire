@@ -1,7 +1,11 @@
 import numpy as np
 import math
 import pyskyfire.regen.physics as physics
-from scipy.optimize import fsolve
+from scipy.optimize import least_squares
+import warnings
+def short_warning(message, category, filename, lineno, file=None, line=None):
+    return f"{category.__name__}: {message}\n"
+warnings.formatwarning = short_warning
 
 class BoundaryConditions:
     """Boundary conditions for the coolant-side inlet.
@@ -33,13 +37,14 @@ class HeatExchangerPhysics:
     ----------
     thrust_chamber : Any
         Object exposing geometry and property models used by the solver
-        (e.g., ``contour``, ``combustion_transport``, ``cooling_circuit_group``,
+        (e.g., ``contour``, ``combustion_transport``,
         ``wall_group``).
     circuit_index : int
         Index of the cooling circuit to use.
     """
-    def __init__(self, thrust_chamber, circuit_index):
+    def __init__(self, thrust_chamber, boundary_conditions, circuit_index):
         self.thrust_chamber = thrust_chamber
+        self.boundary_conditions = boundary_conditions
         self.circuit_index = circuit_index
         self.counter = 0
 
@@ -63,156 +68,46 @@ class HeatExchangerPhysics:
         Implements an **enthalpy-driven** Bartz form. The gas-side coefficient
         is evaluated with property data drawn from the chamber model at ``x``.
         """
-        approach = "new"
-        if approach == "new":
-            h_gas_corr = self.thrust_chamber.h_gas_corr # a user supplied correction factor
-            D_hyd = 2*self.thrust_chamber.contour.r(x) # TODO: Need to update the hydraulic diameter to take the cooling channel shape into account?
-            A_chmb = self.thrust_chamber.contour.A(x)
-            mdot_g = self.thrust_chamber.combustion_transport.mdot
-            T_g = self.thrust_chamber.combustion_transport.get_T(x)
-            T_gr = (T_hw + T_g)/2 # film temperature
 
+        h_gas_corr = self.thrust_chamber.h_gas_corr # a user supplied correction factor
+        D_hyd = 2*self.thrust_chamber.contour.r(x) # TODO: Need to update the hydraulic diameter to take the cooling channel shape into account?
+        A_chmb = self.thrust_chamber.contour.A(x)
+        mdot_g = self.thrust_chamber.combustion_transport.mdot
+        T_g = self.thrust_chamber.combustion_transport.get_T(x)
+        T_gr = (T_hw + T_g)/2 # film temperature
+
+        # sometimes a nes simulation will reach this point without a guess for H_hw, in which case it's better to use 
+        # H_g for an iteration rather than crashing the simulation. 
+        H_g = self.thrust_chamber.combustion_transport.get_h(x)
+        try:
             H_hw = self.thrust_chamber.combustion_transport.get_h(x, T=T_hw)
-            self.counter +=1
-            
-            H_g = self.thrust_chamber.combustion_transport.get_h(x)
+        except:
+            H_hw = H_g
 
-            M_g = self.thrust_chamber.combustion_transport.get_M(x)
-            a_g = self.thrust_chamber.combustion_transport.get_a(x)
-            H_gr = 0.5*(H_hw + H_g) + 0.18*(0.5*M_g**2*a_g**2) # original eq: H_gr = 0.5*(H_hw + H_g) + 0.18*(H_g0 - H_g)
-            
-            #print(f"H_gr:{H_gr}")
-            #input()
-            #Cp_gr = self.thrust_chamber.combustion_transport.get_cp(x, T=T_gr)
-            #mu_gr = self.thrust_chamber.combustion_transport.get_mu(x, T=T_gr)
-            #k_gr = self.thrust_chamber.combustion_transport.get_k(x, T=T_gr)
-            #Pr_gr = Cp_gr*mu_gr/k_gr
+        M_g = self.thrust_chamber.combustion_transport.get_M(x)
+        a_g = self.thrust_chamber.combustion_transport.get_a(x)
+        H_gr = 0.5*(H_hw + H_g) + 0.18*(0.5*M_g**2*a_g**2) # original eq: H_gr = 0.5*(H_hw + H_g) + 0.18*(H_g0 - H_g)
+        
+        # the following units should be implemented using the H_gr enthalpy, and not just the x station
+        # But the current aerothermodynamics module can't handle this. TODO: Implemene new aerothermodynamics
+        # module to handle these queries properly
+        Cp_gr = self.thrust_chamber.combustion_transport.get_cp(x)
+        mu_gr = self.thrust_chamber.combustion_transport.get_mu(x)
+        k_gr = self.thrust_chamber.combustion_transport.get_k(x)
+        Pr_gr = self.thrust_chamber.combustion_transport.get_Pr(x)
 
-            #props = self.thrust_chamber.combustion_transport.get_properties(x, h=H_gr, props=("cp","mu","k","Pr"))
-            #Cp_gr, mu_gr, k_gr, Pr_gr = props["cp"], props["mu"], props["k"], props["Pr"]
+        # The glorious Bartz equation
+        h_gr = physics.h_gas_bartz_enthalpy_driven(k_gr, D_hyd, Cp_gr, mu_gr, mdot_g, A_chmb, T_g, T_gr)*h_gas_corr
 
-            # could potentially evaluate all of these in a single run (much faster)
-            #Cp_gr = self.thrust_chamber.combustion_transport.get_cp(x, h=H_gr)
-            #mu_gr = self.thrust_chamber.combustion_transport.get_mu(x, h=H_gr)
-            #k_gr = self.thrust_chamber.combustion_transport.get_k(x, h=H_gr)
-            #Pr_gr = Cp_gr*mu_gr/k_gr
+        dA_dx_hot = self.thrust_chamber.cooling_circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
+        gamma = self.thrust_chamber.combustion_transport.get_gamma(x)
+        T_aw = physics.T_aw(gamma=gamma, M_inf=M_g, T_inf=T_g, Pr=Pr_gr) # this equation was supposed to be used here for something, but I can't remember what atm. 
+        H_aw = H_g + 0.5*Pr_gr**(1/3)*(M_g**2*a_g**2)
 
-            Cp_gr = self.thrust_chamber.combustion_transport.get_cp(x)
-            mu_gr = self.thrust_chamber.combustion_transport.get_mu(x)
-            k_gr = self.thrust_chamber.combustion_transport.get_k(x)
-            Pr_gr = self.thrust_chamber.combustion_transport.get_Pr(x)
-
-
-            
-            # The glorious Bartz equation
-            h_gr = physics.h_gas_bartz_enthalpy_driven(k_gr, D_hyd, Cp_gr, mu_gr, mdot_g, A_chmb, T_g, T_gr)*h_gas_corr
-
-            dA_dx_hot = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
-            gamma = self.thrust_chamber.combustion_transport.get_gamma(x)
-            T_aw = physics.T_aw(gamma=gamma, M_inf=M_g, T_inf=T_g, Pr=Pr_gr)
-            H_aw = H_g + 0.5*Pr_gr**(1/3)*(M_g**2*a_g**2)
-            #print(H_aw)
-            #input()
-            #H_aw = -1399116.7949471772
-
-            #print(f"H_aw: {H_aw}")
-
-            h_g = h_gr/Cp_gr # enthalpy driven heat transfer definition
-            dQ_hw_dx = h_g*dA_dx_hot*(H_aw - H_hw)
-
-        elif approach == "old":
-            # Old Approach:
-            D_hyd = 2*self.thrust_chamber.contour.r(x) # TODO: Need to update the hydraulic diameter to take the cooling channel shape into account?
-            A_chmb = self.thrust_chamber.contour.A(x)
-            mdot_g = self.thrust_chamber.combustion_transport.mdot
-            T_g = self.thrust_chamber.combustion_transport.get_T(x)
-            T_gr = (T_hw + T_g)/2 # film temperature
-            
-            Cp_gr = self.thrust_chamber.combustion_transport.get_cp(x)
-            mu_gr = self.thrust_chamber.combustion_transport.get_mu(x)
-            k_gr = self.thrust_chamber.combustion_transport.get_k(x)
-            h_gas_corr = self.thrust_chamber.h_gas_corr # a user supplied correction factor
-
-            h_gr = physics.h_gas_bartz_enthalpy_driven(k_gr, D_hyd, Cp_gr, mu_gr, mdot_g, A_chmb, T_g, T_gr)*h_gas_corr
-            dA_dx_hot = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
-            M_inf = self.thrust_chamber.combustion_transport.get_M(x)
-            gamma = self.thrust_chamber.combustion_transport.get_gamma(x)
-            T_aw = self.thrust_chamber.combustion_transport.get_T_aw(x, gamma, M_inf, T_inf=T_g)
-            #H_aw = self.thrust_chamber.combustion_transport.get_h(x, T=T_aw)
-            H_aw = -1399116.7949471772
-            #H_hw = self.thrust_chamber.combustion_transport.get_h(x, T=T_hw) # problem child
-            H_hw = -11247569.350990318
-            h_g = h_gr/Cp_gr # enthalpy driven heat transfer definition
-            dQ_hw_dx = h_g*dA_dx_hot*(H_aw - H_hw)
-
-        elif approach == "idea":
-            
-            D_t = self.thrust_chamber.contour.r_t*2
-            cp_g = self.thrust_chamber.combustion_transport.get_cp(x)
-            mu_g = self.thrust_chamber.combustion_transport.get_mu(x)
-            Pr_g = self.thrust_chamber.combustion_transport.get_Pr(x)
-            p_c = self.thrust_chamber.combustion_transport.p_c
-            c_star = self.thrust_chamber.combustion_transport.c_star
-            A_t = self.thrust_chamber.contour.A_t
-            A_x = self.thrust_chamber.contour.A(x)
-            T_c = self.thrust_chamber.combustion_transport.T_c
-            gamma_g = self.thrust_chamber.combustion_transport.get_gamma(x)
-            M_g = self.thrust_chamber.combustion_transport.get_M(x)
-            
-            sigma = physics.sigma(T_hw, T_c, gamma_g, M_g, omega=0.6)
-            h_g = physics.h_gas_bartz(D_t, mu_g, cp_g, Pr_g, p_c, c_star, A_t, A_x, sigma)
-
-            dA_dx_hot = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
-            T_g = self.thrust_chamber.combustion_transport.get_T(x)
-            dQ_hw_dx = h_g*dA_dx_hot*(T_g - T_hw) 
-
-
-        printout = False
-        if printout: 
-            print(f"D_hyd in Q_hot: {D_hyd}")
-            print(f"A_chmb in Q_hot: {A_chmb}")
-            print(f"mdot in Q_hot: {mdot_g}")
-            print(f"T_g in Q_hot: {T_g}")
-            print(f"T_gr in Q_hot: {T_gr}")
-            print(f"Cp_gr in Q_hot: {Cp_gr}")
-            print(f"mu_gr in Q_hot: {mu_gr}")
-            print(f"k_gr in Q_hot: {k_gr}")
-            print(f"h_gr in Q_hot: {h_gr}")
-            print(f"dA_dx_hot in Q_hot: {dA_dx_hot}")
-            #print(f"p in Q_hot: {p}")
-            print(f"H_hw in Q_hot: {H_hw}")
-            #print(f"M_inf in Q_hot: {M_g}")
-            print(f"gamma in Q_hot: {gamma}")
-            print(f"T_aw in Q_hot: {T_aw}")
-            print(f"H_aw in Q_hot: {H_aw}")
-            print(f"dQ_hw_dx in Q_hot: {dQ_hw_dx}\n")
-            x = input()
+        h_g = h_gr/Cp_gr # enthalpy driven heat transfer definition
+        dQ_hw_dx = h_g*dA_dx_hot*(H_aw - H_hw)
 
         return dQ_hw_dx
-
-    """def dQ_cond_dx(self, x, T_hw, T_cw):
-        
-        Computes the conductive heat transfer through the wall.
-        
-        k = self.engine.thrust_chamber.wall_group.walls[0].material.k # TODO: update to handle more walls. 
-
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        dA_dx_hot = self.engine.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
-
-        L = self.engine.thrust_chamber.wall_group.walls[0].thickness(x)
-        # k * A * (T_hw - T_cw)
-        dQ_cond_dx = k*dA_dx_hot*(T_hw - T_cw)/L 
-        
-        printout = False
-        if printout: 
-            print(f"k in Q_cond: {k}")
-            print(f"dA_dx_hot in Q_cond: {dA_dx_hot}")
-            print(f"L in Q_cond: {L}")
-            print(f"Q_cond in Q_cond: {dQ_cond_dx}\n")
-            print(f"T_hw in Q_cond: {T_hw}")
-            print(f"T_cw in Q_cond: {T_cw}")
-
-        return dQ_cond_dx"""
     
     def dQ_cond_dx(self, x, T_hw, T_cw):
         """Conduction heat flow through the wall stack per unit length.
@@ -238,11 +133,11 @@ class HeatExchangerPhysics:
         """
                 
         # 1) get the local hot‐side area per unit length
-        dA_dx_hot = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
+        dA_dx_hot = self.thrust_chamber.cooling_circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
 
         # 2) sum each wall’s thermal resistance (R = L/(k·A)) per unit length
-        walls = self.thrust_chamber.wall_group.walls
-        R_tot = sum(wall.thickness(x) / (wall.material.get_k((T_hw + T_cw)/2) * dA_dx_hot) for wall in walls) # TODO: this looks a little iffy
+        walls = self.thrust_chamber.cooling_circuits[self.circuit_index].walls
+        R_tot = sum(wall.thickness(x) / (wall.material.get_k((T_hw + T_cw)/2) * dA_dx_hot) for wall in walls)
         dQ_cond_dx = (T_hw - T_cw) / R_tot
 
         # 3) conduction per unit length
@@ -265,45 +160,35 @@ class HeatExchangerPhysics:
         float
             ``dQ_cw/dx`` [W m⁻¹].
         """
-        n_chan = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channel_positions*self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channels_per_leaf
+        n_chan = self.thrust_chamber.cooling_circuits[self.circuit_index].placement.n_channel_positions*self.thrust_chamber.cooling_circuits[self.circuit_index].placement.n_channels_per_leaf
 
         p = self.thrust_chamber.combustion_transport.get_p(x)
-        mdot_c_single_channel = self.thrust_chamber.combustion_transport.mdot_fu/n_chan # TODO: uh, this is kinda absolutely wrong should pull mdot from the cooling circuit
+        mdot_c_single_channel = self.boundary_conditions.mdot_coolant/n_chan
         T_coolant_film = (T_cool + T_cw)/2
-        k_cf = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].coolant_transport.get_k(T_coolant_film, p)
-        Cp_cr = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].coolant_transport.get_cp(T_coolant_film, p)
-        mu_cf = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].coolant_transport.get_mu(T_coolant_film, p)
+        k_cf = self.thrust_chamber.cooling_circuits[self.circuit_index].coolant_transport.get_k(T_coolant_film, p)
+        Cp_cr = self.thrust_chamber.cooling_circuits[self.circuit_index].coolant_transport.get_cp(T_coolant_film, p)
+        mu_cf = self.thrust_chamber.cooling_circuits[self.circuit_index].coolant_transport.get_mu(T_coolant_film, p)
 
-        D_c = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].Dh_coolant(x)
-        dA_dx_cool = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_coolant(x) # TODO: reimplement fin area
-        A_channel = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].A_coolant(x)
+        D_c = self.thrust_chamber.cooling_circuits[self.circuit_index].Dh_coolant(x)
+        A_channel = self.thrust_chamber.cooling_circuits[self.circuit_index].A_coolant(x)
 
-        rho_bulk = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].coolant_transport.get_rho(T_cool, p)
-        mu_bulk = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].coolant_transport.get_mu(T_cool, p)
+        rho_bulk = self.thrust_chamber.cooling_circuits[self.circuit_index].coolant_transport.get_rho(T_cool, p)
+        mu_bulk = self.thrust_chamber.cooling_circuits[self.circuit_index].coolant_transport.get_mu(T_cool, p)
         u_c = physics.u_coolant(rho_bulk, mdot_c_single_channel, A_channel)
         Re_c = physics.reynolds(rho_bulk, u_c, D_c, mu_bulk)
 
-        R_curv = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].radius_of_curvature(x)
+        R_curv = self.thrust_chamber.cooling_circuits[self.circuit_index].radius_of_curvature(x)
         phi_curv = physics.phi_curv(Re_c, D_c, R_curv)
 
         h_cold_corr = self.thrust_chamber.h_cold_corr
         h_c = physics.h_coolant_colburn(k_cf, D_c, Cp_cr, mu_cf, mdot_c_single_channel, A_channel, phi_curv=1)*h_cold_corr 
-        dQ_cw_dx = h_c*dA_dx_cool*(T_cw - T_cool) 
         
-        printout = False
-        if printout: 
-            print(f"T_cw in Q_cold: {T_cw}")
-            print(f"T_cool in Q_cold: {T_cool}")
-            print(f"p in Q_cold: {p}")
-            print(f"mdot_single_chan in Q_cond: {mdot_c_single_channel}")
-            print(f"T_coolant_film in Q_cond: {T_coolant_film}")
-            print(f"k_cf in Q_cold: {k_cf}")
-            print(f"Cp_cr in Q_cold: {Cp_cr}")
-            print(f"mu_cf in Q_cold: {mu_cf}")
-            print(f"D_c in Q_cold: {D_c}")
-            print(f"A_c in Q_cold: {dA_dx_cool}")
-            print(f"h_c in Q_cold: {h_c}")
-            print(f"Q_cw in Q_cold: {dQ_cw_dx}\n")
+        
+        T_rep = 0.5*(T_cw + T_cool)  # or use T_cw, depends on preference
+        R_cool_per_len = self.thrust_chamber.cooling_circuits[self.circuit_index].R_coolant_per_len(x, h_c=h_c, T_wall_rep=T_rep)
+
+        dQ_cw_dx = (T_cw - T_cool) / R_cool_per_len
+        
         return dQ_cw_dx
 
     def coolant_temperature_rate(self, T_cool, p_cool, dQ_cold_dx):
@@ -323,20 +208,11 @@ class HeatExchangerPhysics:
         float
             ``dT_cool/dx`` [K m⁻¹].
         """
-        n_chan = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channel_positions*self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channels_per_leaf
-        mdot_c = self.thrust_chamber.combustion_transport.mdot_fu/n_chan # TODO: this is not actually the coolant flow, its the combustion reaction coolant flow!
-        cp = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].coolant_transport.get_cp(T_cool, p_cool)
+        n_chan = self.thrust_chamber.cooling_circuits[self.circuit_index].placement.n_channel_positions*self.thrust_chamber.cooling_circuits[self.circuit_index].placement.n_channels_per_leaf
+        mdot_c = self.boundary_conditions.mdot_coolant/n_chan 
+        cp = self.thrust_chamber.cooling_circuits[self.circuit_index].coolant_transport.get_cp(T_cool, p_cool)
         dT_dx = dQ_cold_dx/(mdot_c * cp) 
         
-        printout = False
-        if printout: 
-            print(f"\nQ_cold in dTdx: {dQ_cold_dx}")
-            print(f"T_cool in dTdx: {T_cool}")
-            print(f"p_cool in dTdx: {p_cool}")
-            print(f"mdot_coolant in dTdx: {mdot_c}")
-            print(f"cp in dTdx: {cp}")
-            print(f"dTdx in dTdx: {dT_dx}\n")
-
         return dT_dx # temperature change per unit length
     
 
@@ -358,71 +234,31 @@ class HeatExchangerPhysics:
             ``(dp_static/dx, dp_stagnation/dx)`` in [Pa m⁻¹].
         """
         # get friction factor
-        n_chan = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channel_positions*self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].placement.n_channels_per_leaf
-        rho_cool = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].coolant_transport.get_rho(T_cool, p_cool)
-        mdot_c_single_channel = self.thrust_chamber.combustion_transport.mdot_fu/n_chan
+        n_chan = self.thrust_chamber.cooling_circuits[self.circuit_index].placement.n_channel_positions*self.thrust_chamber.cooling_circuits[self.circuit_index].placement.n_channels_per_leaf
+        rho_cool = self.thrust_chamber.cooling_circuits[self.circuit_index].coolant_transport.get_rho(T_cool, p_cool)
+        mdot_c_single_channel = self.boundary_conditions.mdot_coolant/n_chan
 
-        A_cool = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].A_coolant(x)
+        A_cool = self.thrust_chamber.cooling_circuits[self.circuit_index].A_coolant(x)
         u_cool = physics.u_coolant(rho_cool, mdot_c_single_channel, A_cool) 
 
-        D_h = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].Dh_coolant(x)
-        mu = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].coolant_transport.get_mu(T_cool, p_cool)
-        roughness = self.thrust_chamber.roughness
+        D_h = self.thrust_chamber.cooling_circuits[self.circuit_index].Dh_coolant(x)
+        mu = self.thrust_chamber.cooling_circuits[self.circuit_index].coolant_transport.get_mu(T_cool, p_cool)
+        roughness = self.thrust_chamber.cooling_circuits[self.circuit_index].roughness
         ReDh = physics.reynolds(rho_cool, u_cool, D_h, mu)
         f = physics.f_darcy(ReDh, D_h, x, roughness)
 
         # equivalent length due to curvature: 
-        R_curv = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].radius_of_curvature(x)
+        R_curv = self.thrust_chamber.cooling_circuits[self.circuit_index].radius_of_curvature(x)
         K = self.thrust_chamber.K_factor  
         dL_eq_dx = (2 * K * D_h) / (np.pi * R_curv * f) # Differential equivalent length per unit dx
         curvature_factor = 1.0 + dL_eq_dx
-        
-        # actual length since the thrust chamber is sloping
-        dr_dx = self.thrust_chamber.contour.dr_dx(x)
-        slope_factor = np.sqrt(1 + dr_dx**2) # TODO: this expression only works for vertical cooling channels, need to update for helical.
-        #slope_factor = 1
-        # pressure drop per unit length
-        dp_stagnation_dx = - f/D_h * rho_cool*u_cool**2/2*slope_factor#*curvature_factor
-        """print(f"\nrho_cool: {rho_cool}")
-        print(f"u_cool: {u_cool}")
-        print(f"f: {f}")
-        print(f"D_h: {D_h}")
-        print(f"slope_factor: {slope_factor} \n")"""
 
-        # Remove dynamic pressure from stagnation pressure
+        circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
+        dp_stagnation_dx = - f/D_h * rho_cool*u_cool**2/2 * circuit.ds_dx(x) # replaced the slope factor with this
 
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        dA_dx = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_coolant(x) 
-        #if self.engine.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].direction != 1:
-        #    dA_dx = -dA_dx
-
-        #dp_dynamic_dx = - 0.5*rho_cool*u_cool**2/A_cool*dA_dx
+        dA_dx = self.thrust_chamber.cooling_circuits[self.circuit_index].dA_dx_coolant(x) 
 
         dp_static_dx = dp_stagnation_dx - rho_cool*u_cool**2/A_cool*dA_dx
-
-        """print(f"\nx: {x}")
-        print(f"rho_cool: {rho_cool}")
-        print(f"u_cool: {u_cool}")
-        print(f"A_cool: {A_cool}")
-        print(f"dA_dx: {dA_dx} \n")"""
-
-        printout = False
-        if printout: 
-            print(f"n_chan: {n_chan}")
-            print(f"rho_cool in dpdx: {rho_cool}")
-            print(f"mdot_coolant_single_cannel in dpdx: {mdot_c_single_channel}")
-            print(f"A_cool in dpdx: {A_cool}")
-            print(f"u_cool in dpdx: {u_cool}")
-            print(f"darcy_friction in dpdx: {f}")
-            print(f"Reynolds in dpdx: {ReDh}")
-            print(f"roughness in dpdx: {roughness}")
-            print(f"curvature_factor: {curvature_factor}")
-            print(f"slope_factor: {slope_factor}")
-            print(f"mu in dpdx: {mu}")
-            print(f"D_h in dpdx: {D_h}")
-            print(f"dA_dx: {dA_dx}")
-            print(f"dp_stagnation_dx {dp_stagnation_dx}")
-            print(f"dp_static_dx {dp_static_dx}\n")
 
         return dp_static_dx, dp_stagnation_dx
     
@@ -444,13 +280,13 @@ class HeatExchangerPhysics:
             Temperatures ``[T_hot, T_1, ..., T_cold]`` across interfaces.
         """
         # same area-per-length as above
-        dA_dx_hot = self.thrust_chamber.cooling_circuit_group.circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
+        dA_dx_hot = self.thrust_chamber.cooling_circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
 
         # heat transfer per length
         qdx = self.dQ_cond_dx(x, T_hw, T_cw)
         T_rep = 0.5 * (T_hw + T_cw)
         Ts = [T_hw]
-        for wall in self.thrust_chamber.wall_group.walls:
+        for wall in self.thrust_chamber.cooling_circuits[self.circuit_index].walls:
             Rj = wall.thickness(x) / (wall.material.get_k(T_rep) * dA_dx_hot)
             # drop in temperature across this layer:
             T_next = Ts[-1] - qdx * Rj
@@ -499,7 +335,7 @@ def solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, cir
     residual_log = [] if log_residuals else None
     iter_counter = np.zeros(n_nodes, dtype=int)
     
-    circuit = thrust_chamber.cooling_circuit_group.circuits[circuit_index]
+    circuit = thrust_chamber.cooling_circuits[circuit_index]
     orig_x_domain = circuit.x_domain
     # Re-interpolate the x_domain to have exactly n_nodes points.
     if circuit.direction == 1:
@@ -524,7 +360,7 @@ def solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, cir
     p_static_arr[0] = p_cool_in
     p_stagnation_arr[0] = p_cool_in # assuming here no velocity at inlet.....
     # Physics helper
-    physics_helper = HeatExchangerPhysics(thrust_chamber, circuit_index)
+    physics_helper = HeatExchangerPhysics(thrust_chamber, boundary_conditions, circuit_index)
 
     # Initial guesses for the wall temperatures
     T_hw_guess = 0.5 * (thrust_chamber.combustion_transport.get_T(x_domain[0]) + T_cool_in)
@@ -543,27 +379,72 @@ def solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, cir
             print(f'\rSimulating: {math.ceil(i/n_nodes*100)}%', end='', flush=True)
 
         x_i = x_domain[i]
-        #print(x_i)
-        # Solve for T_hw, T_cw via algebraic system:
-        def residuals(T_vars, cell=i):
-            T_hw_trial, T_cw_trial = T_vars
-            Q_hot_val  = physics_helper.dQ_hot_dx(x_i, T_hw_trial)*dx
-            Q_cond_val = physics_helper.dQ_cond_dx(x_i, T_hw_trial, T_cw_trial)*dx
-            Q_cold_val = physics_helper.dQ_cold_dx(x_i, T_cw_trial, T_cool_arr[i])*dx
+        
+        #all_T_interfaces = physics_helper.interface_temperatures(x_i, T_hw_sol, T_cw_sol)
+        # Solve for (T_cw, dT) using bounded, robust least-squares.
+        # Enforces T_hw = T_cw + dT with dT >= 0  =>  T_hw >= T_cw.
+
+        T_gas_i = physics_helper.thrust_chamber.combustion_transport.get_T(x_i)
+
+        # Conservative upper bound for wall temperatures to avoid sign flips in (T_gas - T_hw)
+        # and keep the solver in a physical basin.
+        T_hw_max = max(T_cool_arr[i] + 1.0, T_gas_i - 1e-3)
+
+        def residuals_scaled(vars_, cell=i):
+            T_cw_trial, dT_trial = vars_
+            T_hw_trial = T_cw_trial + dT_trial
+
+            # Use per-cell energy flows
+            Q_hot_val  = physics_helper.dQ_hot_dx(x_i, T_hw_trial) * dx
+            Q_cond_val = physics_helper.dQ_cond_dx(x_i, T_hw_trial, T_cw_trial) * dx
+            Q_cold_val = physics_helper.dQ_cold_dx(x_i, T_cw_trial, T_cool_arr[i]) * dx
+
             R1 = Q_hot_val - Q_cond_val
             R2 = Q_cond_val - Q_cold_val
 
+            # Optional logging of *raw* residuals (not scaled)
             if residual_log is not None:
-                k = iter_counter[cell]          # ← current Newton iteration for *this* cell
+                k = iter_counter[cell]
                 residual_log.append((cell, k, R1, R2))
                 iter_counter[cell] += 1
-            
-            return (R1, R2)
 
-        sol = fsolve(residuals, x0=[T_hw_guess, T_cw_guess])
-        
-        T_hw_sol, T_cw_sol = sol
-        #all_T_interfaces = physics_helper.interface_temperatures(x_i, T_hw_sol, T_cw_sol)
+            # Scale residuals to reduce conditioning issues at extreme heat loads
+            Q_ref = max(abs(Q_hot_val), abs(Q_cond_val), abs(Q_cold_val), 1.0)
+            return np.array([R1 / Q_ref, R2 / Q_ref], dtype=float)
+
+        # Initial guess in (T_cw, dT) space
+        dT_guess = max(T_hw_guess - T_cw_guess, 1.0)
+        x0 = np.array([T_cw_guess, dT_guess], dtype=float)
+
+        # Bounds:
+        # - T_cw cannot go below bulk coolant temp at this station.
+        # - T_hw cannot exceed T_hw_max, so dT <= T_hw_max - T_cw_lo.
+        T_cw_lo = T_cool_arr[i]
+        T_cw_hi = T_hw_max
+        dT_lo = 0.0
+        dT_hi = max(1.0, T_hw_max - T_cw_lo)
+
+        res = least_squares(
+            residuals_scaled,
+            x0=x0,
+            bounds=([T_cw_lo, dT_lo], [T_cw_hi, dT_hi]),
+            method="trf",
+            loss="soft_l1",
+            f_scale=1.0,
+            xtol=1e-10,
+            ftol=1e-10,
+            gtol=1e-10,
+            max_nfev=200,
+        )
+
+        if not res.success:
+            raise RuntimeError(
+                f"least_squares failed at node {i} (x={x_i:.6g}): {res.message}; "
+                f"x={res.x}"
+            )
+
+        T_cw_sol, dT_sol = res.x
+        T_hw_sol = T_cw_sol + dT_sol
 
         # Store in arrays
         T_hw_arr[i] = T_hw_sol
@@ -579,17 +460,12 @@ def solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, cir
             dp_static, dp_stagnation = physics_helper.coolant_pressure_rate(x_i, T_cool_arr[i], p_stagnation_arr[i])
             dp_static = dp_static*dx
             dp_stagnation = dp_stagnation*dx
-            #print(f"dp: {dp_static}")
-
-            #print(dp)
-
             T_cool_arr[i+1] = T_cool_arr[i] + dT
             p_static_arr[i+1] = p_static_arr[i] + dp_static
             p_stagnation_arr[i+1] = p_stagnation_arr[i] + dp_stagnation
 
     if output is True:
         print(f'\rSimulating: {100}%\n', end='', flush=True)
-
 
     # ===============
     # --- RESULTS ---
@@ -598,16 +474,16 @@ def solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, cir
     # 1. Compute the local heat flux (dQ/dA) for each node 
     for i, x_i in enumerate(x_domain):
         Q_hot_val = physics_helper.dQ_hot_dx(x_i, T_hw_arr[i]) * dx
-        A_hot = thrust_chamber.cooling_circuit_group.circuits[circuit_index].dA_dx_thermal_exhaust(x_i) * dx
+        A_hot = thrust_chamber.cooling_circuits[circuit_index].dA_dx_thermal_exhaust(x_i) * dx
         dQ_dA_arr[i] = Q_hot_val / A_hot if A_hot != 0 else 0.0
 
     # 2. Compute the coolant velocity at each node
     velocity_arr = np.zeros(n_nodes)
-    n_chan = thrust_chamber.cooling_circuit_group.circuits[circuit_index].placement.n_channel_positions*thrust_chamber.cooling_circuit_group.circuits[circuit_index].placement.n_channels_per_leaf
+    n_chan = thrust_chamber.cooling_circuits[circuit_index].placement.n_channel_positions*thrust_chamber.cooling_circuits[circuit_index].placement.n_channels_per_leaf
     for i, x_i in enumerate(x_domain):
-        A_channel = thrust_chamber.cooling_circuit_group.circuits[circuit_index].A_coolant(x_i)
-        mdot_c_single = thrust_chamber.combustion_transport.mdot_fu / n_chan
-        rho_cool = thrust_chamber.cooling_circuit_group.circuits[circuit_index].coolant_transport.get_rho(T_cool_arr[i], p_static_arr[i])
+        A_channel = thrust_chamber.cooling_circuits[circuit_index].A_coolant(x_i)
+        mdot_c_single = boundary_conditions.mdot_coolant / n_chan
+        rho_cool = thrust_chamber.cooling_circuits[circuit_index].coolant_transport.get_rho(T_cool_arr[i], p_static_arr[i])
         # Use the physics helper's u_coolant function 
         u_cool = physics.u_coolant(rho_cool, mdot_c_single, A_channel)
         velocity_arr[i] = u_cool
@@ -615,11 +491,11 @@ def solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, cir
     T_stagnation_arr = np.zeros_like(T_cool_arr)
     for i, x_i in enumerate(x_domain):
         # Calculate cp for the current node using static temperature and pressure
-        cp_cool = thrust_chamber.cooling_circuit_group.circuits[circuit_index].coolant_transport.get_cp(T_cool_arr[i], p_static_arr[i])
+        cp_cool = thrust_chamber.cooling_circuits[circuit_index].coolant_transport.get_cp(T_cool_arr[i], p_static_arr[i])
         # Compute stagnation temperature by adding the kinetic energy term
         T_stagnation_arr[i] = T_cool_arr[i] + (velocity_arr[i]**2) / (2.0 * cp_cool)
 
-    n_walls = len(thrust_chamber.wall_group.walls)
+    n_walls = len(thrust_chamber.cooling_circuits[circuit_index].walls)
     T_full = np.zeros((n_nodes, 1 + n_walls + 1))  # coolant + (n_walls+1) interfaces
 
     for i, x_i in enumerate(x_domain):
@@ -636,8 +512,7 @@ def solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, cir
     p_static_corrected = np.zeros_like(p_stagnation_arr)
     for i in range(n_nodes):
         # use density at node i (assumes rho(T,p) weakly depends on p)
-        rho_i = thrust_chamber.cooling_circuit_group \
-                   .circuits[circuit_index] \
+        rho_i = thrust_chamber.cooling_circuits[circuit_index] \
                    .coolant_transport.get_rho(T_cool_arr[i], p_stagnation_arr[i])
         q_dyn = 0.5 * rho_i * velocity_arr[i]**2
         p_static_corrected[i] = p_stagnation_arr[i] - q_dyn

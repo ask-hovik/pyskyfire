@@ -17,16 +17,3 @@ Submodules
    /autoapi/pyskyfire/pump/utils/index
 
 
-Classes
--------
-
-.. toctree::
-   :hidden:
-
-   /autoapi/pyskyfire/pump/Impeller
-
-.. autoapisummary::
-
-   pyskyfire.pump.Impeller
-
-

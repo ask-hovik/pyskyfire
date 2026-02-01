@@ -230,6 +230,111 @@ class Aerothermodynamics:
         )
 
         return cls(optimum)
+    
+    @classmethod
+    def from_F_pe_Lstar(cls, fu, ox, MR, p_c, F, p_e, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, npts=15):
+        """Construct from thrust, area ratio, and L* at a given chamber pressure.
+
+        This helper solves a CEA rocket problem at the specified design point and
+        assembles the ``optimum`` dict used to initialize :class:`Aerothermodynamics`.
+
+        Parameters
+        ----------
+        fu : Any
+            Fuel mixture descriptor (must expose ``propellants`` and ``fractions`` and
+            be consumable by ``CEA_Wrap.Fuel``).
+        ox : Any
+            Oxidizer mixture descriptor (same structural expectations as ``fu``).
+        MR : float
+            Mixture ratio ``m_ox / m_fu`` [-].
+        p_c : float
+            Chamber pressure [Pa].
+        F : float
+            Target thrust [N].
+        eps : float
+            Nozzle area ratio ``A_e / A_t`` [-].
+        L_star : float
+            Characteristic chamber length [m].
+        T_fu_in : float, default 298.15
+            Fuel inlet temperature [K].
+        T_ox_in : float, default 298.15
+            Oxidizer inlet temperature [K].
+        p_amb : float, default 1.013e5
+            Ambient/static pressure for CF/Isp_amb calculations [Pa].
+        npts : int, default 15
+            Number of axial stations to precompute along the contour.
+
+        Returns
+        -------
+        Aerothermodynamics
+            Initialized instance with populated design-point performance and all fields
+            necessary for :meth:`compute_aerothermodynamics`.
+
+        Notes
+        -----
+        - The CEA call assumes perfect expansion for ``Isp_vac`` and uses standard
+        thrust-coefficient relations to compute ``Isp_amb`` and ``Isp_SL``.
+        - Areas and chamber volume are derived from ``c_star``, mass flow, ``L_star``,
+        and mixture density at chamber conditions.
+        """
+
+        fus = []
+        oxs = []
+        for prop, frac in zip(fu.propellants, fu.fractions):
+            fus.append(cea.Fuel(prop, wt=frac, temp=T_fu_in))
+
+        for prop, frac in zip(ox.propellants, ox.fractions):
+            oxs.append(cea.Oxidizer(prop, wt=frac, temp=T_ox_in))
+        
+        rp = cea.RocketProblem(o_f = MR, 
+                               pressure=p_c*0.000145038, # Convert Pa to psi
+                               materials=[*oxs, *fus], 
+                               pip=p_c/p_e) 
+        R = rp.run()
+        
+        #names = cea.ThermoInterface.keys()
+        #print(names)
+        
+        eps = float(getattr(R, "ae"))
+        c_star = float(getattr(R, "cstar"))           
+        Isp_ideal_amb = float(getattr(R, "isp"))      # perfectly expanded Isp
+        Isp_vac = float(getattr(R, "ivac"))           
+        rho_c = float(getattr(R, "c_rho"))
+        T_c = float(getattr(R, "c_t"))
+        T_t = float(getattr(R, "t_t"))
+        p_t = float(getattr(R, "t_p"))
+
+        g = 9.81
+        p_SL = 1.01325e5 # sea level pressure
+        mdot = F/(Isp_vac*g)
+        mdot_fu = mdot/(1+MR)
+        mdot_ox = mdot - mdot_fu
+
+        A_t = c_star*mdot/p_c
+        r_t = np.sqrt(A_t/np.pi)
+        t_stay = L_star*A_t*rho_c/mdot
+        V_c = mdot*t_stay/rho_c
+
+        A_e = A_t*eps
+        r_e = np.sqrt(A_e/np.pi)
+
+        # calculate ambient Isp
+        CF_vac = Isp_vac * g / c_star
+        CF_amb = CF_vac - (p_amb / p_c) * (A_e/A_t)
+        Isp_amb = CF_amb*c_star/g
+
+        CF_SL = CF_vac - (p_SL / p_c) * (A_e/A_t)
+        Isp_SL = CF_SL*c_star/g
+
+        optimum = dict(
+            fu=fu, ox=ox, MR=MR, p_c=p_c, p_t=p_t, T_c=T_c, T_t=T_t, F=F, eps=eps, L_star=L_star, c_star=c_star,
+            p_amb=p_amb, Isp_ideal_amb=Isp_ideal_amb, Isp_vac=Isp_vac, Isp_amb=Isp_amb,
+            Isp_SL=Isp_SL, CF_vac=CF_vac, CF_amb=CF_amb, CF_SL=CF_SL, mdot=mdot,
+            mdot_fu=mdot_fu, mdot_ox=mdot_ox, t_stay=t_stay, A_t=A_t, A_e=A_e,
+            r_t=r_t, r_e=r_e, V_c=V_c, T_fu_in=T_fu_in, T_ox_in=T_ox_in, npts=npts,
+        )
+
+        return cls(optimum)
 
     def compute_aerothermodynamics(self, contour, Nt: int = 64):
         """Precompute 2-D property maps along the supplied contour.
@@ -360,6 +465,8 @@ class Aerothermodynamics:
                 self.mu_map[i, j]    = getattr(Rt, "visc", None)
                 self.k_map[i, j]     = getattr(Rt, "cond", None)
                 self.Pr_map[i, j]    = getattr(Rt, "pran", None)
+
+        print(f'\rPrecomputing map: 100%')
 
     def _bilinear_map(self, prop_map: np.ndarray, x: float, T: float) -> float | None:
         xs = self.x_nodes

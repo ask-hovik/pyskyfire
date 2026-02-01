@@ -69,6 +69,28 @@ Module Contents
 
 .. py:data:: Inconel625
 
+   
+   Ni-based superalloy with excellent corrosion resistance and high-temp strength.
+   Typical use: hot-section hardware, manifolds, and fasteners. Density ~8.44 g/cc.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
 .. py:data:: Inconel718
 
 .. py:data:: StainlessSteel304

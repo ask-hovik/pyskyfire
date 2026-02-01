@@ -34,7 +34,7 @@ autoapi_options = [
     "undoc-members",
     "private-members",
     "special-members",
-    "imported-members",
+    #"imported-members",
     "show-inheritance",
     "show-inheritance-diagram",
     "show-module-summary",
@@ -52,6 +52,7 @@ numpydoc_xref_aliases = {
     "SignalBlock": "pyskyfire.common.blocks.SignalBlock",
 }
 
+autosummary_generate = False
 # If you decided to keep the typehints extension:
 # autodoc_typehints = "none"
 

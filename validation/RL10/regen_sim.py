@@ -76,18 +76,29 @@ xs, rs = psf.regen.contour.get_contour(V_c = V_c,
 contour = psf.regen.Contour(xs, rs, name = "RL10 contour")
 
 wall = psf.regen.Wall(material = psf.common.solids.StainlessSteel304, thickness = params["wall_thickness"]) 
-wall_group = psf.regen.WallGroup(walls=[wall])
+#wall = psf.regen.Wall(material = psf.common.solids.copper, thickness = params["wall_thickness"] )
 
 channel_height_fn = psf.regen.make_channel_height_fn(
     contour=contour, 
     region_fractions=[-1.0, 0.25, 1.0], 
     flat_heights= [0.0032, 0.00134], 
-    pinch_factors= [0.6, -5.0], 
+    pinch_factors= [0.4, -5.0], #baseline had [0.6, -5.0]
     transition_widths=[0.1]
 ) # total coolant volume should be ca 0.015831543m3
 
+#channel_height_fn = psf.regen.make_channel_height_fn(
+#    contour=contour, 
+#    region_fractions=[-1.0, 0.25, 1.0], 
+#    flat_heights= [0.01, 0.006], 
+#    pinch_factors= [0.5, -5.0], #baseline had [0.6, -5.0]
+#    transition_widths=[0.1]
+#) # total coolant volume should be ca 0.015831543m3
+
+def helix_fn(x):
+    return 45*3.14*180
 
 cross_section = psf.regen.CrossSectionRounded()
+#cross_section_squared = psf.regen.CrossSectionSquared(blockage_ratio=0.1)
 LH2_transport = psf.skycea.CoolantTransport(params["coolant_fu"])
 
 half_pass = psf.regen.CoolingCircuit(name="Half Pass", 
@@ -95,7 +106,9 @@ half_pass = psf.regen.CoolingCircuit(name="Half Pass",
                                      coolant_transport=LH2_transport, 
                                      cross_section=cross_section, 
                                      span = [0.25, 1.0], 
-                                     placement=psf.regen.SurfacePlacement(n_channel_positions=180), 
+                                     placement=psf.regen.SurfacePlacement(n_channel_positions=180, helix_angle=helix_fn), 
+                                     walls=[wall],
+                                     roughness=params["roughness_height"],
                                      channel_height=channel_height_fn)
 
 full_pass = psf.regen.CoolingCircuit(name= "Full Pass",
@@ -103,18 +116,23 @@ full_pass = psf.regen.CoolingCircuit(name= "Full Pass",
                                      coolant_transport=LH2_transport, 
                                      cross_section=cross_section, 
                                      span = [1.0, -1.0], 
-                                     placement=psf.regen.SurfacePlacement(n_channel_positions=180), 
+                                     placement=psf.regen.SurfacePlacement(n_channel_positions=180, helix_angle=helix_fn), 
+                                     walls=[wall],
+                                     roughness=params["roughness_height"],
                                      channel_height=channel_height_fn)
 
-cooling_circuit_group = psf.regen.CoolingCircuitGroup(circuit_list=[half_pass, full_pass])
-
 thrust_chamber = psf.regen.ThrustChamber(contour=contour, 
-                                         wall_group=wall_group,
                                          combustion_transport=aerothermodynamics,  
-                                         cooling_circuit_group=cooling_circuit_group,
-                                         roughness=params["roughness_height"],
-                                         h_gas_corr=1.0, # No correction applied
-                                         h_cold_corr=1.0) # No correction applied
+                                         cooling_circuits=[half_pass, full_pass],
+                                         h_gas_corr=1.0,
+                                         h_cold_corr=1.0, # No correction applied
+                                         n_nodes=150, 
+                                         enable_fin=True) 
+
+plot_3d = psf.viz.make_engine_3d_pyvista(thrust_chamber, )
+plot_3d.show()
+del plot_3d 
+input()
 
 mdot_fu = aerothermodynamics.mdot_fu
 boundary_conditions_a = psf.regen.BoundaryConditions(T_coolant_in = params["T_coolant_in"], 

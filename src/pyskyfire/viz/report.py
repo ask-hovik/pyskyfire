@@ -212,6 +212,90 @@ class Tab:
         cap = f"<div class='psf-caption'>{html.escape(caption)}</div>" if caption else ""
         self.blocks.append(_Block("raw", f"<div class='psf-figure'>{svg}{cap}</div>"))
         return self
+    
+    def add_iframe(
+        self,
+        src: str,
+        *,
+        caption: str | None = None,
+        height: str = "720px",
+        style: str = "width:100%;border:1px solid var(--border);border-radius:10px;",
+        blobify_data_urls: bool = True,
+    ) -> "Tab":
+        cap = f"<div class='psf-caption'>{html.escape(caption)}</div>" if caption else ""
+
+        # If this is a heavy data: URL (e.g. your embedded three.js+gltf viewer),
+        # do NOT put it directly into iframe.src. Instead, store it in data-src
+        # and let JS convert it to a blob: URL (Chromium/Edge friendly).
+        if blobify_data_urls and isinstance(src, str) and src.startswith("data:"):
+            iframe = (
+                f"<iframe class='psf-iframe' "
+                f"src='about:blank' "
+                f"data-src='{html.escape(src)}' "
+                f"data-autoload='true' "
+                f"style='{html.escape(style)}height:{html.escape(height)};' "
+                f"sandbox='allow-scripts allow-same-origin' "
+                f"loading='lazy'></iframe>"
+            )
+        else:
+            iframe = (
+                f"<iframe class='psf-iframe' "
+                f"src='{html.escape(src)}' "
+                f"style='{html.escape(style)}height:{html.escape(height)};' "
+                f"sandbox='allow-scripts allow-same-origin' "
+                f"loading='lazy'></iframe>"
+            )
+
+        self.blocks.append(_Block("raw", f"<div class='psf-figure'>{iframe}{cap}</div>"))
+        return self
+    
+    def add_deferred_iframe(
+        self,
+        src: str,
+        *,
+        caption: str | None = None,
+        height: str = "720px",
+        button_text: str = "Load 3D view",
+        autoload: bool = True,
+    ) -> "Tab":
+        # src is your heavy data: URL
+        import html
+        import uuid
+
+        iframe_id = f"psf_iframe_{uuid.uuid4().hex}"
+        cap = f"<div class='psf-caption'>{html.escape(caption)}</div>" if caption else ""
+
+        # Store src in a data attribute; do NOT set iframe src yet
+        block = f"""
+    <div class="psf-figure">
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
+        <button class="psf-btn"
+            type="button"
+            data-target="{iframe_id}"
+            data-src="{html.escape(src)}"
+            data-autoload="{str(autoload).lower()}">
+
+        {html.escape(button_text)}
+        </button>
+        <span class="psf-muted">3D view may take some time to load</span>
+    </div>
+
+    <iframe id="{iframe_id}"
+            src="about:blank"
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin"
+            style="width:100%; height:{html.escape(height)}; border:1px solid var(--border); border-radius:10px;">
+    </iframe>
+    {cap}
+    </div>
+    """
+        self.blocks.append(_Block("raw", block))
+
+        # Register a small script once per report (see step 2)
+        self._needs_deferred_iframe_js = True  # add this attribute to Tab or Report
+        return self
+
+
 
 # --- Report ------------------------------------------------------------------
 
@@ -324,6 +408,9 @@ body {{
   font-weight: 600;
   margin: 0 0 6px 0;
 }}
+.psf-iframe {{ 
+  background: #fff; 
+}}
 </style>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script>
@@ -348,6 +435,97 @@ window.addEventListener('DOMContentLoaded', () => {{
   }} catch(e) {{}}
   psfActivateTab(idx);
 }});
+</script>
+<script>
+(function () {{
+  function runWhenIdle(fn, timeoutMs) {{
+    if ("requestIdleCallback" in window) {{
+      requestIdleCallback(fn, {{ timeout: timeoutMs || 2000 }});
+    }} else {{
+      setTimeout(fn, 0);
+    }}
+  }}
+
+    async function setIframeSrcViaBlob(iframe, src) {{
+    try {{
+        const resp = await fetch(src);
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        iframe.setAttribute("data-blob-url", url);
+        iframe.src = url;
+    }} catch (e) {{
+        console.error(e);
+        iframe.src = src;
+    }}
+
+    iframe.addEventListener(
+        "load",
+        () => {{
+        // Optional cleanup:
+        // const u = iframe.getAttribute("data-blob-url");
+        // if (u) URL.revokeObjectURL(u);
+        }},
+        {{ once: true }}
+    );
+    }}
+
+
+function activate(btn) {{
+  const iframeId = btn.getAttribute("data-target");
+  const src = btn.getAttribute("data-src");
+  const iframe = document.getElementById(iframeId);
+  if (!iframe || !src) return;
+
+  if (iframe.getAttribute("data-loaded") === "1") return;
+  iframe.setAttribute("data-loaded", "1");
+
+  runWhenIdle(() => {{
+    setIframeSrcViaBlob(iframe, src);
+  }}, 5000);
+
+  btn.disabled = true;
+  btn.textContent = "Loading…";
+}}
+
+
+  // Manual click
+  document.addEventListener("click", (e) => {{
+    const btn = e.target.closest("button[data-target][data-src]");
+    if (!btn) return;
+    activate(btn);
+  }});
+
+  // Auto-load (only if enabled)
+    window.addEventListener("load", () => {{
+    // Existing deferred-button behavior (keep)
+    const buttons = document.querySelectorAll(
+        "button[data-target][data-src][data-autoload='true']"
+    );
+    for (const btn of buttons) {{
+        setTimeout(() => {{
+        runWhenIdle(() => activate(btn), 8000);
+        }}, 1000);
+    }}
+
+    // NEW: standard iframe auto-load (blobified)
+    const iframes = document.querySelectorAll(
+        "iframe[data-src][data-autoload='true']"
+    );
+
+    for (const iframe of iframes) {{
+        if (iframe.getAttribute("data-loaded") === "1") continue;
+        iframe.setAttribute("data-loaded", "1");
+
+        const src = iframe.getAttribute("data-src");
+        if (!src) continue;
+
+        setTimeout(() => {{
+        runWhenIdle(() => setIframeSrcViaBlob(iframe, src), 8000);
+        }}, 0);
+    }}
+    }});
+
+}})();
 </script>
 </head>
 <body>

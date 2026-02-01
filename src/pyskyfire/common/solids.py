@@ -599,6 +599,9 @@ Inconel625 = Material(
     nu=ConstantModel(0.27),          # Poisson's ratio
     rho=ConstantModel(8440.0)        # kg/m^3 (8.44 g/cc)
 )
+"""Ni-based superalloy with excellent corrosion resistance and high-temp strength.
+Typical use: hot-section hardware, manifolds, and fasteners. Density ~8.44 g/cc.
+"""
 
 # --------
 # GRCop-42
@@ -650,3 +653,59 @@ TEOS = Material(
     k = ConstantModel(0.5) # Somewhere in the range of 0.5 - 1?
 )
 
+
+
+
+
+
+
+
+
+# ---------- Yellow Brass (70/30 ~ C26000 / CuZn30) ----------
+# Sources:
+# - Cryogenic k(T) curve for Alloy 260 (70–30 brass): CDA Fig. 7. (units converted)  [CIT: turn5view3]
+# - CuZn30 electrical: rho(20°C) ≈ 6.2e-8 Ω·m; alpha(0–100°C) ≈ 1.5e-3 1/K.          [CIT: turn7search0, turn7search14]
+# - Wiedemann–Franz engineering use at low–mid T.                                       [CIT: turn9search4]
+
+# --- 1) Cryogenic anchors from CDA Fig. 7 (approximate digitization) ---
+# Temperatures chosen at common cryo references; values read from the Alloy 260 curve
+# and converted to W/m·K. These reproduce the order of magnitude and trend.
+T_cold = np.array([20.0, 77.0, 150.0, 200.0, 250.0, 293.15])  # K
+k_cold = np.array([55.0, 70.0, 90.0, 100.0, 110.0, 120.0])     # W/m·K  (approx from CDA curve; 120 W/m·K @RT matches datasheets)
+
+k_yb_cold = TabulatedModel(Ts=T_cold, Ys=k_cold)
+
+# --- 2) High-T via Wiedemann–Franz using CuZn30 electrical data ---
+T_ref = 293.15  # 20 °C
+rho0  = 6.2e-8  # Ω·m at 20 °C (CuZn30)
+alpha = 1.5e-3  # 1/K over 0–100 °C (used as engineering approx up to ~800 K)
+L0    = 2.44e-8 # W·Ω·K^-2
+
+T_hi  = np.linspace(200.0, 800.0, 121)                      # K
+rho_T = rho0 * (1.0 + alpha * (T_hi - T_ref))
+k_hi  = L0 * T_hi / rho_T
+k_yb_hi = TabulatedModel(Ts=T_hi, Ys=k_hi)
+
+# Piecewise: use the cryo tabulation below ~300 K; blend into WF above ~200 K.
+k_YellowBrass_70_30 = PiecewiseModel(
+    segments=[
+        (min(T_cold), max(T_cold), k_yb_cold),
+        (min(T_hi),   max(T_hi),   k_yb_hi),
+    ],
+    blend=30.0,
+    range_policy="warn_clip"
+)
+
+YellowBrass_70_30 = Material(
+    name="Yellow Brass 70/30 (≈C26000 / CuZn30)",
+    k=k_YellowBrass_70_30,
+    E=ConstantModel(115e9),        # representative RT modulus
+    alpha=ConstantModel(19.7e-6),  # 20–300 °C mean CTE (CuZn30 datasheets)
+    nu=ConstantModel(0.34),
+    rho=ConstantModel(8530.0)
+)
+
+copper = Material(
+    name = "copper",
+    k = ConstantModel(400) # Somewhere in the range of 0.5 - 1?
+)

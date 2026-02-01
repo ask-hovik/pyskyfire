@@ -1,6 +1,6 @@
 from typing import Sequence, Callable, Union
 import numpy as np
-from pyskyfire.regen.thrust_chamber import Contour
+from pyskyfire.regen.contour import Contour
 
 def make_channel_height_fn(
     contour: Contour,

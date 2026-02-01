@@ -34,19 +34,15 @@ class SectionProfiles:
     theta: np.ndarray        # included angle [rad, N]
     t_wall: np.ndarray       # wall thickness [N]
     centerline: np.ndarray   # (N,3) [x, r, z] or whatever convention you use
-    local_coords: np.ndarray # (N,3,3) orthonormal frames [t, n, b]
-    blockage_ratio: np.ndarray
 
     def __post_init__(self):
         N = self.centerline.shape[0]
-        for name in ("h", "theta", "t_wall", "blockage_ratio"):
+        for name in ("h", "theta", "t_wall"):
             v = getattr(self, name)
             if v.shape[0] != N:
                 raise ValueError(f"{name} length {v.shape[0]} != N {N}")
         if self.centerline.shape != (N, 3):
             raise ValueError("centerline must be (N,3)")
-        if self.local_coords.shape != (N, 3, 3):
-            raise ValueError("local_coords must be (N,3,3)")
 
 class ChannelSection(ABC):
     """Abstract base class for cooling-channel cross-section definitions.
@@ -72,20 +68,59 @@ class ChannelSection(ABC):
     def P_thermal(self, prof: SectionProfiles) -> np.ndarray: ...
     @abstractmethod
     def P_coolant(self, prof: SectionProfiles) -> np.ndarray: ...
-    @abstractmethod
-    def compute_cross_section(self, prof: SectionProfiles, i: int) -> int: ...
-    # -------------------------------------------------------------------------
+    def R_coolant_per_len(
+        self,
+        prof: SectionProfiles,
+        h_c: np.ndarray,
+        k_wall: np.ndarray | float,
+        ) -> np.ndarray:
+        """
+        Effective coolant-side thermal resistance per unit axial length [K m / W].
+
+        This is where ribs/fin efficiency/spreading conduction can be embedded.
+
+        Default fallback (no rib model):
+            R' = 1 / (h_c * A'_cool)
+        where A'_cool is the geometric coolant thermal area per unit axial length.
+        """
+        raise NotImplementedError
+    def R_wall_per_len(
+        self,
+        prof: SectionProfiles,
+        walls: list,                 # or thickness/k arrays
+        T_rep: np.ndarray,
+        A_hot_per_len: np.ndarray,   # fallback reference
+        ) -> np.ndarray:
+        """
+        Effective wall-stack conduction resistance per unit axial length [K m / W].
+        """
+        raise NotImplementedError
+
 
 # ===================== Squared implementation ===============================
 class CrossSectionSquared(ChannelSection):
     """Simplified rectangular channel section (wedge-sector approximation)."""
 
-    def __init__(self, n_points: int = 8):
+    def __init__(self, blockage_ratio: float, n_points: int = 8, ):
         super().__init__(n_points=n_points)
+        self._blockage_ratio = blockage_ratio
+        assert type(blockage_ratio) in (float, int) or callable(blockage_ratio), \
+            "'blockage_ratio' input must be a float, int or callable"
+
+    def blockage_ratio(self, x):
+        # x can be float or ndarray
+        if callable(self._blockage_ratio):
+            return np.asarray(self._blockage_ratio(x), dtype=float)
+        x_arr = np.asarray(x)
+        if x_arr.ndim:
+            return np.full_like(x_arr, float(self._blockage_ratio), dtype=float)
+        return float(self._blockage_ratio)
 
     def _theta_real(self, prof: SectionProfiles) -> np.ndarray:
         """Apply blockage ratio to effective included angle."""
-        return prof.theta * (1 - prof.blockage_ratio)
+        x = prof.centerline[:, 0]
+        br = self.blockage_ratio(x)
+        return prof.theta * (1.0 - br)
 
     def A_coolant(self, prof: SectionProfiles) -> np.ndarray:
         """Compute coolant cross-sectional area [m²]."""
@@ -105,95 +140,70 @@ class CrossSectionSquared(ChannelSection):
         th = self._theta_real(prof)
         P = r_inner*th + r_outer*th + 2*prof.h
         return 4.0 * A / P
-
+    
     def P_thermal(self, prof: SectionProfiles) -> np.ndarray:
         """Return thermal-contact perimeter [m]."""
         r = prof.centerline[:, 1]
         th = self._theta_real(prof)
         return r * th
 
+    
     def P_coolant(self, prof: SectionProfiles) -> np.ndarray:
         """Return coolant-wetted perimeter [m]."""
         r = prof.centerline[:, 1]
         th = self._theta_real(prof)
         r_inner = r + prof.t_wall
         return r_inner * th
-
-    def compute_cross_section(self, prof: SectionProfiles, i: int):
-        """Construct a gmsh OCC wire representing the rectangular section.
-
-        Builds a closed wire via arcs and straight walls positioned at the
-        specified centerline station.
-
-        Parameters
-        ----------
-        prof : SectionProfiles
-            Full section profile data.
-        i : int
-            Station index to build.
-
-        Returns
-        -------
-        int
-            gmsh OCC wire tag.
-
-        Notes
-        -----
-        Requires an initialized gmsh model. Only geometric primitives are
-        created; meshing is up to the caller.
+    
+    def R_coolant_per_len(
+        self,
+        prof: SectionProfiles,
+        h_c: np.ndarray,
+        k_wall: np.ndarray | float,
+    ) -> np.ndarray:
         """
-        import gmsh # lazy import gmsh
-        # -------- station data --------
-        x_i, r_i, th_i = map(float, prof.centerline[i])   # cylindrical (x, r, theta)
-        t_i = np.asarray(prof.local_coords[i, 0], float)  # tangent
-        n_i = np.asarray(prof.local_coords[i, 1], float)  # normal (will be re-orthonormalized)
-        b_i = np.asarray(prof.local_coords[i, 2], float)  # binormal
+        Coolant-side thermal resistance per unit *channel length* [K m / W],
+        including rib sidewalls as fins (first-order model).
 
-        # world-space center point for the section
-        P_i = np.array([x_i, r_i * np.sin(th_i), r_i * np.cos(th_i)], float)
-        
+        Model:
+        - Base perimeter = P_coolant(prof)  (what you already count)
+        - Fin perimeter  = 2*h             (two side walls per channel)
+        - Effective perimeter = P_base + eta_f * P_fin
+        - R_s = 1 / (h_c * P_eff)
+        """
+        # Base wetted perimeter per channel length
+        P_base = self.P_coolant(prof)
 
-        # -------- affine matrix, transformation from world to local coordinate system --------
-        bx, by, bz = map(float, b_i)
-        nx, ny, nz = map(float, n_i)
-        tx, ty, tz = map(float, t_i)
-        Px, Py, Pz = map(float, P_i)
-        A = [
-            bx, nx, tx, Pz,
-            by, ny, ty, Py,
-            bz, nz, tz, Px,
-        ]
+        # Two sidewalls of height h contribute as "fin area": per unit channel length, area = 2*h,
+        # and we can treat this as an equivalent perimeter term on the coolant side
+        h = prof.h
+        P_fin = 2.0 * h
 
-        A = [
-            1.0, 0.0, 0.0, Pz, # TODO: this rotation stuff is just too hard to figure out in an evening man
-            0.0, 1.0, 0.0, Py, # I had to switch out x and z to get them oriented right for some reason??
-            0.0, 0.0, 1.0, Px, ## Revisit this and get the rotation matrix right!
-        ]
+        # Rib thickness estimate at the hot wall (circumferential ligament width)
+        # Use your existing theta-real logic:
+        theta_real = self._theta_real(prof)                 # open sector [rad]
+        theta_tot = prof.theta                              # total local sector [rad]
+        r_inner = prof.centerline[:, 1]
 
-        th_val  = prof.theta[i]
-        br      = prof.blockage_ratio[i]
-        phi     = th_val * (1 - br)
-        h       = prof.h[i]
-        
-        cntr = gmsh.model.occ.addPoint(-r_i, 0, 0)
-        Ai   = gmsh.model.occ.addPoint(-1*(r_i - r_i*np.cos(phi/2)), -r_i*np.sin(phi/2), 0)
-        Bi   = gmsh.model.occ.addPoint(-1*(r_i - r_i*np.cos(phi/2)), r_i*np.sin(phi/2), 0)
-        Ao   = gmsh.model.occ.addPoint((r_i + h)*np.cos(phi/2) - r_i, -(r_i + h)*np.sin(phi/2), 0)
-        Bo   = gmsh.model.occ.addPoint((r_i + h)*np.cos(phi/2) - r_i, (r_i + h)*np.sin(phi/2), 0)
-        
-        arc_in  = gmsh.model.occ.addCircleArc(Ai, cntr, Bi)
-        arc_out = gmsh.model.occ.addCircleArc(Bo, cntr, Ao)  # reversed to close
-        wall_p  = gmsh.model.occ.addLine(Bi, Bo)
-        wall_m  = gmsh.model.occ.addLine(Ao, Ai)
-        edges = [arc_in, wall_p, arc_out, wall_m]
+        # blocked angle -> ligament width
+        theta_block = np.maximum(theta_tot - theta_real, 0.0)
+        t_rib = np.maximum(r_inner * theta_block, 1e-9)
 
-        # Transform ALL edges (not the wire)
-        gmsh.model.occ.affineTransform([(1, e) for e in edges], A)
-        gmsh.model.occ.synchronize()
+        # representative conductivity (allow scalar or array)
+        k = np.asarray(k_wall, dtype=float)
+        if k.ndim == 0:
+            k = np.full_like(h, float(k))
 
-        # -------- wrap transformed edge into a wire and return --------
-        w = gmsh.model.occ.addWire([*edges])
-        return w
+        # Fin efficiency (adiabatic tip) for a rectangular fin:
+        # m = sqrt(2*h_c/(k*t_rib)), eta = tanh(m*h)/(m*h)
+        m = np.sqrt(2.0 * h_c / (k * t_rib))
+        mh = np.maximum(m * h, 1e-12)
+        eta = np.tanh(mh) / mh
+
+        P_eff = P_base + eta * P_fin
+        P_eff = np.maximum(P_eff, 1e-30)
+
+        return 1.0 / (h_c * P_eff)
 
 
 # ===================== Rounded implementation ===============================
@@ -249,99 +259,96 @@ class CrossSectionRounded(ChannelSection):
         angle = np.radians(112.0)
         return (r1 - prof.t_wall) * angle
     
-    def compute_cross_section(self, prof: SectionProfiles, i: int) -> int:
-        """Construct a gmsh OCC wire representing the rounded section.
-
-        Parameters
-        ----------
-        prof : SectionProfiles
-            Section profiles along the cooling circuit.
-        i : int
-            Station index to build.
-
-        Returns
-        -------
-        int
-            gmsh OCC wire tag.
-
-        Notes
-        -----
-        Requires that a gmsh model is active. The geometry is constructed
-        from circle arcs and wall segments in a local coordinate frame,
-        then transformed into global coordinates using the provided
-        orthonormal basis at station ``i``.
+    def R_coolant_per_len(
+        self,
+        prof: SectionProfiles,
+        h_c: np.ndarray,
+        k_wall: np.ndarray | float,
+    ) -> np.ndarray:
         """
-        import gmsh # lazy import
-        # -------- station data --------
-        x_i, r_i, th_i = map(float, prof.centerline[i])   # cylindrical (x, r, theta)
-        t_i = np.asarray(prof.local_coords[i, 0], float)  # tangent
-        n_i = np.asarray(prof.local_coords[i, 1], float)  # normal (will be re-orthonormalized)
-        b_i = np.asarray(prof.local_coords[i, 2], float)  # binormal
+        Coolant-side thermal resistance per unit channel length [K m / W]. 
+        In this function I included a rib on the backside of the cooling channel, 
+        basically the same way as standard rib calculations with rib efficiency. 
+        Unsure if this is completely appropriate. But it had only a minor effect
+        on the RL10 validation case, which use low conductivity stainless. For 
+        thin copper walls adding the rib has a large effect. 
+        """
+        P_base = self.P_coolant(prof)
+        h = prof.h
 
-        # world-space center point for the section
-        P_i = np.array([x_i, r_i * np.sin(th_i), r_i * np.cos(th_i)], float)
-        
+        # Fin "perimeter contribution" from two side walls
+        P_fin = 2.0 * h * np.cos(prof.theta/2)
 
-        # -------- affine matrix, transformation from world to local coordinate system --------
-        bx, by, bz = map(float, b_i)
-        nx, ny, nz = map(float, n_i)
-        tx, ty, tz = map(float, t_i)
-        Px, Py, Pz = map(float, P_i)
-        A = [
-            bx, nx, tx, Pz, # this is the real rotation matrix. But I need to redo the 
-            by, ny, ty, Py,
-            bz, nz, tz, Px,
-        ]
+        # Rib thickness is 2x wall thickness
+        t_rib = 2.0 * prof.t_wall
 
-        A = [
-            1.0, 0.0, 0.0, Pz, # TODO: this rotation stuff is just too hard to figure out in an evening man
-            0.0, 1.0, 0.0, Py, # I had to switch out x and z to get them oriented right for some reason??
-            0.0, 0.0, 1.0, Px, ## Revisit this and get the rotation matrix right!
-        ]
+        # Conductivity array
+        k = np.asarray(k_wall, dtype=float)
+        if k.ndim == 0:
+            k = np.full_like(h, float(k))
 
-        th_val  = prof.theta[i]
-        t       = prof.t_wall[i]
-        phi     = th_val - t/r_i
-        h       = prof.h[i]
+        # Fin efficiency (adiabatic tip rectangular fin)
+        m = np.sqrt(2.0 * h_c / (k * t_rib))
+        mh = m * h
+        eta = np.tanh(mh) / mh
 
-        # calculate some distances
-        v = r_i + h
-        q = v*np.cos(phi/2)
-        xo = q-r_i
-        yo = (r_i + h)*np.sin(phi/2)
-        rotr = np.sqrt((v - q)**2 + yo**2)
-        xotr = h + rotr
+        P_eff = P_base + eta * P_fin
 
-        # set points
-        p_cntr_i = [0, 0, 0]
-        p_cntr_o = [h, 0, 0]
-        p_Ai   = [-1*(r_i - r_i*np.cos(phi/2)), -r_i*np.sin(phi/2), 0]
-        p_Bi   = [-1*(r_i - r_i*np.cos(phi/2)), r_i*np.sin(phi/2), 0]
-        p_Ao   = [xo, -yo, 0]
-        p_Bo   = [xo, yo, 0]
-        p_outr = [xotr, 0, 0]
+        return 1.0 / (h_c * P_eff)
 
-        # Make gmsh points
-        cntr_i = gmsh.model.occ.addPoint(*p_cntr_i)
-        cntr_o = gmsh.model.occ.addPoint(*p_cntr_o)
-        Ai   = gmsh.model.occ.addPoint(*p_Ai)
-        Bi   = gmsh.model.occ.addPoint(*p_Bi)
-        Ao   = gmsh.model.occ.addPoint(*p_Ao)
-        Bo   = gmsh.model.occ.addPoint(*p_Bo)
-        outr = gmsh.model.occ.addPoint(*p_outr)        
+    
 
-        # make gmsh elements
-        arc_in  = gmsh.model.occ.addCircleArc(Ai, cntr_i, Bi)
-        arc_out1 = gmsh.model.occ.addCircleArc(Bo, cntr_o, outr)  # reversed to close
-        arc_out2 = gmsh.model.occ.addCircleArc(outr, cntr_o, Ao)  # reversed to close
-        wall_p  = gmsh.model.occ.addLine(Bi, Bo)
-        wall_m  = gmsh.model.occ.addLine(Ao, Ai)
-        edges = [arc_in, wall_p, arc_out1, arc_out2, wall_m]
+# ===================== Rounded internal implementation ===============================
+# TODO: not changed from normal rounded!!!!
+class CrossSectionRoundedInternal(ChannelSection):
+    """Rounded cooling-channel geometry with curved sidewalls."""
+    def __init__(self, n_points: int = 16): # TODO: Does n-points have any funcion left? 
+        super().__init__(n_points=n_points)
 
-        # Transform to local coordinate system
-        gmsh.model.occ.affineTransform([(1, e) for e in edges], A)
-        gmsh.model.occ.synchronize()
+    def _beta_alpha(self, theta: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Return the inner (β) and outer (α) complementary angles."""
+        beta = (np.pi - theta) * 0.5
+        alpha = np.pi - beta
+        return beta, alpha
 
-        # -------- wrap transformed edge into a wire and return --------
-        w = gmsh.model.occ.addWire([*edges])
-        return w
+    def A_coolant(self, prof: SectionProfiles) -> np.ndarray:
+        """Compute effective coolant cross-sectional area [m²]."""
+        r = prof.centerline[:, 1]
+        r1 = r * np.sin(prof.theta/2)
+        r2 = (r + prof.h) * np.sin(prof.theta/2)
+        beta, alpha = self._beta_alpha(prof.theta)
+        L_side = prof.h * np.cos(prof.theta/2)
+
+        A1 = 0.5 * (r1 - prof.t_wall)**2 * 2 * beta
+        A2 = 0.5 * (r2 - prof.t_wall)**2 * 2 * alpha
+        S1 = (r1 - prof.t_wall) * L_side
+        S2 = (r2 - prof.t_wall) * L_side
+        return A1 + A2 + S1 + S2
+
+    def Dh_coolant(self, prof: SectionProfiles) -> np.ndarray:
+        """Compute hydraulic diameter [m]."""
+        A = self.A_coolant(prof)
+        r = prof.centerline[:, 1]
+        r1 = r * np.sin(prof.theta/2)
+        r2 = (r + prof.h) * np.sin(prof.theta/2)
+        beta, alpha = self._beta_alpha(prof.theta)
+        L_side = prof.h * np.cos(prof.theta/2)
+        arc1 = (r1 - prof.t_wall) * 2 * beta
+        arc2 = (r2 - prof.t_wall) * 2 * alpha
+        P = arc1 + arc2 + 2 * L_side
+        return 4.0 * A / P
+
+    def P_thermal(self, prof: SectionProfiles) -> np.ndarray:
+        """Compute thermal-contact perimeter [m]."""
+        r = prof.centerline[:, 1]
+        r1 = r * np.sin(prof.theta/2)
+        angle = np.radians(112.0)     # your chosen effective contact angle
+        return (r1 * angle)*2
+
+    def P_coolant(self, prof: SectionProfiles) -> np.ndarray:
+        """Compute coolant-wetted perimeter [m]."""
+        r = prof.centerline[:, 1]
+        r1 = r * np.sin(prof.theta/2)
+        angle = np.radians(112.0)
+        return ((r1 - prof.t_wall) * angle)*2
+    
