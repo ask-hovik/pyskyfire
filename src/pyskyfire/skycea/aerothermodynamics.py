@@ -391,6 +391,7 @@ class Aerothermodynamics:
         self.mu_map    = np.empty(shape)
         self.k_map     = np.empty(shape)
         self.Pr_map    = np.empty(shape)
+        self.mw_map    = np.empty(shape)
         self.X_map     = []              # still per-x dict (equilibrium)
         self.T_grid    = np.empty(shape) # per-row temperature grid
 
@@ -435,6 +436,7 @@ class Aerothermodynamics:
             self.mu_map[i, 0]    = getattr(R, "visc", None)
             self.k_map[i, 0]     = getattr(R, "cond", None)
             self.Pr_map[i, 0]    = getattr(R, "pran", None)
+            self.mw_map[i, 0]    = getattr(R, "mw", None)
 
             # ---- build this row’s temperature grid: T_eq(x) → 250 K ----
             T_eq_i = float(self.T_map[i, 0])   # equilibrium T at this x
@@ -465,6 +467,7 @@ class Aerothermodynamics:
                 self.mu_map[i, j]    = getattr(Rt, "visc", None)
                 self.k_map[i, j]     = getattr(Rt, "cond", None)
                 self.Pr_map[i, j]    = getattr(Rt, "pran", None)
+                self.mw_map[i, j]    = getattr(Rt, "mw", None)
 
         print(f'\rPrecomputing map: 100%')
 
@@ -747,9 +750,15 @@ class Aerothermodynamics:
     def get_Pr(self, x: float, T: float | None = None, h: float | None = None) -> float:
         return self._get_prop(x=x, T=T, h=h, map_attr="Pr_map", res_attr="pran")
 
+    def get_molecular_weight(self, x: float, T: float | None = None, h: float | None = None) -> float:
+        """Return mean molecular weight of products [kg/kmol]."""
+        return self._get_prop(x=x, T=T, h=h, map_attr="mw_map", res_attr="mw")
+
     def get_X(self, x: float) -> dict[str, float]:
         """Interpolated mole-fraction dict at position x."""
         return self._interp_X_dict(x)
+
+
 
 
 # Map "public" property keys -> (CEA result attribute, unit_scale)

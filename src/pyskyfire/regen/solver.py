@@ -48,7 +48,7 @@ class HeatExchangerPhysics:
         self.circuit_index = circuit_index
         self.counter = 0
 
-    def dQ_hot_dx(self, x, T_hw):
+    def hot_side_coefficients(self, x, T_hw):
         """Hot-side heat input per unit length using Bartz-style correlation.
 
         Parameters
@@ -105,45 +105,24 @@ class HeatExchangerPhysics:
         H_aw = H_g + 0.5*Pr_gr**(1/3)*(M_g**2*a_g**2)
 
         h_g = h_gr/Cp_gr # enthalpy driven heat transfer definition
-        dQ_hw_dx = h_g*dA_dx_hot*(H_aw - H_hw)
 
-        return dQ_hw_dx
-    
-    def dQ_cond_dx(self, x, T_hw, T_cw):
-        """Conduction heat flow through the wall stack per unit length.
+                # Existing enthalpy-based coefficient used by the solver
 
-        Parameters
-        ----------
-        x : float
-            Axial coordinate [m].
-        T_hw : float
-            Hot-side wall temperature [K].
-        T_cw : float
-            Coolant-side wall temperature [K].
+        # Corresponding heat flux
+        qpp_hot = h_g * (H_aw - H_hw)   # [W m^-2]
 
-        Returns
-        -------
-        float
-            ``dQ_cond/dx`` [W m⁻¹].
+        # Standard effective temperature-based coefficient for plotting/reporting
+        h_hot = qpp_hot / (T_aw - T_hw)
 
-        Notes
-        -----
-        Treats each wall as a 1-D resistor in series:
-        :math:`R_j = L_j / (k_j A)` with ``A = dA_dx_hot`` per unit length.
-        """
-                
-        # 1) get the local hot‐side area per unit length
-        dA_dx_hot = self.thrust_chamber.cooling_circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
+        return {
+            "h_hot": h_hot,
+            "h_g": h_g,
+            "h_gr": h_gr,
+            "T_aw": T_aw,
+            "qpp_hot": qpp_hot,
+        }
 
-        # 2) sum each wall’s thermal resistance (R = L/(k·A)) per unit length
-        walls = self.thrust_chamber.cooling_circuits[self.circuit_index].walls
-        R_tot = sum(wall.thickness(x) / (wall.material.get_k((T_hw + T_cw)/2) * dA_dx_hot) for wall in walls)
-        dQ_cond_dx = (T_hw - T_cw) / R_tot
-
-        # 3) conduction per unit length
-        return dQ_cond_dx
-
-    def dQ_cold_dx(self, x, T_cw, T_cool):
+    def cold_side_coefficients(self, x, T_cw, T_cool):
         """Coolant-side heat removal per unit length.
 
         Parameters
@@ -183,6 +162,57 @@ class HeatExchangerPhysics:
         h_cold_corr = self.thrust_chamber.h_cold_corr
         h_c = physics.h_coolant_colburn(k_cf, D_c, Cp_cr, mu_cf, mdot_c_single_channel, A_channel, phi_curv=1)*h_cold_corr 
         
+
+        return {
+            "h_cold": h_c,
+            "phi_curv": phi_curv,
+            "Re_c": Re_c,
+        }
+
+    def dQ_hot_dx(self, x, T_hw):
+
+        coeffs = self.hot_side_coefficients(x, T_hw)
+        dA_dx_hot = self.thrust_chamber.cooling_circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
+        dQ_hw_dx = coeffs["qpp_hot"] * dA_dx_hot
+        return dQ_hw_dx
+    
+    def dQ_cond_dx(self, x, T_hw, T_cw):
+        """Conduction heat flow through the wall stack per unit length.
+
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+        T_hw : float
+            Hot-side wall temperature [K].
+        T_cw : float
+            Coolant-side wall temperature [K].
+
+        Returns
+        -------
+        float
+            ``dQ_cond/dx`` [W m⁻¹].
+
+        Notes
+        -----
+        Treats each wall as a 1-D resistor in series:
+        :math:`R_j = L_j / (k_j A)` with ``A = dA_dx_hot`` per unit length.
+        """
+                
+        # 1) get the local hot‐side area per unit length
+        dA_dx_hot = self.thrust_chamber.cooling_circuits[self.circuit_index].dA_dx_thermal_exhaust(x)
+
+        # 2) sum each wall’s thermal resistance (R = L/(k·A)) per unit length
+        walls = self.thrust_chamber.cooling_circuits[self.circuit_index].walls
+        R_tot = sum(wall.thickness(x) / (wall.material.get_k((T_hw + T_cw)/2) * dA_dx_hot) for wall in walls)
+        dQ_cond_dx = (T_hw - T_cw) / R_tot
+
+        # 3) conduction per unit length
+        return dQ_cond_dx
+
+    def dQ_cold_dx(self, x, T_cw, T_cool):
+        coeffs = self.cold_side_coefficients(x, T_cw, T_cool)
+        h_c = coeffs["h_cold"]
         
         T_rep = 0.5*(T_cw + T_cool)  # or use T_cw, depends on preference
         R_cool_per_len = self.thrust_chamber.cooling_circuits[self.circuit_index].R_coolant_per_len(x, h_c=h_c, T_wall_rep=T_rep)
@@ -520,18 +550,36 @@ def solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, cir
     # overwrite the old (bad) static-pressure array
     p_static_arr = p_static_corrected
 
+    # 1. Compute hot- and cold-side heat transfer coefficients at each node
+    h_hot_arr = np.zeros(n_nodes)            # effective hot-side h [W/m²/K]
+    h_hot_enthalpy_arr = np.zeros(n_nodes)   # enthalpy-based hot-side coeff [kg/m²/s]
+    h_cold_arr = np.zeros(n_nodes)           # coolant-side h [W/m²/K]
+    T_aw_hot_arr = np.zeros(n_nodes)         # adiabatic wall temperature [K]
+    for i, x_i in enumerate(x_domain):
+        hot = physics_helper.hot_side_coefficients(x_i, T_hw_arr[i])
+        cold = physics_helper.cold_side_coefficients(x_i, T_cw_arr[i], T_cool_arr[i])
+
+        h_hot_arr[i] = hot["h_hot"]
+        h_hot_enthalpy_arr[i] = hot["h_g"]
+        h_cold_arr[i] = cold["h_cold"]
+        T_aw_hot_arr[i] = hot["T_aw"]
+
     global_R, final_R = analyse_residuals(residual_log, n_nodes)
     #print(f"TP was acessed {physics_helper.counter} times")
     cooling_data = {
-        "x"            : x_domain,
-        "T"            : T_full,
-        "T_static"     : T_cool_arr,
-        "T_stagnation" : T_stagnation_arr,
-        "p_static"     : p_static_arr,
-        "p_stagnation" : p_stagnation_arr,
-        "dQ_dA"        : dQ_dA_arr,
-        "velocity"     : velocity_arr,
-        "residuals"    : (global_R, final_R)
+        "x"             : x_domain,
+        "T"             : T_full,
+        "T_static"      : T_cool_arr,
+        "T_stagnation"  : T_stagnation_arr,
+        "p_static"      : p_static_arr,
+        "p_stagnation"  : p_stagnation_arr,
+        "dQ_dA"         : dQ_dA_arr,
+        "velocity"      : velocity_arr,
+        "h_hot"         : h_hot_arr,
+        "h_hot_enthalpy": h_hot_enthalpy_arr,
+        "h_cold"        : h_cold_arr,
+        "T_aw_hot"      : T_aw_hot_arr,
+        "residuals"     : (global_R, final_R)
     }
 
     return cooling_data
