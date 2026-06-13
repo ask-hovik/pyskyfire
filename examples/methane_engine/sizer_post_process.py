@@ -11,7 +11,7 @@ stations = res.stations
 signals = res.signals
 residuals = res.residuals
 params = res.input_params
-cooling_data = [res.block_results["regen_throat_pass"], res.block_results["ox_regen"], ]
+cooling_data = [res.block_results["regen_throat_pass"], res.block_results["ox_regen"], res.block_results["regen_cocurrent_nozzle_pass"], res.block_results["regen_countercurrent_nozzle_pass"]]
 thrust_chamber = params["thrust_chamber"]
 
 
@@ -68,7 +68,7 @@ fu_stations = [
 
 ox_stations = [
     "ox_engine_in", "ox_pump_in", "ox_pump_out",
-    "ox_regen_in", "ox_regen_out", "ox_turbine_in",
+    "ox_regen_in", "ox_regen_1_in", "ox_regen_1_out", "ox_regen_out", "ox_turbine_in",
     "ox_turbine_out", "ox_injector_plenum", "ox_chamber_in"
 ]
 

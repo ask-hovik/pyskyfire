@@ -3,9 +3,13 @@ from __future__ import annotations
 import numpy as np
 from math import gcd
 from functools import reduce
+from dataclasses import dataclass
+from typing import Optional
 
 from pyskyfire.regen.cross_section import SectionProfiles
 from pyskyfire.regen.channel_placement import SurfacePlacement, InternalPlacement
+from pyskyfire.skycea.coolant_transport import CoolantTransport
+
 
 class Wall:
     """Single structural wall or coating layer in a thrust chamber.
@@ -51,6 +55,47 @@ class Wall:
         return float(self._thickness)
 
 
+@dataclass
+class FilmCooling:
+    """
+    User-facing film cooling inputs attached to a ThrustChamber.
+
+    Parameters
+    ----------
+    x_fraction : float
+        Signed axial fraction in [-1, 1], where:
+            -1 -> chamber start
+             0 -> throat
+            +1 -> nozzle exit
+        This is resolved to ``x`` by ``ThrustChamber``.
+    coolant_mass_flow_rate : float
+        Total coolant mass flow injected into the film [kg/s].
+    film_injection_perimeter : float
+        Wetted injection perimeter [m].
+    liquid_absorptivity : float
+        Liquid-film absorptivity for radiation [0..1].
+    mole_fraction_H2O : float
+        User-supplied mole fraction of H2O used by the current Grisson
+        gas-radiation submodel.
+    mole_fraction_CO2 : float
+        User-supplied mole fraction of CO2 used by the current Grisson
+        gas-radiation submodel.
+    turbulence_intensity : float, optional
+        Free-stream turbulence intensity used by Grisson's correlations.
+    x : float | None, optional
+        Absolute axial injection location [m]. This should be populated by
+        ``ThrustChamber`` after it resolves ``x_fraction``.
+    """
+    coolant_transport: CoolantTransport
+    x_fraction: float
+    coolant_mass_flow_rate: float
+    film_injection_perimeter: float
+    liquid_absorptivity: float
+    mole_fraction_H2O: float
+    mole_fraction_CO2: float
+    turbulence_intensity: float = 0.0
+    x: Optional[float] = None
+
 class CoolingCircuit:
     """
     Simulation-only representation of a cooling circuit.
@@ -66,7 +111,7 @@ class CoolingCircuit:
         name,
         contour,
         cross_section,             # ChannelSection
-        span: tuple[float, float],
+        span: list[float],
         placement,                 # ChannelPlacement-like (sim uses only counts/lanes if needed)
         channel_height,            # callable x -> h
         walls,                     # list of wall objects with .thickness(x)
@@ -98,6 +143,7 @@ class CoolingCircuit:
         self.x_domain = None
         self.channel_heights = None
         self.channel_width = None
+
 
     # ---------------- basic getters ----------------
     def roughness(self, x):
@@ -337,6 +383,7 @@ class ThrustChamber:
         h_cold_corr: float = 1.0,
         compute_gas: bool = True,
         enable_fin: bool = True,
+        film_cooling: FilmCooling | None = None,
     ):
         self.contour = contour
         self.cooling_circuits = cooling_circuits
@@ -368,6 +415,11 @@ class ThrustChamber:
         # --- hot-gas side (optional/on-demand) ---
         if compute_gas and hasattr(self.combustion_transport, "compute_aerothermodynamics"):
             self.combustion_transport.compute_aerothermodynamics(self.contour)
+
+
+        self.film_cooling = film_cooling
+        if self.film_cooling is not None:
+            self.film_cooling.x = self._resolve_signed_fraction_to_x(self.film_cooling.x_fraction)
 
     # ------------------------------------------------------------------
     # Domain → centerline → section scalars (sim-only)
@@ -489,6 +541,18 @@ class ThrustChamber:
                 #total_channels += circuit.placement.n_channel_positions
                 total_channels += circuit.placement.channel_count()
         return total_channels
+
+    def _resolve_signed_fraction_to_x(self, f: float) -> float:
+        if not (-1.0 <= f <= 1.0):
+            raise ValueError("film_cooling.x_fraction must be between -1 and 1")
+
+        x_start = float(self.contour.xs[0])
+        x_throat = float(self.contour.x_t)
+        x_end = float(self.contour.xs[-1])
+
+        if f < 0.0:
+            return x_throat + f * (x_throat - x_start)
+        return x_throat + f * (x_end - x_throat)
 
 
 

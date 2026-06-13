@@ -587,7 +587,7 @@ class TurbineBlock(FluidBlock):
 # ---------------------------------------------------------------------------
 #  SIMPLE DUCT
 # ---------------------------------------------------------------------------
-class SimpleDuctBlock(FluidBlock):
+'''class SimpleDuctBlock(FluidBlock):
     """Homogeneous duct loss model with fixed efficiency.
 
     Applies a fixed pressure efficiency :math:`\\eta` via
@@ -673,6 +673,82 @@ class SimpleDuctBlock(FluidBlock):
         st_o = Station(p = p_out,
                        T = T_in,                 # no heat pick-up modelled
                        mdot = mdot)
+
+        return {self.st_out: st_o}, {self.dp_key: dp}
+
+from CoolProp.CoolProp import PropsSI'''
+
+class SimpleDuctBlock(FluidBlock):
+    """Adiabatic homogeneous duct loss model with fixed pressure ratio.
+
+    Applies a fixed pressure ratio via
+
+        p_out = pressure_ratio * p_in
+
+    and computes the outlet temperature from constant specific enthalpy:
+
+        h_out = h_in
+
+    This is a better approximation for an adiabatic low-Mach duct or
+    concentrated pressure-loss element than holding temperature constant.
+
+    Notes
+    -----
+    This is not an isentropic expansion. Entropy increases. For real fluids,
+    especially near saturation or the critical point, T_out may differ strongly
+    from T_in.
+    """
+
+    def __init__(self,
+                 name: str,
+                 st_in: str,
+                 st_out: str,
+                 pressure_ratio: float,
+                 medium: str):
+
+        if not (0.0 < pressure_ratio <= 1.0):
+            raise ValueError("pressure_ratio must be 0 < pressure_ratio ≤ 1")
+
+        self.name = name
+        self.st_in = st_in
+        self.st_out = st_out
+        self.pressure_ratio = pressure_ratio
+
+        super().__init__(medium)
+
+        self.station_inputs = [st_in]
+        self.station_outputs = [st_out]
+        self.signal_inputs = []
+
+        self.dp_key = f"dp_{name}"
+        self.signal_outputs = [self.dp_key]
+
+    def compute(self,
+                stations: Dict[str, "Station"],
+                signals: Dict[str, float]
+                ) -> tuple[Dict[str, "Station"], Dict[str, float]]:
+
+        st_i = stations[self.st_in]
+
+        p_in = st_i.p
+        T_in = st_i.T
+        mdot = st_i.mdot
+
+        p_out = self.pressure_ratio * p_in
+        dp = p_in - p_out
+
+        # Inlet specific enthalpy [J/kg]
+        h_in = CP.PropsSI("H", "P", p_in, "T", T_in, self.medium)
+
+        # Adiabatic low-speed duct / throttling approximation:
+        # h_out = h_in
+        T_out = CP.PropsSI("T", "P", p_out, "H", h_in, self.medium)
+
+        st_o = Station(
+            p=p_out,
+            T=T_out,
+            mdot=mdot,
+        )
 
         return {self.st_out: st_o}, {self.dp_key: dp}
 

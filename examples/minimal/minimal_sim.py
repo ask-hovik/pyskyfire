@@ -134,9 +134,9 @@ thrust_chamber = psf.regen.ThrustChamber(contour=contour,
 # the regenerative cooling of this chamber at steady state during a firing. 
 
 # We can plot the thrust chamber cooling channels by using the following function: 
-"""plot_3d, viewer = psf.viz.make_engine_3d(thrust_chamber, )
+plot_3d, viewer = psf.viz.make_engine_3d(thrust_chamber, )
 plot_3d.show()
-del plot_3d """
+del plot_3d 
 
 # If we imagine that all the fuel that are flowing through the cooling channels end up in the chamber
 # then the mass flow is the same between the two, and we can pull the fuel mass flow from the combustion object. 

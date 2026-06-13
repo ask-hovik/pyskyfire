@@ -59,6 +59,7 @@ Thumbs.db
 # VSCode / IDE settings (if you don't want to track them)
 .vscode/
 .idea/
+pyrightconfig.json
 
 # ------------------------------------------------------------------------------
 # OUTPUT FILES
@@ -103,7 +104,12 @@ cond.html
 engine_cooling_channels.step
 plot_by_circuit.html
 plot.html
-pyrightconfig.json
+film_example.py
+grisson_film_pyskyfire.py
+grisson_pseudo.py
+test_claudeAttempt2.py
+uv.lock
+claudeAttempt2.py
 /trash
 
 
