@@ -103,6 +103,8 @@ cond.html
 engine_cooling_channels.step
 plot_by_circuit.html
 plot.html
+pyrightconfig.json
+/trash
 
 
 # If you don't want to track your dill folder or any generated data, uncomment:
