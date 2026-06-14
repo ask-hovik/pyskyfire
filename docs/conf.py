@@ -13,6 +13,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.graphviz",
     "sphinx.ext.inheritance_diagram",
+    "sphinx.ext.mathjax",
     # "sphinx.ext.autodoc.typehints",  # ← remove (or keep and set autodoc_typehints="none")
 ]
 
