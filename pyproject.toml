@@ -9,6 +9,7 @@ description = "A Python library for rocket engine simulation and design."
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "Ask Haugerud Hovik", email = "ask.hovik@gmail.com" }]
+
 dependencies = [
   "numpy>=2.3",
   "scipy>=1.16",
