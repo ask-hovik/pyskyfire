@@ -26,7 +26,7 @@ Functions
 
    pyskyfire.regen.solver.analyse_residuals
    pyskyfire.regen.solver.short_warning
-   pyskyfire.regen.solver.solve_heat_exchanger_euler
+   pyskyfire.regen.solver.solve_heat_exchanger
    pyskyfire.regen.solver.steady_heating_analysis
 
 
@@ -77,10 +77,10 @@ Module Contents
 
 .. py:function:: short_warning(message, category, filename, lineno, file=None, line=None)
 
-.. py:function:: solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, circuit_index, output, log_residuals=True)
+.. py:function:: solve_heat_exchanger(thrust_chamber, boundary_conditions, n_nodes, circuit_index, output, log_residuals=True)
 
    
-   Solve 1-D steady heating with a marching Euler scheme.
+   Solve 1-D steady heating with a marching scheme.
 
 
    :Parameters:
@@ -165,7 +165,7 @@ Module Contents
    :Returns:
 
        :class:`python:dict`
-           See :func:`solve_heat_exchanger_euler` for keys.
+           See :func:`solve_heat_exchanger` for keys.
 
 
 

@@ -207,7 +207,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../explanations/capabilities.html">Pyskyfire Capabilities</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../explanations/package-structure.html">Pyskyfire Package Structure</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../explanations/regenerative-heat-transfer.html">Regenerative Cooling Heat Transfer in Pyskyfire</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanations/regenerative-cooling-explanation.html">Regenerative Cooling</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -480,8 +480,8 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.regen.solver.short_warning" title="pyskyfire.regen.solver.short_warning"><code class="xref py py-obj docutils literal notranslate"><span class="pre">short_warning</span></code></a>(message, category, filename, lineno[, ...])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.regen.solver.solve_heat_exchanger_euler" title="pyskyfire.regen.solver.solve_heat_exchanger_euler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">solve_heat_exchanger_euler</span></code></a>(thrust_chamber, ...[, ...])</p></td>
-<td><p>Solve 1-D steady heating with a marching Euler scheme.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.regen.solver.solve_heat_exchanger" title="pyskyfire.regen.solver.solve_heat_exchanger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">solve_heat_exchanger</span></code></a>(thrust_chamber, ...[, log_residuals])</p></td>
+<td><p>Solve 1-D steady heating with a marching scheme.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.regen.solver.steady_heating_analysis" title="pyskyfire.regen.solver.steady_heating_analysis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">steady_heating_analysis</span></code></a>(thrust_chamber, ...[, ...])</p></td>
 <td><p>Run the steady heating analysis.</p></td>
@@ -526,9 +526,9 @@ If <code class="docutils literal notranslate"><span class="pre">None</span></cod
 <dd></dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="pyskyfire.regen.solver.solve_heat_exchanger_euler">
-<span class="sig-prename descclassname"><span class="pre">pyskyfire.regen.solver.</span></span><span class="sig-name descname"><span class="pre">solve_heat_exchanger_euler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thrust_chamber</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary_conditions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circuit_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_residuals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyskyfire.regen.solver.solve_heat_exchanger_euler" title="Link to this definition">¶</a></dt>
-<dd><p>Solve 1-D steady heating with a marching Euler scheme.</p>
+<dt class="sig sig-object py" id="pyskyfire.regen.solver.solve_heat_exchanger">
+<span class="sig-prename descclassname"><span class="pre">pyskyfire.regen.solver.</span></span><span class="sig-name descname"><span class="pre">solve_heat_exchanger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thrust_chamber</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary_conditions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circuit_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_residuals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyskyfire.regen.solver.solve_heat_exchanger" title="Link to this definition">¶</a></dt>
+<dd><p>Solve 1-D steady heating with a marching scheme.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
@@ -590,7 +590,7 @@ If <code class="docutils literal notranslate"><span class="pre">None</span></cod
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">dict</span></code></a></dt><dd><p>See <a class="reference internal" href="#pyskyfire.regen.solver.solve_heat_exchanger_euler" title="pyskyfire.regen.solver.solve_heat_exchanger_euler"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_heat_exchanger_euler()</span></code></a> for keys.</p>
+<dt><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">dict</span></code></a></dt><dd><p>See <a class="reference internal" href="#pyskyfire.regen.solver.solve_heat_exchanger" title="pyskyfire.regen.solver.solve_heat_exchanger"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_heat_exchanger()</span></code></a> for keys.</p>
 </dd>
 </dl>
 </dd>
@@ -661,7 +661,7 @@ If <code class="docutils literal notranslate"><span class="pre">None</span></cod
 <li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
 <li><a class="reference internal" href="#pyskyfire.regen.solver.analyse_residuals"><code class="docutils literal notranslate"><span class="pre">analyse_residuals()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.regen.solver.short_warning"><code class="docutils literal notranslate"><span class="pre">short_warning()</span></code></a></li>
-<li><a class="reference internal" href="#pyskyfire.regen.solver.solve_heat_exchanger_euler"><code class="docutils literal notranslate"><span class="pre">solve_heat_exchanger_euler()</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.regen.solver.solve_heat_exchanger"><code class="docutils literal notranslate"><span class="pre">solve_heat_exchanger()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.regen.solver.steady_heating_analysis"><code class="docutils literal notranslate"><span class="pre">steady_heating_analysis()</span></code></a></li>
 </ul>
 </li>
@@ -680,6 +680,7 @@ If <code class="docutils literal notranslate"><span class="pre">None</span></cod
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     </body>
 </html>
