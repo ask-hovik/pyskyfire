@@ -408,6 +408,80 @@ pyskyfire.skycea.aerothermodynamics.Aerothermodynamics
           !! processed by numpydoc !!
 
 
+   .. py:method:: from_F_pe_Lstar(fu, ox, MR, p_c, F, p_e, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, npts=15)
+      :classmethod:
+
+
+      
+      Construct from thrust, area ratio, and L* at a given chamber pressure.
+
+      This helper solves a CEA rocket problem at the specified design point and
+      assembles the ``optimum`` dict used to initialize :class:`Aerothermodynamics`.
+
+      :Parameters:
+
+          **fu** : :obj:`Any`
+              Fuel mixture descriptor (must expose ``propellants`` and ``fractions`` and
+              be consumable by ``CEA_Wrap.Fuel``).
+
+          **ox** : :obj:`Any`
+              Oxidizer mixture descriptor (same structural expectations as ``fu``).
+
+          **MR** : :class:`python:float`
+              Mixture ratio ``m_ox / m_fu`` [-].
+
+          **p_c** : :class:`python:float`
+              Chamber pressure [Pa].
+
+          **F** : :class:`python:float`
+              Target thrust [N].
+
+          **eps** : :class:`python:float`
+              Nozzle area ratio ``A_e / A_t`` [-].
+
+          **L_star** : :class:`python:float`
+              Characteristic chamber length [m].
+
+          **T_fu_in** : :class:`python:float`, :obj:`default` 298.15
+              Fuel inlet temperature [K].
+
+          **T_ox_in** : :class:`python:float`, :obj:`default` 298.15
+              Oxidizer inlet temperature [K].
+
+          **p_amb** : :class:`python:float`, :obj:`default` 1.013e5
+              Ambient/static pressure for CF/Isp_amb calculations [Pa].
+
+          **npts** : :class:`python:int`, :obj:`default` 15
+              Number of axial stations to precompute along the contour.
+
+
+
+      :Returns:
+
+          :obj:`Aerothermodynamics`
+              Initialized instance with populated design-point performance and all fields
+              necessary for :meth:`compute_aerothermodynamics`.
+
+
+
+
+
+
+
+
+      .. rubric:: Notes
+
+      - The CEA call assumes perfect expansion for ``Isp_vac`` and uses standard
+      thrust-coefficient relations to compute ``Isp_amb`` and ``Isp_SL``.
+      - Areas and chamber volume are derived from ``c_star``, mass flow, ``L_star``,
+      and mixture density at chamber conditions.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: get_H(x: float, T: float | None = None, h: float | None = None) -> float
 
 
@@ -457,6 +531,30 @@ pyskyfire.skycea.aerothermodynamics.Aerothermodynamics
 
 
    .. py:method:: get_k(x: float, T: float | None = None, h: float | None = None) -> float
+
+
+   .. py:method:: get_molecular_weight(x: float, T: float | None = None, h: float | None = None) -> float
+
+      
+      Return mean molecular weight of products [kg/kmol].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
 
 
    .. py:method:: get_mu(x: float, T: float | None = None, h: float | None = None) -> float

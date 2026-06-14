@@ -23,6 +23,7 @@ Classes
    /autoapi/pyskyfire/viz/plot_regen/PlotCoolantPressure
    /autoapi/pyskyfire/viz/plot_regen/PlotCoolantTemperature
    /autoapi/pyskyfire/viz/plot_regen/PlotHeatFlux
+   /autoapi/pyskyfire/viz/plot_regen/PlotHeatTransferCoefficient
    /autoapi/pyskyfire/viz/plot_regen/PlotHydraulicDiameter
    /autoapi/pyskyfire/viz/plot_regen/PlotRadiusOfCurvature
    /autoapi/pyskyfire/viz/plot_regen/PlotTemperatureProfile
@@ -39,6 +40,7 @@ Classes
    pyskyfire.viz.plot_regen.PlotCoolantPressure
    pyskyfire.viz.plot_regen.PlotCoolantTemperature
    pyskyfire.viz.plot_regen.PlotHeatFlux
+   pyskyfire.viz.plot_regen.PlotHeatTransferCoefficient
    pyskyfire.viz.plot_regen.PlotHydraulicDiameter
    pyskyfire.viz.plot_regen.PlotRadiusOfCurvature
    pyskyfire.viz.plot_regen.PlotTemperatureProfile

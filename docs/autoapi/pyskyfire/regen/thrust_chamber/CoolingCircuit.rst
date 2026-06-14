@@ -1,75 +1,10 @@
 pyskyfire.regen.thrust_chamber.CoolingCircuit
 =============================================
 
-.. py:class:: pyskyfire.regen.thrust_chamber.CoolingCircuit(name, contour, cross_section, span, placement, channel_height, coolant_transport, blockage_ratio=None)
+.. py:class:: pyskyfire.regen.thrust_chamber.CoolingCircuit(name, contour, cross_section, span: list[float], placement, channel_height, walls, coolant_transport, roughness)
 
    
-   Representation of a cooling circuit following the chamber contour.
-
-   Each circuit defines the geometry of one group of coolant channels,
-   including their cross-sectional shape, span, and placement relative to
-   the hot wall.
-
-   :Parameters:
-
-       **name** : :class:`python:str`
-           Identifier of the circuit.
-
-       **contour** : :obj:`Contour`
-           Hot-gas wall geometry defining the outer boundary.
-
-       **cross_section** : :obj:`ChannelSection`
-           Cross-sectional geometry model providing A, Dh, and perimeters.
-
-       **span** : :class:`python:tuple`\[:class:`python:float`, :class:`python:float`]
-           Normalized start and end of circuit (-1 = chamber inlet, +1 = nozzle exit).
-
-       **placement** : :obj:`ChannelPlacement`
-           Strategy describing how channel centerlines are positioned.
-
-       **channel_height** : :func:`python:callable`
-           Function returning the local channel height [m].
-
-       **coolant_transport** : :obj:`object`
-           Object providing coolant thermophysical properties.
-
-       **blockage_ratio** : :class:`python:float` or :term:`numpy:array_like`, :obj:`optional`
-           Fraction of the sector blocked by solid wall or rib.
-
-   :Attributes:
-
-       **name** : :class:`python:str`
-           Circuit name.
-
-       **contour** : :obj:`Contour`
-           Reference hot-gas contour.
-
-       **cross_section** : :obj:`ChannelSection`
-           Shape model used for thermal and hydraulic quantities.
-
-       **placement** : :obj:`ChannelPlacement`
-           Placement rule describing angular and radial positioning.
-
-       **channel_height** : :func:`python:callable`
-           Function returning height as a function of x.
-
-       **coolant_transport** : :obj:`object`
-           Provides coolant properties (k, μ, Cp, ρ, etc.).
-
-       **span** : (:class:`python:float`, :class:`python:float`)
-           Normalized start/end bounds.
-
-       **direction** : :class:`python:int`
-           +1 if flow is forward (increasing x), −1 if reversed.
-
-       **A_coolant_vals, Dh_coolant_vals** : :obj:`ndarray <numpy.ndarray>`
-           Precomputed local coolant area and hydraulic diameter.
-
-       **dA_dx_thermal_exhaust_vals, dA_dx_thermal_coolant_vals** : :obj:`ndarray <numpy.ndarray>`
-           Surface-area differentials on hot and cold sides.
-
-       **radius_of_curvature_vals** : :obj:`ndarray <numpy.ndarray>`
-           Local curvature radius for each axial node.
+   Simulation-only representation of a cooling circuit.
 
 
 
@@ -79,19 +14,14 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
 
 
 
-   .. seealso::
 
-       
-       :obj:`CoolingCircuitGroup`
-           Groups multiple cooling circuits.
-       :obj:`SectionProfiles`
-           Bundles local geometry inputs for cross-section methods.
-       
-       
+
+
+
    .. rubric:: Notes
 
-   The circuit precomputes local geometric properties for fast interpolation
-   during steady-state or transient simulations.
+   - No OCC / geometry generation here.
+   - Does NOT compute true local frames; those are a visualization concern.
 
 
 
@@ -104,47 +34,13 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
    .. py:method:: Dh_coolant(x)
 
 
-   .. py:method:: _prof(centerline, local_coords)
+   .. py:method:: R_coolant_per_len(x: float, h_c: float, T_wall_rep: float) -> float
 
       
-      Assemble a `SectionProfiles` object for a given centerline.
+      Effective coolant-side thermal resistance per unit *axial length* [K m / W].
 
-
-      :Parameters:
-
-          **centerline** : :obj:`ndarray <numpy.ndarray>`, :obj:`shape` (:obj:`N`, 3)
-              Channel centerline coordinates (x, r, θ).
-
-          **local_coords** : :obj:`ndarray <numpy.ndarray>`, :obj:`shape` (:obj:`N`, 3, 3)
-              Local coordinate frames.
-
-
-
-      :Returns:
-
-          :obj:`SectionProfiles`
-              Ready-to-use profile bundle for cross-section routines.
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: compute_geometry()
-
-      
-      Generate full 3D point-cloud representations for all channel centerlines.
-
-      Each point cloud corresponds to one physical cooling channel.
+      Cross-section returns resistance per unit channel length (s). Convert to per-x using:
+          R_x = R_s / (ds/dx)
 
 
 
@@ -164,12 +60,11 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
           !! processed by numpydoc !!
 
 
-   .. py:method:: compute_single_centerline()
+   .. py:method:: _prof(centerline: numpy.ndarray) -> pyskyfire.regen.cross_section.SectionProfiles
 
       
-      Generate OCC wire objects for each station along the first centerline.
+      Build a SectionProfiles with trivial frames (analytics don't use them).
 
-      Intended for CAD or meshing visualization.
 
 
 
@@ -192,16 +87,12 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
    .. py:method:: compute_volume()
 
       
-      Compute total circuit volume by integrating local area along its centerline.
+      Total circuit volume (all physical lanes) via ∫ A ds, scaled by lane count.
 
 
 
 
 
-      :Returns:
-
-          :class:`python:float`
-              Total coolant volume [m³].
 
 
 
@@ -226,16 +117,20 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
    .. py:method:: dA_dx_thermal_exhaust(x)
 
 
+   .. py:method:: ds_dx(x)
+
+
    .. py:method:: finalize()
+
+
+   .. py:method:: local_sector_angle(x)
 
 
    .. py:method:: precompute_thermal_properties()
 
       
-      Precompute all cross-section-dependent thermal geometry arrays.
+      Precompute A, Dh, and thermal perimeters along a representative centerline.
 
-      Calculates effective surface-area derivatives, hydraulic diameter, and
-      radius of curvature for interpolation during simulation.
 
 
 
@@ -258,10 +153,14 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
    .. py:method:: radius_of_curvature(x)
 
 
-   .. py:method:: set_blockage_ratio(blockage_ratio)
+   .. py:method:: roughness(x)
+
+
+   .. py:method:: section_profiles_at(x: float) -> pyskyfire.regen.cross_section.SectionProfiles
 
       
-      blockage_ratio can be scalar or length-N array over x-domain.
+      Single-station SectionProfiles for use in local closures (rib/fin, LUTs, etc.).
+      Returns arrays of length 1.
 
 
 
@@ -284,18 +183,43 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
 
    .. py:method:: set_centerline(centerline_list)
 
+      
+      Provide one or more centerlines as arrays of shape (N, 3): [x, r, theta].
+      For simulation we use the first as the representative path.
 
-   .. py:method:: set_centerline_test(centerline_list)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
 
 
    .. py:method:: set_channel_height(heights)
 
 
+   .. py:method:: set_channel_local_sector(local_sectors)
+
+
    .. py:method:: set_channel_width(widths_rad)
 
 
-   .. py:method:: set_t_wall_tot(t_wall_tot)
-
-
    .. py:method:: set_x_domain(x_domain)
+
+
+   .. py:method:: total_thickness(x)
+
+
+   .. py:method:: wedge_angle(x)
 

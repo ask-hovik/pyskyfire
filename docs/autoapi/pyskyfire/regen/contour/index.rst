@@ -24,6 +24,21 @@ pyskyfire.regen.contour
        !! processed by numpydoc !!
 
 
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/regen/contour/Contour
+   /autoapi/pyskyfire/regen/contour/ContourToroidalAerospike
+
+.. autoapisummary::
+
+   pyskyfire.regen.contour.Contour
+   pyskyfire.regen.contour.ContourToroidalAerospike
+
+
 Functions
 ---------
 

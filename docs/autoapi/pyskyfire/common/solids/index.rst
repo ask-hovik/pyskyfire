@@ -13,13 +13,20 @@ Attributes
    pyskyfire.common.solids.GRCop42
    pyskyfire.common.solids.Inconel625
    pyskyfire.common.solids.Inconel718
+   pyskyfire.common.solids.L0
    pyskyfire.common.solids.StainlessSteel304
    pyskyfire.common.solids.T625
    pyskyfire.common.solids.T625_C
    pyskyfire.common.solids.T718_hi
    pyskyfire.common.solids.TEOS
    pyskyfire.common.solids.T_F
+   pyskyfire.common.solids.T_cold
+   pyskyfire.common.solids.T_hi
+   pyskyfire.common.solids.T_ref
+   pyskyfire.common.solids.YellowBrass_70_30
    pyskyfire.common.solids.ZirconiumOxide
+   pyskyfire.common.solids.alpha
+   pyskyfire.common.solids.copper
    pyskyfire.common.solids.k42_mono
    pyskyfire.common.solids.k625
    pyskyfire.common.solids.k625_W
@@ -29,8 +36,15 @@ Attributes
    pyskyfire.common.solids.k718_table
    pyskyfire.common.solids.k_304_piecewise
    pyskyfire.common.solids.k_BTUin
+   pyskyfire.common.solids.k_YellowBrass_70_30
+   pyskyfire.common.solids.k_cold
+   pyskyfire.common.solids.k_hi
+   pyskyfire.common.solids.k_yb_cold
+   pyskyfire.common.solids.k_yb_hi
    pyskyfire.common.solids.log10poly_304_cryo
    pyskyfire.common.solids.mills_304_highT
+   pyskyfire.common.solids.rho0
+   pyskyfire.common.solids.rho_T
 
 
 Classes
@@ -93,6 +107,10 @@ Module Contents
 
 .. py:data:: Inconel718
 
+.. py:data:: L0
+   :value: 2.44e-08
+
+
 .. py:data:: StainlessSteel304
 
 .. py:data:: T625
@@ -105,7 +123,23 @@ Module Contents
 
 .. py:data:: T_F
 
+.. py:data:: T_cold
+
+.. py:data:: T_hi
+
+.. py:data:: T_ref
+   :value: 293.15
+
+
+.. py:data:: YellowBrass_70_30
+
 .. py:data:: ZirconiumOxide
+
+.. py:data:: alpha
+   :value: 0.0015
+
+
+.. py:data:: copper
 
 .. py:data:: k42_mono
 
@@ -125,7 +159,23 @@ Module Contents
 
 .. py:data:: k_BTUin
 
+.. py:data:: k_YellowBrass_70_30
+
+.. py:data:: k_cold
+
+.. py:data:: k_hi
+
+.. py:data:: k_yb_cold
+
+.. py:data:: k_yb_hi
+
 .. py:data:: log10poly_304_cryo
 
 .. py:data:: mills_304_highT
+
+.. py:data:: rho0
+   :value: 6.2e-08
+
+
+.. py:data:: rho_T
 

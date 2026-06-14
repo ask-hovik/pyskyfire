@@ -15,7 +15,7 @@ Functions
 Module Contents
 ---------------
 
-.. py:function:: make_channel_height_fn(contour: pyskyfire.regen.thrust_chamber.Contour, region_fractions: Sequence[float], flat_heights: Sequence[float], pinch_factors: Sequence[float], transition_widths: Union[float, Sequence[float]], logistic_k: float = 10.0) -> Callable[[float], float]
+.. py:function:: make_channel_height_fn(contour: pyskyfire.regen.contour.Contour, region_fractions: Sequence[float], flat_heights: Sequence[float], pinch_factors: Sequence[float], transition_widths: Union[float, Sequence[float]], logistic_k: float = 10.0) -> Callable[[float], float]
 
    
    Construct a smooth channel-height profile along a thrust chamber contour.

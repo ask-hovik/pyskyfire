@@ -1,7 +1,7 @@
 pyskyfire.regen.cross_section.CrossSectionSquared
 =================================================
 
-.. py:class:: pyskyfire.regen.cross_section.CrossSectionSquared(n_points: int = 8)
+.. py:class:: pyskyfire.regen.cross_section.CrossSectionSquared(blockage_ratio: float, n_points: int = 8)
 
    Bases: :py:obj:`ChannelSection`
 
@@ -127,6 +127,36 @@ pyskyfire.regen.cross_section.CrossSectionSquared
           !! processed by numpydoc !!
 
 
+   .. py:method:: R_coolant_per_len(prof: SectionProfiles, h_c: numpy.ndarray, k_wall: numpy.ndarray | float) -> numpy.ndarray
+
+      
+      Coolant-side thermal resistance per unit *channel length* [K m / W],
+      including rib sidewalls as fins (first-order model).
+
+      Model:
+      - Base perimeter = P_coolant(prof)  (what you already count)
+      - Fin perimeter  = 2*h             (two side walls per channel)
+      - Effective perimeter = P_base + eta_f * P_fin
+      - R_s = 1 / (h_c * P_eff)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: _theta_real(prof: SectionProfiles) -> numpy.ndarray
 
       
@@ -151,43 +181,5 @@ pyskyfire.regen.cross_section.CrossSectionSquared
           !! processed by numpydoc !!
 
 
-   .. py:method:: compute_cross_section(prof: SectionProfiles, i: int)
-
-      
-      Construct a gmsh OCC wire representing the rectangular section.
-
-      Builds a closed wire via arcs and straight walls positioned at the
-      specified centerline station.
-
-      :Parameters:
-
-          **prof** : :obj:`SectionProfiles`
-              Full section profile data.
-
-          **i** : :class:`python:int`
-              Station index to build.
-
-
-
-      :Returns:
-
-          :class:`python:int`
-              gmsh OCC wire tag.
-
-
-
-
-
-
-
-
-      .. rubric:: Notes
-
-      Requires an initialized gmsh model. Only geometric primitives are
-      created; meshing is up to the caller.
-
-
-
-      ..
-          !! processed by numpydoc !!
+   .. py:method:: blockage_ratio(x)
 

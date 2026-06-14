@@ -1,7 +1,7 @@
 pyskyfire.common.blocks.SimpleDuctBlock
 =======================================
 
-.. py:class:: pyskyfire.common.blocks.SimpleDuctBlock(name: str, st_in: str, st_out: str, eta: float, medium)
+.. py:class:: pyskyfire.common.blocks.SimpleDuctBlock(name: str, st_in: str, st_out: str, pressure_ratio: float, medium: str)
 
    Bases: :py:obj:`FluidBlock`
 
@@ -11,49 +11,35 @@ pyskyfire.common.blocks.SimpleDuctBlock
 
 
    
-   Homogeneous duct loss model with fixed efficiency.
+   Adiabatic homogeneous duct loss model with fixed pressure ratio.
 
-   Applies a fixed pressure efficiency :math:`\eta` via
-   ``p_out = η * p_in`` while keeping temperature unchanged.
+   Applies a fixed pressure ratio via
 
-   :Parameters:
+       p_out = pressure_ratio * p_in
 
-       **name** : :class:`python:str`
-           Block name.
+   and computes the outlet temperature from constant specific enthalpy:
 
-       **st_in** : :class:`python:str`
-           Inlet station key.
+       h_out = h_in
 
-       **st_out** : :class:`python:str`
-           Outlet station key.
-
-       **eta** : :class:`python:float`
-           Pressure efficiency (``0 < η ≤ 1``).
-
-       **medium** : :class:`python:str`
-           CoolProp fluid string.
-
-   :Attributes:
-
-       **dp_key** : :class:`python:str`
-           Name of the emitted pressure-drop signal.
-
-       **station_inputs, station_outputs, signal_inputs, signal_outputs** : :class:`python:list`\[:class:`python:str`]
-           Network I/O metadata.
+   This is a better approximation for an adiabatic low-Mach duct or
+   concentrated pressure-loss element than holding temperature constant.
 
 
 
 
 
 
-   :Raises:
-
-       :obj:`ValueError`
-           If ``eta`` is not in ``(0, 1]``.
 
 
 
 
+
+
+   .. rubric:: Notes
+
+   This is not an isentropic expansion. Entropy increases. For real fluids,
+   especially near saturation or the critical point, T_out may differ strongly
+   from T_in.
 
 
 
@@ -63,26 +49,26 @@ pyskyfire.common.blocks.SimpleDuctBlock
    .. py:method:: compute(stations: Dict[str, pyskyfire.common.engine_network.Station], signals: Dict[str, float]) -> tuple[Dict[str, pyskyfire.common.engine_network.Station], Dict[str, float]]
 
       
-      Apply fixed loss and emit outlet station and Δp.
+      Compute one pass of the block.
 
 
       :Parameters:
 
-          **stations** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.common.engine_network.Station>`]
-              Network stations (must contain ``st_in``).
+          **stations_in** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.common.engine_network.Station>`]
+              Input network stations keyed by name.
 
-          **signals** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
-              Scalar signals (unused).
+          **signals_in** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
+              Input scalar signals keyed by name.
 
 
 
       :Returns:
 
           **stations_out** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.common.engine_network.Station>`]
-              ``{st_out: Station}`` with ``p_out = η * p_in`` and unchanged ``T``.
+              Updated or newly created stations produced by the block.
 
           **signals_out** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
-              ``{dp_key: float}`` with ``dp = p_in - p_out`` [Pa].
+              Updated or newly created scalar signals produced by the block.
 
 
 
@@ -91,6 +77,10 @@ pyskyfire.common.blocks.SimpleDuctBlock
 
 
 
+      .. rubric:: Notes
+
+      .. Note::
+          Implementations should treat missing inputs as an error. The engine network orchestrator is expected to provide the declared inputs.
 
 
 

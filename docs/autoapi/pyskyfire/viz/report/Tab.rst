@@ -3,7 +3,13 @@ pyskyfire.viz.report.Tab
 
 .. py:class:: pyskyfire.viz.report.Tab
 
+   .. py:method:: add_deferred_iframe(src: str, *, caption: str | None = None, height: str = '720px', button_text: str = 'Load 3D view', autoload: bool = True) -> Tab
+
+
    .. py:method:: add_figure(fig: plotly.graph_objects.Figure, caption: Optional[str] = None) -> Tab
+
+
+   .. py:method:: add_iframe(src: str, *, caption: str | None = None, height: str = '720px', style: str = 'width:100%;border:1px solid var(--border);border-radius:10px;', blobify_data_urls: bool = True) -> Tab
 
 
    .. py:method:: add_image(path: str, *, alt: str = '', caption: str | None = None, style: str = 'max-width:100%;height:auto;') -> Tab

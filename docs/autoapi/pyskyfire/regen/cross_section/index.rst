@@ -12,6 +12,7 @@ Classes
 
    /autoapi/pyskyfire/regen/cross_section/ChannelSection
    /autoapi/pyskyfire/regen/cross_section/CrossSectionRounded
+   /autoapi/pyskyfire/regen/cross_section/CrossSectionRoundedInternal
    /autoapi/pyskyfire/regen/cross_section/CrossSectionSquared
    /autoapi/pyskyfire/regen/cross_section/SectionProfiles
 
@@ -19,6 +20,7 @@ Classes
 
    pyskyfire.regen.cross_section.ChannelSection
    pyskyfire.regen.cross_section.CrossSectionRounded
+   pyskyfire.regen.cross_section.CrossSectionRoundedInternal
    pyskyfire.regen.cross_section.CrossSectionSquared
    pyskyfire.regen.cross_section.SectionProfiles
 

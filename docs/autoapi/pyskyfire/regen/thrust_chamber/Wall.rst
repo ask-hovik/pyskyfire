@@ -39,13 +39,7 @@ pyskyfire.regen.thrust_chamber.Wall
 
 
 
-   .. seealso::
 
-       
-       :obj:`WallGroup`
-           Container combining multiple walls.
-       
-       
 
 
 
@@ -53,33 +47,4 @@ pyskyfire.regen.thrust_chamber.Wall
        !! processed by numpydoc !!
 
    .. py:method:: thickness(x)
-
-      
-      Return the wall thickness at position `x`.
-
-
-      :Parameters:
-
-          **x** : :class:`python:float`
-              Axial coordinate [m].
-
-
-
-      :Returns:
-
-          :class:`python:float`
-              Wall thickness [m].
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
 

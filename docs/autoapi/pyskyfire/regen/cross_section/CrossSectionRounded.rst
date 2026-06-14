@@ -127,10 +127,15 @@ pyskyfire.regen.cross_section.CrossSectionRounded
           !! processed by numpydoc !!
 
 
-   .. py:method:: _beta_alpha(theta: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray]
+   .. py:method:: R_coolant_per_len(prof: SectionProfiles, h_c: numpy.ndarray, k_wall: numpy.ndarray | float) -> numpy.ndarray
 
       
-      Return the inner (β) and outer (α) complementary angles.
+      Coolant-side thermal resistance per unit channel length [K m / W]. 
+      In this function I included a rib on the backside of the cooling channel, 
+      basically the same way as standard rib calculations with rib efficiency. 
+      Unsure if this is completely appropriate. But it had only a minor effect
+      on the RL10 validation case, which use low conductivity stainless. For 
+      thin copper walls adding the rib has a large effect. 
 
 
 
@@ -151,26 +156,10 @@ pyskyfire.regen.cross_section.CrossSectionRounded
           !! processed by numpydoc !!
 
 
-   .. py:method:: compute_cross_section(prof: SectionProfiles, i: int) -> int
+   .. py:method:: _beta_alpha(theta: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray]
 
       
-      Construct a gmsh OCC wire representing the rounded section.
-
-
-      :Parameters:
-
-          **prof** : :obj:`SectionProfiles`
-              Section profiles along the cooling circuit.
-
-          **i** : :class:`python:int`
-              Station index to build.
-
-
-
-      :Returns:
-
-          :class:`python:int`
-              gmsh OCC wire tag.
+      Return the inner (β) and outer (α) complementary angles.
 
 
 
@@ -179,12 +168,11 @@ pyskyfire.regen.cross_section.CrossSectionRounded
 
 
 
-      .. rubric:: Notes
 
-      Requires that a gmsh model is active. The geometry is constructed
-      from circle arcs and wall segments in a local coordinate frame,
-      then transformed into global coordinates using the provided
-      orthonormal basis at station ``i``.
+
+
+
+
 
 
 

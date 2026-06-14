@@ -25,6 +25,7 @@ Functions
 .. autoapisummary::
 
    pyskyfire.regen.solver.analyse_residuals
+   pyskyfire.regen.solver.short_warning
    pyskyfire.regen.solver.solve_heat_exchanger_euler
    pyskyfire.regen.solver.steady_heating_analysis
 
@@ -73,6 +74,8 @@ Module Contents
 
    ..
        !! processed by numpydoc !!
+
+.. py:function:: short_warning(message, category, filename, lineno, file=None, line=None)
 
 .. py:function:: solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, circuit_index, output, log_residuals=True)
 

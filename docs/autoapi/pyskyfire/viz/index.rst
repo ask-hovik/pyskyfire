@@ -11,10 +11,11 @@ Submodules
    :maxdepth: 1
 
    /autoapi/pyskyfire/viz/core/index
-   /autoapi/pyskyfire/viz/embed_stl/index
-   /autoapi/pyskyfire/viz/export_3d/index
+   /autoapi/pyskyfire/viz/engine_viz/index
+   /autoapi/pyskyfire/viz/impeller_viz/index
    /autoapi/pyskyfire/viz/lookup_tables/index
    /autoapi/pyskyfire/viz/plot_common/index
+   /autoapi/pyskyfire/viz/plot_film_cooling/index
    /autoapi/pyskyfire/viz/plot_regen/index
    /autoapi/pyskyfire/viz/plot_skycea/index
    /autoapi/pyskyfire/viz/report/index

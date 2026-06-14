@@ -1,7 +1,7 @@
 pyskyfire.regen.solver.HeatExchangerPhysics
 ===========================================
 
-.. py:class:: pyskyfire.regen.solver.HeatExchangerPhysics(thrust_chamber, circuit_index)
+.. py:class:: pyskyfire.regen.solver.HeatExchangerPhysics(thrust_chamber, boundary_conditions, circuit_index)
 
    
    Encapsulate hot-side, wall, and coolant heat-transfer/pressure models.
@@ -13,7 +13,7 @@ pyskyfire.regen.solver.HeatExchangerPhysics
 
        **thrust_chamber** : :obj:`Any`
            Object exposing geometry and property models used by the solver
-           (e.g., ``contour``, ``combustion_transport``, ``cooling_circuit_group``,
+           (e.g., ``contour``, ``combustion_transport``,
            ``wall_group``).
 
        **circuit_index** : :class:`python:int`
@@ -34,6 +34,44 @@ pyskyfire.regen.solver.HeatExchangerPhysics
 
    ..
        !! processed by numpydoc !!
+
+   .. py:method:: cold_side_coefficients(x, T_cw, T_cool)
+
+      
+      Coolant-side heat removal per unit length.
+
+
+      :Parameters:
+
+          **x** : :class:`python:float`
+              Axial coordinate [m].
+
+          **T_cw** : :class:`python:float`
+              Coolant-side wall temperature [K].
+
+          **T_cool** : :class:`python:float`
+              Bulk coolant temperature [K].
+
+
+
+      :Returns:
+
+          :class:`python:float`
+              ``dQ_cw/dx`` [W m⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
 
    .. py:method:: coolant_pressure_rate(x, T_cool, p_cool)
 
@@ -113,41 +151,6 @@ pyskyfire.regen.solver.HeatExchangerPhysics
 
    .. py:method:: dQ_cold_dx(x, T_cw, T_cool)
 
-      
-      Coolant-side heat removal per unit length.
-
-
-      :Parameters:
-
-          **x** : :class:`python:float`
-              Axial coordinate [m].
-
-          **T_cw** : :class:`python:float`
-              Coolant-side wall temperature [K].
-
-          **T_cool** : :class:`python:float`
-              Bulk coolant temperature [K].
-
-
-
-      :Returns:
-
-          :class:`python:float`
-              ``dQ_cw/dx`` [W m⁻¹].
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
 
    .. py:method:: dQ_cond_dx(x, T_hw, T_cw)
 
@@ -192,6 +195,9 @@ pyskyfire.regen.solver.HeatExchangerPhysics
 
 
    .. py:method:: dQ_hot_dx(x, T_hw)
+
+
+   .. py:method:: hot_side_coefficients(x, T_hw)
 
       
       Hot-side heat input per unit length using Bartz-style correlation.

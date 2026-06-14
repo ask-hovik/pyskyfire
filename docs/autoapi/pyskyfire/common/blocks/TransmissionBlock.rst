@@ -1,7 +1,7 @@
 pyskyfire.common.blocks.TransmissionBlock
 =========================================
 
-.. py:class:: pyskyfire.common.blocks.TransmissionBlock(name, sink_keys, out_key='P_required')
+.. py:class:: pyskyfire.common.blocks.TransmissionBlock(name, sink_keys, source_keys)
 
    Bases: :py:obj:`SignalBlock`
 
