@@ -29,9 +29,7 @@ At each axial station $x$:
 - Gas composition is equilibrated at the local $T$ and $p$.
 - Thermodynamic and transport properties are then interpolated:
 
-$$
-\rho_g, \mu_g, \Pr_g, c_{p,g}, k_g = f(T, p)
-$$
+$$\rho_g, \mu_g, \Pr_g, c_{p,g}, k_g = f(T, p)$$
 
 The isentropic exponent is:
 
