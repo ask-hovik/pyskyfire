@@ -1,6 +1,6 @@
 # Regenerative Cooling Heat Transfer in Pyskyfire
 
-The regenerative cooling solver is one of the core capabilities of pyskyfire. It predicts the heat transfer from the hot combustion gases through the thrust chamber wall into the coolant flowing in the cooling channels. The solver is implemented as a quasi-1D, steady-state model that balances heat transfer on the hot gas side, conduction through the wall (including multiple layers), and heat transfer into the coolant.
+The regenerative cooling solver is one of the core capabilities of pyskyfire. It predicts the heat transfer from the hot combustion gases through the thrust chamber wall into the coolant flowing in the cooling channels. The solver is implemented as a quasi-1D, steady-state model that balances heat transfer on the hot gas side, conduction through the wall (including multiple layers), and heat transfer into the coolant. 
 
 This explanation focuses on the physics and assumptions implemented in the `regen` module (primarily `physics.py` and `solver.py`).
 
