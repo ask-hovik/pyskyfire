@@ -1,7 +1,8 @@
 # __init__.py
 
 # Explicit imports for accessibility
-from .impeller import Impeller
+#from .impeller import Impeller
+from .impeller_new import Impeller
 #from .plot import plot_impeller_views, plot_impeller_3D
 
 # Expose submodules for direct access if needed

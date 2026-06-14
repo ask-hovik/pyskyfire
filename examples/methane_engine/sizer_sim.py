@@ -17,33 +17,39 @@ def setup_initial_stations(params):
     mdot_fu_est = params["thrust_chamber"].combustion_transport.mdot_fu
     st["fu_engine_in"]              = psf.common.Station(params["p_tank_fu"],   params["T_tank_fu"],        mdot_fu_est)
     st["fu_pump_in"]                = psf.common.Station(st["fu_engine_in"].p,  st["fu_engine_in"].T,       mdot_fu_est)
-    st["fu_pump_out"]               = psf.common.Station(params["p_c"]*2.5,     params["T_tank_fu"]+10,     mdot_fu_est)
-    st["fu_shaft_recirc"]           = psf.common.Station(params["p_c"]*2.5,     params["T_tank_fu"]+10,     mdot_fu_est)
-    st["fu_regen_duct_in"]          = psf.common.Station(params["p_c"]*2.4,     params["T_tank_fu"]+10,     mdot_fu_est)
-    st["fu_regen_in"]               = psf.common.Station(params["p_c"]*2.4,     params["T_tank_fu"]+10,     mdot_fu_est)
-    st["fu_regen_interstage_1"]     = psf.common.Station(params["p_c"]*2.3,     params["T_tank_fu"]+100,     mdot_fu_est)
-    st["fu_regen_interstage_2"]     = psf.common.Station(params["p_c"]*2.3,     params["T_tank_fu"]+180,     mdot_fu_est)
-    st["fu_regen_out"]              = psf.common.Station(params["p_c"]*2.0,     params["T_tank_fu"]+250,     mdot_fu_est)
-    st["fu_tubrine_inlet_split"]    = psf.common.Station(params["p_c"]*1.9,     params["T_tank_fu"]+250,     mdot_fu_est)
-    st["fu_bypass_valve"]           = psf.common.Station(params["p_c"]*1.60,    params["T_tank_fu"]+250,     mdot_fu_est)
-    st["fu_turbine_in"]             = psf.common.Station(params["p_c"]*1.9,     params["T_tank_fu"]+250,     mdot_fu_est)
+    st["fu_pump_out"]               = psf.common.Station(params["p_c"]*1.4,     params["T_tank_fu"]+10,     mdot_fu_est)
+    st["fu_shaft_recirc"]           = psf.common.Station(params["p_c"]*1.4,     params["T_tank_fu"]+10,     mdot_fu_est)
+    st["fu_regen_duct_in"]          = psf.common.Station(params["p_c"]*1.4,     params["T_tank_fu"]+10,     mdot_fu_est)
+    st["fu_regen_in"]               = psf.common.Station(params["p_c"]*1.4,     params["T_tank_fu"]+10,     mdot_fu_est)
+    st["fu_regen_interstage_1"]     = psf.common.Station(params["p_c"]*1.4,     params["T_tank_fu"]+100,     mdot_fu_est)
+    st["fu_regen_interstage_2"]     = psf.common.Station(params["p_c"]*1.4,     params["T_tank_fu"]+180,     mdot_fu_est)
+    st["fu_regen_out"]              = psf.common.Station(params["p_c"]*1.4,     params["T_tank_fu"]+250,     mdot_fu_est)
+    st["fu_tubrine_inlet_split"]    = psf.common.Station(params["p_c"]*1.3,     params["T_tank_fu"]+250,     mdot_fu_est)
+    st["fu_bypass_valve"]           = psf.common.Station(params["p_c"]*1.3,    params["T_tank_fu"]+250,     mdot_fu_est)
+    st["fu_turbine_in"]             = psf.common.Station(params["p_c"]*1.2,     params["T_tank_fu"]+250,     mdot_fu_est)
     st["fu_turbine_out"]            = psf.common.Station(params["p_c"]*1.1,     params["T_tank_fu"]+200,     mdot_fu_est)
     st["fu_turbine_outlet_merge"]   = psf.common.Station(params["p_c"]*1.1,     params["T_tank_fu"]+200,     mdot_fu_est)
     st["fu_injector_plenum"]        = psf.common.Station(params["p_c"]*1.1,     params["T_tank_fu"]+200,     mdot_fu_est)
     st["fu_chamber_in"]             = psf.common.Station(params["p_c"],         params["T_tank_fu"]+200,     mdot_fu_est)
 
+    
+
     # ==== LOX side ====
     mdot_ox_est = params["thrust_chamber"].combustion_transport.mdot_ox
     st["ox_engine_in"]              = psf.common.Station(params["p_tank_ox"],   params["T_tank_ox"],      mdot_ox_est)
     st["ox_pump_in"]                = psf.common.Station(st["ox_engine_in"].p,   st["ox_engine_in"].T,    mdot_ox_est)
-    st["ox_pump_out"]               = psf.common.Station(params["p_c"]*2.5,     params["T_tank_ox"]+10,     mdot_ox_est)
-    st["ox_shaft_recirc"]           = psf.common.Station(params["p_c"]*2.5,     params["T_tank_ox"]+10,     mdot_ox_est)
-    st["ox_regen_duct_in"]          = psf.common.Station(params["p_c"]*2.4,     params["T_tank_ox"]+10,     mdot_ox_est)
-    st["ox_regen_in"]               = psf.common.Station(params["p_c"]*2.4,     params["T_tank_ox"]+10,     mdot_ox_est)
-    st["ox_regen_out"]              = psf.common.Station(params["p_c"]*2.2,     params["T_tank_ox"]+250,     mdot_ox_est)
-    st["ox_turbine_inlet_split"]    = psf.common.Station(params["p_c"]*2.1,     params["T_tank_ox"]+250,    mdot_ox_est)
-    st["ox_bypass_valve"]           = psf.common.Station(params["p_c"]*1.6,     params["T_tank_ox"]+250,     mdot_ox_est)
-    st["ox_turbine_in"]             = psf.common.Station(params["p_c"]*2.0,     params["T_tank_ox"]+250,     mdot_ox_est)
+    st["ox_pump_out"]               = psf.common.Station(params["p_c"]*1.6,     params["T_tank_ox"]+10,     mdot_ox_est)
+    st["ox_shaft_recirc"]           = psf.common.Station(params["p_c"]*1.6,     params["T_tank_ox"]+10,     mdot_ox_est)
+    st["ox_regen_duct_in"]          = psf.common.Station(params["p_c"]*1.6,     params["T_tank_ox"]+10,     mdot_ox_est)
+    st["ox_regen_in"]               = psf.common.Station(params["p_c"]*1.6,     params["T_tank_ox"]+10,     mdot_ox_est)
+    st["ox_regen_1_in"]             = psf.common.Station(params["p_c"]*1.6,     params["T_tank_ox"]+250,     mdot_ox_est/2)
+    st["ox_regen_2_in"]             = psf.common.Station(params["p_c"]*1.6,     params["T_tank_ox"]+250,     mdot_ox_est/2)
+    st["ox_regen_1_out"]            = psf.common.Station(params["p_c"]*1.6,     params["T_tank_ox"]+250,     mdot_ox_est/2)
+    st["ox_regen_2_out"]            = psf.common.Station(params["p_c"]*1.6,     params["T_tank_ox"]+250,     mdot_ox_est/2)
+    st["ox_regen_out"]              = psf.common.Station(params["p_c"]*1.6,     params["T_tank_ox"]+250,     mdot_ox_est/2)
+    st["ox_turbine_inlet_split"]    = psf.common.Station(params["p_c"]*1.5,     params["T_tank_ox"]+250,    mdot_ox_est)
+    st["ox_bypass_valve"]           = psf.common.Station(params["p_c"]*1.3,     params["T_tank_ox"]+250,     mdot_ox_est)
+    st["ox_turbine_in"]             = psf.common.Station(params["p_c"]*1.3,     params["T_tank_ox"]+250,     mdot_ox_est)
     st["ox_turbine_out"]            = psf.common.Station(params["p_c"]*1.2,     params["T_tank_ox"]+200,     mdot_ox_est)
     st["ox_turbine_outlet_merge"]   = psf.common.Station(params["p_c"]*1.1,     params["T_tank_ox"]+200,    mdot_ox_est)
     st["ox_injector_plenum"]        = psf.common.Station(params["p_c"]*1.1,     params["T_tank_ox"]+200,    mdot_ox_est)
@@ -119,7 +125,7 @@ def setup_thrust_chamber(params):
     ) # total coolant volume should be ca 0.015831543m3
 
     def simple_height(x):
-        return 1.5e-3
+        return 2e-3
 
     def internal_width(x):
         return 20e-3
@@ -168,7 +174,7 @@ def setup_thrust_chamber(params):
                                         coolant_transport=ox_transport, 
                                         cross_section=cross_section, 
                                         span = [-0.31, -1.0], 
-                                        placement=psf.regen.SurfacePlacement(n_channel_positions=240),
+                                        placement=psf.regen.SurfacePlacement(n_channel_positions=300),
                                         walls = [barrier_wall, oxygen_copper_wall], 
                                         roughness = params["copper_roughness_height"],
                                         channel_height=simple_height)
@@ -185,14 +191,17 @@ def setup_thrust_chamber(params):
                                                 )"""
 
 
-
-    cooling_circuit_group = psf.regen.CoolingCircuitGroup(circuit_list=[fu_copper_pass, fu_inco_pass_cocurrent, fu_inco_pass_countercurrent, ox_copper_pass])
-
     thrust_chamber = psf.regen.ThrustChamber(contour=contour, 
                                             combustion_transport=aerothermodynamics,  
-                                            cooling_circuit_group=cooling_circuit_group,
+                                            cooling_circuits = [fu_copper_pass, fu_inco_pass_cocurrent, fu_inco_pass_countercurrent, ox_copper_pass],
                                             h_gas_corr=1.0, # No correction applied
                                             h_cold_corr=1.0) # No correction applied
+
+    """plot_3d, viewer = psf.viz.make_engine_3d(thrust_chamber)
+    plot_3d.show()
+    del plot_3d 
+    input()"""
+
     
     return thrust_chamber
 
@@ -235,17 +244,17 @@ def engine_sizer(params):
     blocks.append(psf.common.SimpleDuctBlock(name="duct_pump_regen_fuel",  
                                              st_in="fu_regen_duct_in", 
                                              st_out="fu_regen_in", 
-                                             eta=params["eta_pump_regen_fu"],
+                                             pressure_ratio=params["eta_pump_regen_fu"],
                                              medium=params["coolprop_fu"].propellants[0]))
     
     blocks.append(psf.common.RegenBlock(name="regen_throat_pass", 
                                         st_in="fu_regen_in", 
-                                        st_out="fu_regen_out", 
+                                        st_out="fu_regen_interstage_1", 
                                         circuit_index=0, 
                                         thrust_chamber=params["thrust_chamber"],
                                         medium=params["coolprop_fu"].propellants[0]))
     
-    """blocks.append(psf.common.RegenBlock(name="regen_cocurrent_nozzle_pass", 
+    blocks.append(psf.common.RegenBlock(name="regen_cocurrent_nozzle_pass", 
                                         st_in="fu_regen_interstage_1", 
                                         st_out="fu_regen_interstage_2", 
                                         circuit_index=1, 
@@ -257,12 +266,12 @@ def engine_sizer(params):
                                         st_out="fu_regen_out", 
                                         circuit_index=2, 
                                         thrust_chamber=params["thrust_chamber"],
-                                        medium=params["coolprop_fu"].propellants[0]))"""
+                                        medium=params["coolprop_fu"].propellants[0]))
     
     blocks.append(psf.common.SimpleDuctBlock(name="duct_regen_turbine_fuel", 
                                              st_in="fu_regen_out", 
                                              st_out="fu_turbine_inlet_split", 
-                                             eta=params["eta_regen_turbine_fu"],
+                                             pressure_ratio=params["eta_regen_turbine_fu"],
                                              medium=params["coolprop_fu"].propellants[0]))
     
     blocks.append(psf.common.MassFlowSplitterBlock(name="fuel_split_turbine_bypass", 
@@ -286,13 +295,13 @@ def engine_sizer(params):
     blocks.append(psf.common.SimpleDuctBlock(name="duct_turbine_injector_fuel", 
                                              st_in="fu_turbine_outlet_merge", 
                                              st_out="fu_injector_plenum", 
-                                             eta=params["eta_turbine_injector_fu"],
+                                             pressure_ratio=params["eta_turbine_injector_fu"],
                                              medium=params["coolprop_fu"].propellants[0]))
     
     blocks.append(psf.common.SimpleDuctBlock(name="fu_injector", 
                                              st_in="fu_injector_plenum", 
                                              st_out="fu_chamber_in", 
-                                             eta=params["eta_fu_injector"],
+                                             pressure_ratio=params["eta_fu_injector"],
                                              medium=params["coolprop_fu"].propellants[0]))
     
     blocks.append(psf.common.TransmissionBlock(name="fuel_shaft", sink_keys=["P_fuel_pump"], source_keys=["P_fuel_turbine_required"]))
@@ -324,20 +333,38 @@ def engine_sizer(params):
     blocks.append(psf.common.SimpleDuctBlock(name="duct_pump_regen_ox", 
                                              st_in="ox_regen_duct_in", 
                                              st_out="ox_regen_in",
-                                             eta=params["eta_pump_regen_ox"],
+                                             pressure_ratio=params["eta_pump_regen_ox"],
                                              medium=params["coolprop_ox"].propellants[0]))
+
+    blocks.append(psf.common.MassFlowSplitterBlock(name="ox_regen_split", 
+                                                st_in="ox_regen_in",
+                                                st_out=["ox_regen_1_in", "ox_regen_2_in"],
+                                                fractions=[0.5, 0.5],
+                                                medium=params["coolprop_ox"].propellants[0]))
     
     blocks.append(psf.common.RegenBlock(name="ox_regen",
-                                        st_in="ox_regen_in",
-                                        st_out="ox_regen_out",
-                                        circuit_index=3,
+                                        st_in="ox_regen_1_in",
+                                        st_out="ox_regen_1_out",
+                                        circuit_index=3, # Just pretending there is more area than there is
                                         thrust_chamber=params["thrust_chamber"],
                                         medium=params["coolprop_ox"].propellants[0]))
+
+    blocks.append(psf.common.RegenBlock(name="ox_regen",
+                                        st_in="ox_regen_2_in",
+                                        st_out="ox_regen_2_out",
+                                        circuit_index=3, # here, same circuit index is deliberate in this sim
+                                        thrust_chamber=params["thrust_chamber"],
+                                        medium=params["coolprop_ox"].propellants[0]))
+
+    blocks.append(psf.common.MassFlowMergerBlock(name="ox_regen_merge", 
+                                                 st_in=["ox_regen_1_out", "ox_regen_2_out"],
+                                                 st_out="ox_regen_out",
+                                                 medium=params["coolprop_ox"].propellants[0]))
     
     blocks.append(psf.common.SimpleDuctBlock(name="duct_regen_turbine_ox", 
                                              st_in="ox_regen_out", 
                                              st_out="ox_turbine_inlet_split",
-                                             eta=params["eta_pump_regen_ox"],
+                                             pressure_ratio=params["eta_pump_regen_ox"],
                                              medium=params["coolprop_ox"].propellants[0]))
     
     blocks.append(psf.common.MassFlowSplitterBlock(name="ox_split_turbine_bypass", 
@@ -361,13 +388,13 @@ def engine_sizer(params):
     blocks.append(psf.common.SimpleDuctBlock(name="duct_turbine_injector_ox", 
                                              st_in="ox_turbine_outlet_merge", 
                                              st_out="ox_injector_plenum",
-                                             eta=params["eta_pump_regen_ox"],
+                                             pressure_ratio=params["eta_pump_regen_ox"],
                                              medium=params["coolprop_ox"].propellants[0]))
     
     blocks.append(psf.common.SimpleDuctBlock(name="ox_injector", 
                                              st_in="ox_injector_plenum", 
                                              st_out="ox_chamber_in",
-                                             eta=params["eta_ox_injector"],
+                                             pressure_ratio=params["eta_ox_injector"],
                                              medium=params["coolprop_ox"].propellants[0]))
     
 

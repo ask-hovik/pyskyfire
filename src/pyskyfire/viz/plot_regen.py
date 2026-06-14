@@ -589,3 +589,48 @@ class PlotTemperatureProfile(PlotBase):
             margin=dict(l=70, r=20, t=60, b=60),
         )
         self.fig.update_xaxes(range=[x_min, x_max])
+
+class PlotHeatTransferCoefficient(PlotBase):
+    """
+    Plot returned regenerative-cooling heat transfer coefficients.
+
+    Expects dicts with keys:
+      - 'x'
+      - 'h_hot'   : effective hot-side temperature-based h [W/m²/K]
+      - 'h_cold'  : coolant-side h [W/m²/K]
+    Optional:
+      - 'name'
+    """
+
+    def __init__(self, *cooling_data_dicts, hot: bool = True, cold: bool = True):
+        super().__init__(go.Figure())
+        self.template("plotly_white")
+
+        for i, data in enumerate(cooling_data_dicts):
+            x = np.asarray(data["x"])
+            name = data.get("name", f"Set {i+1}")
+
+            if hot and "h_hot" in data:
+                y_hot = np.asarray(data["h_hot"])
+                self.fig.add_trace(go.Scatter(
+                    x=x, y=y_hot, mode="lines",
+                    name=f"{name} — Hot side",
+                    showlegend=True,
+                ))
+
+            if cold and "h_cold" in data:
+                y_cold = np.asarray(data["h_cold"])
+                self.fig.add_trace(go.Scatter(
+                    x=x, y=y_cold, mode="lines",
+                    name=f"{name} — Coolant side",
+                    showlegend=True,
+                    line=dict(dash="dash"),
+                ))
+
+        self.fig.update_layout(
+            title="Heat Transfer Coefficient",
+            xaxis=dict(title="Axial Position (m)"),
+            yaxis=dict(title="h (W/m²/K)"),
+            legend=dict(title=None),
+            margin=dict(l=60, r=20, t=60, b=60),
+        )

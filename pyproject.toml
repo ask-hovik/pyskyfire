@@ -19,7 +19,9 @@ dependencies = [
   "pyvis>=0.3",
   "plotly>=6.3",
   "gmsh>=4.14",
-  "trimesh>=4.8"
+  "trimesh>=4.8",
+  "pyvista",
+  "cantera"
 ]
 
 classifiers = [
@@ -52,5 +54,5 @@ docs = [
   "sphinx-design",
   "autoapi",
   "numpydoc",
-  "pyvista[jupyter],
+  "pyvista[jupyter]",
 ]
