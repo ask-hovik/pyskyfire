@@ -47,13 +47,13 @@ include = [
 
 [project.optional-dependencies]
 docs = [
-  "sphinx>=7.3",
+  "sphinx >= 8.0",
   "furo",
   "myst-parser",
-  "sphinx-autodoc-typehints",
   "sphinx-copybutton",
   "sphinx-design",
-  "autoapi",
+  "sphinx-autoapi >= 3.8",
   "numpydoc",
+  "sphinx-autodoc-typehints",
   "pyvista[jupyter]",
 ]
