@@ -6,11 +6,12 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Package Structure" href="package-structure.html"><link rel="prev" title="Making a Validation Case in Pyskyfire" href="../howto/making-validation-case.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Pyskyfire Capabilities - pyskyfire</title>
+        <title>Capabilities - pyskyfire</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=e79a130c" />
     
     
 
@@ -173,7 +174,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -205,7 +206,7 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul class="current">
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Pyskyfire Capabilities</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Capabilities</a></li>
 <li class="toctree-l1"><a class="reference internal" href="package-structure.html">Package Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="regenerative-cooling-explanation.html">Regenerative Cooling</a></li>
 </ul>
@@ -445,14 +446,192 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section class="tex2jax_ignore mathjax_ignore" id="pyskyfire-capabilities">
-<h1>Pyskyfire Capabilities<a class="headerlink" href="#pyskyfire-capabilities" title="Link to this heading">¶</a></h1>
-<p>This page shows what Pyskyfire can do at-a-glance.</p>
+          <section class="tex2jax_ignore mathjax_ignore" id="capabilities">
+<h1>Capabilities<a class="headerlink" href="#capabilities" title="Link to this heading">¶</a></h1>
+<p>This page shows what Pyskyfire can do at-a-glance. The goal of this page is to give you an overview of the current capabilities of the package, so that you can better understand if it fits your needs.</p>
+<section id="generate-thrust-chamber-and-nozzle-geometry">
+<h2>Generate thrust chamber and nozzle geometry<a class="headerlink" href="#generate-thrust-chamber-and-nozzle-geometry" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Sizes the throat and nozzle from propulsion inputs such as:</p>
+<ul>
+<li><p>propellant combination</p></li>
+<li><p>fuel and oxidizer inlet state</p></li>
+<li><p>chamber pressure</p></li>
+<li><p>mixture ratio</p></li>
+<li><p>thrust</p></li>
+<li><p>exit pressure or expansion target</p></li>
+<li><p>ambient pressure</p></li>
+<li><p>characteristic chamber length, <span class="math notranslate nohighlight">\(L^*\)</span></p></li>
+</ul>
+</li>
+<li><p>Generate <strong>chamber geometry</strong> from chamber volume, contraction ratio, converging angle, throat radius, and chamber/nozzle blend radii.</p></li>
+<li><p>Generate <strong>bell nozzles</strong> using a Rao-style thrust-optimized parabolic contour.</p></li>
+<li><p>Generate <strong>conical nozzles</strong> for simpler comparison cases.</p></li>
+</ul>
+<div class="psf-demo-frame psf-plot-demo">
+  <iframe
+    src="../_static/demos/methane_engine_contour.html"
+    title="Interactive methane engine contour plot"
+    loading="lazy"
+    sandbox="allow-scripts allow-same-origin">
+  </iframe>
+</div></section>
+<section id="estimate-hot-gas-and-nozzle-performance">
+<h2>Estimate hot-gas and nozzle performance<a class="headerlink" href="#estimate-hot-gas-and-nozzle-performance" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Solve chemical-equilibrium-based thrust chamber performance using NASA CEA as a backend.</p></li>
+<li><p>Estimate useful propulsion parameters such as:</p>
+<ul>
+<li><p>vacuum and/or ambient specific impulse</p></li>
+<li><p>characteristic velocity, <span class="math notranslate nohighlight">\(c^*\)</span></p></li>
+<li><p>thrust coefficient, <span class="math notranslate nohighlight">\(C_F\)</span></p></li>
+<li><p>total mass flow rate</p></li>
+<li><p>oxidizer and fuel mass flow rate</p></li>
+<li><p>throat radius and throat area</p></li>
+<li><p>expansion ratio</p></li>
+<li><p>chamber volume from <span class="math notranslate nohighlight">\(L^*\)</span></p></li>
+</ul>
+</li>
+<li><p>Generate hot-gas property distributions <strong>throughout the chamber and nozzle</strong>, including quantities such as:</p>
+<ul>
+<li><p>pressure</p></li>
+<li><p>temperature</p></li>
+<li><p>Mach number</p></li>
+<li><p>molecular mass</p></li>
+<li><p>ratio of specific heats</p></li>
+<li><p>enthalpy</p></li>
+<li><p>specific heat</p></li>
+<li><p>thermal conductivity</p></li>
+<li><p>viscosity</p></li>
+<li><p>Prandtl number</p></li>
+<li><p>density</p></li>
+<li><p>speed of sound</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="solve-regenerative-cooling-problems">
+<h2>Solve regenerative cooling problems<a class="headerlink" href="#solve-regenerative-cooling-problems" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Solve regenerative cooling along user-defined cooling circuits.</p></li>
+<li><p>Support multiple cooling passes over different parts of the thrust chamber.</p></li>
+<li><p>Support co-current and counter-current coolant flow.</p></li>
+<li><p>Support different coolants in different cooling circuits.</p></li>
+<li><p>Uses fluid property models for a wide range of liquid and gaseous coolants.</p></li>
+<li><p>Model coolant pressure drop, temperature rise, velocity, heat flux, and wall temperatures along the engine.</p></li>
+<li><p>Define cooling circuits over arbitrary axial spans of the thrust chamber.</p></li>
+<li><p>Support complex cooling channel layouts, including:</p>
+<ul>
+<li><p>straight channels</p></li>
+<li><p>slanted or helical channels</p></li>
+<li><p>interleaved channel circuits</p></li>
+<li><p>circuits with different channel counts</p></li>
+<li><p>circuits covering different chamber/nozzle regions</p></li>
+</ul>
+</li>
+<li><p>Support multiple cooling-channel cross-section models.</p></li>
+<li><p>Support variable channel height, width, roughness, and hydraulic geometry along the engine.</p></li>
+<li><p>Support multi-material chamber walls, enabling studies of:</p>
+<ul>
+<li><p>layered wall temperature drops</p></li>
+<li><p>thermal barrier coatings</p></li>
+</ul>
+</li>
+<li><p>Estimate temperature profile from hot gas through boundary layer, multi material-walls, and coolant boundary layer.</p></li>
+</ul>
+</section>
+<section id="model-film-cooling">
+<h2>Model film cooling<a class="headerlink" href="#model-film-cooling" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Solve film cooling cases for sub-critical pressure conditions.</p></li>
+<li><p>Model coolant injection, entrainment, and film-cooling heat-transfer effects using implemented film-cooling correlations.</p></li>
+<li><p>Use film-cooling calculations as a separate analysis path or as a basis for future coupling to regenerative cooling models.</p></li>
+</ul>
+</section>
+<section id="solve-full-engine-cycle-networks">
+<h2>Solve full engine-cycle networks<a class="headerlink" href="#solve-full-engine-cycle-networks" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Represent an engine as a network of connected thermodynamic stations, signal variables, and component blocks.</p></li>
+<li><p>Solve expander-cycle-style engine architectures containing:</p>
+<ul>
+<li><p>pumps</p></li>
+<li><p>turbines</p></li>
+<li><p>regenerative cooling passages</p></li>
+<li><p>ducts</p></li>
+<li><p>valves</p></li>
+<li><p>injectors</p></li>
+<li><p>mass-flow splitters</p></li>
+<li><p>mass-flow mergers</p></li>
+<li><p>recirculation paths</p></li>
+</ul>
+</li>
+<li><p>Solve coupled pump, turbine, pressure-loss, coolant-heating, and thrust-chamber constraints.</p></li>
+<li><p>Track pressure, temperature, mass flow, and thermodynamic state through the engine.</p></li>
+<li><p>Represent both fuel-side and oxidizer-side flow paths.</p></li>
+<li><p>Use the engine-network formulation to investigate different expander-cycle layouts and pressure budgets.</p></li>
+</ul>
+</section>
+<section id="analyze-pumps-and-turbomachinery">
+<h2>Analyze pumps and turbomachinery<a class="headerlink" href="#analyze-pumps-and-turbomachinery" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Provide pump and turbine utility models for engine-cycle calculations.</p></li>
+<li><p>Estimate pump power, turbine power, pressure rise, pressure drop, and efficiency effects.</p></li>
+<li><p>Support first-order sizing and analysis of rotating machinery components used in liquid rocket engine cycles.</p></li>
+<li><p>Include pump-related geometry and visualization utilities for early-stage turbopump design work.</p></li>
+</ul>
+</section>
+<section id="generate-plots-and-reports">
+<h2>Generate plots and reports<a class="headerlink" href="#generate-plots-and-reports" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Generate built-in plots for common engine analysis outputs, including:</p>
+<ul>
+<li><p>thrust chamber contour</p></li>
+<li><p>coolant pressure</p></li>
+<li><p>coolant temperature</p></li>
+<li><p>coolant velocity</p></li>
+<li><p>wall temperature</p></li>
+<li><p>heat flux</p></li>
+<li><p>hydraulic diameter</p></li>
+<li><p>coolant flow area</p></li>
+<li><p>hot-gas transport properties</p></li>
+<li><p>engine-network diagrams</p></li>
+<li><p>pressure-temperature diagrams</p></li>
+</ul>
+</li>
+<li><p>Generate standalone HTML reports containing tables, plots, images, and embedded interactive content.</p></li>
+<li><p>Save and reload analysis results for post-processing.</p></li>
+</ul>
+</section>
+<section id="visualize-cooling-channel-geometry-in-3d">
+<h2>Visualize cooling-channel geometry in 3D<a class="headerlink" href="#visualize-cooling-channel-geometry-in-3d" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Generate 3D visualizations of thrust chamber cooling-channel geometry.</p></li>
+<li><p>Render cooling channels with their actual centerline placement and cross-section geometry.</p></li>
+<li><p>Visualize interleaved and multi-pass cooling layouts.</p></li>
+<li><p>Export an interactive browser-based 3D viewer for documentation or report generation.</p></li>
+<li><p>Embed a rotatable 3D engine model directly into generated HTML documentation.</p></li>
+</ul>
+<div class="psf-demo-frame">
+  <iframe
+    src="../_static/demos/engine_3d.html"
+    title="Interactive 3D engine model"
+    loading="lazy"
+    sandbox="allow-scripts allow-same-origin">
+  </iframe>
+</div></section>
+<section id="support-scripted-design-studies">
+<h2>Support scripted design studies<a class="headerlink" href="#support-scripted-design-studies" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Use Python scripts to define complete engine cases, run analyses, and post-process results.</p></li>
+<li><p>Modify geometry, materials, coolant circuits, propellants, pressures, mixture ratio, thrust level, and cycle parameters programmatically.</p></li>
+<li><p>Use examples and validation cases as templates for new thrust chamber and engine-cycle studies.</p></li>
+</ul>
+</section>
 </section>
 
         </article>
@@ -498,8 +677,35 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Capabilities</a><ul>
+<li><a class="reference internal" href="#generate-thrust-chamber-and-nozzle-geometry">Generate thrust chamber and nozzle geometry</a></li>
+<li><a class="reference internal" href="#estimate-hot-gas-and-nozzle-performance">Estimate hot-gas and nozzle performance</a></li>
+<li><a class="reference internal" href="#solve-regenerative-cooling-problems">Solve regenerative cooling problems</a></li>
+<li><a class="reference internal" href="#model-film-cooling">Model film cooling</a></li>
+<li><a class="reference internal" href="#solve-full-engine-cycle-networks">Solve full engine-cycle networks</a></li>
+<li><a class="reference internal" href="#analyze-pumps-and-turbomachinery">Analyze pumps and turbomachinery</a></li>
+<li><a class="reference internal" href="#generate-plots-and-reports">Generate plots and reports</a></li>
+<li><a class="reference internal" href="#visualize-cooling-channel-geometry-in-3d">Visualize cooling-channel geometry in 3D</a></li>
+<li><a class="reference internal" href="#support-scripted-design-studies">Support scripted design studies</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
@@ -508,5 +714,7 @@
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     </body>
 </html>

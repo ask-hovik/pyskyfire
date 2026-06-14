@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Regenerative Cooling" href="regenerative-cooling-explanation.html"><link rel="prev" title="Pyskyfire Capabilities" href="capabilities.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Regenerative Cooling" href="regenerative-cooling-explanation.html"><link rel="prev" title="Capabilities" href="capabilities.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
         <title>Package Structure - pyskyfire</title>
@@ -11,6 +11,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=e79a130c" />
     
     
 
@@ -205,7 +206,7 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="capabilities.html">Pyskyfire Capabilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="capabilities.html">Capabilities</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Package Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="regenerative-cooling-explanation.html">Regenerative Cooling</a></li>
 </ul>
@@ -522,8 +523,8 @@
 </table>
 </div>
 </section>
-<section id="the-src-pyskyfire-package">
-<h2>2. The <code class="docutils literal notranslate"><span class="pre">src/pyskyfire/</span></code> package<a class="headerlink" href="#the-src-pyskyfire-package" title="Link to this heading">¶</a></h2>
+<section id="src-pyskyfire">
+<h2>2. <code class="docutils literal notranslate"><span class="pre">src/pyskyfire/</span></code><a class="headerlink" href="#src-pyskyfire" title="Link to this heading">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">src/pyskyfire/</span></code> directory contains the code that becomes the <code class="docutils literal notranslate"><span class="pre">pyskyfire</span></code> Python package after installation.</p>
 <p>The package content is as follows:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>src/pyskyfire/
@@ -545,12 +546,12 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pyskyfire</span><span class="o">.</span><span class="n">regen</span>
 </pre></div>
 </div>
-<section id="top-level-init-py">
-<h3>Top-level <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code><a class="headerlink" href="#top-level-init-py" title="Link to this heading">¶</a></h3>
-<p>The file <code class="docutils literal notranslate"><span class="pre">src/pyskyfire/__init__.py</span></code> marks <code class="docutils literal notranslate"><span class="pre">pyskyfire</span></code> as a Python package and exposes the main subpackages.</p>
+<section id="init-py">
+<h3><code class="docutils literal notranslate"><span class="pre">__init__.py</span></code><a class="headerlink" href="#init-py" title="Link to this heading">¶</a></h3>
+<p>The top-level file <code class="docutils literal notranslate"><span class="pre">src/pyskyfire/__init__.py</span></code> marks <code class="docutils literal notranslate"><span class="pre">pyskyfire</span></code> as a Python package and exposes the main subpackages.</p>
 </section>
-<section id="common">
-<h3><code class="docutils literal notranslate"><span class="pre">common</span></code><a class="headerlink" href="#common" title="Link to this heading">¶</a></h3>
+<section id="pyskyfire-common">
+<h3><code class="docutils literal notranslate"><span class="pre">pyskyfire.common</span></code><a class="headerlink" href="#pyskyfire-common" title="Link to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">common</span></code> contains objects and helper classes that are used by several other parts of Pyskyfire. It is where broadly useful concepts live: fluids, solids, results, engine stations, and engine-cycle blocks.</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -585,8 +586,8 @@
 </table>
 </div>
 </section>
-<section id="regen">
-<h3><code class="docutils literal notranslate"><span class="pre">regen</span></code><a class="headerlink" href="#regen" title="Link to this heading">¶</a></h3>
+<section id="pyskyfire-regen">
+<h3><code class="docutils literal notranslate"><span class="pre">pyskyfire.regen</span></code><a class="headerlink" href="#pyskyfire-regen" title="Link to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">regen</span></code> contains the thrust-chamber and regenerative-cooling model. This is one of the central subpackages in Pyskyfire.</p>
 <p>A useful mental model is:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>geometry + materials + coolant + hot-gas properties
@@ -638,8 +639,8 @@ wall temperatures, coolant temperatures, pressure losses, heat fluxes
 </table>
 </div>
 </section>
-<section id="skycea">
-<h3><code class="docutils literal notranslate"><span class="pre">skycea</span></code><a class="headerlink" href="#skycea" title="Link to this heading">¶</a></h3>
+<section id="pyskyfire-skycea">
+<h3><code class="docutils literal notranslate"><span class="pre">pyskyfire.skycea</span></code><a class="headerlink" href="#pyskyfire-skycea" title="Link to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">skycea</span></code> handles chemical-equilibrium and transport-property calculations. It connects engine geometry and propellant choices to the gas and coolant properties needed by the rest of the package.</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -668,12 +669,12 @@ wall temperatures, coolant temperatures, pressure losses, heat fluxes
 </table>
 </div>
 </section>
-<section id="pump-and-turbine">
-<h3><code class="docutils literal notranslate"><span class="pre">pump</span></code> and <code class="docutils literal notranslate"><span class="pre">turbine</span></code><a class="headerlink" href="#pump-and-turbine" title="Link to this heading">¶</a></h3>
+<section id="pyskyfire-pump-pyskyfire-turbine">
+<h3><code class="docutils literal notranslate"><span class="pre">pyskyfire.pump</span></code> / <code class="docutils literal notranslate"><span class="pre">pyskyfire.turbine</span></code><a class="headerlink" href="#pyskyfire-pump-pyskyfire-turbine" title="Link to this heading">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">pump</span></code> and <code class="docutils literal notranslate"><span class="pre">turbine</span></code> subpackages contain tools for turbopumps. They are both under development, and currently the pyskyfire package works fine without them. In the future, these packages will generate pump, turbine and manifold geometries, and expose other turbopump-relevant properties such as eigenfrequencies of the turbopump assembly.</p>
 </section>
-<section id="viz-plotting-reporting-and-geometry-visualisation">
-<h3><code class="docutils literal notranslate"><span class="pre">viz</span></code>: plotting, reporting, and geometry visualisation<a class="headerlink" href="#viz-plotting-reporting-and-geometry-visualisation" title="Link to this heading">¶</a></h3>
+<section id="pyskyfire-viz">
+<h3><code class="docutils literal notranslate"><span class="pre">pyskyfire.viz</span></code><a class="headerlink" href="#pyskyfire-viz" title="Link to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">viz</span></code> turns simulation data into plots, reports, and geometry views. It is where the package moves from numerical results to things a user can inspect visually.</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -875,7 +876,7 @@ Thrust chamber
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Pyskyfire Capabilities</div>
+                <div class="title">Capabilities</div>
                 
               </div>
             </a>
@@ -911,13 +912,13 @@ Thrust chamber
             <ul>
 <li><a class="reference internal" href="#">Package Structure</a><ul>
 <li><a class="reference internal" href="#the-repository-as-a-whole">1. The repository as a whole</a></li>
-<li><a class="reference internal" href="#the-src-pyskyfire-package">2. The <code class="docutils literal notranslate"><span class="pre">src/pyskyfire/</span></code> package</a><ul>
-<li><a class="reference internal" href="#top-level-init-py">Top-level <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code></a></li>
-<li><a class="reference internal" href="#common"><code class="docutils literal notranslate"><span class="pre">common</span></code></a></li>
-<li><a class="reference internal" href="#regen"><code class="docutils literal notranslate"><span class="pre">regen</span></code></a></li>
-<li><a class="reference internal" href="#skycea"><code class="docutils literal notranslate"><span class="pre">skycea</span></code></a></li>
-<li><a class="reference internal" href="#pump-and-turbine"><code class="docutils literal notranslate"><span class="pre">pump</span></code> and <code class="docutils literal notranslate"><span class="pre">turbine</span></code></a></li>
-<li><a class="reference internal" href="#viz-plotting-reporting-and-geometry-visualisation"><code class="docutils literal notranslate"><span class="pre">viz</span></code>: plotting, reporting, and geometry visualisation</a></li>
+<li><a class="reference internal" href="#src-pyskyfire">2. <code class="docutils literal notranslate"><span class="pre">src/pyskyfire/</span></code></a><ul>
+<li><a class="reference internal" href="#init-py"><code class="docutils literal notranslate"><span class="pre">__init__.py</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire-common"><code class="docutils literal notranslate"><span class="pre">pyskyfire.common</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire-regen"><code class="docutils literal notranslate"><span class="pre">pyskyfire.regen</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire-skycea"><code class="docutils literal notranslate"><span class="pre">pyskyfire.skycea</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire-pump-pyskyfire-turbine"><code class="docutils literal notranslate"><span class="pre">pyskyfire.pump</span></code> / <code class="docutils literal notranslate"><span class="pre">pyskyfire.turbine</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire-viz"><code class="docutils literal notranslate"><span class="pre">pyskyfire.viz</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#how-the-subpackages-fit-together">3. How the subpackages fit together</a></li>
