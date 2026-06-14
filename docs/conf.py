@@ -81,6 +81,9 @@ html_theme   = "furo"
 html_title   = "pyskyfire"
 templates_path = ["_templates"]
 html_static_path = ["_static"]
+html_css_files = [
+    "custom.css",
+]
 
 # Python changes
 python_use_unqualified_type_names = True

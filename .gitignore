@@ -110,7 +110,9 @@ grisson_pseudo.py
 test_claudeAttempt2.py
 uv.lock
 claudeAttempt2.py
+useful_commands.md
 /trash
+/tools
 
 
 # If you don't want to track your dill folder or any generated data, uncomment:

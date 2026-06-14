@@ -47,7 +47,7 @@ The most important folder for the actual library code is `src/`. The other folde
 | `validation/` | Contains cases that compare Pyskyfire against reference data, published results, known solutions, or other tools. These are mainly about credibility rather than teaching the interface. |
 
 
-## 2. The `src/pyskyfire/` package
+## 2. `src/pyskyfire/`
 
 The `src/pyskyfire/` directory contains the code that becomes the `pyskyfire` Python package after installation.
 
@@ -78,11 +78,11 @@ is a module, and it belongs to the subpackage:
 pyskyfire.regen
 ```
 
-### Top-level `__init__.py`
+### `__init__.py`
 
-The file `src/pyskyfire/__init__.py` marks `pyskyfire` as a Python package and exposes the main subpackages.
+The top-level file `src/pyskyfire/__init__.py` marks `pyskyfire` as a Python package and exposes the main subpackages.
 
-### `common`
+### `pyskyfire.common`
 
 `common` contains objects and helper classes that are used by several other parts of Pyskyfire. It is where broadly useful concepts live: fluids, solids, results, engine stations, and engine-cycle blocks.
 
@@ -96,7 +96,7 @@ The file `src/pyskyfire/__init__.py` marks `pyskyfire` as a Python package and e
 | `constants.py` | Stores shared constants that may be used across modules. Keeping constants in one place avoids repeating the same numbers throughout the code. |
 | `__init__.py` | Re-exports selected objects from the `common` subpackage so they are easier to import. |
 
-### `regen`
+### `pyskyfire.regen`
 
 `regen` contains the thrust-chamber and regenerative-cooling model. This is one of the central subpackages in Pyskyfire.
 
@@ -123,7 +123,7 @@ wall temperatures, coolant temperatures, pressure losses, heat fluxes
 | `film_solver_2.py` | Contains a newer or alternative film-cooling implementation. New users should normally start from documented examples or validation cases before relying on experimental modules. |
 | `__init__.py` | Re-exports selected objects from the `regen` subpackage so common classes and functions are easier to import. |
 
-### `skycea`
+### `pyskyfire.skycea`
 
 `skycea` handles chemical-equilibrium and transport-property calculations. It connects engine geometry and propellant choices to the gas and coolant properties needed by the rest of the package.
 
@@ -135,11 +135,11 @@ wall temperatures, coolant temperatures, pressure losses, heat fluxes
 | `data/` | Contains data files needed by the CEA wrapper, such as transport-property library data. |
 | `__init__.py` | Re-exports selected skycea functionality for easier imports. |
 
-### `pump` and `turbine`
+### `pyskyfire.pump` / `pyskyfire.turbine`
 
 The `pump` and `turbine` subpackages contain tools for turbopumps. They are both under development, and currently the pyskyfire package works fine without them. In the future, these packages will generate pump, turbine and manifold geometries, and expose other turbopump-relevant properties such as eigenfrequencies of the turbopump assembly. 
 
-### `viz`: plotting, reporting, and geometry visualisation
+### `pyskyfire.viz`
 
 `viz` turns simulation data into plots, reports, and geometry views. It is where the package moves from numerical results to things a user can inspect visually.
 
