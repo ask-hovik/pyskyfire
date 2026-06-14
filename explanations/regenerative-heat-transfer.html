@@ -173,7 +173,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -183,7 +183,6 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
   
-  <span class="sidebar-brand-text">pyskyfire</span>
   
 </a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -446,14 +445,157 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
           <section id="regenerative-cooling-heat-transfer-in-pyskyfire">
 <h1>Regenerative Cooling Heat Transfer in Pyskyfire<a class="headerlink" href="#regenerative-cooling-heat-transfer-in-pyskyfire" title="Link to this heading">¶</a></h1>
-<p>This explanation goes into depth around how Pyskyfire handles the regenerative cooling heat transfer.</p>
+<p>The regenerative cooling solver is one of the core capabilities of pyskyfire. It predicts the heat transfer from the hot combustion gases through the thrust chamber wall into the coolant flowing in the cooling channels. The solver is implemented as a quasi-1D, steady-state model that balances heat transfer on the hot gas side, conduction through the wall (including multiple layers), and heat transfer into the coolant.</p>
+<p>This explanation focuses on the physics and assumptions implemented in the <code class="docutils literal notranslate"><span class="pre">regen</span></code> module (primarily <code class="docutils literal notranslate"><span class="pre">physics.py</span></code> and <code class="docutils literal notranslate"><span class="pre">solver.py</span></code>).</p>
+<section id="overall-approach-and-assumptions">
+<h2>1. Overall Approach and Assumptions<a class="headerlink" href="#overall-approach-and-assumptions" title="Link to this heading">¶</a></h2>
+<p>The regenerative cooling model follows a <strong>quasi-1D steady-state</strong> approach, consistent with established tools such as those described by Binder et al. (1997). The main assumptions are:</p>
+<ul class="simple">
+<li><p>Flow and heat transfer are treated as one-dimensional along the axial direction of the thrust chamber.</p></li>
+<li><p>No axial heat conduction in the wall (temperature gradients in the radial direction dominate).</p></li>
+<li><p>Propellants are treated as incompressible while in the liquid phase.</p></li>
+<li><p>Chemical equilibrium is assumed at every station in the combustion gas.</p></li>
+<li><p>Heat transfer coefficients are calculated using established engineering correlations (Bartz on the hot gas side, Colburn on the coolant side) rather than full CFD.</p></li>
+<li><p>The model is enthalpy-driven on the hot gas side (better correlation with experimental data for combustion flows) and temperature-driven on the coolant side.</p></li>
+</ul>
+<p>The solver marches along the thrust chamber contour, solving a system of differential equations for wall temperatures, coolant temperature, and coolant pressure at each station.</p>
+</section>
+<section id="combustion-gas-aerothermodynamics-hot-gas-properties">
+<h2>2. Combustion Gas Aerothermodynamics (Hot Gas Properties)<a class="headerlink" href="#combustion-gas-aerothermodynamics-hot-gas-properties" title="Link to this heading">¶</a></h2>
+<p>Before solving the cooling problem, the hot gas properties along the thrust chamber must be known. These are obtained from chemical equilibrium calculations (via the <code class="docutils literal notranslate"><span class="pre">skycea</span></code> module, based on NASA CEA-style methods).</p>
+<p>At each axial station $x$:</p>
+<ul class="simple">
+<li><p>The local area ratio $\varepsilon(x) = A_x / A_t$ is calculated from the contour geometry.</p></li>
+<li><p>The local Mach number $M(x)$ is found from the isentropic area-Mach relation (subsonic before the throat, supersonic after).</p></li>
+<li><p>Local temperature $T(x)$ and pressure $p(x)$ are computed using isentropic relations.</p></li>
+<li><p>Gas composition is equilibrated at the local $T$ and $p$.</p></li>
+<li><p>Thermodynamic and transport properties are then interpolated:</p></li>
+</ul>
+<p>$$
+\rho_g, \mu_g, \Pr_g, c_{p,g}, k_g = f(T, p)
+$$</p>
+<p>The isentropic exponent is:</p>
+<p>$$
+\gamma = \frac{c_p}{c_v}
+$$</p>
+<p>These properties (especially those evaluated at reference enthalpy conditions averaged between the freestream gas and wall) are used as inputs to the hot gas heat transfer calculation.</p>
+</section>
+<section id="hot-gas-side-heat-transfer">
+<h2>3. Hot Gas Side Heat Transfer<a class="headerlink" href="#hot-gas-side-heat-transfer" title="Link to this heading">¶</a></h2>
+<p>pyskyfire uses an <strong>enthalpy-driven</strong> heat transfer formulation on the hot gas side, following Binder et al. (1997). This approach generally shows better agreement with experimental data than purely temperature-driven models for combustion gases.</p>
+<p>The heat transfer rate to the wall is:</p>
+<p>$$
+\dot{Q}<em>{hw} = h_g A_h (H</em>{aw} - H_{hw})
+$$</p>
+<p>where:</p>
+<ul class="simple">
+<li><p>$H_{aw}$ = adiabatic wall enthalpy</p></li>
+<li><p>$H_{hw}$ = hot wall enthalpy</p></li>
+<li><p>$A_h$ = heat transfer area on the hot gas side</p></li>
+</ul>
+<p>The enthalpy-based heat transfer coefficient is defined as:</p>
+<p>$$
+h_g = \frac{h_{gr}}{c_{p,gr}}
+$$</p>
+<p>Here the subscript $r$ denotes properties evaluated at a reference enthalpy condition (average between freestream gas and wall surface conditions).</p>
+<p>The hot gas heat transfer coefficient $h_{gr}$ is calculated using the <strong>Bartz correlation</strong> (as presented by Binder):</p>
+<p>$$
+h_{\text{Bartz}} = 0.026 \frac{k_{gr}}{D_h} \left( \frac{c_{p,gr}}{k_{gr} \mu_{gr}} \right)^{0.4} \left( \frac{\dot{m}<em>g D_h}{A</em>{\text{chmb}}} \right)^{0.8} \frac{T_g}{T_{gr}}
+$$</p>
+<p>A curvature correction is sometimes applied in the code for regions of high contour curvature.</p>
+</section>
+<section id="conduction-through-the-wall">
+<h2>4. Conduction Through the Wall<a class="headerlink" href="#conduction-through-the-wall" title="Link to this heading">¶</a></h2>
+<p>Heat conduction through the thrust chamber wall (which may consist of multiple layers, e.g., liner + thermal barrier coating) is modeled using Fourier’s law in one dimension (radial direction).</p>
+<p>For a wall layer of thickness $\delta_j$ and conductivity $k_j$:</p>
+<p>$$
+R_j(x) = \frac{\delta_j(x)}{k_j} \frac{dA_h}{dx}
+$$</p>
+<p>The temperature drop across each layer is:</p>
+<p>$$
+\Delta T_j = \frac{d\dot{Q}_{\text{cond}}}{dx} R_j
+$$</p>
+<p>The temperature at the interface between layers is updated iteratively:</p>
+<p>$$
+T_{j+1} = T_j - \Delta T_j
+$$</p>
+<p>This allows pyskyfire to compute both the hot-side wall temperature ($T_{hw}$) and cold-side wall temperature ($T_{cw}$) even with multi-layer walls.</p>
+</section>
+<section id="cold-side-coolant-heat-transfer">
+<h2>5. Cold Side (Coolant) Heat Transfer<a class="headerlink" href="#cold-side-coolant-heat-transfer" title="Link to this heading">¶</a></h2>
+<p>On the coolant side, a <strong>temperature-driven</strong> formulation is used (Newton’s law of cooling):</p>
+<p>$$
+\dot{Q}<em>{cw} = h_c A_c (T</em>{cw} - T_{\text{cool}})
+$$</p>
+<p>The coolant-side heat transfer coefficient is calculated using a modified <strong>Colburn correlation</strong> with a curvature correction factor:</p>
+<p>$$
+h_{\text{Colburn}} = 0.023 \frac{k_{cf}}{D_{h,c}} \left( \frac{c_{p,cf}}{k_{cf} \mu_{cf}} \right)^{0.4} \left( \frac{\dot{m}<em>c D</em>{h,c}}{A_{\text{chn}}} \right)^{0.8} \varphi_{\text{curv}}
+$$</p>
+<p>where the subscript $cf$ denotes coolant properties evaluated at film conditions (average of bulk coolant and cold wall temperature).</p>
+<p>The <strong>curvature correction factor</strong> $\varphi_{\text{curv}}$ accounts for the effect of channel curvature on the boundary layer:</p>
+<p>$$
+\varphi_{\text{curv}} = \left( \text{Re}<em>{D_h} \frac{D_h}{2 R</em>{\text{curv}}} \right)^{0.05}
+$$</p>
+<p>The local radius of curvature $R_{\text{curv}}(x)$ is computed from the second derivative of the contour:</p>
+<p>$$
+R_{\text{curv}}(x) = \frac{\left(1 + \left( \frac{dr}{dx} \right)^2 \right)^{3/2}}{\frac{d^2 r}{dx^2}}
+$$</p>
+</section>
+<section id="overall-solver-and-coupling-solver-py">
+<h2>6. Overall Solver and Coupling (solver.py)<a class="headerlink" href="#overall-solver-and-coupling-solver-py" title="Link to this heading">¶</a></h2>
+<p>The three heat transfer mechanisms (hot gas, conduction, coolant) are coupled through energy balance at steady state:</p>
+<p>$$
+\dot{Q}<em>{hw} = \dot{Q}</em>{\text{cond}} = \dot{Q}_{cw}
+$$</p>
+<p>The solver marches along the thrust chamber and solves the following system of differential equations:</p>
+<p><strong>Hot gas side:</strong>
+$$
+\frac{d\dot{Q}<em>{hw}}{dx} = h_g(x) \frac{dA_h}{dx} (H</em>{aw}(x) - H_{hw}(x))
+$$</p>
+<p><strong>Wall conduction:</strong>
+$$
+\frac{d\dot{Q}<em>{\text{cond}}}{dx} = k(x) \frac{dA_h}{dx} \frac{T</em>{hw}(x) - T_{cw}(x)}{L(x)}
+$$</p>
+<p><strong>Coolant side:</strong>
+$$
+\frac{d\dot{Q}<em>{cw}}{dx} = h_c(x) \frac{dA_c}{dx} (T</em>{cw}(x) - T_{\text{cool}}(x))
+$$</p>
+<p>From energy balance on the coolant:</p>
+<p>$$
+\frac{dT_{\text{cool}}}{dx} = \frac{1}{\dot{m} c_p} \frac{d\dot{Q}_{cw}}{dx}
+$$</p>
+<p>Coolant pressure drop (including friction):</p>
+<p>$$
+\frac{dp_{0,\text{cool}}}{dx} = -\frac{f \rho v^2}{D_h \cdot 2}
+$$</p>
+<p>The friction factor $f$ is determined from the Reynolds number using the laminar Darcy formula or the Colebrook-White equation (with linear blending in the transitional regime $2300 &lt; \text{Re}_{D_h} &lt; 3500$).</p>
+<p>The solver iterates until the residuals (typically update residuals between iterations) converge to a satisfactory tolerance. pyskyfire tracks both local cell residuals and a global norm (usually $L_\infty$ or averaged $L_2$).</p>
+</section>
+<section id="summary-of-key-physics">
+<h2>Summary of Key Physics<a class="headerlink" href="#summary-of-key-physics" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>Hot gas side</strong>: Enthalpy-driven (Binder/Bartz)</p></li>
+<li><p><strong>Wall</strong>: Multi-layer conduction with temperature continuity</p></li>
+<li><p><strong>Coolant side</strong>: Temperature-driven (Colburn) + curvature correction</p></li>
+<li><p><strong>Coupling</strong>: Strict energy balance at steady state</p></li>
+<li><p><strong>Numerical method</strong>: Forward marching 1D finite volume / finite difference approach</p></li>
+</ul>
+<p>This model strikes a practical balance between physical fidelity and computational speed, making it suitable for design space exploration while still producing results that compare well with RL10 data (as shown in the validation section of the thesis).</p>
+<hr class="docutils" />
+<p><strong>References</strong> (from the original thesis)</p>
+<ul class="simple">
+<li><p>Binder et al. (1997) — Enthalpy-based heat transfer approach</p></li>
+<li><p>Huzel &amp; Huang — Classic rocket propulsion design reference</p></li>
+<li><p>Bartz and Colburn correlations (standard engineering practice)T</p></li>
+</ul>
+</section>
 </section>
 
         </article>
@@ -499,8 +641,33 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Regenerative Cooling Heat Transfer in Pyskyfire</a><ul>
+<li><a class="reference internal" href="#overall-approach-and-assumptions">1. Overall Approach and Assumptions</a></li>
+<li><a class="reference internal" href="#combustion-gas-aerothermodynamics-hot-gas-properties">2. Combustion Gas Aerothermodynamics (Hot Gas Properties)</a></li>
+<li><a class="reference internal" href="#hot-gas-side-heat-transfer">3. Hot Gas Side Heat Transfer</a></li>
+<li><a class="reference internal" href="#conduction-through-the-wall">4. Conduction Through the Wall</a></li>
+<li><a class="reference internal" href="#cold-side-coolant-heat-transfer">5. Cold Side (Coolant) Heat Transfer</a></li>
+<li><a class="reference internal" href="#overall-solver-and-coupling-solver-py">6. Overall Solver and Coupling (solver.py)</a></li>
+<li><a class="reference internal" href="#summary-of-key-physics">Summary of Key Physics</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
