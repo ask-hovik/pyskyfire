@@ -87,3 +87,13 @@ def skip_autoapi_members(app, what, name, obj, skip, options):
 
 def setup(app):
     app.connect("autoapi-skip-member", skip_autoapi_members)
+
+# Logo
+html_logo = "_static/pyskyfire_header.png"   # or .png
+
+# Optional but recommended with Furo
+html_theme_options = {
+    "sidebar_hide_name": True,      # Hides the text "pyskyfire" when logo is shown
+    # "light_logo": "_static/pyskyfire-logo-light.svg",   # if you have separate light/dark versions
+    # "dark_logo": "_static/pyskyfire-logo-dark.svg",
+}
