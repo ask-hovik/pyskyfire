@@ -57,7 +57,15 @@ autosummary_generate = False
 # If you decided to keep the typehints extension:
 # autodoc_typehints = "none"
 
-myst_enable_extensions = ["colon_fence", "deflist", "substitution", "attrs_inline", "tasklist"]
+myst_enable_extensions = [
+    "colon_fence",
+    "deflist",
+    "substitution",
+    "attrs_inline",
+    "tasklist",
+    "dollarmath", 
+    "amsmath",         
+]
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),

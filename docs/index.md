@@ -39,7 +39,7 @@ howto/making-validation-case
 
 explanations/capabilities
 explanations/package-structure
-explanations/regenerative-heat-transfer
+explanations/regenerative-cooling-explanation
 ```
 
 ```{toctree}

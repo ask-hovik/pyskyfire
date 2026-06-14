@@ -326,8 +326,8 @@ class HeatExchangerPhysics:
 
     
 
-def solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, circuit_index, output, log_residuals=True):
-    """Solve 1-D steady heating with a marching Euler scheme.
+def solve_heat_exchanger(thrust_chamber, boundary_conditions, n_nodes, circuit_index, output, log_residuals=True):
+    """Solve 1-D steady heating with a marching scheme.
 
     Parameters
     ----------
@@ -656,10 +656,10 @@ def steady_heating_analysis(thrust_chamber, boundary_conditions, n_nodes=100, ci
     Returns
     -------
     dict
-        See :func:`solve_heat_exchanger_euler` for keys.
+        See :func:`solve_heat_exchanger` for keys.
     """
     if solver.lower() == "newton":
-        return solve_heat_exchanger_euler(thrust_chamber, boundary_conditions, n_nodes, circuit_index, output)
+        return solve_heat_exchanger(thrust_chamber, boundary_conditions, n_nodes, circuit_index, output)
     else: 
         print("solver name not recognized")
     # possibility to implement other solvers here
