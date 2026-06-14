@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Regenerative Cooling" href="regenerative-cooling-explanation.html"><link rel="prev" title="Pyskyfire Capabilities" href="capabilities.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Pyskyfire Package Structure - pyskyfire</title>
+        <title>Package Structure - pyskyfire</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
@@ -173,7 +173,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -206,7 +206,7 @@
 <p class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="capabilities.html">Pyskyfire Capabilities</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Pyskyfire Package Structure</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Package Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="regenerative-cooling-explanation.html">Regenerative Cooling</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
@@ -445,14 +445,413 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section class="tex2jax_ignore mathjax_ignore" id="pyskyfire-package-structure">
-<h1>Pyskyfire Package Structure<a class="headerlink" href="#pyskyfire-package-structure" title="Link to this heading">¶</a></h1>
-<p>This explanation gives an overview of the organisation of the Pyskyfire package.</p>
+          <section class="tex2jax_ignore mathjax_ignore" id="package-structure">
+<h1>Package Structure<a class="headerlink" href="#package-structure" title="Link to this heading">¶</a></h1>
+<p>This page explains how the Pyskyfire repository is organised. It is written for users who are comfortable with engineering and Python scripts, but who may not have spent much time inside a Python package before.</p>
+<p>The goal of this page is to give you a mental map of where things live, what each part is responsible for, and how the different parts of the project fit together.</p>
+<section id="the-repository-as-a-whole">
+<h2>1. The repository as a whole<a class="headerlink" href="#the-repository-as-a-whole" title="Link to this heading">¶</a></h2>
+<p>When you open the Pyskyfire repository, you are looking at more than the Python code itself. A software repository usually contains:</p>
+<ul class="simple">
+<li><p>the source code,</p></li>
+<li><p>examples showing how the code is used,</p></li>
+<li><p>validation cases showing whether the code reproduces known results,</p></li>
+<li><p>documentation,</p></li>
+<li><p>configuration files telling Python and Git how to treat the project,</p></li>
+<li><p>images and generated content</p></li>
+</ul>
+<p>A simplified view of the root directory is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>pyskyfire/
+├── .gitattributes
+├── .gitignore
+├── LICENSE
+├── README.md
+├── pyproject.toml
+├── docs/
+├── examples/
+├── images/
+├── src/
+└── validation/
+</pre></div>
+</div>
+<p>The most important folder for the actual library code is <code class="docutils literal notranslate"><span class="pre">src/</span></code>. The other folders explain, demonstrate, test, package, or present that code.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>File or folder</p></th>
+<th class="head"><p>What it is for</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">.gitignore</span></code></p></td>
+<td><p>Tells Git which files should not be tracked. In practice, this keeps local caches, virtual environments, build products, generated outputs, private data, and temporary files out of the repository history.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">.gitattributes</span></code></p></td>
+<td><p>Gives GitHub extra instructions about how to treat certain files. In Pyskyfire it marks generated HTML reports in <code class="docutils literal notranslate"><span class="pre">examples/</span></code> and <code class="docutils literal notranslate"><span class="pre">validation/</span></code> as generated, so they do not dominate GitHub’s language statistics.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LICENSE</span></code></p></td>
+<td><p>States the legal terms for using and modifying the project. Pyskyfire uses the MIT License, which is permissive, but also makes clear that the software is provided without warranty.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">README.md</span></code></p></td>
+<td><p>The front page of the GitHub repository. It introduces what Pyskyfire is, shows the main capabilities, gives a minimal installation command, and points users toward examples and validation cases.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code></p></td>
+<td><p>The main configuration file for the Python package. It defines the package name, version, dependencies, build system, optional documentation dependencies, and tells the build system that the importable package lives in <code class="docutils literal notranslate"><span class="pre">src/pyskyfire</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">docs/</span></code></p></td>
+<td><p>Contains the documentation website. This includes tutorials, how-to guides, explanations such as this page, and generated API reference pages.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">examples/</span></code></p></td>
+<td><p>Contains scripts that demonstrate how to use the package. These are primarily teaching material: they show workflows and interfaces that users can copy and adapt.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">images/</span></code></p></td>
+<td><p>Stores figures used in the README and documentation, such as plots, screenshots, and rendered engine or cooling-channel images.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">src/</span></code></p></td>
+<td><p>Contains the actual installable Python package. When a user writes <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">pyskyfire</span></code>, Python imports code from <code class="docutils literal notranslate"><span class="pre">src/pyskyfire</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">validation/</span></code></p></td>
+<td><p>Contains cases that compare Pyskyfire against reference data, published results, known solutions, or other tools. These are mainly about credibility rather than teaching the interface.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="the-src-pyskyfire-package">
+<h2>2. The <code class="docutils literal notranslate"><span class="pre">src/pyskyfire/</span></code> package<a class="headerlink" href="#the-src-pyskyfire-package" title="Link to this heading">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">src/pyskyfire/</span></code> directory contains the code that becomes the <code class="docutils literal notranslate"><span class="pre">pyskyfire</span></code> Python package after installation.</p>
+<p>The package content is as follows:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>src/pyskyfire/
+├── __init__.py
+├── common/
+├── regen/
+├── skycea/
+├── pump/
+├── turbine/
+└── viz/
+</pre></div>
+</div>
+<p>Each subfolder is a <em>subpackage</em>. A subpackage is a folder containing related Python modules. A module is a single <code class="docutils literal notranslate"><span class="pre">.py</span></code> file.</p>
+<p>For example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>src/pyskyfire/regen/solver.py
+</pre></div>
+</div>
+<p>is a module, and it belongs to the subpackage:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pyskyfire</span><span class="o">.</span><span class="n">regen</span>
+</pre></div>
+</div>
+<section id="top-level-init-py">
+<h3>Top-level <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code><a class="headerlink" href="#top-level-init-py" title="Link to this heading">¶</a></h3>
+<p>The file <code class="docutils literal notranslate"><span class="pre">src/pyskyfire/__init__.py</span></code> marks <code class="docutils literal notranslate"><span class="pre">pyskyfire</span></code> as a Python package and exposes the main subpackages.</p>
+</section>
+<section id="common">
+<h3><code class="docutils literal notranslate"><span class="pre">common</span></code><a class="headerlink" href="#common" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">common</span></code> contains objects and helper classes that are used by several other parts of Pyskyfire. It is where broadly useful concepts live: fluids, solids, results, engine stations, and engine-cycle blocks.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Role</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fluids.py</span></code></p></td>
+<td><p>Defines a <code class="docutils literal notranslate"><span class="pre">Fluid</span></code> helper for propellant and coolant mixtures. It stores component names, composition fractions, and whether the mixture is given on a mass or mole basis.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">solids.py</span></code></p></td>
+<td><p>Defines material-property models for solids. These can represent constant, polynomial, tabulated, or piecewise temperature-dependent properties such as thermal conductivity.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">results.py</span></code></p></td>
+<td><p>Defines a dictionary-like <code class="docutils literal notranslate"><span class="pre">Results</span></code> container with dot access and save/load functionality. This is useful for storing simulation outputs in a convenient way.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">engine_network.py</span></code></p></td>
+<td><p>Defines <code class="docutils literal notranslate"><span class="pre">Station</span></code> objects and the <code class="docutils literal notranslate"><span class="pre">EngineNetwork</span></code> fixed-point framework. This is used to connect pumps, turbines, cooling circuits, and other components into a larger engine-cycle calculation.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">blocks.py</span></code></p></td>
+<td><p>Defines the block interface used by the engine network. A block reads stations and/or scalar signals, performs a calculation, and returns updated stations and signals.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">constants.py</span></code></p></td>
+<td><p>Stores shared constants that may be used across modules. Keeping constants in one place avoids repeating the same numbers throughout the code.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">__init__.py</span></code></p></td>
+<td><p>Re-exports selected objects from the <code class="docutils literal notranslate"><span class="pre">common</span></code> subpackage so they are easier to import.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="regen">
+<h3><code class="docutils literal notranslate"><span class="pre">regen</span></code><a class="headerlink" href="#regen" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">regen</span></code> contains the thrust-chamber and regenerative-cooling model. This is one of the central subpackages in Pyskyfire.</p>
+<p>A useful mental model is:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>geometry + materials + coolant + hot-gas properties
+                  ↓
+          regenerative cooling solver
+                  ↓
+wall temperatures, coolant temperatures, pressure losses, heat fluxes
+</pre></div>
+</div>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Role</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">contour.py</span></code></p></td>
+<td><p>Defines the hot-gas contour of the chamber and nozzle. It provides local radius, area, throat geometry, expansion ratio, contraction ratio, and wall slope.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cross_section.py</span></code></p></td>
+<td><p>Defines cooling-channel cross-section models. These provide flow area, hydraulic diameter, thermal perimeter, coolant wetted perimeter, and thermal resistance information.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">channel_height.py</span></code></p></td>
+<td><p>Contains logic for channel-height distributions along the chamber. This lets cooling-channel geometry vary with axial position.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">channel_placement.py</span></code></p></td>
+<td><p>Describes how cooling channels are placed around or inside the chamber wall. This includes channel counts and placement logic that affect per-channel mass flow.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">thrust_chamber.py</span></code></p></td>
+<td><p>Ties the physical thrust-chamber model together. It contains wall layers, cooling circuits, film-cooling inputs, and the chamber object used by the solver.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">physics.py</span></code></p></td>
+<td><p>Contains local engineering correlations used by the solver, such as Bartz-style hot-gas heat transfer, Colburn coolant-side heat transfer, Reynolds number, Darcy friction factor, and adiabatic wall temperature.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">solver.py</span></code></p></td>
+<td><p>Runs the regenerative-cooling calculation. It marches along the cooling circuit, solves local wall heat balances, and updates coolant temperature and pressure.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">film_solver.py</span></code></p></td>
+<td><p>Contains film-cooling model functionality. Film cooling is separate from regenerative cooling because coolant is injected into the hot-gas side rather than only flowing inside wall channels.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">film_solver_2.py</span></code></p></td>
+<td><p>Contains a newer or alternative film-cooling implementation. New users should normally start from documented examples or validation cases before relying on experimental modules.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">__init__.py</span></code></p></td>
+<td><p>Re-exports selected objects from the <code class="docutils literal notranslate"><span class="pre">regen</span></code> subpackage so common classes and functions are easier to import.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="skycea">
+<h3><code class="docutils literal notranslate"><span class="pre">skycea</span></code><a class="headerlink" href="#skycea" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">skycea</span></code> handles chemical-equilibrium and transport-property calculations. It connects engine geometry and propellant choices to the gas and coolant properties needed by the rest of the package.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Role</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">aerothermodynamics.py</span></code></p></td>
+<td><p>Computes and stores hot-gas properties along the chamber/nozzle contour using CEA-based calculations. The regenerative-cooling solver uses this to get gas temperature, pressure, Mach number, enthalpy, viscosity, thermal conductivity, Prandtl number, and other properties at each axial location.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">coolant_transport.py</span></code></p></td>
+<td><p>Defines transport-property containers for coolants and other fluids. Properties such as density, heat capacity, viscosity, conductivity, and Prandtl number can be constants or functions of temperature and pressure.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">nozzle_solver.py</span></code></p></td>
+<td><p>Contains nozzle and CEA-based performance utilities. It supports the broader role of connecting propellants, chamber conditions, nozzle geometry, and CEA outputs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">data/</span></code></p></td>
+<td><p>Contains data files needed by the CEA wrapper, such as transport-property library data.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">__init__.py</span></code></p></td>
+<td><p>Re-exports selected skycea functionality for easier imports.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="pump-and-turbine">
+<h3><code class="docutils literal notranslate"><span class="pre">pump</span></code> and <code class="docutils literal notranslate"><span class="pre">turbine</span></code><a class="headerlink" href="#pump-and-turbine" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">pump</span></code> and <code class="docutils literal notranslate"><span class="pre">turbine</span></code> subpackages contain tools for turbopumps. They are both under development, and currently the pyskyfire package works fine without them. In the future, these packages will generate pump, turbine and manifold geometries, and expose other turbopump-relevant properties such as eigenfrequencies of the turbopump assembly.</p>
+</section>
+<section id="viz-plotting-reporting-and-geometry-visualisation">
+<h3><code class="docutils literal notranslate"><span class="pre">viz</span></code>: plotting, reporting, and geometry visualisation<a class="headerlink" href="#viz-plotting-reporting-and-geometry-visualisation" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">viz</span></code> turns simulation data into plots, reports, and geometry views. It is where the package moves from numerical results to things a user can inspect visually.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Role</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">core.py</span></code></p></td>
+<td><p>Defines common Plotly helper functionality used by several plotting classes. It provides shared behaviour for configuring, showing, and saving figures.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">plot_regen.py</span></code></p></td>
+<td><p>Plotting tools for regenerative-cooling results, such as wall temperature, coolant temperature, pressure, heat flux, and heat-transfer coefficients.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">plot_film_cooling.py</span></code></p></td>
+<td><p>Plotting tools for film-cooling results.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">plot_skycea.py</span></code></p></td>
+<td><p>Plotting tools for aerothermodynamic and CEA-derived results.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">plot_common.py</span></code></p></td>
+<td><p>Shared plotting utilities used by several plotting modules.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">engine_viz.py</span></code></p></td>
+<td><p>3D engine and cooling-channel visualisation tools. This includes geometry-oriented views of cooling circuits and engine structure.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">impeller_viz.py</span></code></p></td>
+<td><p>Visualisation tools for pump and impeller geometry.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">report.py</span></code></p></td>
+<td><p>Report-generation helpers for collecting plots, tables, and simulation summaries.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">lookup_tables.py</span></code></p></td>
+<td><p>Lookup-table support used by plotting or reporting workflows.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">__init__.py</span></code></p></td>
+<td><p>Re-exports selected visualisation functions and classes for easier imports.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<section id="how-the-subpackages-fit-together">
+<h2>3. How the subpackages fit together<a class="headerlink" href="#how-the-subpackages-fit-together" title="Link to this heading">¶</a></h2>
+<p>The subpackages each have a responsibility, but in order to run a regenerative cooling analysis or a full cycle analysis, the packages work together. A typical regenerative-cooling analysis might work like this:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">common</span></code> defines shared concepts such as fluids, solids, stations, blocks, and results.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">skycea</span></code> provides gas and coolant property models.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">regen</span></code> defines the thrust chamber, cooling channels, wall layers, heat-transfer correlations, and regenerative-cooling solver.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pump</span></code> and <code class="docutils literal notranslate"><span class="pre">turbine</span></code> provide machinery-related utilities and can be connected into an engine-cycle model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">common.engine_network</span></code> and <code class="docutils literal notranslate"><span class="pre">common.blocks</span></code> allow component models to be connected into a full engine network.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">viz</span></code> turns the resulting data into plots, reports, and geometry visualisations.</p></li>
+</ol>
+<p>Geometry, material data, gas properties, heat-transfer correlations, numerical solvers, engine-cycle logic, and visualisation are different responsibilities. The idea is that keeping these responsibilities in different subpackages makes the code easier to test, replace, and understand.</p>
+</section>
+<section id="example-versus-validation-entry">
+<h2>4. Example versus validation entry<a class="headerlink" href="#example-versus-validation-entry" title="Link to this heading">¶</a></h2>
+<p>The differences between examples and validation cases are important.</p>
+<p>An <strong>example</strong> primarily teaches usage. A good example says:</p>
+<blockquote>
+<div><p>“Here is how you use this feature.”</p>
+</div></blockquote>
+<p>It may use simplified input data. It may prioritise readability over physical correctness. It should be easy to copy, modify, and run.</p>
+<p>Examples belong in the <code class="docutils literal notranslate"><span class="pre">examples/</span></code> folder in the root directory.</p>
+<p>A <strong>validation entry</strong> primarily tests credibility. A good validation case says:</p>
+<blockquote>
+<div><p>“Here is evidence that this feature gives reasonable results for a known case.”</p>
+</div></blockquote>
+<p>It should explain:</p>
+<ul class="simple">
+<li><p>what reference data is used,</p></li>
+<li><p>where the reference data came from,</p></li>
+<li><p>what assumptions were made,</p></li>
+<li><p>what quantities are compared,</p></li>
+<li><p>where the model agrees and where it does not,</p></li>
+<li><p>an interpretation of the result.</p></li>
+</ul>
+<p>Validation cases belong in the <code class="docutils literal notranslate"><span class="pre">validation/</span></code> folder in thr root directory:</p>
+<p>A validation case can also be educational. After all, they show how the program is used to represent real hardware. But their primary purposes are different:</p>
+<p>| Folder | Main question |
+|—|—|—|
+| <code class="docutils literal notranslate"><span class="pre">examples/</span></code> | “How do I use this?” |
+| <code class="docutils literal notranslate"><span class="pre">validation/</span></code> | “What does the result reveal” |</p>
+</section>
+<section id="how-to-read-the-code-without-getting-lost">
+<h2>5. How to read the code without getting lost<a class="headerlink" href="#how-to-read-the-code-without-getting-lost" title="Link to this heading">¶</a></h2>
+<p>Pyskyfire is mostly written in an <strong>object-oriented</strong> style. This means that the code is organised around objects that represent things in the problem.</p>
+<p>An object combines data and behaviour. For example, a thrust chamber is not only a list of numbers. It has geometry, wall layers, cooling circuits, coolant properties, and hot-gas properties. It also has methods that answer questions such as “what is the local channel area?” or “what is the wall thickness here?”</p>
+<p>In object-oriented code, you can build larger objects from smaller objects:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Material models
+      ↓
+Wall layers
+      ↓
+Cooling-channel cross-section + channel placement + channel height
+      ↓
+Cooling circuit + Contour
+      ↓
+Thrust chamber
+</pre></div>
+</div>
+<p>A <code class="docutils literal notranslate"><span class="pre">ThrustChamber</span></code> object therefore acts as a container for many other objects. It may contain a <code class="docutils literal notranslate"><span class="pre">Contour</span></code>, one or more <code class="docutils literal notranslate"><span class="pre">CoolingCircuit</span></code> objects, <code class="docutils literal notranslate"><span class="pre">Wall</span></code> objects, <code class="docutils literal notranslate"><span class="pre">CoolantTransport</span></code> objects, and an aerothermodynamic model for the combustion gas. The solver therefore does not need every detail written directly inside <code class="docutils literal notranslate"><span class="pre">solver.py</span></code>. Instead, it receives the thrust-chamber object and asks it for the geometry, material, gas-property, and coolant-property information it needs.</p>
+<p>A value used in the solver may come from another object several layers away. For example, the solver may ask a cooling circuit for its hydraulic diameter, and that cooling circuit may compute it from a cross-section object, a channel-height function, and a channel-placement object.</p>
+<p>For regenerative cooling, start with:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Start here</p></th>
+<th class="head"><p>Why</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">examples/</span></code> or <code class="docutils literal notranslate"><span class="pre">validation/regen_vali/...</span></code></p></td>
+<td><p>Shows a complete setup script where the objects are actually created and connected.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">regen/thrust_chamber.py</span></code></p></td>
+<td><p>Shows how the physical thrust chamber, wall layers, and cooling circuits are represented.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">regen/solver.py</span></code></p></td>
+<td><p>Shows the main regenerative-cooling solve procedure.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">regen/physics.py</span></code></p></td>
+<td><p>Shows the local equations and correlations used by the solver.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">skycea/aerothermodynamics.py</span></code></p></td>
+<td><p>Shows where the hot-gas properties come from.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">viz/plot_regen.py</span></code></p></td>
+<td><p>Shows how regenerative-cooling results are plotted.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>For engine-cycle work, start with:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Start here</p></th>
+<th class="head"><p>Why</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">common/blocks.py</span></code></p></td>
+<td><p>Defines the component blocks that read and write stations/signals.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">common/engine_network.py</span></code></p></td>
+<td><p>The underlying orchestrator that connects the blocks.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="summary">
+<h2>6. Summary<a class="headerlink" href="#summary" title="Link to this heading">¶</a></h2>
+<p>Pyskyfire is organised like a typical Python engineering package:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> defines how the package is built and installed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.gitignore</span></code> keeps local, generated, private, and temporary files out of version control.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.gitattributes</span></code> helps GitHub classify generated outputs correctly.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">README.md</span></code> introduces the project.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs/</span></code> contains the documentation website.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">examples/</span></code> teaches usage.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">validation/</span></code> demonstrates credibility against reference cases.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">images/</span></code> stores figures used in documentation and presentation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">src/pyskyfire/</span></code> contains the actual importable Python package.</p></li>
+</ul>
+<p>Inside <code class="docutils literal notranslate"><span class="pre">src/pyskyfire/</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">common</span></code> contains shared data structures, material/fluid helpers, results containers, and engine-network logic.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">regen</span></code> contains thrust-chamber geometry, cooling-channel definitions, heat-transfer correlations, and the regenerative-cooling solver.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">skycea</span></code> provides CEA-based aerothermodynamics and transport-property interfaces.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pump</span></code> contains preliminary centrifugal pump and impeller design tools.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">turbine</span></code> contains early turbine-related utilities.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">viz</span></code> contains plotting, reporting, and visualisation tools.</p></li>
+</ul>
+<p>Pyskyfire is a set of cooperating objects and modules. The package separates geometry, properties, physics, solvers, engine-cycle blocks, and visualisation, and orchestrates them together to run a regenerative cooling or full cycle simulation.</p>
+</section>
 </section>
 
         </article>
@@ -498,8 +897,40 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Package Structure</a><ul>
+<li><a class="reference internal" href="#the-repository-as-a-whole">1. The repository as a whole</a></li>
+<li><a class="reference internal" href="#the-src-pyskyfire-package">2. The <code class="docutils literal notranslate"><span class="pre">src/pyskyfire/</span></code> package</a><ul>
+<li><a class="reference internal" href="#top-level-init-py">Top-level <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code></a></li>
+<li><a class="reference internal" href="#common"><code class="docutils literal notranslate"><span class="pre">common</span></code></a></li>
+<li><a class="reference internal" href="#regen"><code class="docutils literal notranslate"><span class="pre">regen</span></code></a></li>
+<li><a class="reference internal" href="#skycea"><code class="docutils literal notranslate"><span class="pre">skycea</span></code></a></li>
+<li><a class="reference internal" href="#pump-and-turbine"><code class="docutils literal notranslate"><span class="pre">pump</span></code> and <code class="docutils literal notranslate"><span class="pre">turbine</span></code></a></li>
+<li><a class="reference internal" href="#viz-plotting-reporting-and-geometry-visualisation"><code class="docutils literal notranslate"><span class="pre">viz</span></code>: plotting, reporting, and geometry visualisation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-the-subpackages-fit-together">3. How the subpackages fit together</a></li>
+<li><a class="reference internal" href="#example-versus-validation-entry">4. Example versus validation entry</a></li>
+<li><a class="reference internal" href="#how-to-read-the-code-without-getting-lost">5. How to read the code without getting lost</a></li>
+<li><a class="reference internal" href="#summary">6. Summary</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
