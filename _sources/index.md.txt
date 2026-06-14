@@ -1,6 +1,7 @@
 # Start Here
 
-An explanation of the package and how the documentation page works. (To be filled out)
+An explanation of the package and how the documentation page works. (To be filled out). 
+Testing. testing 2. testing 3. 
 
 ```{toctree}
 :maxdepth: 1
@@ -47,5 +48,11 @@ explanations/regenerative-heat-transfer
 :titlesonly:
 :hidden:
 
-api/index
+autoapi/pyskyfire/common/index
+autoapi/pyskyfire/regen/index
+autoapi/pyskyfire/pump/index
+autoapi/pyskyfire/turbine/index
+autoapi/pyskyfire/skycea/index
+autoapi/pyskyfire/viz/index
+
 ```

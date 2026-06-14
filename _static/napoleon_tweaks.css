@@ -1,0 +1,10 @@
+/* Make "Returns" type names non-italic and code-colored */
+dl.field-list > dt em,
+dl.simple > dt em,
+dd > dl > dt em {
+  font-style: normal !important;
+  font-family: var(--font-stack--monospace, monospace);
+  background: var(--color-background-secondary);
+  padding: 0 0.15em;
+  border-radius: 0.2em;
+}
