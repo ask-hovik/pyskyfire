@@ -8,7 +8,7 @@ copyright = f"{date.today().year}, {author}"
 
 extensions = [
     "myst_parser",
-    "autoapi.extension",
+    "autoapi.sphinx",
     "numpydoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.graphviz",
