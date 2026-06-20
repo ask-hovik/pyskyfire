@@ -64,7 +64,7 @@ pyrightconfig.json
 # ------------------------------------------------------------------------------
 # OUTPUT FILES
 # ------------------------------------------------------------------------------
-*.png
+
 *.jpg
 *.log
 /lib/
@@ -113,6 +113,7 @@ claudeAttempt2.py
 useful_commands.md
 /trash
 /tools
+/film_testing
 
 
 # If you don't want to track your dill folder or any generated data, uncomment:
