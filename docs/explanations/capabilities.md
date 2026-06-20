@@ -54,6 +54,17 @@ This page shows what Pyskyfire can do at-a-glance. The goal of this page is to g
   * density
   * speed of sound
 
+```{raw} html
+<div class="psf-demo-frame psf-plot-demo">
+  <iframe
+    src="../_static/demos/rl10_viscosity_field.html"
+    title="RL10 Conductivity Field"
+    loading="lazy"
+    sandbox="allow-scripts allow-same-origin">
+  </iframe>
+</div>
+``` 
+
 ## Solve regenerative cooling problems
 
 * Solve regenerative cooling along user-defined cooling circuits.
@@ -74,8 +85,14 @@ This page shows what Pyskyfire can do at-a-glance. The goal of this page is to g
 * Support multi-material chamber walls, enabling studies of:
   * layered wall temperature drops
   * thermal barrier coatings
-
 * Estimate temperature profile from hot gas through boundary layer, multi material-walls, and coolant boundary layer. 
+
+![](../_static/demos/RL10_coolant_temperature.png)
+![](../_static/demos/RL10_coolant_static_pressure.png)
+![](../_static/demos/RL10_heat_flux.png)
+![](../_static/demos/RL10_wall_temperature.png)
+![](../_static/demos/temperature_profile_chamber.png)
+
 
 ## Model film cooling
 
@@ -102,6 +119,10 @@ This page shows what Pyskyfire can do at-a-glance. The goal of this page is to g
 * Represent both fuel-side and oxidizer-side flow paths.
 * Use the engine-network formulation to investigate different expander-cycle layouts and pressure budgets.
 
+![](../_static/demos/fuel_side_cycle_vali_condensed.png)
+![](../_static/demos/engine_network_transp.png)
+
+
 ## Analyze pumps and turbomachinery
 
 * Provide pump and turbine utility models for engine-cycle calculations.
@@ -119,7 +140,6 @@ This page shows what Pyskyfire can do at-a-glance. The goal of this page is to g
   * coolant velocity
   * wall temperature
   * heat flux
-  * hydraulic diameter
   * coolant flow area
   * hot-gas transport properties
   * engine-network diagrams

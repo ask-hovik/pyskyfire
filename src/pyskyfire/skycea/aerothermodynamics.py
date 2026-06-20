@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 import os
 import math
@@ -440,7 +439,7 @@ class Aerothermodynamics:
 
             # ---- build this row’s temperature grid: T_eq(x) → 250 K ----
             T_eq_i = float(self.T_map[i, 0])   # equilibrium T at this x
-            T_low  = 200
+            T_low  = 500
             # make it descending or ascending; we’ll treat as ascending for interp
             row_Ts = np.linspace(T_eq_i, T_low, Nt)
             self.T_grid[i, :] = row_Ts
@@ -465,7 +464,7 @@ class Aerothermodynamics:
                 self.h_map[i, j]     = getattr(Rt, "h", None)
                 self.a_map[i, j]     = getattr(Rt, "son", None)
                 self.mu_map[i, j]    = getattr(Rt, "visc", None)
-                self.k_map[i, j]     = getattr(Rt, "cond", None)
+                self.k_map[i, j]     = getattr(Rt, "cond", None) / 10 # there is a unit handling mismatch between TPProblem and RocketProblem in CEA_Wrap. 
                 self.Pr_map[i, j]    = getattr(Rt, "pran", None)
                 self.mw_map[i, j]    = getattr(Rt, "mw", None)
 
@@ -798,3 +797,4 @@ def _mw_from_exploded(chemrep: str) -> float:
             raise KeyError(f"Element {sym!r} not in periodic table; extend _PERIODIC.")
         mw += _PERIODIC[sym] * n
     return mw
+

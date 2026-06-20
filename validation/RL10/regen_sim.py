@@ -95,7 +95,7 @@ channel_height_fn = psf.regen.make_channel_height_fn(
 #) # total coolant volume should be ca 0.015831543m3
 
 def helix_fn(x):
-    return 45*3.14*180
+    return 0#45*3.14*180
 
 cross_section = psf.regen.CrossSectionRounded()
 #cross_section_squared = psf.regen.CrossSectionSquared(blockage_ratio=0.1)
@@ -129,10 +129,10 @@ thrust_chamber = psf.regen.ThrustChamber(contour=contour,
                                          n_nodes=150, 
                                          enable_fin=True) 
 
-plot_3d = psf.viz.make_engine_3d_pyvista(thrust_chamber, )
+"""plot_3d, _ = psf.viz.make_engine_3d(thrust_chamber, )
 plot_3d.show()
 del plot_3d 
-input()
+input()"""
 
 mdot_fu = aerothermodynamics.mdot_fu
 boundary_conditions_a = psf.regen.BoundaryConditions(T_coolant_in = params["T_coolant_in"], 

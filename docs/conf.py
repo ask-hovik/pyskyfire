@@ -1,6 +1,9 @@
 # -- Minimal Sphinx config for pyskyfire using AutoAPI + NumPyDoc ------------
 from datetime import date
 import os
+from pathlib import Path
+import subprocess
+import sys
 
 project   = "pyskyfire"
 author    = "Ask Haugerud Hovik"
@@ -97,8 +100,36 @@ def skip_autoapi_members(app, what, name, obj, skip, options):
         return True
     return skip
 
+def generate_tutorial_reports(app):
+    """Generate HTML reports required by the tutorial pages."""
+    if app.builder.format != "html":
+        return
+
+    repository_root = Path(__file__).resolve().parent.parent
+    minimal_sim = repository_root / "examples" / "minimal" / "minimal_sim.py"
+
+    report_path = (
+        Path(app.outdir)
+        / "_static"
+        / "reports"
+        / "minimal-report.html"
+    )
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(minimal_sim),
+            "--report-path",
+            str(report_path),
+        ],
+        cwd=repository_root,
+        check=True,
+    )
+
 def setup(app):
     app.connect("autoapi-skip-member", skip_autoapi_members)
+    app.connect("builder-inited", generate_tutorial_reports)
 
 # Logo
 html_logo = "_static/pyskyfire_header.png"   # or .png
