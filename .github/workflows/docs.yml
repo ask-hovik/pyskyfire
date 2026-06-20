@@ -24,7 +24,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             xvfb \
-            libgl1-mesa-glx \
+            libgl1 \
+            libgl1-mesa-dri \
             libglu1-mesa
 
       - name: Install uv

@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+from sphinx.errors import SphinxError
 
 project   = "pyskyfire"
 author    = "Ask Haugerud Hovik"
@@ -116,7 +117,7 @@ def generate_tutorial_reports(app):
     )
     report_path.parent.mkdir(parents=True, exist_ok=True)
 
-    subprocess.run(
+    result = subprocess.run(
         [
             sys.executable,
             str(minimal_sim),
@@ -124,8 +125,16 @@ def generate_tutorial_reports(app):
             str(report_path),
         ],
         cwd=repository_root,
-        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
     )
+
+    if result.returncode:
+        raise SphinxError(
+            "Minimal-engine tutorial simulation failed:\n\n"
+            + result.stdout
+        )
 
 def setup(app):
     app.connect("autoapi-skip-member", skip_autoapi_members)
