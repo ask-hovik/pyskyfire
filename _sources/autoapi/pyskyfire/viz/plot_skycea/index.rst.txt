@@ -19,10 +19,12 @@ Classes
    :hidden:
 
    /autoapi/pyskyfire/viz/plot_skycea/PlotTransportProperty
+   /autoapi/pyskyfire/viz/plot_skycea/PlotTransportPropertyField
 
 .. autoapisummary::
 
    pyskyfire.viz.plot_skycea.PlotTransportProperty
+   pyskyfire.viz.plot_skycea.PlotTransportPropertyField
 
 
 Module Contents

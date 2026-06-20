@@ -11,6 +11,7 @@ Submodules
    :maxdepth: 1
 
    /autoapi/pyskyfire/skycea/aerothermodynamics/index
+   /autoapi/pyskyfire/skycea/aerothermodynamics_old/index
    /autoapi/pyskyfire/skycea/coolant_transport/index
    /autoapi/pyskyfire/skycea/nozzle_solver/index
 
