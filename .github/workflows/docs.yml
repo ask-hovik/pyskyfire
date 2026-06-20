@@ -41,18 +41,9 @@ jobs:
       - name: Build Linux CEA backend
         shell: bash
         run: |
-          CEA_ASSET_DIR="$(
-            python - <<'PY'
-            import importlib.util
-            from pathlib import Path
+          set -euo pipefail
 
-            spec = importlib.util.find_spec("CEA_Wrap")
-            if spec is None or spec.origin is None:
-                raise RuntimeError("CEA_Wrap installation could not be located.")
-
-            print(Path(spec.origin).parent / "assets")
-            PY
-          )"
+          CEA_ASSET_DIR="$(python -c 'import importlib.util; from pathlib import Path; spec = importlib.util.find_spec("CEA_Wrap"); assert spec and spec.origin; print(Path(spec.origin).parent / "assets")')"
 
           CEA_BUILD_DIR="$RUNNER_TEMP/cea-wrap"
           mkdir -p "$CEA_BUILD_DIR"
