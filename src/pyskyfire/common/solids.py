@@ -284,7 +284,7 @@ class PiecewiseModel(PropertyModel):
         Range-handling mode: ``"warn_clip"`` (default), ``"clip"`` or ``"error"``.
     blend : float, optional
         Retained for API compatibility (unused in the new rules).
-
+    
     Notes
     -----
     The evaluation rules are:
@@ -292,6 +292,7 @@ class PiecewiseModel(PropertyModel):
     - **Gaps:** linearly interpolate between the nearest segment endpoints.
     - **Overlaps:** average results from all covering segments.
     - **Out-of-range:** clip to the nearest valid edge (warns if ``"warn_clip"``).
+
     """
 
     segments: List[Tuple[float, float, PropertyModel]]

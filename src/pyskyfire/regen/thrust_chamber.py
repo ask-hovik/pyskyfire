@@ -216,7 +216,7 @@ class CoolingCircuit:
         self.Dh_coolant_vals = self.cross_section.Dh_coolant(prof)
 
         # simple planar curvature proxy in meridional plane (optional)
-        # κ ≈ |r''| / (1 + r'^2)^(3/2)
+        # :math:`\kappa` ≈ |r''| / (1 + r'^2)^(3/2)
         r_pp = np.gradient(dr_dx, x_vals)
         self.radius_of_curvature_vals = 1.0 / np.clip(
             np.abs(r_pp) / (1.0 + dr_dx**2) ** 1.5, 1e-12, None
@@ -360,8 +360,8 @@ class ThrustChamber:
     """
     Simulation-only thrust-chamber assembly.
 
-    Responsibilities
-    ----------------
+    Notes
+    -----
     • Define x-domains for circuits from their fractional spans
     • Build ONE representative centerline per circuit: [x, r(x), θ_azimuth=0]
     • Compute per-circuit wedge angles (theta) and heights (h)
@@ -570,7 +570,7 @@ def radius_of_curvature(
 
     • Positive  → curve bends *away* from the symmetry axis  
     • Negative  → curve bends *toward* the symmetry axis  
-    • np.inf    → locally straight (|κ| below `eps`)
+    • np.inf    → locally straight (|:math:`\kappa`| below `eps`)
 
     Parameters
     ----------
@@ -579,7 +579,7 @@ def radius_of_curvature(
     axis   : {'x', 'y', 'z'}, optional
         Which coordinate is the symmetry axis.  Default 'x'.
     eps    : float, optional
-        Curvature values with |κ| < eps are treated as zero (straight).
+        Curvature values with |:math:`\kappa`| < eps are treated as zero (straight).
 
     Returns
     -------
@@ -598,10 +598,10 @@ def radius_of_curvature(
     dr_dx   = np.gradient(r, x)         #   r′(x)
     d2r_dx2 = np.gradient(dr_dx, x)     #   r″(x)
 
-    # -------- 3. curvature (κ) and signed radius (R) --------------------- #
-    kappa = d2r_dx2 / np.power(1.0 + dr_dx**2, 1.5)   # κ = r″ / (1+r′²)³ᐟ²
+    # -------- 3. curvature (:math:`\kappa`) and signed radius (R) --------------------- #
+    kappa = d2r_dx2 / np.power(1.0 + dr_dx**2, 1.5)   # :math:`\kappa` = r″ / (1+r′²)³ᐟ²
 
-    # treat tiny κ as straight line → infinite radius
+    # treat tiny :math:`\kappa` as straight line → infinite radius
     with np.errstate(divide="ignore"):
         R = np.where(np.abs(kappa) < eps, np.inf, 1.0 / kappa)
 

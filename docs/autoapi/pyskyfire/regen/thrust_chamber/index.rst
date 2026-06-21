@@ -42,7 +42,7 @@ Module Contents
 
    • Positive  → curve bends *away* from the symmetry axis  
    • Negative  → curve bends *toward* the symmetry axis  
-   • np.inf    → locally straight (|κ| below `eps`)
+   • np.inf    → locally straight (|:math:`\kappa`| below `eps`)
 
    :Parameters:
 
@@ -53,7 +53,7 @@ Module Contents
            Which coordinate is the symmetry axis.  Default 'x'.
 
        **eps** : :class:`python:float`, :obj:`optional`
-           Curvature values with |κ| < eps are treated as zero (straight).
+           Curvature values with |:math:`\kappa`| < eps are treated as zero (straight).
 
 
 

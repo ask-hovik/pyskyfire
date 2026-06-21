@@ -198,14 +198,23 @@ Module Contents
 
    From Gülich Table D2.1
 
-   :param n (float): rpm [1/min]
-   :param Q (float): flow rate [m^3/s]
-   :param H (float): head [m]
-   :return n_q (float): specific speed
+   :Parameters:
+
+       **Q** : :class:`python:float`
+           Flow rate [m^3/s].
+
+       **H** : :class:`python:float`
+           Head [m].
+
+       **n** : :class:`python:int`
+           Rotational speed [rpm].
 
 
 
+   :Returns:
 
+       **n_q** : :class:`python:float`
+           Specific speen
 
 
 

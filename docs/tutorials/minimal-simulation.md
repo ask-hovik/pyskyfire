@@ -1,26 +1,22 @@
-# Build a Minimal Regeneratively Cooled Engine
+# Minimal Simulation
 
-This tutorial builds and analyses a small nitrous-oxide/ethanol rocket engine with a single regenerative-cooling circuit. It is intended to introduce the principal Pyskyfire objects and the normal workflow for a thrust-chamber thermal analysis, not to establish a design ready for manufacture or hot-fire testing.
+This tutorial builds and analyses a small regeneratively cooled nitrous-oxide/ethanol rocket engine. It is intended to introduce the principal Pyskyfire objects and the normal workflow for a thrust-chamber thermal analysis. This tutorial is focused on showcasing pyskyfire capabilities, and is not focused on engine design.
 
-The complete, runnable source is maintained in [`examples/minimal/minimal_sim.py`](https://github.com/ask-hovik/pyskyfire/blob/main/examples/minimal/minimal_sim.py). The code blocks below are included directly from that file, so the tutorial and executable example remain synchronized.
+The complete, runnable source is maintained in [`examples/minimal/minimal_sim.py`](https://github.com/ask-hovik/pyskyfire/blob/main/examples/minimal/minimal_sim.py).
 
 ## Prerequisites
 
-Install Pyskyfire and its simulation dependencies. From a source checkout, install the project into the active environment, then run:
+Install Pyskyfire into your current environemnt, then run:
 
 ```console
 python examples/minimal/minimal_sim.py
 ```
 
-The script writes `minimal_report.html` beside the script. The report includes an
-interactive three-dimensional engine view, together
-with the simulation results.
+The script builds a thrust chamber, and then runs a regenerative cooling analysis. It then postprocesses the results, giving you a few options to view the generated data: Either as standalone html graphs, or as a compiled report output as `minimal_report.html`.
 
 ## What you will build
 
-The example uses a 5 kN engine with a 50 bar chamber pressure, an area ratio of 10, nitrous oxide as oxidizer, and ethanol as both fuel and coolant. It uses one helical, square-channel cooling circuit from nozzle exit to chamber inlet.
-
-The purpose is to establish the complete chain from a performance design point, through chamber geometry and cooling-channel geometry, to a steady-state thermal calculation and report. It deliberately keeps the cooling geometry simple: a constant 2 mm channel height, a uniform 45-degree helix angle, and one wall material.
+The example uses a 5 kN engine with a 50 bar chamber pressure, an area ratio of 10, nitrous oxide as oxidizer, and ethanol as both fuel and coolant. It uses a single helical, square-channel cooling circuit running from nozzle exit to chamber inlet.
 
 ## Define the engine design point
 

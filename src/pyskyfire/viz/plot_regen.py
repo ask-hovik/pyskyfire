@@ -27,15 +27,16 @@ class PlotContour(PlotBase):
         self.template(template)
 
         # ------------ colorway helper (same color for +r and -r; rotate per contour) ------------
-        try:
-            tpl = pio.templates[template] if template in pio.templates else pio.templates["plotly"]
-            colorway = list(tpl.layout.colorway) if tpl.layout.colorway else []
-        except Exception:
-            colorway = []
+        #try:
+        #    tpl = pio.templates[template] if template in pio.templates else pio.templates["plotly"]
+        #    colorway = list(tpl.layout.colorway) if tpl.layout.colorway else []
+        #except Exception:
+        #    colorway = []
 
-        if not colorway:
+        #if not colorway:
             # plotly's default colorway fallback
-            colorway = ["#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
+            
+        colorway = ["#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A",
                         "#19D3F3", "#FF6692", "#B6E880", "#FF97FF", "#FECB52"]
 
         color_idx = 0

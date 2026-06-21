@@ -1,7 +1,6 @@
 import numpy as np
 from . import constants as const
 from . import utils
-from . import plot
 
 
 class Impeller(object):
@@ -9,9 +8,14 @@ class Impeller(object):
     def __init__(self, Q, H, n, material=None):
         """Take input variables and execute the project.
 
-        :param Q (float): flow rate [m^3/s]
-        :param H (float) head [m]
-        :param n (int): rotational speed [1/min]
+        Parameters
+        ----------
+        Q : float
+            Flow rate [m^3/s].
+        H : float
+            Head [m].
+        n : int
+            Rotational speed [rpm].
         """
         self.Q = Q
         self.H = H
@@ -97,7 +101,7 @@ class Impeller(object):
             meridionals, a=a, b=b, c=c,
             beta_1B=beta_1B, beta_2B=beta_2B
         )
-        plot.plot_streamlines_3d(new_meridionals, z=num_blades, show=True)
+        #plot.plot_streamlines_3d(new_meridionals, z=num_blades, show=True)
 
 
 def specific_speed(n, Q, H):
@@ -105,10 +109,19 @@ def specific_speed(n, Q, H):
 
     From Gülich Table D2.1
 
-    :param n (float): rpm [1/min]
-    :param Q (float): flow rate [m^3/s]
-    :param H (float): head [m]
-    :return n_q (float): specific speed
+    Parameters
+    ----------
+    Q : float
+        Flow rate [m^3/s].
+    H : float
+        Head [m].
+    n : int
+        Rotational speed [rpm].
+
+    Returns
+    -------
+    n_q : float
+        Specific speen
     """
     n_q = n*Q**0.5/H**0.75
 

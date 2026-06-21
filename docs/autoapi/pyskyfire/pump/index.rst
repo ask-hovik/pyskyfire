@@ -14,7 +14,6 @@ Submodules
    /autoapi/pyskyfire/pump/impeller/index
    /autoapi/pyskyfire/pump/impeller_new/index
    /autoapi/pyskyfire/pump/impeller_new_2/index
-   /autoapi/pyskyfire/pump/plot/index
    /autoapi/pyskyfire/pump/pump_cli/index
    /autoapi/pyskyfire/pump/utils/index
 

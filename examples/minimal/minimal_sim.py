@@ -9,71 +9,70 @@ import pyskyfire as psf
 def main(report_path: Path | None = None) -> None:
     # tutorial:start:engine-inputs
     params = dict(
-        p_c=50e5,
-        F=5e3,
-        eps=10,
-        L_star=1.2,
-        MR=2.8,
-        AR_c=1.8,
-        cea_fu=psf.common.Fluid(
-            type="fuel", propellants=["C2H5OH"], fractions=[1.0]
-        ),
-        cea_ox=psf.common.Fluid(
-            type="oxidizer", propellants=["N2O"], fractions=[1.0]
-        ),
-        coolprop_fu=psf.common.Fluid(
-            type="fuel", propellants=["ethanol"], fractions=[1.0]
-        ),
-        T_coolant_in=298.15,
-        p_coolant_in=23e5,
-        material=psf.common.solids.StainlessSteel304,
-        wall_thickness=0.5e-3,
-        n_channels=60,
-        blockage_ratio=0.0,
-        roughness_height=10e-6,
+        p_c=20e5,                                                                               # Chamber Pressure (Pa)
+        F=5e3,                                                                                  # Thrust (N)
+        eps=10,                                                                                 # Nozzle area ratio
+        L_star=1.2,                                                                             # Combustion chamber characteristic length 
+        MR=2.8,                                                                                 # Mixture ratio
+        AR_c=1.8,                                                                               # Chamber aspect ratio
+        cea_fu=psf.common.Fluid(type="fuel", propellants=["C2H5OH"], fractions=[1.0]),          # Ethanol
+        cea_ox=psf.common.Fluid(type="oxidizer", propellants=["N2O"], fractions=[1.0]),         # Nitrous oxide
+        coolprop_fu=psf.common.Fluid(type="fuel", propellants=["ethanol"], fractions=[1.0]),    # Ethanol
+        T_coolant_in=298.15,                                                                    # Coolant inlet temperature
+        p_coolant_in=23e5,                                                                      # Coolant inlet pressure
+        material=psf.common.solids.StainlessSteel304,                                           # Wall material
+        wall_thickness=0.5e-3,                                                                  # Wall thickness
+        n_channels=60,                                                                          # Number of cooling channels
+        blockage_ratio=0.1,                                                                     # Fraction of cooling channel cross section filled with ribs
+        roughness_height=10e-6,                                                                 # Cooling channel roughness parameter
     )
     # tutorial:end:engine-inputs
 
     # tutorial:start:aerothermodynamics
+    # Create hot gas property object:
     aerothermodynamics = psf.skycea.Aerothermodynamics.from_F_eps_Lstar(
-        fu=params["cea_fu"],
-        ox=params["cea_ox"],
-        MR=params["MR"],
-        p_c=params["p_c"],
-        F=params["F"],
-        eps=params["eps"],
-        L_star=params["L_star"],
+        fu=params["cea_fu"],        # Fuel input
+        ox=params["cea_ox"],        # Ox input
+        MR=params["MR"],            # Mixture ratio
+        p_c=params["p_c"],          # Chamber pressure
+        F=params["F"],              # Thrust
+        eps=params["eps"],          # Area ratio
+        L_star=params["L_star"],    # Characteristic length 
     )
 
-    params["V_c"] = aerothermodynamics.V_c
-    params["r_t"] = aerothermodynamics.r_t
+    params["V_c"] = aerothermodynamics.V_c # Retrieve calculated chamber volume
+    params["r_t"] = aerothermodynamics.r_t # Retrieve calculated throat radius
 
-    coolant_transport = psf.skycea.CoolantTransport(params["coolprop_fu"])
+    # Create coolant property object:
+    coolant_transport = psf.skycea.CoolantTransport(params["coolprop_fu"]) # 
     # tutorial:end:aerothermodynamics
 
-    # tutorial:start:contour-and-wall
+    # tutorial:start:contour
+    # Calculate contour points
     xs, rs = psf.regen.contour.get_contour(
-        V_c=params["V_c"],
-        AR_c=params["AR_c"],
-        r_t=params["r_t"],
-        area_ratio=params["eps"],
-        nozzle="rao",
-        R_1f=1,
-        R_2f=2,
-        R_3f=0.3,
+        V_c=params["V_c"],          # Chamber volume
+        AR_c=params["AR_c"],        # Chamber aspect ratio
+        r_t=params["r_t"],          # Throat radius
+        area_ratio=params["eps"],   # Area ratio
+        nozzle="rao",               # Type of nozzle
+        R_1f=1,                     # Throat radius parameter
+        R_2f=2,                     # Chamber-to-contraction radius parameter
+        R_3f=0.3,                   # Throat-to-nozzle radius parameter
     )
 
+    # Create contour object
     contour = psf.regen.Contour(xs, rs, name="Minimal Contour")
+    # tutorial:end:contour
+
+    # tutorial:start:walls
     wall = psf.regen.Wall(
         material=params["material"],
         thickness=params["wall_thickness"],
     )
-    # tutorial:end:contour-and-wall
+    # tutorial:end:walls
 
     # tutorial:start:cooling-circuit
-    cross_section = psf.regen.CrossSectionSquared(
-        blockage_ratio=params["blockage_ratio"]
-    )
+    cross_section = psf.regen.CrossSectionSquared(blockage_ratio=params["blockage_ratio"])
 
     def channel_height_function(x):
         return 2e-3
