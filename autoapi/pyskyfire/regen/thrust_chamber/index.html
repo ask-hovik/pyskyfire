@@ -200,7 +200,7 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials/minimal-simulation.html">Build a Minimal Regeneratively Cooled Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials/minimal-simulation.html">Minimal Simulation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../tutorials/advanced-simulation.html">Advanced Simulation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
@@ -327,7 +327,6 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../pump/impeller_new_2/index.html">pyskyfire.pump.impeller_new_2</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../pump/plot/index.html">pyskyfire.pump.plot</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../pump/pump_cli/index.html">pyskyfire.pump.pump_cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../pump/utils/index.html">pyskyfire.pump.utils</a></li>
 </ul>
@@ -507,7 +506,7 @@
 <ul class="simple">
 <li><p>Positive  → curve bends <em>away</em> from the symmetry axis</p></li>
 <li><p>Negative  → curve bends <em>toward</em> the symmetry axis</p></li>
-<li><p>np.inf    → locally straight (<a href="#id1"><span class="problematic" id="id2">|κ|</span></a> below <cite>eps</cite>)</p></li>
+<li><p>np.inf    → locally straight (<a href="#id1"><span class="problematic" id="id2">|:math:`\kappa`|</span></a> below <cite>eps</cite>)</p></li>
 </ul>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -516,7 +515,7 @@
 </dd>
 <dt><strong>axis</strong><span class="classifier">{‘x’, ‘y’, ‘z’}, <code class="xref py py-obj docutils literal notranslate"><span class="pre">optional</span></code></span></dt><dd><p>Which coordinate is the symmetry axis.  Default ‘x’.</p>
 </dd>
-<dt><strong>eps</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">optional</span></code></span></dt><dd><p>Curvature values with <a href="#id3"><span class="problematic" id="id4">|κ|</span></a> &lt; eps are treated as zero (straight).</p>
+<dt><strong>eps</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">optional</span></code></span></dt><dd><p>Curvature values with <a href="#id3"><span class="problematic" id="id4">|:math:`\kappa`|</span></a> &lt; eps are treated as zero (straight).</p>
 </dd>
 </dl>
 </dd>

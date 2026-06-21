@@ -18,6 +18,15 @@ pyskyfire.regen.thrust_chamber.ThrustChamber
 
 
 
+   .. rubric:: Notes
+
+   • Define x-domains for circuits from their fractional spans
+   • Build ONE representative centerline per circuit: [x, r(x), θ_azimuth=0]
+   • Compute per-circuit wedge angles (theta) and heights (h)
+   • Trigger each circuit's precompute/finalize (A, Dh, perimeters, volume)
+   • (Optionally) trigger combustion aerothermodynamics
+
+   No visualization, no OCC/GMsh imports, no multiple angular copies.
 
 
 

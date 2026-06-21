@@ -200,7 +200,7 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials/minimal-simulation.html">Build a Minimal Regeneratively Cooled Engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials/minimal-simulation.html">Minimal Simulation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../tutorials/advanced-simulation.html">Advanced Simulation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
@@ -327,7 +327,6 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../impeller_new_2/index.html">pyskyfire.pump.impeller_new_2</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../plot/index.html">pyskyfire.pump.plot</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pump_cli/index.html">pyskyfire.pump.pump_cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/index.html">pyskyfire.pump.utils</a></li>
 </ul>
@@ -606,16 +605,22 @@ and the last to the upper boundary (alpha = 1).</p>
 <span class="sig-prename descclassname"><span class="pre">pyskyfire.pump.impeller.</span></span><span class="sig-name descname"><span class="pre">specific_speed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyskyfire.pump.impeller.specific_speed" title="Link to this definition">¶</a></dt>
 <dd><p>Calculate centrifugal pump’s specific speed.</p>
 <p>From Gülich Table D2.1</p>
-<dl class="field-list simple">
+<dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>(</strong><strong>float</strong><strong>)</strong> (<a class="reference internal" href="../impeller_new_2/index.html#pyskyfire.pump.impeller_new_2.H" title="pyskyfire.pump.impeller_new_2.H"><em>H</em></a>) – rpm [1/min]</p></li>
-<li><p><strong>(</strong><strong>float</strong><strong>)</strong> – flow rate [m^3/s]</p></li>
-<li><p><strong>(</strong><strong>float</strong><strong>)</strong> – head [m]</p></li>
-</ul>
+<dd class="field-odd"><dl>
+<dt><strong>Q</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>Flow rate [m^3/s].</p>
 </dd>
-<dt class="field-even">Return n_q (float)<span class="colon">:</span></dt>
-<dd class="field-even"><p>specific speed</p>
+<dt><strong>H</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>Head [m].</p>
+</dd>
+<dt><strong>n</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a></span></dt><dd><p>Rotational speed [rpm].</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl>
+<dt><strong>n_q</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>Specific speen</p>
+</dd>
+</dl>
 </dd>
 </dl>
 </dd></dl>

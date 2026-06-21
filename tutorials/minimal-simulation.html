@@ -7,7 +7,7 @@
         <link rel="prefetch" href="../_static/pyskyfire_header.png" as="image">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Build a Minimal Regeneratively Cooled Engine - pyskyfire</title>
+        <title>Minimal Simulation - pyskyfire</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
@@ -200,7 +200,7 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
 <ul class="current">
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Build a Minimal Regeneratively Cooled Engine</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Minimal Simulation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="advanced-simulation.html">Advanced Simulation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
@@ -327,7 +327,6 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/pump/impeller_new_2/index.html">pyskyfire.pump.impeller_new_2</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/pump/plot/index.html">pyskyfire.pump.plot</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/pump/pump_cli/index.html">pyskyfire.pump.pump_cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/pump/utils/index.html">pyskyfire.pump.utils</a></li>
 </ul>
@@ -460,51 +459,42 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section class="tex2jax_ignore mathjax_ignore" id="build-a-minimal-regeneratively-cooled-engine">
-<h1>Build a Minimal Regeneratively Cooled Engine<a class="headerlink" href="#build-a-minimal-regeneratively-cooled-engine" title="Link to this heading">¶</a></h1>
-<p>This tutorial builds and analyses a small nitrous-oxide/ethanol rocket engine with a single regenerative-cooling circuit. It is intended to introduce the principal Pyskyfire objects and the normal workflow for a thrust-chamber thermal analysis, not to establish a design ready for manufacture or hot-fire testing.</p>
-<p>The complete, runnable source is maintained in <a class="reference external" href="https://github.com/ask-hovik/pyskyfire/blob/main/examples/minimal/minimal_sim.py"><code class="docutils literal notranslate"><span class="pre">examples/minimal/minimal_sim.py</span></code></a>. The code blocks below are included directly from that file, so the tutorial and executable example remain synchronized.</p>
+          <section class="tex2jax_ignore mathjax_ignore" id="minimal-simulation">
+<h1>Minimal Simulation<a class="headerlink" href="#minimal-simulation" title="Link to this heading">¶</a></h1>
+<p>This tutorial builds and analyses a small regeneratively cooled nitrous-oxide/ethanol rocket engine. It is intended to introduce the principal Pyskyfire objects and the normal workflow for a thrust-chamber thermal analysis. This tutorial is focused on showcasing pyskyfire capabilities, and is not focused on engine design.</p>
+<p>The complete, runnable source is maintained in <a class="reference external" href="https://github.com/ask-hovik/pyskyfire/blob/main/examples/minimal/minimal_sim.py"><code class="docutils literal notranslate"><span class="pre">examples/minimal/minimal_sim.py</span></code></a>.</p>
 <section id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
-<p>Install Pyskyfire and its simulation dependencies. From a source checkout, install the project into the active environment, then run:</p>
+<p>Install Pyskyfire into your current environemnt, then run:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python examples/minimal/minimal_sim.py</span>
 </pre></div>
 </div>
-<p>The script writes <code class="docutils literal notranslate"><span class="pre">minimal_report.html</span></code> beside the script. The report includes an
-interactive three-dimensional engine view, together
-with the simulation results.</p>
+<p>The script builds a thrust chamber, and then runs a regenerative cooling analysis. It then postprocesses the results, giving you a few options to view the generated data: Either as standalone html graphs, or as a compiled report output as <code class="docutils literal notranslate"><span class="pre">minimal_report.html</span></code>.</p>
 </section>
 <section id="what-you-will-build">
 <h2>What you will build<a class="headerlink" href="#what-you-will-build" title="Link to this heading">¶</a></h2>
-<p>The example uses a 5 kN engine with a 50 bar chamber pressure, an area ratio of 10, nitrous oxide as oxidizer, and ethanol as both fuel and coolant. It uses one helical, square-channel cooling circuit from nozzle exit to chamber inlet.</p>
-<p>The purpose is to establish the complete chain from a performance design point, through chamber geometry and cooling-channel geometry, to a steady-state thermal calculation and report. It deliberately keeps the cooling geometry simple: a constant 2 mm channel height, a uniform 45-degree helix angle, and one wall material.</p>
+<p>The example uses a 5 kN engine with a 50 bar chamber pressure, an area ratio of 10, nitrous oxide as oxidizer, and ethanol as both fuel and coolant. It uses a single helical, square-channel cooling circuit running from nozzle exit to chamber inlet.</p>
 </section>
 <section id="define-the-engine-design-point">
 <h2>Define the engine design point<a class="headerlink" href="#define-the-engine-design-point" title="Link to this heading">¶</a></h2>
 <p>Start with the intended chamber conditions, nozzle geometry, combustion mixture ratio, coolant inlet state, and the thermal/geometry choices for the cooling circuit.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-    <span class="n">p_c</span><span class="o">=</span><span class="mf">50e5</span><span class="p">,</span>
-    <span class="n">F</span><span class="o">=</span><span class="mf">5e3</span><span class="p">,</span>
-    <span class="n">eps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-    <span class="n">L_star</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>
-    <span class="n">MR</span><span class="o">=</span><span class="mf">2.8</span><span class="p">,</span>
-    <span class="n">AR_c</span><span class="o">=</span><span class="mf">1.8</span><span class="p">,</span>
-    <span class="n">cea_fu</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Fluid</span><span class="p">(</span>
-        <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;fuel&quot;</span><span class="p">,</span> <span class="n">propellants</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;C2H5OH&quot;</span><span class="p">],</span> <span class="n">fractions</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
-    <span class="p">),</span>
-    <span class="n">cea_ox</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Fluid</span><span class="p">(</span>
-        <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;oxidizer&quot;</span><span class="p">,</span> <span class="n">propellants</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;N2O&quot;</span><span class="p">],</span> <span class="n">fractions</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
-    <span class="p">),</span>
-    <span class="n">coolprop_fu</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Fluid</span><span class="p">(</span>
-        <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;fuel&quot;</span><span class="p">,</span> <span class="n">propellants</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ethanol&quot;</span><span class="p">],</span> <span class="n">fractions</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
-    <span class="p">),</span>
-    <span class="n">T_coolant_in</span><span class="o">=</span><span class="mf">298.15</span><span class="p">,</span>
-    <span class="n">p_coolant_in</span><span class="o">=</span><span class="mf">23e5</span><span class="p">,</span>
-    <span class="n">material</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">solids</span><span class="o">.</span><span class="n">StainlessSteel304</span><span class="p">,</span>
-    <span class="n">wall_thickness</span><span class="o">=</span><span class="mf">0.5e-3</span><span class="p">,</span>
-    <span class="n">n_channels</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
-    <span class="n">blockage_ratio</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-    <span class="n">roughness_height</span><span class="o">=</span><span class="mf">10e-6</span><span class="p">,</span>
+    <span class="n">p_c</span><span class="o">=</span><span class="mf">20e5</span><span class="p">,</span>                                                                               <span class="c1"># Chamber Pressure (Pa)</span>
+    <span class="n">F</span><span class="o">=</span><span class="mf">5e3</span><span class="p">,</span>                                                                                  <span class="c1"># Thrust (N)</span>
+    <span class="n">eps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>                                                                                 <span class="c1"># Nozzle area ratio</span>
+    <span class="n">L_star</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>                                                                             <span class="c1"># Combustion chamber characteristic length </span>
+    <span class="n">MR</span><span class="o">=</span><span class="mf">2.8</span><span class="p">,</span>                                                                                 <span class="c1"># Mixture ratio</span>
+    <span class="n">AR_c</span><span class="o">=</span><span class="mf">1.8</span><span class="p">,</span>                                                                               <span class="c1"># Chamber aspect ratio</span>
+    <span class="n">cea_fu</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Fluid</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;fuel&quot;</span><span class="p">,</span> <span class="n">propellants</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;C2H5OH&quot;</span><span class="p">],</span> <span class="n">fractions</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">]),</span>          <span class="c1"># Ethanol</span>
+    <span class="n">cea_ox</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Fluid</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;oxidizer&quot;</span><span class="p">,</span> <span class="n">propellants</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;N2O&quot;</span><span class="p">],</span> <span class="n">fractions</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">]),</span>         <span class="c1"># Nitrous oxide</span>
+    <span class="n">coolprop_fu</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Fluid</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;fuel&quot;</span><span class="p">,</span> <span class="n">propellants</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ethanol&quot;</span><span class="p">],</span> <span class="n">fractions</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">]),</span>    <span class="c1"># Ethanol</span>
+    <span class="n">T_coolant_in</span><span class="o">=</span><span class="mf">298.15</span><span class="p">,</span>                                                                    <span class="c1"># Coolant inlet temperature</span>
+    <span class="n">p_coolant_in</span><span class="o">=</span><span class="mf">23e5</span><span class="p">,</span>                                                                      <span class="c1"># Coolant inlet pressure</span>
+    <span class="n">material</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">solids</span><span class="o">.</span><span class="n">StainlessSteel304</span><span class="p">,</span>                                           <span class="c1"># Wall material</span>
+    <span class="n">wall_thickness</span><span class="o">=</span><span class="mf">0.5e-3</span><span class="p">,</span>                                                                  <span class="c1"># Wall thickness</span>
+    <span class="n">n_channels</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>                                                                          <span class="c1"># Number of cooling channels</span>
+    <span class="n">blockage_ratio</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>                                                                     <span class="c1"># Fraction of cooling channel cross section filled with ribs</span>
+    <span class="n">roughness_height</span><span class="o">=</span><span class="mf">10e-6</span><span class="p">,</span>                                                                 <span class="c1"># Cooling channel roughness parameter</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -514,20 +504,22 @@ with the simulation results.</p>
 <section id="compute-the-combustion-and-coolant-models">
 <h2>Compute the combustion and coolant models<a class="headerlink" href="#compute-the-combustion-and-coolant-models" title="Link to this heading">¶</a></h2>
 <p>Pyskyfire uses the supplied design point to construct an aerothermodynamic model of the combustion gases. In this example, that model also determines the chamber volume and throat radius needed for the requested thrust, chamber pressure, nozzle area ratio, and characteristic length.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">aerothermodynamics</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">skycea</span><span class="o">.</span><span class="n">Aerothermodynamics</span><span class="o">.</span><span class="n">from_F_eps_Lstar</span><span class="p">(</span>
-    <span class="n">fu</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;cea_fu&quot;</span><span class="p">],</span>
-    <span class="n">ox</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;cea_ox&quot;</span><span class="p">],</span>
-    <span class="n">MR</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;MR&quot;</span><span class="p">],</span>
-    <span class="n">p_c</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">],</span>
-    <span class="n">F</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;F&quot;</span><span class="p">],</span>
-    <span class="n">eps</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eps&quot;</span><span class="p">],</span>
-    <span class="n">L_star</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;L_star&quot;</span><span class="p">],</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create hot gas property object:</span>
+<span class="n">aerothermodynamics</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">skycea</span><span class="o">.</span><span class="n">Aerothermodynamics</span><span class="o">.</span><span class="n">from_F_eps_Lstar</span><span class="p">(</span>
+    <span class="n">fu</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;cea_fu&quot;</span><span class="p">],</span>        <span class="c1"># Fuel input</span>
+    <span class="n">ox</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;cea_ox&quot;</span><span class="p">],</span>        <span class="c1"># Ox input</span>
+    <span class="n">MR</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;MR&quot;</span><span class="p">],</span>            <span class="c1"># Mixture ratio</span>
+    <span class="n">p_c</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">],</span>          <span class="c1"># Chamber pressure</span>
+    <span class="n">F</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;F&quot;</span><span class="p">],</span>              <span class="c1"># Thrust</span>
+    <span class="n">eps</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eps&quot;</span><span class="p">],</span>          <span class="c1"># Area ratio</span>
+    <span class="n">L_star</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;L_star&quot;</span><span class="p">],</span>    <span class="c1"># Characteristic length </span>
 <span class="p">)</span>
 
-<span class="n">params</span><span class="p">[</span><span class="s2">&quot;V_c&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">aerothermodynamics</span><span class="o">.</span><span class="n">V_c</span>
-<span class="n">params</span><span class="p">[</span><span class="s2">&quot;r_t&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">aerothermodynamics</span><span class="o">.</span><span class="n">r_t</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">&quot;V_c&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">aerothermodynamics</span><span class="o">.</span><span class="n">V_c</span> <span class="c1"># Retrieve calculated chamber volume</span>
+<span class="n">params</span><span class="p">[</span><span class="s2">&quot;r_t&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">aerothermodynamics</span><span class="o">.</span><span class="n">r_t</span> <span class="c1"># Retrieve calculated throat radius</span>
 
-<span class="n">coolant_transport</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">skycea</span><span class="o">.</span><span class="n">CoolantTransport</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;coolprop_fu&quot;</span><span class="p">])</span>
+<span class="c1"># Create coolant property object:</span>
+<span class="n">coolant_transport</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">skycea</span><span class="o">.</span><span class="n">CoolantTransport</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;coolprop_fu&quot;</span><span class="p">])</span> <span class="c1"># </span>
 </pre></div>
 </div>
 <p>The calculated <code class="docutils literal notranslate"><span class="pre">V_c</span></code> and <code class="docutils literal notranslate"><span class="pre">r_t</span></code> are inserted into <code class="docutils literal notranslate"><span class="pre">params</span></code> because the contour generator requires them. <code class="docutils literal notranslate"><span class="pre">CoolantTransport</span></code> supplies coolant thermodynamic and transport properties along the cooling path.</p>
@@ -535,32 +527,12 @@ with the simulation results.</p>
 <section id="generate-the-thrust-chamber-contour-and-wall">
 <h2>Generate the thrust-chamber contour and wall<a class="headerlink" href="#generate-the-thrust-chamber-contour-and-wall" title="Link to this heading">¶</a></h2>
 <p>Next, create a Rao nozzle contour and combine it with the chamber dimensions calculated above. The resulting axial and radial coordinates are stored in a <code class="docutils literal notranslate"><span class="pre">Contour</span></code> object. Create a <code class="docutils literal notranslate"><span class="pre">Wall</span></code> to represent the material layer separating the coolant from the combustion gases.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">xs</span><span class="p">,</span> <span class="n">rs</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">contour</span><span class="o">.</span><span class="n">get_contour</span><span class="p">(</span>
-    <span class="n">V_c</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;V_c&quot;</span><span class="p">],</span>
-    <span class="n">AR_c</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;AR_c&quot;</span><span class="p">],</span>
-    <span class="n">r_t</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;r_t&quot;</span><span class="p">],</span>
-    <span class="n">area_ratio</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eps&quot;</span><span class="p">],</span>
-    <span class="n">nozzle</span><span class="o">=</span><span class="s2">&quot;rao&quot;</span><span class="p">,</span>
-    <span class="n">R_1f</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">R_2f</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-    <span class="n">R_3f</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="n">contour</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">Contour</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Minimal Contour&quot;</span><span class="p">)</span>
-<span class="n">wall</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">Wall</span><span class="p">(</span>
-    <span class="n">material</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;material&quot;</span><span class="p">],</span>
-    <span class="n">thickness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;wall_thickness&quot;</span><span class="p">],</span>
-<span class="p">)</span>
-</pre></div>
-</div>
 <p><code class="docutils literal notranslate"><span class="pre">get_contour</span></code> exposes further shaping parameters beyond those used here. The three curvature factors, <code class="docutils literal notranslate"><span class="pre">R_1f</span></code>, <code class="docutils literal notranslate"><span class="pre">R_2f</span></code>, and <code class="docutils literal notranslate"><span class="pre">R_3f</span></code>, affect the chamber-to-throat and nozzle transitions. Retain this simple contour while learning the workflow; contour optimisation is a later design problem.</p>
 </section>
 <section id="define-the-regenerative-cooling-circuit">
 <h2>Define the regenerative-cooling circuit<a class="headerlink" href="#define-the-regenerative-cooling-circuit" title="Link to this heading">¶</a></h2>
 <p>A <code class="docutils literal notranslate"><span class="pre">CoolingCircuit</span></code> combines the coolant model, channel cross-section, channel placement, wall stack, roughness, and dimensions. Pyskyfire can represent multiple circuits, including circuits covering different spans of the contour or interlacing with one another. This tutorial uses one circuit running from the nozzle exit to the chamber inlet.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cross_section</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CrossSectionSquared</span><span class="p">(</span>
-    <span class="n">blockage_ratio</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;blockage_ratio&quot;</span><span class="p">]</span>
-<span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cross_section</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CrossSectionSquared</span><span class="p">(</span><span class="n">blockage_ratio</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;blockage_ratio&quot;</span><span class="p">])</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">channel_height_function</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">return</span> <span class="mf">2e-3</span>
@@ -777,7 +749,7 @@ with this tutorial.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Build a Minimal Regeneratively Cooled Engine</a><ul>
+<li><a class="reference internal" href="#">Minimal Simulation</a><ul>
 <li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li><a class="reference internal" href="#what-you-will-build">What you will build</a></li>
 <li><a class="reference internal" href="#define-the-engine-design-point">Define the engine design point</a></li>
