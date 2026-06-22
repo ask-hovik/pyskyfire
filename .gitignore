@@ -114,7 +114,8 @@ useful_commands.md
 /trash
 /tools
 /film_testing
-
+/papers
+/cea_files
 
 # If you don't want to track your dill folder or any generated data, uncomment:
 # dills/
