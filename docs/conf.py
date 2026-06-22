@@ -28,7 +28,7 @@ autoapi_type  = "python"
 autoapi_dirs  = [os.path.join(SRC, "pyskyfire")]
 autoapi_root  = "autoapi"
 autoapi_add_toctree_entry = True
-autoapi_keep_files = True
+autoapi_keep_files = False
 autoapi_generate_api_docs = True
 autoapi_member_order = "groupwise"
 autoapi_python_class_content = "class"
@@ -102,27 +102,27 @@ def skip_autoapi_members(app, what, name, obj, skip, options):
     return skip
 
 def generate_tutorial_reports(app):
-    """Generate HTML reports required by the tutorial pages."""
+    """Generate HTML artifacts used by tutorial pages."""
     if app.builder.format != "html":
         return
 
     repository_root = Path(__file__).resolve().parent.parent
     minimal_sim = repository_root / "examples" / "minimal" / "minimal_sim.py"
 
-    report_path = (
+    output_dir = (
         Path(app.outdir)
         / "_static"
-        / "reports"
-        / "minimal-report.html"
+        / "tutorial-artifacts"
+        / "minimal-simulation"
     )
-    report_path.parent.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     result = subprocess.run(
         [
             sys.executable,
             str(minimal_sim),
-            "--report-path",
-            str(report_path),
+            "--output-dir",
+            str(output_dir),
         ],
         cwd=repository_root,
         stdout=subprocess.PIPE,

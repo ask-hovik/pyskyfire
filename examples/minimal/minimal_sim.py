@@ -6,7 +6,7 @@ from pathlib import Path
 import pyskyfire as psf
 
 
-def main(report_path: Path | None = None) -> None:
+def main(output_dir: Path | None = None) -> None:
     # tutorial:start:engine-inputs
     params = dict(
         p_c=20e5,                                                                               # Chamber Pressure (Pa)
@@ -25,6 +25,8 @@ def main(report_path: Path | None = None) -> None:
         n_channels=60,                                                                          # Number of cooling channels
         blockage_ratio=0.1,                                                                     # Fraction of cooling channel cross section filled with ribs
         roughness_height=10e-6,                                                                 # Cooling channel roughness parameter
+        helix_angle=45,                                                                         # Cooling channel helix angle
+        channel_height=2e-3                                                                     # Cooling channel height
     )
     # tutorial:end:engine-inputs
 
@@ -42,6 +44,7 @@ def main(report_path: Path | None = None) -> None:
 
     params["V_c"] = aerothermodynamics.V_c # Retrieve calculated chamber volume
     params["r_t"] = aerothermodynamics.r_t # Retrieve calculated throat radius
+    params["mdot_fu"] = aerothermodynamics.mdot_fu # retrieve fuel mass flow rate
 
     # Create coolant property object:
     coolant_transport = psf.skycea.CoolantTransport(params["coolprop_fu"]) # 
@@ -75,10 +78,10 @@ def main(report_path: Path | None = None) -> None:
     cross_section = psf.regen.CrossSectionSquared(blockage_ratio=params["blockage_ratio"])
 
     def channel_height_function(x):
-        return 2e-3
+        return params["channel_height"]
 
     def helix_angle_function(x):
-        return 45 * 3.14 / 180
+        return params["helix_angle"] * 3.14 / 180
 
     placement = psf.regen.SurfacePlacement(
         n_channel_positions=params["n_channels"],
@@ -111,7 +114,7 @@ def main(report_path: Path | None = None) -> None:
     boundary_conditions = psf.regen.BoundaryConditions(
         T_coolant_in=params["T_coolant_in"],
         p_coolant_in=params["p_coolant_in"],
-        mdot_coolant=aerothermodynamics.mdot_fu,
+        mdot_coolant=params["mdot_fu"],
     )
 
     cooling_data = psf.regen.steady_heating_analysis(
@@ -124,9 +127,10 @@ def main(report_path: Path | None = None) -> None:
     # tutorial:end:simulation
 
     # tutorial:start:report
-    if report_path is None:
-        report_path = Path(__file__).with_name("minimal_report.html")
-    report_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_dir is None:
+        output_dir = Path(__file__).parent
+
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     report = psf.viz.Report("Minimal Engine")
 
@@ -147,16 +151,20 @@ def main(report_path: Path | None = None) -> None:
     )
 
     tab_overview = report.add_tab("Engine Overview")
-    tab_overview.add_figure(psf.viz.PlotContour(thrust_chamber.contour))
 
-    # tutorial:start:visualisation
-    plotter, viewer_src = psf.viz.make_engine_3d(thrust_chamber, show=False)
+    # Engine contour
+    contour_plot = psf.viz.PlotContour(thrust_chamber.contour)
+    contour_plot.save_html(output_dir / "contour.html")
+    tab_overview.add_figure(contour_plot)
+
+    # 3D engine
+    engine_viewer = psf.viz.make_engine_3d(thrust_chamber, show=False)
+    engine_viewer.save_html(output_dir / "engine-3d.html")
     tab_overview.add_iframe(
-        viewer_src,
+        engine_viewer.data_url,
         caption="Engine 3D",
     )
-    del plotter
-    # tutorial:end:visualisation
+    engine_viewer.close()
 
     tab_cooling_data = report.add_tab("Cooling Data")
     tab_cooling_data.add_figure(
@@ -166,9 +174,12 @@ def main(report_path: Path | None = None) -> None:
             plot_coolant_wall=True,
         )
     )
+
+    heat_flux = psf.viz.PlotHeatFlux(cooling_data)
+    heat_flux.save_html(output_dir / "heat-flux.html")
     tab_cooling_data.add_figure(psf.viz.PlotCoolantTemperature(cooling_data))
     tab_cooling_data.add_figure(psf.viz.PlotCoolantPressure(cooling_data))
-    tab_cooling_data.add_figure(psf.viz.PlotHeatFlux(cooling_data))
+    tab_cooling_data.add_figure(heat_flux)
     tab_cooling_data.add_figure(psf.viz.PlotVelocity(cooling_data))
 
     tab_thrust_chamber = report.add_tab("Thrust Chamber Properties")
@@ -199,6 +210,7 @@ def main(report_path: Path | None = None) -> None:
         psf.viz.PlotTemperatureProfile(cooling_data, thrust_chamber, 0, 0.05)
     )
 
+    report_path = output_dir / "minimal-report.html"
     report.save_html(report_path)
     print(f"Report saved to {report_path}")
     # tutorial:end:report
@@ -207,10 +219,10 @@ def main(report_path: Path | None = None) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--report-path",
+        "--output-dir",
         type=Path,
-        help="Path for the generated HTML report.",
+        help="Directory for generated HTML outputs.",
     )
-    args = parser.parse_args()
 
-    main(report_path=args.report_path)
+    args = parser.parse_args()
+    main(output_dir=args.output_dir)

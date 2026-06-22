@@ -5,6 +5,7 @@ from pathlib import Path
 import base64
 import tempfile
 import os
+from dataclasses import dataclass
 
 import numpy as np
 import pyvista as pv
@@ -21,6 +22,40 @@ from pyskyfire.regen.cross_section import (
 
 _EPS = 1e-12
 TWO_PI = 2.0 * np.pi
+
+# ---------------------------------------------------------------------------
+# Returned dataclass
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Engine3DViewer:
+    """Interactive self-contained HTML viewer for a thrust-chamber model."""
+
+    plotter: pv.Plotter
+    data_url: str
+
+    def save_html(self, path: str | Path) -> Path:
+        """Write the interactive viewer to a standalone HTML file."""
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        prefix = "data:text/html;base64,"
+        if not self.data_url.startswith(prefix):
+            raise ValueError("Expected a base64-encoded HTML data URL")
+
+        encoded_html = self.data_url.removeprefix(prefix)
+        html = base64.b64decode(encoded_html).decode("utf-8")
+
+        path.write_text(html, encoding="utf-8")
+        return path
+
+    def show(self):
+        """Open the PyVista desktop viewer."""
+        return self.plotter.show()
+
+    def close(self) -> None:
+        """Release PyVista rendering resources."""
+        self.plotter.close()
 
 
 # ---------------------------------------------------------------------------
@@ -922,7 +957,11 @@ def make_engine_3d(
 
     print(f"Plotter finished in {end - start:.3f} s")
 
-    return plotter, viewer_src #cl_full, w_full, cid_full, meshes
+
+    return Engine3DViewer(
+        plotter=plotter,
+        data_url=viewer_src,
+    ) # return plotter, viewer_src #cl_full, w_full, cid_full, meshes
 
 def plane_uv_to_xyz(
     P0: np.ndarray,
