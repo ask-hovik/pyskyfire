@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Advanced Simulation" href="advanced-simulation.html"><link rel="prev" title="Start Here" href="../index.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Optimise mixture ratio" href="../howto/mixture-ratio-optimisation.html"><link rel="prev" title="Start Here" href="../index.html">
         <link rel="prefetch" href="../_static/pyskyfire_header.png" as="image">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
@@ -201,12 +201,10 @@
 <p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
 <ul class="current">
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Minimal Simulation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="advanced-simulation.html">Advanced Simulation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../howto/engine-optimization.html">Engine Optimisation in Pyskyfire</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../howto/making-validation-case.html">Making a Validation Case in Pyskyfire</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../howto/mixture-ratio-optimisation.html">Optimise mixture ratio</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul>
@@ -483,15 +481,15 @@
 <p>Start with the intended chamber conditions, thrust, nozzle geometry, coolant inlet state, and the thermal/geometry choices for the cooling circuit.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
     <span class="n">p_c</span><span class="o">=</span><span class="mf">20e5</span><span class="p">,</span>                                                                               <span class="c1"># Chamber Pressure (Pa)</span>
-    <span class="n">F</span><span class="o">=</span><span class="mf">5e3</span><span class="p">,</span>                                                                                  <span class="c1"># Thrust (N)</span>
-    <span class="n">eps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>                                                                                 <span class="c1"># Nozzle area ratio</span>
+    <span class="n">F</span><span class="o">=</span><span class="mf">10e3</span><span class="p">,</span>                                                                                  <span class="c1"># Thrust (N)</span>
+    <span class="n">eps</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>                                                                                 <span class="c1"># Nozzle area ratio</span>
     <span class="n">L_star</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>                                                                             <span class="c1"># Combustion chamber characteristic length </span>
     <span class="n">MR</span><span class="o">=</span><span class="mf">2.8</span><span class="p">,</span>                                                                                 <span class="c1"># Mixture ratio</span>
-    <span class="n">AR_c</span><span class="o">=</span><span class="mf">1.8</span><span class="p">,</span>                                                                               <span class="c1"># Chamber aspect ratio</span>
+    <span class="n">AR_c</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>                                                                               <span class="c1"># Chamber aspect ratio</span>
     <span class="n">cea_fu</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Fluid</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;fuel&quot;</span><span class="p">,</span> <span class="n">propellants</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;C2H5OH&quot;</span><span class="p">],</span> <span class="n">fractions</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">]),</span>          <span class="c1"># Ethanol</span>
     <span class="n">cea_ox</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Fluid</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;oxidizer&quot;</span><span class="p">,</span> <span class="n">propellants</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;N2O&quot;</span><span class="p">],</span> <span class="n">fractions</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">]),</span>         <span class="c1"># Nitrous oxide</span>
     <span class="n">coolprop_fu</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Fluid</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;fuel&quot;</span><span class="p">,</span> <span class="n">propellants</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ethanol&quot;</span><span class="p">],</span> <span class="n">fractions</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">]),</span>    <span class="c1"># Ethanol</span>
-    <span class="n">T_coolant_in</span><span class="o">=</span><span class="mf">298.15</span><span class="p">,</span>                                                                    <span class="c1"># Coolant inlet temperature</span>
+    <span class="n">T_coolant_in</span><span class="o">=</span><span class="mf">273.15</span><span class="p">,</span>                                                                    <span class="c1"># Coolant inlet temperature</span>
     <span class="n">p_coolant_in</span><span class="o">=</span><span class="mf">23e5</span><span class="p">,</span>                                                                      <span class="c1"># Coolant inlet pressure</span>
     <span class="n">material</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">solids</span><span class="o">.</span><span class="n">StainlessSteel304</span><span class="p">,</span>                                           <span class="c1"># Wall material</span>
     <span class="n">wall_thickness</span><span class="o">=</span><span class="mf">0.5e-3</span><span class="p">,</span>                                                                  <span class="c1"># Wall thickness</span>
@@ -664,6 +662,8 @@
 
 <span class="n">report</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">Report</span><span class="p">(</span><span class="s2">&quot;Minimal Engine&quot;</span><span class="p">)</span>
 
+<span class="c1"># Parameters tab</span>
+<span class="c1"># --------------</span>
 <span class="n">tab_params</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">&quot;Parameters&quot;</span><span class="p">)</span>
 <span class="n">tab_params</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span>
     <span class="n">params</span><span class="p">,</span>
@@ -680,12 +680,9 @@
     <span class="n">precision</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
 <span class="p">)</span>
 
+<span class="c1"># Overview tab</span>
+<span class="c1"># ------------</span>
 <span class="n">tab_overview</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">&quot;Engine Overview&quot;</span><span class="p">)</span>
-
-<span class="c1"># Engine contour</span>
-<span class="n">contour_plot</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotContour</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="o">.</span><span class="n">contour</span><span class="p">)</span>
-<span class="n">contour_plot</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="n">output_dir</span> <span class="o">/</span> <span class="s2">&quot;contour.html&quot;</span><span class="p">)</span>
-<span class="n">tab_overview</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">contour_plot</span><span class="p">)</span>
 
 <span class="c1"># 3D engine</span>
 <span class="n">engine_viewer</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">make_engine_3d</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -696,6 +693,13 @@
 <span class="p">)</span>
 <span class="n">engine_viewer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
+<span class="c1"># Engine contour</span>
+<span class="n">contour_plot</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotContour</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="o">.</span><span class="n">contour</span><span class="p">)</span>
+<span class="n">contour_plot</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="n">output_dir</span> <span class="o">/</span> <span class="s2">&quot;contour.html&quot;</span><span class="p">)</span>
+<span class="n">tab_overview</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">contour_plot</span><span class="p">)</span>
+
+<span class="c1"># Cooling data tab</span>
+<span class="c1"># ----------------</span>
 <span class="n">tab_cooling_data</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">&quot;Cooling Data&quot;</span><span class="p">)</span>
 <span class="n">tab_cooling_data</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
     <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotWallTemperature</span><span class="p">(</span>
@@ -720,6 +724,8 @@
 <span class="n">tab_thrust_chamber</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotdAdxThermalCoolant</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="p">))</span>
 <span class="n">tab_thrust_chamber</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotdAdxCoolantArea</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="p">))</span>
 
+<span class="c1"># Combustion calculations tab</span>
+<span class="c1"># ---------------------------</span>
 <span class="n">tab_combustion</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">&quot;Combustion&quot;</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;M&quot;</span><span class="p">,</span> <span class="s2">&quot;gamma&quot;</span><span class="p">,</span> <span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">,</span> <span class="s2">&quot;cp&quot;</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="s2">&quot;mu&quot;</span><span class="p">,</span> <span class="s2">&quot;Pr&quot;</span><span class="p">,</span> <span class="s2">&quot;rho&quot;</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">]:</span>
     <span class="n">tab_combustion</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
@@ -729,6 +735,8 @@
         <span class="p">)</span>
     <span class="p">)</span>
 
+<span class="c1"># Thermal gradient tab</span>
+<span class="c1"># --------------------</span>
 <span class="n">tab_thermal_gradient</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">&quot;Thermal Gradient&quot;</span><span class="p">)</span>
 <span class="n">tab_thermal_gradient</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
     <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotTemperatureProfile</span><span class="p">(</span><span class="n">cooling_data</span><span class="p">,</span> <span class="n">thrust_chamber</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">)</span>
@@ -740,13 +748,15 @@
     <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotTemperatureProfile</span><span class="p">(</span><span class="n">cooling_data</span><span class="p">,</span> <span class="n">thrust_chamber</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>
 <span class="p">)</span>
 
+<span class="c1"># Save report</span>
+<span class="c1"># -----------</span>
 <span class="n">report_path</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">&quot;minimal-report.html&quot;</span>
 <span class="n">report</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="n">report_path</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Report saved to </span><span class="si">{</span><span class="n">report_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>When the scripts completes, a few standalone interactive html graphs have been made. A comprehensive report is compiled into <code class="docutils literal notranslate"><span class="pre">minimal-report.html</span></code>. You can view the report here:
-<a href="../_static/tutorial-artifacts/minimal-report.html"> Minimal Simulation Report</a></p>
+<a href="../_static/tutorial-artifacts/minimal-simulation/minimal-report.html"> Minimal Simulation Report</a></p>
 </section>
 </section>
 
@@ -755,12 +765,12 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="advanced-simulation.html">
+          <a class="next-page" href="../howto/mixture-ratio-optimisation.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Advanced Simulation</div>
+                <div class="title">Optimise mixture ratio</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>

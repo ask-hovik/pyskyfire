@@ -175,7 +175,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -201,12 +201,10 @@
 <p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="tutorials/minimal-simulation.html">Minimal Simulation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorials/advanced-simulation.html">Advanced Simulation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="howto/engine-optimization.html">Engine Optimisation in Pyskyfire</a></li>
-<li class="toctree-l1"><a class="reference internal" href="howto/making-validation-case.html">Making a Validation Case in Pyskyfire</a></li>
+<li class="toctree-l1"><a class="reference internal" href="howto/mixture-ratio-optimisation.html">Optimise mixture ratio</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul>
@@ -457,15 +455,104 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
           <section class="tex2jax_ignore mathjax_ignore" id="start-here">
 <h1>Start Here<a class="headerlink" href="#start-here" title="Link to this heading">¶</a></h1>
-<p>An explanation of the package and how the documentation page works. (To be filled out).
-Testing. testing 2. testing 3.</p>
+<p>Pyskyfire is a Python library for analysing liquid-propellant rocket engines.</p>
+<p>It supports:</p>
+<ul class="simple">
+<li><p>combustion-performance and nozzle-flow calculations using NASA CEA;</p></li>
+<li><p>thrust-chamber and nozzle contour generation;</p></li>
+<li><p>regenerative-cooling analysis of chamber walls and coolant channels;</p></li>
+<li><p>cooling-channel geometry, wall-material, and coolant-property models;</p></li>
+<li><p>pump, turbine, and engine-network utilities;</p></li>
+<li><p>plots, interactive 3D geometry views, and standalone HTML reports.</p></li>
+</ul>
+<p>Pyskyfire is intended for preliminary engine design, thermal analysis, and engine-cycle studies.</p>
+<section id="start-with-the-minimal-simulation">
+<h2>Start with the minimal simulation<a class="headerlink" href="#start-with-the-minimal-simulation" title="Link to this heading">¶</a></h2>
+<p><a class="reference internal" href="tutorials/minimal-simulation.html"><span class="doc">Minimal Simulation</span></a> is the recommended introduction to Pyskyfire.</p>
+<p>The tutorial builds and analyses a 5 kN nitrous-oxide/ethanol rocket engine. It shows how to:</p>
+<ol class="arabic simple">
+<li><p>define an engine design point;</p></li>
+<li><p>calculate combustion-gas properties;</p></li>
+<li><p>generate a thrust-chamber contour;</p></li>
+<li><p>define walls and cooling channels;</p></li>
+<li><p>run a regenerative-cooling simulation; and</p></li>
+<li><p>generate plots, a 3D model, and an HTML report.</p></li>
+</ol>
+<p>The complete source code is available in <code class="docutils literal notranslate"><span class="pre">examples/minimal/minimal_sim.py</span></code>. Use it as a starting point for new engine cases.</p>
+</section>
+<section id="documentation-structure">
+<h2>Documentation structure<a class="headerlink" href="#documentation-structure" title="Link to this heading">¶</a></h2>
+<p>The documentation follows the <a class="reference external" href="https://diataxis.fr/">Diátaxis</a> framework. Each section serves a different purpose.</p>
+<section id="tutorials">
+<h3>Tutorials<a class="headerlink" href="#tutorials" title="Link to this heading">¶</a></h3>
+<p>Tutorials are guided, runnable introductions to a complete workflow.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="tutorials/minimal-simulation.html"><span class="doc">Minimal Simulation</span></a>
+Build and analyse a regeneratively cooled thrust chamber from a defined engine design point.</p></li>
+</ul>
+</section>
+<section id="howto">
+<h3>Howto<a class="headerlink" href="#howto" title="Link to this heading">¶</a></h3>
+<p>Howtos guide you through achieving a specific goal. For example hoe to use pyskyfire to find an optimum mixture ratio: <a class="reference internal" href="howto/mixture-ratio-optimisation.html"><span class="doc">Mixture ratio optimisation</span></a></p>
+</section>
+<section id="explanations">
+<h3>Explanations<a class="headerlink" href="#explanations" title="Link to this heading">¶</a></h3>
+<p>Explanations describe the engineering models, code structure, and analysis methods used by Pyskyfire.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="explanations/capabilities.html"><span class="doc">Capabilities</span></a>
+Overview of the analyses, outputs, and visualisation tools provided by Pyskyfire.</p></li>
+<li><p><a class="reference internal" href="explanations/package-structure.html"><span class="doc">Package Structure</span></a>
+Overview of the repository, source packages, examples, validation cases, and their roles.</p></li>
+<li><p><a class="reference internal" href="explanations/regenerative-cooling-explanation.html"><span class="doc">Regenerative Cooling</span></a>
+Explanation of the regenerative-cooling model, solver structure, heat-transfer paths, and governing quantities.</p></li>
+</ul>
+</section>
+<section id="reference">
+<h3>Reference<a class="headerlink" href="#reference" title="Link to this heading">¶</a></h3>
+<p>The reference section is generated from the source code and documents the available Python interfaces.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Package</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="autoapi/pyskyfire/common/index.html"><span class="doc">pyskyfire.common</span></a></p></td>
+<td><p>Shared objects including fluids, material models, result containers, stations, blocks, and engine-network infrastructure.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="autoapi/pyskyfire/skycea/index.html"><span class="doc">pyskyfire.skycea</span></a></p></td>
+<td><p>NASA CEA-based combustion and aerothermodynamic calculations, nozzle utilities, and coolant transport properties.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="autoapi/pyskyfire/regen/index.html"><span class="doc">pyskyfire.regen</span></a></p></td>
+<td><p>Thrust-chamber geometry, cooling channels, wall models, regenerative cooling, and film cooling.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="autoapi/pyskyfire/pump/index.html"><span class="doc">pyskyfire.pump</span></a></p></td>
+<td><p>Pump and turbopump analysis utilities.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="autoapi/pyskyfire/turbine/index.html"><span class="doc">pyskyfire.turbine</span></a></p></td>
+<td><p>Turbine models and utilities for engine-cycle calculations.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="autoapi/pyskyfire/viz/index.html"><span class="doc">pyskyfire.viz</span></a></p></td>
+<td><p>Plotting, reporting, pressure-temperature diagrams, and 3D engine visualisation.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Use the reference when you need the exact inputs, outputs, methods, or inheritance structure of a class or function.</p>
+</section>
+</section>
+<section id="documentation-and-source-code">
+<h2>Documentation and source code<a class="headerlink" href="#documentation-and-source-code" title="Link to this heading">¶</a></h2>
+<p>Tutorials use runnable scripts from the repository. The minimal simulation tutorial includes selected sections of <code class="docutils literal notranslate"><span class="pre">examples/minimal/minimal_sim.py</span></code>, so the documented workflow matches the executed example.</p>
+<p>The API reference is generated from docstrings in <code class="docutils literal notranslate"><span class="pre">src/pyskyfire/</span></code>.</p>
 <div class="toctree-wrapper compound">
 </div>
 <div class="toctree-wrapper compound">
@@ -476,6 +563,7 @@ Testing. testing 2. testing 3.</p>
 </div>
 <div class="toctree-wrapper compound">
 </div>
+</section>
 </section>
 
         </article>
@@ -511,8 +599,37 @@ Testing. testing 2. testing 3.</p>
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Start Here</a><ul>
+<li><a class="reference internal" href="#start-with-the-minimal-simulation">Start with the minimal simulation</a></li>
+<li><a class="reference internal" href="#documentation-structure">Documentation structure</a><ul>
+<li><a class="reference internal" href="#tutorials">Tutorials</a></li>
+<li><a class="reference internal" href="#howto">Howto</a></li>
+<li><a class="reference internal" href="#explanations">Explanations</a></li>
+<li><a class="reference internal" href="#reference">Reference</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#documentation-and-source-code">Documentation and source code</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

@@ -164,4 +164,4 @@ The example uses Pyskyfire's report system to collect input data, calculated opt
 ```
 
 When the scripts completes, a few standalone interactive html graphs have been made. A comprehensive report is compiled into `minimal-report.html`. You can view the report here: 
-<a href="../_static/tutorial-artifacts/minimal-report.html"> Minimal Simulation Report</a>
+<a href="../_static/tutorial-artifacts/minimal-simulation/minimal-report.html"> Minimal Simulation Report</a>
