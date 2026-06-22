@@ -11,65 +11,23 @@ Pyskyfire is an open-source python package, meant as an alternative to RPA, NPSS
 The first iteration of pyskyfire was written as part of the master thesis of Ask Haugerud Hovik, which can be read [here](https://drive.google.com/file/d/1sZJmt-8UWtUChprji67LmnazS3Ei_K3a/view). The motivation to start writing the software came purely from a curiosity standpoint and from an innate wish to spread the understanding of rocket engines and propel us further into the space age. Please use this software responsibly and make sure you, your team memebers and everyone else stay safe in your rocket engine endeavours.  
 
 # Program Capabilities
-Features of pyskyfire include thrust chamber chemical equilibrium analysis, multi-pass regenerative cooling, thrust chamber contour generation, pump and turbine utilities, and full rocket engine cycle analysis.
+Features of pyskyfire include thrust chamber chemical equilibrium analysis, multi-pass regenerative cooling, thrust chamber contour generation, pump and turbine utilities, and full rocket engine cycle analysis. A full explanation of the capabilities of pyskyfire is outlined in [the documentation](https://ask-hovik.github.io/pyskyfire/explanations/capabilities.html)
 
-## Regenerative Cooling
-A cornerstone of pyskyfire is its built-in regenerative cooling solver. The solver supports multi pass regenerative cooling with multiple propellants. Here demonstrated is the one-and-a-half pass cooling arrangement of the venerable RL10 engine. 
-
-**Coolant Pressure**
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/RL10_coolant_static_pressure.png)
-**Coolant Temperature**
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/RL10_coolant_temperature.png)
-**Wall Heat Flux**
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/RL10_heat_flux.png)
-**Wall Temperature**
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/RL10_wall_temperature.png)
-
-In addition, multiple propellants can be used as coolants in the same thrust chamber, and multiple wall layers can be added, simulating such things as thermal barrier coatings. 
-
-**Multi-Pass, Thermal Barrier Coating Example**
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/methane_engine_wall_temperatures.png)
-**Estimate of Temperature Profile**
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/temperature_profile_chamber.png)
-
-## Contour Generation
-Pyskyfire can generate optimal contours using either a "Rao" nozzle or a conical nozzle. 
-
-**Bell Nozzle Example**
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/methane_engine_contour.png)
-
-## Aerothermodynamic Properties
-The aerothermodynamic properties of the hot gas as it moves through the nozzle is predicted by the program, either using Cantera or NASA CEA. 
-
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/skycea_comparison_1.png)
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/skycea_comparison_2.png)
-
-## Full Cycle Analysis
-By combining built-in modules for pumps and turbines, the whole engine cycle thermodynamic state can be predicted. Here compared with the RL10 cycle. 
-
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/fuel_side_cycle_vali_condensed.png)
-
-The whole engine can be represented in an engine network, and through the use of PT-diagrams. 
-
-**Engine Network Example**
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/engine_network_transp.png)
-**Methane-Side Path**
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/methane_PT.png)
-**Oxygen-Side Path**
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/oxygen_PT.png)
-
-## Engine Visualisation 
-The engine cooling channels can be visualised in 3D, with interlacing between different cooling loops, and inner and outer wall of each cooling channel rendered. Cross sections through any plane of this render can also be made. Here, the RL10 with its semicircular cooling channels is shown
-
-![](https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/RL10_visualisation_transp.png
-)
+# Documentaion
+[Documentation](https://ask-hovik.github.io/pyskyfire) for the project is available, and written in a pedagogic style. The package with examples and validation cases is still being developed, so the documentation does not cover everything the package is capable of. Look into the validation cases and advanced examples to see everything the package can do.
 
 # Installation
 The package is available on PyPI, and is simply installed with 
 
 ```
-pip install pyskyfire
+uv pip install pyskyfire
 ```
+
+For the bleeding edge version clone the repository and install in an editable environment. 
+
+``` 
+uv pip install -e . 
+```  
 
 # Contributions
 

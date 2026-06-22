@@ -10,15 +10,15 @@ def main(output_dir: Path | None = None) -> None:
     # tutorial:start:engine-inputs
     params = dict(
         p_c=20e5,                                                                               # Chamber Pressure (Pa)
-        F=5e3,                                                                                  # Thrust (N)
-        eps=10,                                                                                 # Nozzle area ratio
+        F=10e3,                                                                                  # Thrust (N)
+        eps=6,                                                                                 # Nozzle area ratio
         L_star=1.2,                                                                             # Combustion chamber characteristic length 
         MR=2.8,                                                                                 # Mixture ratio
-        AR_c=1.8,                                                                               # Chamber aspect ratio
+        AR_c=1.5,                                                                               # Chamber aspect ratio
         cea_fu=psf.common.Fluid(type="fuel", propellants=["C2H5OH"], fractions=[1.0]),          # Ethanol
         cea_ox=psf.common.Fluid(type="oxidizer", propellants=["N2O"], fractions=[1.0]),         # Nitrous oxide
         coolprop_fu=psf.common.Fluid(type="fuel", propellants=["ethanol"], fractions=[1.0]),    # Ethanol
-        T_coolant_in=298.15,                                                                    # Coolant inlet temperature
+        T_coolant_in=273.15,                                                                    # Coolant inlet temperature
         p_coolant_in=23e5,                                                                      # Coolant inlet pressure
         material=psf.common.solids.StainlessSteel304,                                           # Wall material
         wall_thickness=0.5e-3,                                                                  # Wall thickness
@@ -134,6 +134,8 @@ def main(output_dir: Path | None = None) -> None:
 
     report = psf.viz.Report("Minimal Engine")
 
+    # Parameters tab
+    # --------------
     tab_params = report.add_tab("Parameters")
     tab_params.add_table(
         params,
@@ -150,12 +152,9 @@ def main(output_dir: Path | None = None) -> None:
         precision=3,
     )
 
+    # Overview tab
+    # ------------
     tab_overview = report.add_tab("Engine Overview")
-
-    # Engine contour
-    contour_plot = psf.viz.PlotContour(thrust_chamber.contour)
-    contour_plot.save_html(output_dir / "contour.html")
-    tab_overview.add_figure(contour_plot)
 
     # 3D engine
     engine_viewer = psf.viz.make_engine_3d(thrust_chamber, show=False)
@@ -166,6 +165,13 @@ def main(output_dir: Path | None = None) -> None:
     )
     engine_viewer.close()
 
+    # Engine contour
+    contour_plot = psf.viz.PlotContour(thrust_chamber.contour)
+    contour_plot.save_html(output_dir / "contour.html")
+    tab_overview.add_figure(contour_plot)
+
+    # Cooling data tab
+    # ----------------
     tab_cooling_data = report.add_tab("Cooling Data")
     tab_cooling_data.add_figure(
         psf.viz.PlotWallTemperature(
@@ -190,6 +196,8 @@ def main(output_dir: Path | None = None) -> None:
     tab_thrust_chamber.add_figure(psf.viz.PlotdAdxThermalCoolant(thrust_chamber))
     tab_thrust_chamber.add_figure(psf.viz.PlotdAdxCoolantArea(thrust_chamber))
 
+    # Combustion calculations tab
+    # ---------------------------
     tab_combustion = report.add_tab("Combustion")
     for prop in ["M", "gamma", "T", "p", "h", "cp", "k", "mu", "Pr", "rho", "a"]:
         tab_combustion.add_figure(
@@ -199,6 +207,8 @@ def main(output_dir: Path | None = None) -> None:
             )
         )
 
+    # Thermal gradient tab
+    # --------------------
     tab_thermal_gradient = report.add_tab("Thermal Gradient")
     tab_thermal_gradient.add_figure(
         psf.viz.PlotTemperatureProfile(cooling_data, thrust_chamber, 0, -0.1)
@@ -210,6 +220,8 @@ def main(output_dir: Path | None = None) -> None:
         psf.viz.PlotTemperatureProfile(cooling_data, thrust_chamber, 0, 0.05)
     )
 
+    # Save report
+    # -----------
     report_path = output_dir / "minimal-report.html"
     report.save_html(report_path)
     print(f"Report saved to {report_path}")

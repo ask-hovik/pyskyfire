@@ -101,30 +101,17 @@ def skip_autoapi_members(app, what, name, obj, skip, options):
         return True
     return skip
 
-def generate_tutorial_reports(app):
-    """Generate HTML artifacts used by tutorial pages."""
-    if app.builder.format != "html":
-        return
-
-    repository_root = Path(__file__).resolve().parent.parent
-    minimal_sim = repository_root / "examples" / "minimal" / "minimal_sim.py"
-
-    output_dir = (
-        Path(app.outdir)
-        / "_static"
-        / "tutorial-artifacts"
-        / "minimal-simulation"
-    )
+def run_artifact_script(script: Path, output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     result = subprocess.run(
         [
             sys.executable,
-            str(minimal_sim),
+            str(script),
             "--output-dir",
             str(output_dir),
         ],
-        cwd=repository_root,
+        cwd=ROOT,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -132,13 +119,41 @@ def generate_tutorial_reports(app):
 
     if result.returncode:
         raise SphinxError(
-            "Minimal-engine tutorial simulation failed:\n\n"
+            f"Documentation artifact generation failed for {script}:\n\n"
             + result.stdout
         )
 
+
+def generate_docs_artifacts(app):
+    """Generate HTML artifacts used by documentation pages."""
+    if app.builder.format != "html":
+        return
+
+    repository_root = Path(__file__).resolve().parent.parent
+
+    run_artifact_script(
+        script=repository_root / "examples" / "minimal" / "minimal_sim.py",
+        output_dir=(
+            Path(app.outdir)
+            / "_static"
+            / "tutorial-artifacts"
+            / "minimal-simulation"
+        ),
+    )
+
+    run_artifact_script(
+        script=repository_root / "examples" / "MR_optimisation" / "MR_opt.py",
+        output_dir=(
+            Path(app.outdir)
+            / "_static"
+            / "howto-artifacts"
+            / "mixture-ratio-optimization"
+        ),
+    )
+
 def setup(app):
     app.connect("autoapi-skip-member", skip_autoapi_members)
-    app.connect("builder-inited", generate_tutorial_reports)
+    app.connect("builder-inited", generate_docs_artifacts)
 
 # Logo
 html_logo = "_static/pyskyfire_header.png"   # or .png
