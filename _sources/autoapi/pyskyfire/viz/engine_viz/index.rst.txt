@@ -14,6 +14,19 @@ Attributes
    pyskyfire.viz.engine_viz._EPS
 
 
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/viz/engine_viz/Engine3DViewer
+
+.. autoapisummary::
+
+   pyskyfire.viz.engine_viz.Engine3DViewer
+
+
 Functions
 ---------
 

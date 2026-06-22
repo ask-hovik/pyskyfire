@@ -1,0 +1,97 @@
+pyskyfire.viz.engine_viz.Engine3DViewer
+=======================================
+
+.. py:class:: pyskyfire.viz.engine_viz.Engine3DViewer
+
+   
+   Interactive self-contained HTML viewer for a thrust-chamber model.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: close() -> None
+
+      
+      Release PyVista rendering resources.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: save_html(path: str | pathlib.Path) -> pathlib.Path
+
+      
+      Write the interactive viewer to a standalone HTML file.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: show()
+
+      
+      Open the PyVista desktop viewer.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

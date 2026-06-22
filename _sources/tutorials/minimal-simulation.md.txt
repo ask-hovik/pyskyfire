@@ -1,6 +1,6 @@
 # Minimal Simulation
 
-This tutorial builds and analyses a small regeneratively cooled nitrous-oxide/ethanol rocket engine. It is intended to introduce the principal Pyskyfire objects and the normal workflow for a thrust-chamber thermal analysis. This tutorial is focused on showcasing pyskyfire capabilities, and is not focused on engine design.
+This tutorial builds and analyses a small regeneratively cooled nitrous-oxide/ethanol rocket engine. It is intended to introduce the principal Pyskyfire objects and the normal workflow for a thrust-chamber thermal analysis. This tutorial is focused on showcasing Pyskyfire capabilities, and is not focused on engine design.
 
 The complete, runnable source is maintained in [`examples/minimal/minimal_sim.py`](https://github.com/ask-hovik/pyskyfire/blob/main/examples/minimal/minimal_sim.py).
 
@@ -16,11 +16,11 @@ The script builds a thrust chamber, and then runs a regenerative cooling analysi
 
 ## What you will build
 
-The example uses a 5 kN engine with a 50 bar chamber pressure, an area ratio of 10, nitrous oxide as oxidizer, and ethanol as both fuel and coolant. It uses a single helical, square-channel cooling circuit running from nozzle exit to chamber inlet.
+The example uses a 5 kN engine with a 20 bar chamber pressure, an area ratio of 10, nitrous oxide as oxidizer, and ethanol as both fuel and coolant. It uses a single, helical, square-channel cooling circuit running from nozzle exit to chamber inlet.
 
 ## Define the engine design point
 
-Start with the intended chamber conditions, nozzle geometry, combustion mixture ratio, coolant inlet state, and the thermal/geometry choices for the cooling circuit.
+Start with the intended chamber conditions, thrust, nozzle geometry, coolant inlet state, and the thermal/geometry choices for the cooling circuit.
 
 ```{literalinclude} ../../examples/minimal/minimal_sim.py
 :language: python
@@ -29,13 +29,21 @@ Start with the intended chamber conditions, nozzle geometry, combustion mixture 
 :dedent: 4  
 ``` 
 
-`cea_fu` and `cea_ox` define the propellants passed to the NASA CEA-backed combustion model. `coolprop_fu` defines the coolant passed to the CoolProp-backed transport-property model. The two representations must name the same physical coolant, but use the naming conventions accepted by their respective backends.
+`cea_fu` and `cea_ox` define the propellants passed to the NASA CEA-backed combustion model. `coolprop_fu` defines the coolant passed to the CoolProp-backed transport-property model. Different backends are used for the coolant and the combustion gas, NASA CEA for the hot gas, CoolProp for the coolant, hence the need to define the ethanol twice. 
 
-`p_c`, `F`, `eps`, `L_star`, and `MR` establish the thermodynamic design point. `AR_c` controls the generated chamber geometry. The remaining inputs define the cooling wall and flow channels: material, hot-gas-to-coolant wall thickness, channel count, rib blockage, and coolant-side roughness.
+`p_c`, `F`, `eps`, `L_star`, and `MR` establish the thermodynamic design point. `AR_c` represents the chamber aspect ratio, defined as 
+
+$$ AR_c = \frac{L_c^2}{S_c} $$
+
+where $L_c$ is the chamber length, and $S_c$ is the area of the cross section of the chamber when the section plane passes through the chamber axis. 
+
+![Thrust chamber contour](../_static/images/thrust-chamber-contour.svg)
+
+The remaining inputs define the cooling wall and flow channels: material, hot-gas-to-coolant wall thickness, channel count, rib blockage, coolant-side roughness, helix angle and channel height.
 
 ## Compute the combustion and coolant models
 
-Pyskyfire uses the supplied design point to construct an aerothermodynamic model of the combustion gases. In this example, that model also determines the chamber volume and throat radius needed for the requested thrust, chamber pressure, nozzle area ratio, and characteristic length.
+Pyskyfire uses the supplied design point to construct an aerothermodynamic model of the combustion gases. Upon initialisation, the aerothermodynamics class calculates many parameters about the engine. In this example, the ideal chamber volume, throat radius and fuel mass flow the class has calculated is used further.  
 
 ```{literalinclude} ../../examples/minimal/minimal_sim.py
 :language: python
@@ -44,24 +52,46 @@ Pyskyfire uses the supplied design point to construct an aerothermodynamic model
 :dedent: 4
 ```
 
-The calculated `V_c` and `r_t` are inserted into `params` because the contour generator requires them. `CoolantTransport` supplies coolant thermodynamic and transport properties along the cooling path.
+The aerothermodynamics class has multiple constructors allowing you to choose which set of inputs is used to construct the hot gas properties. In this example `from_F_eps_Lstar` is used. See other options in {doc}`Aerothermodynamics <../autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics>`. The calculated `V_c`, `r_t` and `mdot_fu` are inserted into `params` for convenience. `CoolantTransport` supplies coolant thermodynamic and transport properties.
 
-## Generate the thrust-chamber contour and wall
+## Generate the thrust-chamber contour
 
-Next, create a Rao nozzle contour and combine it with the chamber dimensions calculated above. The resulting axial and radial coordinates are stored in a `Contour` object. Create a `Wall` to represent the material layer separating the coolant from the combustion gases.
+Next, we are going to create a nozzle contour. We can choose between a conical nozzle and a bell (Rao) nozzle. The resulting axial and radial coordinates are stored in a `Contour` object. 
 
 ```{literalinclude} ../../examples/minimal/minimal_sim.py
 :language: python
-:start-after: tutorial:start:contour-and-wall
-:end-before: tutorial:end:contour-and-wall
+:start-after: tutorial:start:contour
+:end-before: tutorial:end:contour
 :dedent: 4
 ```
 
-`get_contour` exposes further shaping parameters beyond those used here. The three curvature factors, `R_1f`, `R_2f`, and `R_3f`, affect the chamber-to-throat and nozzle transitions. Retain this simple contour while learning the workflow; contour optimisation is a later design problem.
+`get_contour` exposes further shaping parameters beyond those used here. The three curvature factors, `R_1f`, `R_2f`, and `R_3f`, affect the chamber-to-throat and nozzle transitions.
+
+```{raw} html
+<div class="psf-wide-frame">
+  <iframe
+    src="../_static/tutorial-artifacts/minimal-simulation/contour.html"
+    title="Interactive thrust-chamber contour"
+    loading="lazy"
+    sandbox="allow-scripts allow-same-origin">
+  </iframe>
+</div>
+``` 
+
+## Define the walls
+
+Create a `Wall` to represent the material layer separating the coolant from the combustion gases. Multiple wall layers are possible, but we keep it simple here. 
+
+```{literalinclude} ../../examples/minimal/minimal_sim.py
+:language: python
+:start-after: tutorial:start:walls
+:end-before: tutorial:end:walls
+:dedent: 4
+```
 
 ## Define the regenerative-cooling circuit
 
-A `CoolingCircuit` combines the coolant model, channel cross-section, channel placement, wall stack, roughness, and dimensions. Pyskyfire can represent multiple circuits, including circuits covering different spans of the contour or interlacing with one another. This tutorial uses one circuit running from the nozzle exit to the chamber inlet.
+A `CoolingCircuit` combines the coolant model, channel cross-section, channel placement, wall stack, roughness, and dimensions. Pyskyfire can represent multiple circuits, including circuits covering different spans of the contour or interlacing with one another. This tutorial makes it simple with one circuit running from the nozzle exit to the chamber inlet.
 
 ```{literalinclude} ../../examples/minimal/minimal_sim.py
 :language: python
@@ -72,7 +102,7 @@ A `CoolingCircuit` combines the coolant model, channel cross-section, channel pl
 
 The constant `channel_height_function` creates 2 mm-high channels everywhere on the engine. `SurfacePlacement` maps channels around the thrust-chamber surface. Here the channels follow a constant 45-degree helix. The `span=[1.0, -1.0]` sets the coolant flow direction from the bottom of the nozzle towards the chamber.
 
-## Assemble and inspect the thrust chamber
+## Assemble the thrust chamber
 
 `ThrustChamber` is the composite object that joins the contour, combustion model, and cooling circuit. It computes geometry-dependent quantities that cannot be determined by the individual objects alone.
 
@@ -83,13 +113,24 @@ The constant `channel_height_function` creates 2 mm-high channels everywhere on 
 :dedent: 4
 ```
 
-Before solving the heat-transfer problem, it may be nice to inspect the generated cooling-channel geometry.
+Before solving the heat-transfer problem, it may be nice to inspect the generated cooling-channel geometry. See the report section for visualisation options. Bellow is one possibility, a 3d representation of the thrust chamber created. 
 
-This view is useful for checking that channels cover the intended contour span and have the expected placement before interpreting a thermal result.
+```{raw} html
+<div class="psf-demo-frame psf-demo-frame--large">
+  <iframe
+    src="../_static/tutorial-artifacts/minimal-simulation/engine-3d.html"
+    title="Interactive 3D minimal-engine model"
+    loading="lazy"
+    sandbox="allow-scripts allow-same-origin">
+  </iframe>
+</div>
+``` 
+
+This view is useful for checking that channels cover the intended contour span and have the expected placement before interpreting a thermal result. Unfortunately, rib visualisation is currently not implemented, so cooling channels will always cover the entire chamber wall in the visualsation (but not in simulation). A fix for this will be implemented in the future. 
 
 ## Run the steady-state cooling analysis
 
-The cooling simulation needs a coolant inlet temperature, inlet pressure, and mass flow rate. This simple engine assumes that all fuel supplied to the chamber first passes through the cooling circuit, so the coolant mass flow is the fuel mass flow calculated by the combustion model.
+The cooling simulation needs a coolant inlet temperature, inlet pressure, and mass flow rate. This simple engine assumes that all fuel supplied to the chamber first passes through the cooling circuit, so the coolant mass flow is the fuel mass flow calculated by the combustion model. In the case where there is multiple cooling circuits, the circuit index indicates which one should be used in the given simulation.
 
 ```{literalinclude} ../../examples/minimal/minimal_sim.py
 :language: python
@@ -98,7 +139,18 @@ The cooling simulation needs a coolant inlet temperature, inlet pressure, and ma
 :dedent: 4
 ```
 
-`steady_heating_analysis` returns `cooling_data`, which contains the axial solution for coolant state, wall temperatures, heat flux, flow velocity, and related quantities. More sophisticated engine studies may solve the cooling-loop inlet conditions as part of a complete engine-cycle iteration rather than prescribing them directly.
+`steady_heating_analysis` returns `cooling_data`, which contains the axial solution for coolant state, wall temperatures, heat flux, flow velocity, and related quantities. Below the heat flux is shown as an example. 
+
+```{raw} html
+<div class="psf-wide-frame">
+  <iframe
+    src="../_static/tutorial-artifacts/minimal-simulation/heat-flux.html"
+    title="Interactive heat flux"
+    loading="lazy"
+    sandbox="allow-scripts allow-same-origin">
+  </iframe>
+</div>
+``` 
 
 ## Generate and inspect the report
 
@@ -111,19 +163,5 @@ The example uses Pyskyfire's report system to collect input data, calculated opt
 :dedent: 4
 ```
 
-Open `minimal_report.html` after the script completes. The first checks should be:
-
-- **Wall temperature:** locate the hot-side wall-temperature peak, particularly near the throat.
-- **Coolant pressure:** confirm that the pressure remains above a suitable margin for the coolant state and your feed-system assumptions.
-- **Coolant temperature and velocity:** check for implausible temperature rise, acceleration, or geometry discontinuities.
-- **Heat flux:** compare its axial distribution with the expected throat-region thermal peak.
-- **Cooling-channel area and hydraulic diameter:** verify that the generated channel geometry is physically credible along the entire contour.
-
-This is a deliberately simple baseline. It does not size injectors, pumps, turbines, tanks, valves, structural margins, ignition hardware, or a full feed cycle. The next tutorial extends this workflow into a full engine-cycle study.
-
-## Generated report
-
-The documentation build runs the complete example and publishes the resulting report
-with this tutorial.
-
-<a href="../_static/reports/minimal-report.html">Open the generated minimal-engine report</a>
+When the scripts completes, a few standalone interactive html graphs have been made. A comprehensive report is compiled into `minimal-report.html`. You can view the report here: 
+<a href="../_static/tutorial-artifacts/minimal-report.html"> Minimal Simulation Report</a>
