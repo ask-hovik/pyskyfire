@@ -1,0 +1,538 @@
+pyskyfire.viz.network_viz
+=========================
+
+.. py:module:: pyskyfire.viz.network_viz
+
+.. autoapi-nested-parse::
+
+   Interactive HTML visualisation for :class:`EngineNetwork` objects.
+
+   The visualiser deliberately treats the network topology as model data and the
+   node positions / edge bend points as presentation data.  This makes it useful
+   both as a script output today and as the basis for a future graphical editor.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.viz.network_viz._BLOCK_TITLES
+   pyskyfire.viz.network_viz._HTML_TEMPLATE
+   pyskyfire.viz.network_viz._LAYOUT_VERSION
+   pyskyfire.viz.network_viz._X6_ASSET_NAME
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/viz/network_viz/NetworkVisualizer
+   /autoapi/pyskyfire/viz/network_viz/_BlockSpec
+
+.. autoapisummary::
+
+   pyskyfire.viz.network_viz.NetworkVisualizer
+   pyskyfire.viz.network_viz._BlockSpec
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.viz.network_viz._block_colors
+   pyskyfire.viz.network_viz._block_name
+   pyskyfire.viz.network_viz._block_signal_inputs
+   pyskyfire.viz.network_viz._block_title
+   pyskyfire.viz.network_viz._flatten_keys
+   pyskyfire.viz.network_viz._json_for_script
+   pyskyfire.viz.network_viz._read_layout
+   pyskyfire.viz.network_viz._read_packaged_asset
+   pyskyfire.viz.network_viz._slug
+   pyskyfire.viz.network_viz._stable_id
+   pyskyfire.viz.network_viz.make_network_viz
+
+
+Module Contents
+---------------
+
+.. py:function:: _block_colors(spec: _BlockSpec) -> tuple[str, str]
+
+   
+   Return (fill, stroke) colors for a block.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _block_name(block: Any, index: int) -> str
+
+.. py:function:: _block_signal_inputs(block: Any) -> list[str]
+
+   
+   Return declared scalar inputs, excluding internal pressure-drop bookkeeping.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _block_title(block: Any) -> str
+
+.. py:function:: _flatten_keys(value: Any) -> list[str]
+
+   
+   Return metadata keys, accepting the nested lists used by older blocks.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _json_for_script(value: Any) -> str
+
+   
+   Serialize JSON safely for an inline ``<script>`` element.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _read_layout(layout: Mapping[str, Any] | str | pathlib.Path | None) -> dict[str, Any]
+
+.. py:function:: _read_packaged_asset(filename: str) -> str
+
+   
+   Return a UTF-8 JavaScript asset bundled with pyskyfire.viz.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _slug(value: str) -> str
+
+.. py:function:: _stable_id(prefix: str, *parts: Any) -> str
+
+   
+   Return an X6-safe ID stable across runs if network topology is unchanged.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: make_network_viz(network: Any, *, title: str = 'PyskyFire Engine Network', layout: Mapping[str, Any] | str | pathlib.Path | None = None) -> NetworkVisualizer
+
+   
+   Create an editable HTML visualisation of an :class:`EngineNetwork`.
+
+   ``layout`` can be the JSON file downloaded from a prior visualisation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: _BLOCK_TITLES
+
+.. py:data:: _HTML_TEMPLATE
+   :value: Multiline-String
+
+   .. raw:: html
+
+      <details><summary>Show Value</summary>
+
+   .. code-block:: python
+
+      """<!doctype html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>__TITLE__</title>
+        <script>
+        __X6_SOURCE__
+        </script>
+        <style>
+          :root { color-scheme: light; }
+          * { box-sizing: border-box; }
+          body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #17212b; background: #ffffff; }
+          .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid #d9e0e7; background: #f8fafc; }
+          .toolbar h1 { margin: 0 auto 0 0; font-size: 16px; font-weight: 650; }
+          .toolbar button { padding: 6px 10px; border: 1px solid #aab8c5; border-radius: 5px; background: #ffffff; color: #17212b; cursor: pointer; font: inherit; font-size: 13px; }
+          .toolbar button:hover { background: #edf3f8; }
+          .hint { width: 100%; color: #5d6975; font-size: 12px; }
+          #network-canvas { width: 100%; height: calc(100vh - 87px); min-height: 620px; background: #ffffff; }
+          .error { margin: 24px; padding: 14px; border: 1px solid #d14343; border-radius: 6px; color: #7b1f1f; background: #fff5f5; }
+        </style>
+      </head>
+      <body>
+        <div class="toolbar">
+          <h1>__TITLE__</h1>
+          <div class="hint">
+            Drag blocks to arrange the schematic. Scroll to pan; Ctrl/Cmd + scroll to zoom.
+          </div>
+        </div>
+        <div id="network-canvas"></div>
+      
+        <script id="network-data" type="application/json">__PAYLOAD__</script>
+        <script>
+        (() => {
+          const payload = JSON.parse(document.getElementById('network-data').textContent);
+          const container = document.getElementById('network-canvas');
+      
+          if (!window.X6) {
+            container.innerHTML = '<div class="error">Could not load AntV X6. Check your network connection, or pass a local X6 bundle through <code>x6_url</code>.</div>';
+            return;
+          }
+      
+          function makePortGroup(position, stroke) {
+            return {
+              position,
+              attrs: {
+                circle: {
+                  r: 4,
+                  magnet: false,
+                  stroke,
+                  strokeWidth: 1.25,
+                  fill: '#ffffff',
+                },
+              },
+            };
+          }
+      
+          const portGroups = {
+            'station-left': makePortGroup('left', '#355267'),
+            'station-right': makePortGroup('right', '#355267'),
+            'station-top': makePortGroup('top', '#355267'),
+            'station-bottom': makePortGroup('bottom', '#355267'),
+            'signal-left': makePortGroup('left', '#7a5a18'),
+            'signal-right': makePortGroup('right', '#7a5a18'),
+            'signal-top': makePortGroup('top', '#7a5a18'),
+            'signal-bottom': makePortGroup('bottom', '#7a5a18'),
+          };
+      
+          const graph = new X6.Graph({
+            container,
+            width: Math.max(container.clientWidth, 900),
+            height: Math.max(container.clientHeight, 620),
+            grid: { visible: true, size: 10, type: 'mesh', args: [{ color: '#e8edf2', thickness: 1 }] },
+            panning: true,
+            mousewheel: { enabled: true, modifiers: ['ctrl', 'meta'] },
+            connecting: { allowBlank: false, allowNode: false, allowEdge: false, allowPort: false },
+          });
+      
+          const defaultLayout = structuredClone(payload.layout || { nodes: {}, edges: {} });
+          let activeLayout = structuredClone(defaultLayout);
+      
+          function nodePosition(node) {
+            const saved = activeLayout.nodes && activeLayout.nodes[node.id];
+            if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) return saved;
+            return { x: node.x, y: node.y };
+          }
+      
+          for (const node of payload.nodes) {
+            const position = nodePosition(node);
+            const isSource = node.kind === 'source';
+            const fillColor = isSource
+              ? '#f7f9fb'
+              : ((node.data && node.data.fill) || '#eef5fb');
+            const strokeColor = isSource
+              ? '#8092a1'
+              : ((node.data && node.data.stroke) || '#2f6f96');
+      
+            graph.addNode({
+              id: node.id,
+              shape: 'rect',
+              x: position.x,
+              y: position.y,
+              width: node.width,
+              height: node.height,
+              label: node.label,
+              attrs: {
+                body: {
+                  fill: fillColor,
+                  stroke: strokeColor,
+                  strokeWidth: 1.35,
+                  rx: 7,
+                  ry: 7,
+                },
+                label: {
+                  fill: '#17212b',
+                  fontSize: 12,
+                  fontWeight: 560,
+                  textWrap: { width: -16, height: -12, ellipsis: true },
+                },
+              },
+              ports: { groups: portGroups, items: node.ports },
+              data: node.data,
+            });
+          }
+      
+          for (const edge of payload.edges) {
+            const isSignal = edge.kind === 'signal';
+            const config = {
+              id: edge.id,
+              source: edge.source,
+              target: edge.target,
+              router: { name: 'manhattan', args: { padding: 16 } },
+              connector: { name: 'rounded', args: { radius: 6 } },
+              attrs: {
+                line: {
+                  stroke: isSignal ? '#9a751e' : '#2f6f96',
+                  strokeWidth: isSignal ? 1.6 : 2.1,
+                  strokeDasharray: isSignal ? '6 4' : '',
+                  targetMarker: { name: 'classic', size: 7 },
+                },
+              },
+              labels: [{ position: 0.5, attrs: { label: { text: edge.label, fill: isSignal ? '#79590e' : '#1f4e6b', fontSize: 10 } } }],
+              data: { kind: edge.kind },
+            };
+            graph.addEdge(config);
+          }
+      
+          function nodeCenter(node) {
+            const bbox = node.getBBox();
+            return {
+              x: bbox.x + bbox.width / 2,
+              y: bbox.y + bbox.height / 2,
+            };
+          }
+      
+          function sideToward(dx, dy) {
+            return Math.abs(dx) > Math.abs(dy)
+              ? (dx >= 0 ? 'right' : 'left')
+              : (dy >= 0 ? 'bottom' : 'top');
+          }
+      
+          function updatePortSides() {
+            // A port faces the average position of the blocks connected to it.
+            // This is a local routing heuristic: it makes the first and final
+            // Manhattan segments as short and direct as possible without imposing
+            // a global layout algorithm.
+            const connections = new Map();
+      
+            function accumulate(nodeId, portId, kind, otherNodeId) {
+              const node = graph.getCellById(nodeId);
+              const other = graph.getCellById(otherNodeId);
+              if (!node || !other || !portId) return;
+      
+              const own = nodeCenter(node);
+              const peer = nodeCenter(other);
+              const mapKey = `${nodeId}\u0000${portId}`;
+              const item = connections.get(mapKey) || {
+                node,
+                portId,
+                kind,
+                dx: 0,
+                dy: 0,
+              };
+              item.dx += peer.x - own.x;
+              item.dy += peer.y - own.y;
+              connections.set(mapKey, item);
+            }
+      
+            for (const edge of payload.edges) {
+              accumulate(edge.source.cell, edge.source.port, edge.kind, edge.target.cell);
+              accumulate(edge.target.cell, edge.target.port, edge.kind, edge.source.cell);
+            }
+      
+            for (const item of connections.values()) {
+              const group = `${item.kind}-${sideToward(item.dx, item.dy)}`;
+              const port = item.node.getPort(item.portId);
+              if (port && port.group !== group) {
+                item.node.setPortProp(item.portId, 'group', group);
+              }
+            }
+          }
+      
+          let portUpdateFrame = null;
+          function schedulePortSideUpdate() {
+            if (portUpdateFrame !== null) return;
+            portUpdateFrame = window.requestAnimationFrame(() => {
+              portUpdateFrame = null;
+              updatePortSides();
+            });
+          }
+      
+          graph.on('node:change:position', schedulePortSideUpdate);
+          updatePortSides();
+      
+          const nodeUndoStack = [];
+          const maxUndoEntries = 100;
+          let dragStart = null;
+      
+          function isEditableElement(element) {
+          return (
+              element instanceof HTMLInputElement ||
+              element instanceof HTMLTextAreaElement ||
+              element instanceof HTMLSelectElement ||
+              element?.isContentEditable
+          );
+          }
+      
+          graph.on('node:move', ({ node }) => {
+          const position = node.position();
+          dragStart = {
+              id: node.id,
+              x: position.x,
+              y: position.y,
+          };
+          });
+      
+          graph.on('node:moved', ({ node }) => {
+          if (!dragStart || dragStart.id !== node.id) return;
+      
+          const position = node.position();
+      
+          if (position.x !== dragStart.x || position.y !== dragStart.y) {
+              nodeUndoStack.push(dragStart);
+      
+              if (nodeUndoStack.length > maxUndoEntries) {
+              nodeUndoStack.shift();
+              }
+          }
+      
+          dragStart = null;
+          });
+      
+          document.addEventListener('keydown', (event) => {
+          const isUndoShortcut =
+              (event.ctrlKey || event.metaKey) &&
+              !event.shiftKey &&
+              event.key.toLowerCase() === 'z';
+      
+          if (!isUndoShortcut || isEditableElement(event.target)) return;
+      
+          const previous = nodeUndoStack.pop();
+          if (!previous) return;
+      
+          const node = graph.getCellById(previous.id);
+          if (!node || !node.isNode()) return;
+      
+          event.preventDefault();
+          node.position(previous.x, previous.y);
+          });
+      
+          const resize = () => graph.resize(Math.max(container.clientWidth, 900), Math.max(container.clientHeight, 620));
+          new ResizeObserver(resize).observe(container);
+          resize();
+        })();
+        </script>
+      </body>
+      </html>
+      """
+
+   .. raw:: html
+
+      </details>
+
+
+
+.. py:data:: _LAYOUT_VERSION
+   :value: 1
+
+
+.. py:data:: _X6_ASSET_NAME
+   :value: 'x6.min.js'
+
+

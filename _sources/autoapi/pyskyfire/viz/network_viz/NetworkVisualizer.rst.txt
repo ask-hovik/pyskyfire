@@ -1,0 +1,206 @@
+pyskyfire.viz.network_viz.NetworkVisualizer
+===========================================
+
+.. py:class:: pyskyfire.viz.network_viz.NetworkVisualizer
+
+   
+   Build an editable X6 HTML view of an engine network.
+
+
+   :Parameters:
+
+       **network:**
+           An object exposing ``blocks`` with PyskyFire's station/signal metadata.
+
+       **title:**
+           Browser title and heading displayed above the canvas.
+
+       **layout:**
+           Optional layout mapping or JSON file previously downloaded from the
+           viewer.  It contains only presentation data, never solver data.
+
+       **Notes**
+           ..
+
+       **-----**
+           ..
+
+       **The HTML visualiser is editable in the browser.  A browser cannot safely**
+           ..
+
+       **overwrite an arbitrary local file, so the toolbar downloads a sidecar**
+           ..
+
+       **layout JSON file.  Pass that file back through ``layout=`` on a later run.**
+           ..
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__() -> None
+
+
+   .. py:method:: _block_specs() -> list[_BlockSpec]
+
+
+   .. py:method:: _make_edges(specs: list[_BlockSpec], nodes: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]
+
+      
+      Connect producer and consumer ports, adding sources for boundary data.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _make_nodes(specs: list[_BlockSpec]) -> list[dict[str, Any]]
+
+      
+      Make a top-to-bottom starting layout in one column per fluid medium.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _make_payload() -> dict[str, Any]
+
+
+   .. py:method:: save_html(path: str | pathlib.Path) -> pathlib.Path
+
+      
+      Write the viewer to an HTML file and return the resolved path.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: show() -> None
+
+      
+      Open a temporary standalone visualisation in the default browser.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: to_html() -> str
+
+      
+      Return a standalone HTML document containing the X6 viewer.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: data_url
+      :type: str
+
+
+      
+      Base64 ``data:text/html`` URL suitable for :meth:`Tab.add_iframe`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

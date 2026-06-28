@@ -14,6 +14,7 @@ Submodules
    /autoapi/pyskyfire/viz/engine_viz/index
    /autoapi/pyskyfire/viz/impeller_viz/index
    /autoapi/pyskyfire/viz/lookup_tables/index
+   /autoapi/pyskyfire/viz/network_viz/index
    /autoapi/pyskyfire/viz/plot_common/index
    /autoapi/pyskyfire/viz/plot_film_cooling/index
    /autoapi/pyskyfire/viz/plot_regen/index

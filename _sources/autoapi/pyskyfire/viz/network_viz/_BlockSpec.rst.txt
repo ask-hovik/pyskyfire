@@ -1,0 +1,9 @@
+pyskyfire.viz.network_viz._BlockSpec
+====================================
+
+.. py:class:: pyskyfire.viz.network_viz._BlockSpec
+
+   .. py:property:: is_signal_only
+      :type: bool
+
+
