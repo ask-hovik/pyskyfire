@@ -21,7 +21,7 @@ import pyskyfire as psf
 
 
 # tutorial:start:run-mode
-RUN_MODE = "regen_only"  # Choose: "regen_only" or "full_cycle"
+RUN_MODE = "full_cycle"  # Choose: "regen_only" or "full_cycle"
 RESULTS_FILENAME = "results.pkl"
 # tutorial:end:run-mode
 

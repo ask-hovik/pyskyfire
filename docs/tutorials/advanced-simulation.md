@@ -251,4 +251,6 @@ Finally, the script validates the saved result contract, chooses the appropriate
 :end-before: tutorial:end:generate-report
 ```
 
-A regeneration-only result produces a thrust-chamber and cooling report without an engine-cycle tab. A full-cycle result includes both the chamber analysis and the coupled-cycle diagnostics.
+A regeneration-only result produces a thrust-chamber and cooling report without an engine-cycle tab. A full-cycle result includes both the chamber analysis and the coupled-cycle diagnostics. View the 
+
+

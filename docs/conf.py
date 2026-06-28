@@ -2,8 +2,7 @@
 from datetime import date
 import os
 from pathlib import Path
-import subprocess
-import sys
+import shutil
 from sphinx.errors import SphinxError
 
 project   = "pyskyfire"
@@ -101,59 +100,85 @@ def skip_autoapi_members(app, what, name, obj, skip, options):
         return True
     return skip
 
-def run_artifact_script(script: Path, output_dir: Path) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
+def copy_example_html_files(
+    source: Path,
+    destination: Path,
+    required_files: set[str],
+) -> None:
+    """Copy flat, pre-generated example HTML files into the docs build."""
 
-    result = subprocess.run(
-        [
-            sys.executable,
-            str(script),
-            "--output-dir",
-            str(output_dir),
-        ],
-        cwd=ROOT,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
+    missing = sorted(
+        filename for filename in required_files
+        if not (source / filename).is_file()
     )
-
-    if result.returncode:
+    if missing:
         raise SphinxError(
-            f"Documentation artifact generation failed for {script}:\n\n"
-            + result.stdout
+            f"Missing generated documentation files in {source}:\n"
+            + "\n".join(f"  - {filename}" for filename in missing)
+            + "\n\nRun the corresponding example manually before building docs."
         )
 
+    if destination.exists():
+        shutil.rmtree(destination)
 
-def generate_docs_artifacts(app):
-    """Generate HTML artifacts used by documentation pages."""
+    destination.mkdir(parents=True)
+
+    for html_file in source.glob("*.html"):
+        shutil.copy2(html_file, destination / html_file.name)
+
+
+def copy_docs_artifacts(app) -> None:
+    """Copy pre-generated HTML tutorial artifacts for HTML builds."""
+
     if app.builder.format != "html":
         return
 
     repository_root = Path(__file__).resolve().parent.parent
+    output_static = Path(app.outdir) / "_static"
 
-    run_artifact_script(
-        script=repository_root / "examples" / "minimal" / "minimal_sim.py",
-        output_dir=(
-            Path(app.outdir)
-            / "_static"
+    copy_example_html_files(
+        source=repository_root / "examples" / "minimal",
+        destination=(
+            output_static
             / "tutorial-artifacts"
             / "minimal-simulation"
         ),
+        required_files={
+            "minimal-report.html",
+            "engine-3d.html",
+            "contour.html",
+            "heat-flux.html",
+        },
     )
 
-    run_artifact_script(
-        script=repository_root / "examples" / "MR_optimisation" / "MR_opt.py",
-        output_dir=(
-            Path(app.outdir)
-            / "_static"
+    copy_example_html_files(
+        source=repository_root / "examples" / "advanced",
+        destination=(
+            output_static
+            / "tutorial-artifacts"
+            / "advanced-cycle-simulation"
+        ),
+        required_files={
+            "methane_engine_report.html",
+        },
+    )
+
+    copy_example_html_files(
+        source=repository_root / "examples" / "MR_optimisation",
+        destination=(
+            output_static
             / "howto-artifacts"
             / "mixture-ratio-optimization"
         ),
+        required_files={
+            "mixture-ratio-optimisation.html",
+            "optimized-contour.html",
+        },
     )
 
 def setup(app):
     app.connect("autoapi-skip-member", skip_autoapi_members)
-    app.connect("builder-inited", generate_docs_artifacts)
+    app.connect("builder-inited", copy_docs_artifacts)
 
 # Logo
 html_logo = "_static/pyskyfire_header.png"   # or .png
