@@ -7,3 +7,4 @@ from .plot_skycea import *
 from .plot_common import *
 from .engine_viz import *
 from .impeller_viz import *
+from .network_viz import *

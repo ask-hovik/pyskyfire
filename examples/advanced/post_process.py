@@ -37,9 +37,9 @@ def add_common_report_content(report, params, thrust_chamber, cooling_data):
 
     # Engine overview
     tab_overview = report.add_tab("Engine Overview")
-    engine_viewer = psf.viz.make_engine_3d(thrust_chamber, show=False)
+    """engine_viewer = psf.viz.make_engine_3d(thrust_chamber, show=False)
     tab_overview.add_iframe(engine_viewer.data_url, caption="Engine 3D")
-    engine_viewer.close()
+    engine_viewer.close()"""
     tab_overview.add_figure(psf.viz.PlotContour(thrust_chamber.contour))
 
     # Cooling data
@@ -177,6 +177,18 @@ def add_full_cycle_report_content(report, results):
             scale="linear",
         )
     )
+
+    tab_network = report.add_tab("Engine Network")
+    viewer = psf.viz.make_network_viz(
+        results["net"],
+        title="Methane engine cycle",
+    )
+    tab_network.add_iframe(
+        viewer.data_url,
+        caption="Editable engine-cycle schematic",
+        height="900px",
+    )
+
 # tutorial:end:cycle-report
 
 

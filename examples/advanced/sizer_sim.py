@@ -409,7 +409,7 @@ def engine_sizer(params, thrust_chamber):
     # Fuel-side blocks
     blocks.append(
         psf.common.MassFlowMergerBlock(
-            name="fuel_inlet_merge",
+            name="Fuel Inlet Merge",
             st_in=["fu_engine_in", "fu_shaft_recirc"],
             st_out="fu_pump_in",
             medium=fuel_medium,
@@ -417,16 +417,16 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.PumpBlock(
-            name="fuel_pump",
+            name="Fuel Pump",
             st_in="fu_pump_in",
             st_out="fu_pump_out",
             overcome=[
-                "duct_pump_regen_fuel",
-                "regen_throat_pass",
-                "duct_regen_turbine_fuel",
-                "fuel_turbine",
-                "duct_turbine_injector_fuel",
-                "fu_injector",
+                "Duct Pump-Regen Fuel",
+                "Regen Throat Pass",
+                "Duct Regen-Turbine Fuel",
+                "Fuel Turbine",
+                "Duct Turbine-Injector Fuel",
+                "Fu Injector",
             ],
             load_fraction=1.0,
             p_base=params["p_c"],
@@ -438,7 +438,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.MassFlowSplitterBlock(
-            name="fuel_recirc_split",
+            name="Fuel Recirc. Split",
             st_in="fu_pump_out",
             st_out=["fu_regen_duct_in", "fu_shaft_recirc"],
             fractions=[
@@ -450,7 +450,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.SimpleDuctBlock(
-            name="duct_pump_regen_fuel",
+            name="Duct Pump-Regen Fuel",
             st_in="fu_regen_duct_in",
             st_out="fu_regen_in",
             pressure_ratio=params["eta_pump_regen_fu"],
@@ -459,7 +459,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.RegenBlock(
-            name="regen_throat_pass",
+            name="Regen Throat Pass",
             st_in="fu_regen_in",
             st_out="fu_regen_interstage_1",
             circuit_index=0,
@@ -469,7 +469,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.RegenBlock(
-            name="regen_cocurrent_nozzle_pass",
+            name="Regen Cocurrent Nozzle Pass",
             st_in="fu_regen_interstage_1",
             st_out="fu_regen_interstage_2",
             circuit_index=1,
@@ -479,7 +479,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.RegenBlock(
-            name="regen_countercurrent_nozzle_pass",
+            name="Regen Countercurrent Nozzle Pass",
             st_in="fu_regen_interstage_2",
             st_out="fu_regen_out",
             circuit_index=2,
@@ -489,7 +489,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.SimpleDuctBlock(
-            name="duct_regen_turbine_fuel",
+            name="Duct Regen-Turbine Fuel",
             st_in="fu_regen_out",
             st_out="fu_turbine_inlet_split",
             pressure_ratio=params["eta_regen_turbine_fu"],
@@ -498,7 +498,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.MassFlowSplitterBlock(
-            name="fuel_split_turbine_bypass",
+            name="Fuel Split Turbine Bypass",
             st_in="fu_turbine_inlet_split",
             st_out=["fu_turbine_in", "fu_bypass_valve"],
             fractions=[
@@ -510,7 +510,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.TurbineBlock(
-            name="fuel_turbine",
+            name="Fuel Turbine",
             st_in="fu_turbine_in",
             st_out="fu_turbine_out",
             P_req_key="P_fuel_turbine_required",
@@ -520,7 +520,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.MassFlowMergerBlock(
-            name="merge_turbine_bypass",
+            name="Merge Turbine Bypass",
             st_in=["fu_turbine_out", "fu_bypass_valve"],
             st_out="fu_turbine_outlet_merge",
             medium=fuel_medium,
@@ -528,7 +528,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.SimpleDuctBlock(
-            name="duct_turbine_injector_fuel",
+            name="Duct Turbine-Injector Fuel",
             st_in="fu_turbine_outlet_merge",
             st_out="fu_injector_plenum",
             pressure_ratio=params["eta_turbine_injector_fu"],
@@ -537,7 +537,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.SimpleDuctBlock(
-            name="fu_injector",
+            name="Fu Injector",
             st_in="fu_injector_plenum",
             st_out="fu_chamber_in",
             pressure_ratio=params["eta_fu_injector"],
@@ -546,8 +546,8 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.TransmissionBlock(
-            name="fuel_shaft",
-            sink_keys=["P_fuel_pump"],
+            name="Fuel Shaft",
+            sink_keys=["P_Fuel Pump"],
             source_keys=["P_fuel_turbine_required"],
         )
     )
@@ -558,7 +558,7 @@ def engine_sizer(params, thrust_chamber):
     # Oxidizer-side blocks
     blocks.append(
         psf.common.MassFlowMergerBlock(
-            name="merge_ox_recirc",
+            name="Merge Ox Recirc",
             st_in=["ox_engine_in", "ox_shaft_recirc"],
             st_out="ox_pump_in",
             medium=ox_medium,
@@ -566,16 +566,16 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.PumpBlock(
-            name="ox_pump",
+            name="Ox Pump",
             st_in="ox_pump_in",
             st_out="ox_pump_out",
             overcome=[
-                "duct_pump_regen_ox",
-                "ox_regen",
-                "duct_regen_turbine_ox",
-                "ox_turbine",
-                "duct_turbine_injector_ox",
-                "ox_injector",
+                "Duct Pump-Regen Ox",
+                "Ox Regen 1",
+                "Duct Regen-Turbine Ox",
+                "Ox Turbine",
+                "Duct Turbine-Injector Ox",
+                "Ox Injector",
             ],
             load_fraction=1.0,
             p_base=params["p_c"],
@@ -587,7 +587,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.MassFlowSplitterBlock(
-            name="split_ox_recirc",
+            name="Split Ox Recirc",
             st_in="ox_pump_out",
             st_out=["ox_regen_duct_in", "ox_shaft_recirc"],
             fractions=[
@@ -599,7 +599,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.SimpleDuctBlock(
-            name="duct_pump_regen_ox",
+            name="Duct Pump-Regen Ox",
             st_in="ox_regen_duct_in",
             st_out="ox_regen_in",
             pressure_ratio=params["eta_pump_regen_ox"],
@@ -608,7 +608,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.MassFlowSplitterBlock(
-            name="ox_regen_split",
+            name="Ox Regen Split",
             st_in="ox_regen_in",
             st_out=["ox_regen_1_in", "ox_regen_2_in"],
             fractions=[0.5, 0.5],
@@ -620,7 +620,7 @@ def engine_sizer(params, thrust_chamber):
     # so the pump should see a single branch pressure drop.
     blocks.append(
         psf.common.RegenBlock(
-            name="ox_regen",
+            name="Ox Regen 1",
             st_in="ox_regen_1_in",
             st_out="ox_regen_1_out",
             circuit_index=3,
@@ -630,7 +630,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.RegenBlock(
-            name="ox_regen",
+            name="Ox Regen 2",
             st_in="ox_regen_2_in",
             st_out="ox_regen_2_out",
             circuit_index=3,
@@ -640,7 +640,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.MassFlowMergerBlock(
-            name="ox_regen_merge",
+            name="Ox Regen Merge",
             st_in=["ox_regen_1_out", "ox_regen_2_out"],
             st_out="ox_regen_out",
             medium=ox_medium,
@@ -648,7 +648,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.SimpleDuctBlock(
-            name="duct_regen_turbine_ox",
+            name="Duct Regen-Turbine Ox",
             st_in="ox_regen_out",
             st_out="ox_turbine_inlet_split",
             pressure_ratio=params["eta_regen_turbine_ox"],
@@ -657,7 +657,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.MassFlowSplitterBlock(
-            name="ox_split_turbine_bypass",
+            name="Ox Split Turbine Bypass",
             st_in="ox_turbine_inlet_split",
             st_out=["ox_turbine_in", "ox_bypass_valve"],
             fractions=[
@@ -669,7 +669,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.TurbineBlock(
-            name="ox_turbine",
+            name="Ox Turbine",
             st_in="ox_turbine_in",
             st_out="ox_turbine_out",
             P_req_key="P_ox_turbine_required",
@@ -679,7 +679,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.MassFlowMergerBlock(
-            name="merge_ox_bypass",
+            name="Merge Ox Bypass",
             st_in=["ox_turbine_out", "ox_bypass_valve"],
             st_out="ox_turbine_outlet_merge",
             medium=ox_medium,
@@ -687,7 +687,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.SimpleDuctBlock(
-            name="duct_turbine_injector_ox",
+            name="Duct Turbine-Injector Ox",
             st_in="ox_turbine_outlet_merge",
             st_out="ox_injector_plenum",
             pressure_ratio=params["eta_turbine_injector_ox"],
@@ -696,7 +696,7 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.SimpleDuctBlock(
-            name="ox_injector",
+            name="Ox Injector",
             st_in="ox_injector_plenum",
             st_out="ox_chamber_in",
             pressure_ratio=params["eta_ox_injector"],
@@ -705,8 +705,8 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.TransmissionBlock(
-            name="ox_shaft",
-            sink_keys=["P_ox_pump"],
+            name="Ox Shaft",
+            sink_keys=["P_Ox Pump"],
             source_keys=["P_ox_turbine_required"],
         )
     )
@@ -748,12 +748,10 @@ def cooling_data_from_full_cycle(block_results):
     """Normalize full-cycle block results to the common cooling-data contract."""
 
     return {
-        "fuel_throat": block_results["regen_throat_pass"],
-        "fuel_nozzle_cocurrent": block_results["regen_cocurrent_nozzle_pass"],
-        "fuel_nozzle_countercurrent": block_results[
-            "regen_countercurrent_nozzle_pass"
-        ],
-        "oxidizer_copper": block_results["ox_regen"],
+        "fuel_throat": block_results["Regen Throat Pass"],
+        "fuel_nozzle_cocurrent": block_results["Regen Cocurrent Nozzle Pass"],
+        "fuel_nozzle_countercurrent": block_results["Regen Countercurrent Nozzle Pass"],
+        "oxidizer_copper": block_results["Ox Regen 1"],
     }
 
 # tutorial:end:full-cycle-cooling-data

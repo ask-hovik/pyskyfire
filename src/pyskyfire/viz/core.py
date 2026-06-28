@@ -36,6 +36,17 @@ class PlotBase:
     """Common helpers + Plotly passthrough."""
     def __init__(self, fig: Optional[go.Figure] = None):
         self.fig = fig or go.Figure()
+
+        self.fig.update_layout(
+            legend=dict(
+                orientation="h",   # horizontal legend
+                yanchor="bottom",
+                y=1.02,            # just above the plotting area
+                xanchor="right",
+                x=1,               # aligned with the plot's right edge
+            )
+        )
+
         # Namespaces
         self.layout  = _Node(self.fig, lambda f, d: f.update_layout(**d))
         self.traces  = _Node(self.fig, lambda f, d: f.update_traces(**d))
