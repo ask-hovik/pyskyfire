@@ -93,7 +93,7 @@ self
 :hidden:
 
 tutorials/minimal-simulation
-<!-- tutorials/advanced-simulation -->
+tutorials/advanced-simulation
 ```
 
 ```{toctree}
