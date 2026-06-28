@@ -3,11 +3,11 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Optimise mixture ratio" href="../howto/mixture-ratio-optimisation.html"><link rel="prev" title="Minimal Simulation" href="minimal-simulation.html">
         <link rel="prefetch" href="../_static/pyskyfire_header.png" as="image">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Advanced Simulation - pyskyfire</title>
+        <title>Engine-Cycle Simulation - pyskyfire</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
@@ -175,7 +175,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
       </label>
     </div>
@@ -199,8 +199,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Start Here</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="minimal-simulation.html">Minimal Simulation</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Engine-Cycle Simulation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
 <ul>
@@ -455,14 +456,958 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section class="tex2jax_ignore mathjax_ignore" id="advanced-simulation">
-<h1>Advanced Simulation<a class="headerlink" href="#advanced-simulation" title="Link to this heading">¶</a></h1>
-<p>Fill in the advanced simulation here.</p>
+          <section class="tex2jax_ignore mathjax_ignore" id="engine-cycle-simulation">
+<h1>Engine-Cycle Simulation<a class="headerlink" href="#engine-cycle-simulation" title="Link to this heading">¶</a></h1>
+<p>This tutorial develops the engine-cycle layer of the advanced methane/oxygen dual-expander example. It assumes that you are already comfortable with the thrust-chamber, cooling-circuit, and regenerative heat-transfer objects introduced in <a class="reference internal" href="minimal-simulation.html"><span class="doc">Minimal Simulation</span></a>.</p>
+<p>The complete example consists of two scripts:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>examples/advanced/
+├── sizer_sim.py
+└── post_process.py
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">RUN_MODE</span> <span class="pre">=</span> <span class="pre">&quot;regen_only&quot;</span></code> is useful while developing the thrust chamber: it runs the regenerative circuits with explicit inlet boundary conditions and does not construct the complete cycle. This tutorial concentrates on <code class="docutils literal notranslate"><span class="pre">RUN_MODE</span> <span class="pre">=</span> <span class="pre">&quot;full_cycle&quot;</span></code>, where the cooling circuits are embedded in a coupled pump–regenerator–turbine–injector network.</p>
+<p>Run the simulation and report generator from the repository root:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python examples/advanced/sizer_sim.py</span>
+<span class="go">python examples/advanced/post_process.py</span>
+</pre></div>
+</div>
+<p>The simulation writes <code class="docutils literal notranslate"><span class="pre">results.pkl</span></code>; post-processing reads that file and writes <code class="docutils literal notranslate"><span class="pre">methane_engine_report.html</span></code>.</p>
+<section id="choose-the-run-mode">
+<h2>Choose the run mode<a class="headerlink" href="#choose-the-run-mode" title="Link to this heading">¶</a></h2>
+<p>The top of the simulation script selects the calculation to perform.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RUN_MODE</span> <span class="o">=</span> <span class="s2">&quot;regen_only&quot;</span>  <span class="c1"># Choose: &quot;regen_only&quot; or &quot;full_cycle&quot;</span>
+<span class="n">RESULTS_FILENAME</span> <span class="o">=</span> <span class="s2">&quot;results.pkl&quot;</span>
+</pre></div>
+</div>
+<p>Use <code class="docutils literal notranslate"><span class="pre">&quot;regen_only&quot;</span></code> when you are changing chamber geometry, walls, cooling-channel layout, or standalone cooling boundary conditions. Use <code class="docutils literal notranslate"><span class="pre">&quot;full_cycle&quot;</span></code> only once the regenerative configuration is plausible enough to be embedded in the cycle.</p>
+</section>
+<section id="define-the-design-point">
+<h2>Define the design point<a class="headerlink" href="#define-the-design-point" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">make_params()</span></code> contains the editable numerical and physical inputs. It holds four kinds of data:</p>
+<ul class="simple">
+<li><p>chamber design point, propellants, contour parameters, wall stack, and cooling geometry;</p></li>
+<li><p>tank pressures, pump efficiencies and speeds, turbine efficiencies, and duct pressure ratios;</p></li>
+<li><p>small recirculation and turbine-bypass fractions;</p></li>
+<li><p>independent inlet conditions for the standalone regeneration mode.</p></li>
+</ul>
+<p>The combustion propellants and coolant propellants are both defined because the hot-gas model and coolant-property model have distinct responsibilities. The parameter dictionary serves as the single source of design assumptions: it is saved together with the result and displayed in the report.</p>
+</section>
+<section id="build-the-thrust-chamber">
+<h2>Build the thrust chamber<a class="headerlink" href="#build-the-thrust-chamber" title="Link to this heading">¶</a></h2>
+<p>The full cycle still begins by constructing a thrust chamber. The block below computes the combustion-gas transport model, generates the contour, defines walls and cooling circuits, and combines them into one <code class="docutils literal notranslate"><span class="pre">ThrustChamber</span></code>. (In principle, the thrust chamber aerothermodynamic properties are dependent on the condition of the propellants at the inlet of the engine. It could therefore be a part of the simulation loop. However, the computational cost to this is great, and the added precision it gives is marginal. It is therefore more practical to guess the inlet conditions to the thrust chamber, and perhaps update them once the inlet conditions to the thrust chamber has been established by running the simulation).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">setup_thrust_chamber</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the chamber geometry, walls, channels, and gas-side transport.&quot;&quot;&quot;</span>
+
+    <span class="n">aerothermodynamics</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">skycea</span><span class="o">.</span><span class="n">Aerothermodynamics</span><span class="o">.</span><span class="n">from_F_pe_Lstar</span><span class="p">(</span>
+        <span class="n">fu</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;cea_fu&quot;</span><span class="p">],</span>
+        <span class="n">ox</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;cea_ox&quot;</span><span class="p">],</span>
+        <span class="n">T_fu_in</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_gas_fu_in&quot;</span><span class="p">],</span>
+        <span class="n">T_ox_in</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_gas_ox_in&quot;</span><span class="p">],</span>
+        <span class="n">MR</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;MR&quot;</span><span class="p">],</span>
+        <span class="n">p_c</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">],</span>
+        <span class="n">F</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;F&quot;</span><span class="p">],</span>
+        <span class="n">p_e</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_e&quot;</span><span class="p">],</span>
+        <span class="n">L_star</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;L_star&quot;</span><span class="p">],</span>
+        <span class="n">p_amb</span><span class="o">=</span><span class="mf">1e5</span><span class="p">,</span>
+        <span class="n">npts</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">xs</span><span class="p">,</span> <span class="n">rs</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">contour</span><span class="o">.</span><span class="n">get_contour</span><span class="p">(</span>
+        <span class="n">V_c</span><span class="o">=</span><span class="n">aerothermodynamics</span><span class="o">.</span><span class="n">V_c</span><span class="p">,</span>
+        <span class="n">r_t</span><span class="o">=</span><span class="n">aerothermodynamics</span><span class="o">.</span><span class="n">r_t</span><span class="p">,</span>
+        <span class="n">area_ratio</span><span class="o">=</span><span class="n">aerothermodynamics</span><span class="o">.</span><span class="n">eps</span><span class="p">,</span>
+        <span class="n">AR_c</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;AR_c&quot;</span><span class="p">],</span>
+        <span class="n">theta_conv</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;theta_conv&quot;</span><span class="p">],</span>
+        <span class="n">nozzle</span><span class="o">=</span><span class="s2">&quot;rao&quot;</span><span class="p">,</span>
+        <span class="n">R_1f</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;R_1f&quot;</span><span class="p">],</span>
+        <span class="n">R_2f</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;R_2f&quot;</span><span class="p">],</span>
+        <span class="n">R_3f</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;R_3f&quot;</span><span class="p">],</span>
+        <span class="n">length_fraction</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;length_fraction&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">contour</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">Contour</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Methane Engine&quot;</span><span class="p">)</span>
+
+    <span class="n">oxygen_copper_wall</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">Wall</span><span class="p">(</span>
+        <span class="n">material</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;copper&quot;</span><span class="p">],</span>
+        <span class="n">thickness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;oxygen_copper_thickness&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">fuel_copper_wall</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">Wall</span><span class="p">(</span>
+        <span class="n">material</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;copper&quot;</span><span class="p">],</span>
+        <span class="n">thickness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;fuel_copper_thickness&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">barrier_wall</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">Wall</span><span class="p">(</span>
+        <span class="n">material</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;zirconia&quot;</span><span class="p">],</span>
+        <span class="n">thickness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;barrier_thickness&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">inconel_wall</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">Wall</span><span class="p">(</span>
+        <span class="n">material</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;inconel&quot;</span><span class="p">],</span>
+        <span class="n">thickness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;inconel_thickness&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="n">channel_height_fn</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">make_channel_height_fn</span><span class="p">(</span>
+        <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
+        <span class="n">region_fractions</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
+        <span class="n">flat_heights</span><span class="o">=</span><span class="p">[</span><span class="mf">0.00032</span><span class="p">,</span> <span class="mf">0.00134</span><span class="p">],</span>
+        <span class="n">pinch_factors</span><span class="o">=</span><span class="p">[</span><span class="mf">0.8</span><span class="p">,</span> <span class="o">-</span><span class="mf">5.0</span><span class="p">],</span>
+        <span class="n">transition_widths</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">ox_channel_height</span><span class="p">(</span><span class="n">_x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;ox_channel_height&quot;</span><span class="p">]</span>
+
+    <span class="n">cross_section</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CrossSectionRounded</span><span class="p">()</span>
+    <span class="n">fuel_transport</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">skycea</span><span class="o">.</span><span class="n">CoolantTransport</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;coolprop_fu&quot;</span><span class="p">])</span>
+    <span class="n">ox_transport</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">skycea</span><span class="o">.</span><span class="n">CoolantTransport</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;coolprop_ox&quot;</span><span class="p">])</span>
+
+    <span class="n">fuel_channel_placement</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">SurfacePlacement</span><span class="p">(</span><span class="n">n_channel_positions</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;fuel_channel_positions&quot;</span><span class="p">],)</span>
+    <span class="n">ox_channel_placement</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">SurfacePlacement</span><span class="p">(</span><span class="n">n_channel_positions</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;ox_channel_positions&quot;</span><span class="p">],)</span>
+
+    <span class="n">fu_copper_pass</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CoolingCircuit</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Fuel Copper Pass&quot;</span><span class="p">,</span>
+        <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
+        <span class="n">coolant_transport</span><span class="o">=</span><span class="n">fuel_transport</span><span class="p">,</span>
+        <span class="n">cross_section</span><span class="o">=</span><span class="n">cross_section</span><span class="p">,</span>
+        <span class="n">span</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.29</span><span class="p">],</span>
+        <span class="n">placement</span><span class="o">=</span><span class="n">fuel_channel_placement</span><span class="p">,</span>
+        <span class="n">walls</span><span class="o">=</span><span class="p">[</span><span class="n">barrier_wall</span><span class="p">,</span> <span class="n">fuel_copper_wall</span><span class="p">],</span>
+        <span class="n">roughness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;copper_roughness_height&quot;</span><span class="p">],</span>
+        <span class="n">channel_height</span><span class="o">=</span><span class="n">channel_height_fn</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">fu_inco_pass_cocurrent</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CoolingCircuit</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Fuel Inconel Pass Cocurrent&quot;</span><span class="p">,</span>
+        <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
+        <span class="n">coolant_transport</span><span class="o">=</span><span class="n">fuel_transport</span><span class="p">,</span>
+        <span class="n">cross_section</span><span class="o">=</span><span class="n">cross_section</span><span class="p">,</span>
+        <span class="n">span</span><span class="o">=</span><span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
+        <span class="n">placement</span><span class="o">=</span><span class="n">fuel_channel_placement</span><span class="p">,</span>
+        <span class="n">walls</span><span class="o">=</span><span class="p">[</span><span class="n">inconel_wall</span><span class="p">],</span>
+        <span class="n">roughness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;inconel_roughtness_height&quot;</span><span class="p">],</span>
+        <span class="n">channel_height</span><span class="o">=</span><span class="n">channel_height_fn</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">fu_inco_pass_countercurrent</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CoolingCircuit</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Fuel Inconel Pass Countercurrent&quot;</span><span class="p">,</span>
+        <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
+        <span class="n">coolant_transport</span><span class="o">=</span><span class="n">fuel_transport</span><span class="p">,</span>
+        <span class="n">cross_section</span><span class="o">=</span><span class="n">cross_section</span><span class="p">,</span>
+        <span class="n">span</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">],</span>
+        <span class="n">placement</span><span class="o">=</span><span class="n">fuel_channel_placement</span><span class="p">,</span>
+        <span class="n">walls</span><span class="o">=</span><span class="p">[</span><span class="n">inconel_wall</span><span class="p">],</span>
+        <span class="n">roughness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;inconel_roughtness_height&quot;</span><span class="p">],</span>
+        <span class="n">channel_height</span><span class="o">=</span><span class="n">channel_height_fn</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">ox_copper_pass</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CoolingCircuit</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Oxidizer Copper Pass&quot;</span><span class="p">,</span>
+        <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
+        <span class="n">coolant_transport</span><span class="o">=</span><span class="n">ox_transport</span><span class="p">,</span>
+        <span class="n">cross_section</span><span class="o">=</span><span class="n">cross_section</span><span class="p">,</span>
+        <span class="n">span</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">0.31</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">],</span>
+        <span class="n">placement</span><span class="o">=</span><span class="n">ox_channel_placement</span><span class="p">,</span>
+        <span class="n">walls</span><span class="o">=</span><span class="p">[</span><span class="n">barrier_wall</span><span class="p">,</span> <span class="n">oxygen_copper_wall</span><span class="p">],</span>
+        <span class="n">roughness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;copper_roughness_height&quot;</span><span class="p">],</span>
+        <span class="n">channel_height</span><span class="o">=</span><span class="n">ox_channel_height</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">ThrustChamber</span><span class="p">(</span>
+        <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
+        <span class="n">combustion_transport</span><span class="o">=</span><span class="n">aerothermodynamics</span><span class="p">,</span>
+        <span class="n">cooling_circuits</span><span class="o">=</span><span class="p">[</span><span class="n">fu_copper_pass</span><span class="p">,</span> <span class="n">fu_inco_pass_cocurrent</span><span class="p">,</span> <span class="n">fu_inco_pass_countercurrent</span><span class="p">,</span> <span class="n">ox_copper_pass</span><span class="p">,],</span>
+        <span class="n">h_gas_corr</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">h_cold_corr</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+</pre></div>
+</div>
+<p>This example contains three sequential fuel cooling passes and one oxidizer pass. The fuel first cools the copper throat/chamber region, then travels through a co-current nozzle pass and returns through a counter-current nozzle pass. The oxidizer is split into identical parallel paths through the oxidizer cooling circuit.</p>
+<p>The chamber construction is intentionally presented as one block here. For a step-by-step explanation of the combustion model, contour generation, walls, channel placement, and standalone regenerative solution, see the <a class="reference internal" href="minimal-simulation.html"><span class="doc">Minimal Simulation</span></a> tutorial.</p>
+</section>
+<section id="initial-station-guesses">
+<h2>Initial station guesses<a class="headerlink" href="#initial-station-guesses" title="Link to this heading">¶</a></h2>
+<p>A full engine cycle has fluid states at every component interface. Pyskyfire represents each state as a <code class="docutils literal notranslate"><span class="pre">Station(p,</span> <span class="pre">T,</span> <span class="pre">mdot)</span></code>, containing pressure in Pa, temperature in K, and mass flow in kg/s.</p>
+<p>The network needs an initial station dictionary before it can converge:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">setup_initial_stations</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">thrust_chamber</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create the initial station guesses used by the full-cycle solver.&quot;&quot;&quot;</span>
+
+    <span class="n">stations</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">mdot_fu_est</span> <span class="o">=</span> <span class="n">thrust_chamber</span><span class="o">.</span><span class="n">combustion_transport</span><span class="o">.</span><span class="n">mdot_fu</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_engine_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_tank_fu&quot;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">],</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_pump_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_engine_in&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_engine_in&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_pump_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_shaft_recirc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_regen_duct_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_regen_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_regen_interstage_1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">100</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_regen_interstage_2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">180</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_regen_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_turbine_inlet_split&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_bypass_valve&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_turbine_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.2</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_turbine_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_turbine_outlet_merge&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_injector_plenum&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;fu_chamber_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_fu&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
+
+    <span class="n">mdot_ox_est</span> <span class="o">=</span> <span class="n">thrust_chamber</span><span class="o">.</span><span class="n">combustion_transport</span><span class="o">.</span><span class="n">mdot_ox</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_engine_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_tank_ox&quot;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">],</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_pump_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_engine_in&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_engine_in&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_pump_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_shaft_recirc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_regen_duct_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_regen_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot_ox_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_regen_1_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_est</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_regen_2_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_est</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_regen_1_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_est</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_regen_2_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_est</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_regen_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_est</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_turbine_inlet_split&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_bypass_valve&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_turbine_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_turbine_out&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.2</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_turbine_outlet_merge&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_injector_plenum&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">&quot;ox_chamber_in&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;T_tank_ox&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
+
+    <span class="k">return</span> <span class="n">stations</span>
+
+
+</pre></div>
+</div>
+<p>The station names are not merely labels. They are the links between blocks: a block reads its named inlet stations and writes its named outlet stations. For example, the fuel pump writes <code class="docutils literal notranslate"><span class="pre">fu_pump_out</span></code>; the recirculation splitter then reads <code class="docutils literal notranslate"><span class="pre">fu_pump_out</span></code> and writes <code class="docutils literal notranslate"><span class="pre">fu_regen_duct_in</span></code> and <code class="docutils literal notranslate"><span class="pre">fu_shaft_recirc</span></code>.</p>
+<p>These values are <strong>initial guesses</strong>, not prescribed results. They should nevertheless be physically credible. A useful starting point follows the expected trend through the engine:</p>
+<ul class="simple">
+<li><p>pressure rises across a pump and decreases across ducts, cooling circuits, turbines, and injectors;</p></li>
+<li><p>temperature rises through regenerative cooling and decreases across a turbine;</p></li>
+<li><p>mass flow follows the intended split, merge, recirculation, and bypass fractions.</p></li>
+</ul>
+<p>A fixed-point solver is not a global optimiser that can reliably recover from arbitrary guesses. If an early sweep sends a fluid to an invalid thermodynamic state, makes a turbine outlet temperature non-physical, or generates an enormous pressure change, property calls and the regenerative solver may fail before the network has a chance to settle. Use rough but reasonable values; they do not need to be accurate final-cycle predictions.</p>
+</section>
+<section id="initial-scalar-signals">
+<h2>Initial scalar signals<a class="headerlink" href="#initial-scalar-signals" title="Link to this heading">¶</a></h2>
+<p>Stations represent flowing propellant. Signals represent scalar quantities shared between blocks but not carried by a single fluid stream: pump power, turbine power requirement, pressure drops, targets, or future control variables.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">setup_initial_signals</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create the scalar initial guesses for the full-cycle solver.&quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;p_c&quot;</span><span class="p">:</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;P_fuel_pump&quot;</span><span class="p">:</span> <span class="mf">2.8e5</span><span class="p">,</span>
+        <span class="s2">&quot;P_ox_pump&quot;</span><span class="p">:</span> <span class="mf">2.0e5</span><span class="p">,</span>
+        <span class="s2">&quot;P_fuel_turbine_required&quot;</span><span class="p">:</span> <span class="mf">2.8e5</span><span class="p">,</span>
+        <span class="s2">&quot;P_ox_turbine_required&quot;</span><span class="p">:</span> <span class="mf">2.0e5</span><span class="p">,</span>
+    <span class="p">}</span>
+
+
+</pre></div>
+</div>
+<p>This example begins with estimates for the fuel and oxidizer pump powers. The transmission blocks later update the corresponding turbine power requirements. Pressure-drop signals are added separately after the blocks are created because each loss-producing block declares its own <code class="docutils literal notranslate"><span class="pre">dp_key</span></code>.</p>
+</section>
+<section id="create-the-engine-network">
+<h2>Create the engine network<a class="headerlink" href="#create-the-engine-network" title="Link to this heading">¶</a></h2>
+<p>The network setup first gathers the station guesses, scalar signals, and component blocks.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">stations</span> <span class="o">=</span> <span class="n">setup_initial_stations</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">thrust_chamber</span><span class="p">)</span>
+    <span class="n">signals</span> <span class="o">=</span> <span class="n">setup_initial_signals</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+    <span class="n">blocks</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">fuel_medium</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;coolprop_fu&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">propellants</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ox_medium</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;coolprop_ox&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">propellants</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Each block advertises the station and signal keys it consumes and emits. The <code class="docutils literal notranslate"><span class="pre">EngineNetwork</span></code> executes the blocks in the order supplied by the list, merges each block’s outputs into its station and signal dictionaries, and measures the maximum relative change in the updated quantities.</p>
+<p>At present, Pyskyfire preserves the supplied block order. It does not yet perform a dependency-aware topological sort. Arrange the blocks in a valid flow order: merge or source, pump, splitter, ducts and cooling passages, turbine, downstream ducts, injector, then transmission coupling.</p>
+<section id="fluid-and-signal-blocks">
+<h3>Fluid and signal blocks<a class="headerlink" href="#fluid-and-signal-blocks" title="Link to this heading">¶</a></h3>
+<p>The example uses the following block types.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Block</p></th>
+<th class="head"><p>Role in the network</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MassFlowMergerBlock</span></code></p></td>
+<td><p>Combines same-fluid branches by mass and enthalpy.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PumpBlock</span></code></p></td>
+<td><p>Raises pressure to meet its required load and emits the pump shaft-power signal.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MassFlowSplitterBlock</span></code></p></td>
+<td><p>Divides a stream into fixed fractions; the branch pressure and temperature are unchanged by the ideal split itself.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SimpleDuctBlock</span></code></p></td>
+<td><p>Applies a fixed pressure ratio and an adiabatic, constant-enthalpy pressure loss.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RegenBlock</span></code></p></td>
+<td><p>Runs a regenerative-cooling circuit using its inlet station, writes its outlet station, and emits its pressure drop.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TurbineBlock</span></code></p></td>
+<td><p>Expands the inlet stream enough to deliver the shaft-power signal requested by the transmission.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TransmissionBlock</span></code></p></td>
+<td><p>Sums shaft power demands and writes the power signal consumed by the turbine.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="fuel-side-blocks-and-the-pump-load">
+<h3>Fuel-side blocks and the pump load<a class="headerlink" href="#fuel-side-blocks-and-the-pump-load" title="Link to this heading">¶</a></h3>
+<p>The fuel-side block sequence reads much like an engine flow schematic:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># Fuel-side blocks</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowMergerBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fuel_inlet_merge&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;fu_engine_in&quot;</span><span class="p">,</span> <span class="s2">&quot;fu_shaft_recirc&quot;</span><span class="p">],</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;fu_pump_in&quot;</span><span class="p">,</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">PumpBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fuel_pump&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;fu_pump_in&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;fu_pump_out&quot;</span><span class="p">,</span>
+            <span class="n">overcome</span><span class="o">=</span><span class="p">[</span>
+                <span class="s2">&quot;duct_pump_regen_fuel&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;regen_throat_pass&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;duct_regen_turbine_fuel&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;fuel_turbine&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;duct_turbine_injector_fuel&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;fu_injector&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="n">load_fraction</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+            <span class="n">p_base</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">],</span>
+            <span class="n">input_p</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_tank_fu&quot;</span><span class="p">],</span>
+            <span class="n">eta</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eta_pump_fu&quot;</span><span class="p">],</span>
+            <span class="n">n</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;n_fu&quot;</span><span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowSplitterBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fuel_recirc_split&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;fu_pump_out&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;fu_regen_duct_in&quot;</span><span class="p">,</span> <span class="s2">&quot;fu_shaft_recirc&quot;</span><span class="p">],</span>
+            <span class="n">fractions</span><span class="o">=</span><span class="p">[</span>
+                <span class="mi">1</span> <span class="o">-</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;zeta_fu_recirc&quot;</span><span class="p">],</span>
+                <span class="n">params</span><span class="p">[</span><span class="s2">&quot;zeta_fu_recirc&quot;</span><span class="p">],</span>
+            <span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">SimpleDuctBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;duct_pump_regen_fuel&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;fu_regen_duct_in&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;fu_regen_in&quot;</span><span class="p">,</span>
+            <span class="n">pressure_ratio</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eta_pump_regen_fu&quot;</span><span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">RegenBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;regen_throat_pass&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;fu_regen_in&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;fu_regen_interstage_1&quot;</span><span class="p">,</span>
+            <span class="n">circuit_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">thrust_chamber</span><span class="o">=</span><span class="n">thrust_chamber</span><span class="p">,</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">RegenBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;regen_cocurrent_nozzle_pass&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;fu_regen_interstage_1&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;fu_regen_interstage_2&quot;</span><span class="p">,</span>
+            <span class="n">circuit_index</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">thrust_chamber</span><span class="o">=</span><span class="n">thrust_chamber</span><span class="p">,</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">RegenBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;regen_countercurrent_nozzle_pass&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;fu_regen_interstage_2&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;fu_regen_out&quot;</span><span class="p">,</span>
+            <span class="n">circuit_index</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">thrust_chamber</span><span class="o">=</span><span class="n">thrust_chamber</span><span class="p">,</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">SimpleDuctBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;duct_regen_turbine_fuel&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;fu_regen_out&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;fu_turbine_inlet_split&quot;</span><span class="p">,</span>
+            <span class="n">pressure_ratio</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eta_regen_turbine_fu&quot;</span><span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowSplitterBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fuel_split_turbine_bypass&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;fu_turbine_inlet_split&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;fu_turbine_in&quot;</span><span class="p">,</span> <span class="s2">&quot;fu_bypass_valve&quot;</span><span class="p">],</span>
+            <span class="n">fractions</span><span class="o">=</span><span class="p">[</span>
+                <span class="mi">1</span> <span class="o">-</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;zeta_fu_turbine_bypass&quot;</span><span class="p">],</span>
+                <span class="n">params</span><span class="p">[</span><span class="s2">&quot;zeta_fu_turbine_bypass&quot;</span><span class="p">],</span>
+            <span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">TurbineBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fuel_turbine&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;fu_turbine_in&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;fu_turbine_out&quot;</span><span class="p">,</span>
+            <span class="n">P_req_key</span><span class="o">=</span><span class="s2">&quot;P_fuel_turbine_required&quot;</span><span class="p">,</span>
+            <span class="n">eta</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eta_turbine_fu&quot;</span><span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowMergerBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;merge_turbine_bypass&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;fu_turbine_out&quot;</span><span class="p">,</span> <span class="s2">&quot;fu_bypass_valve&quot;</span><span class="p">],</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;fu_turbine_outlet_merge&quot;</span><span class="p">,</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">SimpleDuctBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;duct_turbine_injector_fuel&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;fu_turbine_outlet_merge&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;fu_injector_plenum&quot;</span><span class="p">,</span>
+            <span class="n">pressure_ratio</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eta_turbine_injector_fu&quot;</span><span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">SimpleDuctBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fu_injector&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;fu_injector_plenum&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;fu_chamber_in&quot;</span><span class="p">,</span>
+            <span class="n">pressure_ratio</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eta_fu_injector&quot;</span><span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">TransmissionBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fuel_shaft&quot;</span><span class="p">,</span>
+            <span class="n">sink_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;P_fuel_pump&quot;</span><span class="p">],</span>
+            <span class="n">source_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;P_fuel_turbine_required&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">PumpBlock.overcome</span></code> deserves special attention. It lists the downstream blocks whose pressure losses the pump must overcome:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">overcome</span><span class="o">=</span><span class="p">[</span>
+    <span class="s2">&quot;duct_pump_regen_fuel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;regen_throat_pass&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;duct_regen_turbine_fuel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fuel_turbine&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;duct_turbine_injector_fuel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fu_injector&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>A pressure-loss block named <code class="docutils literal notranslate"><span class="pre">regen_throat_pass</span></code> writes a signal named <code class="docutils literal notranslate"><span class="pre">dp_regen_throat_pass</span></code>. The pump collects <code class="docutils literal notranslate"><span class="pre">dp_&lt;block</span> <span class="pre">name&gt;</span></code> for every listed item, adds the baseline chamber-side pressure requirement, and determines the target pump outlet pressure. Its required shaft power is then emitted as <code class="docutils literal notranslate"><span class="pre">P_fuel_pump</span></code>.</p>
+<p>This is somewhat clunky. The pressure path is not inferred automatically from the network graph, so modifying the cycle topology requires manually updating <code class="docutils literal notranslate"><span class="pre">overcome</span></code>. It remains the current solution because it keeps the block models local and the fixed-point solver simple: the pump only needs scalar pressure-drop signals, rather than a general graph traversal and algebraic loop formulation. Treat each <code class="docutils literal notranslate"><span class="pre">overcome</span></code> list as part of the cycle definition and review it whenever a component is added, removed, bypassed, or moved.</p>
+</section>
+<section id="oxidizer-side-blocks">
+<h3>Oxidizer-side blocks<a class="headerlink" href="#oxidizer-side-blocks" title="Link to this heading">¶</a></h3>
+<p>The oxidizer side follows the same architecture, with a split into two parallel cooling branches before the turbine:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># Oxidizer-side blocks</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowMergerBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;merge_ox_recirc&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ox_engine_in&quot;</span><span class="p">,</span> <span class="s2">&quot;ox_shaft_recirc&quot;</span><span class="p">],</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;ox_pump_in&quot;</span><span class="p">,</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">PumpBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ox_pump&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;ox_pump_in&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;ox_pump_out&quot;</span><span class="p">,</span>
+            <span class="n">overcome</span><span class="o">=</span><span class="p">[</span>
+                <span class="s2">&quot;duct_pump_regen_ox&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;ox_regen&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;duct_regen_turbine_ox&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;ox_turbine&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;duct_turbine_injector_ox&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;ox_injector&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="n">load_fraction</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+            <span class="n">p_base</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_c&quot;</span><span class="p">],</span>
+            <span class="n">input_p</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;p_tank_ox&quot;</span><span class="p">],</span>
+            <span class="n">n</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;n_ox&quot;</span><span class="p">],</span>
+            <span class="n">eta</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eta_pump_ox&quot;</span><span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowSplitterBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;split_ox_recirc&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;ox_pump_out&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ox_regen_duct_in&quot;</span><span class="p">,</span> <span class="s2">&quot;ox_shaft_recirc&quot;</span><span class="p">],</span>
+            <span class="n">fractions</span><span class="o">=</span><span class="p">[</span>
+                <span class="mi">1</span> <span class="o">-</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;zeta_ox_recirc&quot;</span><span class="p">],</span>
+                <span class="n">params</span><span class="p">[</span><span class="s2">&quot;zeta_ox_recirc&quot;</span><span class="p">],</span>
+            <span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">SimpleDuctBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;duct_pump_regen_ox&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;ox_regen_duct_in&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;ox_regen_in&quot;</span><span class="p">,</span>
+            <span class="n">pressure_ratio</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eta_pump_regen_ox&quot;</span><span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowSplitterBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ox_regen_split&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;ox_regen_in&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ox_regen_1_in&quot;</span><span class="p">,</span> <span class="s2">&quot;ox_regen_2_in&quot;</span><span class="p">],</span>
+            <span class="n">fractions</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c1"># The duplicated name is deliberate: these are identical parallel channels,</span>
+    <span class="c1"># so the pump should see a single branch pressure drop.</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">RegenBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ox_regen&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;ox_regen_1_in&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;ox_regen_1_out&quot;</span><span class="p">,</span>
+            <span class="n">circuit_index</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+            <span class="n">thrust_chamber</span><span class="o">=</span><span class="n">thrust_chamber</span><span class="p">,</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">RegenBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ox_regen&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;ox_regen_2_in&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;ox_regen_2_out&quot;</span><span class="p">,</span>
+            <span class="n">circuit_index</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+            <span class="n">thrust_chamber</span><span class="o">=</span><span class="n">thrust_chamber</span><span class="p">,</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowMergerBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ox_regen_merge&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ox_regen_1_out&quot;</span><span class="p">,</span> <span class="s2">&quot;ox_regen_2_out&quot;</span><span class="p">],</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;ox_regen_out&quot;</span><span class="p">,</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">SimpleDuctBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;duct_regen_turbine_ox&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;ox_regen_out&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;ox_turbine_inlet_split&quot;</span><span class="p">,</span>
+            <span class="n">pressure_ratio</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eta_regen_turbine_ox&quot;</span><span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowSplitterBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ox_split_turbine_bypass&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;ox_turbine_inlet_split&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ox_turbine_in&quot;</span><span class="p">,</span> <span class="s2">&quot;ox_bypass_valve&quot;</span><span class="p">],</span>
+            <span class="n">fractions</span><span class="o">=</span><span class="p">[</span>
+                <span class="mi">1</span> <span class="o">-</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;zeta_ox_turbine_bypass&quot;</span><span class="p">],</span>
+                <span class="n">params</span><span class="p">[</span><span class="s2">&quot;zeta_ox_turbine_bypass&quot;</span><span class="p">],</span>
+            <span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">TurbineBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ox_turbine&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;ox_turbine_in&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;ox_turbine_out&quot;</span><span class="p">,</span>
+            <span class="n">P_req_key</span><span class="o">=</span><span class="s2">&quot;P_ox_turbine_required&quot;</span><span class="p">,</span>
+            <span class="n">eta</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eta_turbine_ox&quot;</span><span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowMergerBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;merge_ox_bypass&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ox_turbine_out&quot;</span><span class="p">,</span> <span class="s2">&quot;ox_bypass_valve&quot;</span><span class="p">],</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;ox_turbine_outlet_merge&quot;</span><span class="p">,</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">SimpleDuctBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;duct_turbine_injector_ox&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;ox_turbine_outlet_merge&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;ox_injector_plenum&quot;</span><span class="p">,</span>
+            <span class="n">pressure_ratio</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eta_turbine_injector_ox&quot;</span><span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">SimpleDuctBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ox_injector&quot;</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">&quot;ox_injector_plenum&quot;</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">&quot;ox_chamber_in&quot;</span><span class="p">,</span>
+            <span class="n">pressure_ratio</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;eta_ox_injector&quot;</span><span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">TransmissionBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ox_shaft&quot;</span><span class="p">,</span>
+            <span class="n">sink_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;P_ox_pump&quot;</span><span class="p">],</span>
+            <span class="n">source_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;P_ox_turbine_required&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+</pre></div>
+</div>
+<p>The two oxidizer <code class="docutils literal notranslate"><span class="pre">RegenBlock</span></code> instances deliberately use the same name because they represent identical parallel paths. They therefore produce the same branch pressure-drop signal, which is the relevant loss for the pump’s <code class="docutils literal notranslate"><span class="pre">overcome</span></code> list.</p>
+</section>
+<section id="seed-pressure-drop-signals-and-solve">
+<h3>Seed pressure-drop signals and solve<a class="headerlink" href="#seed-pressure-drop-signals-and-solve" title="Link to this heading">¶</a></h3>
+<p>Before the first iteration, the script creates initial pressure-drop signals from the station guesses.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># Initialise pressure-drop signals from the station guesses. # TODO internalise this process</span>
+    <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="s2">&quot;dp_key&quot;</span><span class="p">):</span>
+            <span class="k">continue</span>
+
+        <span class="n">st_in</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">station_inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">block</span><span class="o">.</span><span class="n">station_inputs</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">st_out</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">station_outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">block</span><span class="o">.</span><span class="n">station_outputs</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">st_in</span> <span class="ow">in</span> <span class="n">stations</span> <span class="ow">and</span> <span class="n">st_out</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">:</span>
+            <span class="n">dp0</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">stations</span><span class="p">[</span><span class="n">st_in</span><span class="p">]</span><span class="o">.</span><span class="n">p</span> <span class="o">-</span> <span class="n">stations</span><span class="p">[</span><span class="n">st_out</span><span class="p">]</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dp0</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">signals</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">dp_key</span><span class="p">,</span> <span class="n">dp0</span><span class="p">)</span>
+
+</pre></div>
+</div>
+<p>This bootstrap step exists because the pumps read downstream pressure-drop signals on their first sweep, while those signals are only calculated by the loss-producing blocks during the sweep. The initial values do not need to be exact, but they should be non-negative and consistent with the station guesses.</p>
+<p>The network is then constructed and solved:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">net</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">EngineNetwork</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">signals</span><span class="p">,</span> <span class="n">blocks</span><span class="p">)</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">run_fixed_point</span><span class="p">(</span><span class="n">tol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;net&quot;</span><span class="p">:</span> <span class="n">net</span><span class="p">,</span>
+        <span class="s2">&quot;stations&quot;</span><span class="p">:</span> <span class="n">net</span><span class="o">.</span><span class="n">stations</span><span class="p">,</span>
+        <span class="s2">&quot;signals&quot;</span><span class="p">:</span> <span class="n">net</span><span class="o">.</span><span class="n">signals</span><span class="p">,</span>
+        <span class="s2">&quot;residuals&quot;</span><span class="p">:</span> <span class="n">net</span><span class="o">.</span><span class="n">residuals</span><span class="p">,</span>
+        <span class="s2">&quot;block_results&quot;</span><span class="p">:</span> <span class="n">net</span><span class="o">.</span><span class="n">block_results</span><span class="p">,</span>
+    <span class="p">}</span>
+
+</pre></div>
+</div>
+<p>During one fixed-point sweep, every block receives the current station and signal dictionaries, computes its outputs, and overwrites the corresponding dictionary entries. Pyskyfire records the largest relative update among pressure, temperature, mass flow, and scalar signals. It repeats complete sweeps until that residual falls below <code class="docutils literal notranslate"><span class="pre">tol</span></code> or the iteration limit is reached.</p>
+<p>A converged network performs one additional <strong>post-process sweep</strong>. Every block has a <code class="docutils literal notranslate"><span class="pre">post_process(stations,</span> <span class="pre">signals)</span></code> hook. Most blocks return an empty dictionary because their ordinary station result is already sufficient. <code class="docutils literal notranslate"><span class="pre">RegenBlock</span></code> uses this hook to rerun its cooling calculation on a detailed axial grid using the final converged inlet condition. The resulting temperature, pressure, heat-flux, and wall-temperature profiles are collected in <code class="docutils literal notranslate"><span class="pre">net.block_results</span></code>, keyed by block name.</p>
+<p>This split is important: a network iteration only needs enough information to update the coupled cycle. Detailed axial arrays are more expensive and are therefore generated after convergence, once rather than once per fixed-point sweep.</p>
+</section>
+</section>
+<section id="normalize-cooling-results-and-save-the-simulation">
+<h2>Normalize cooling results and save the simulation<a class="headerlink" href="#normalize-cooling-results-and-save-the-simulation" title="Link to this heading">¶</a></h2>
+<p>The standalone regeneration path returns named cooling data directly. The full-cycle path obtains equivalent cooling data from the regenerative blocks’ post-process outputs:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">cooling_data_from_full_cycle</span><span class="p">(</span><span class="n">block_results</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalize full-cycle block results to the common cooling-data contract.&quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;fuel_throat&quot;</span><span class="p">:</span> <span class="n">block_results</span><span class="p">[</span><span class="s2">&quot;regen_throat_pass&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;fuel_nozzle_cocurrent&quot;</span><span class="p">:</span> <span class="n">block_results</span><span class="p">[</span><span class="s2">&quot;regen_cocurrent_nozzle_pass&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;fuel_nozzle_countercurrent&quot;</span><span class="p">:</span> <span class="n">block_results</span><span class="p">[</span>
+            <span class="s2">&quot;regen_countercurrent_nozzle_pass&quot;</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;oxidizer_copper&quot;</span><span class="p">:</span> <span class="n">block_results</span><span class="p">[</span><span class="s2">&quot;ox_regen&quot;</span><span class="p">],</span>
+    <span class="p">}</span>
+
+</pre></div>
+</div>
+<p>The main function selects the mode, runs the requested calculation, and saves a portable <code class="docutils literal notranslate"><span class="pre">Results</span></code> object.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">if</span> <span class="n">RUN_MODE</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;regen_only&quot;</span><span class="p">,</span> <span class="s2">&quot;full_cycle&quot;</span><span class="p">}:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;RUN_MODE must be &#39;regen_only&#39; or &#39;full_cycle&#39;, not </span><span class="si">{</span><span class="n">RUN_MODE</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="n">make_params</span><span class="p">()</span>
+    <span class="n">thrust_chamber</span> <span class="o">=</span> <span class="n">setup_thrust_chamber</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">RUN_MODE</span> <span class="o">==</span> <span class="s2">&quot;regen_only&quot;</span><span class="p">:</span>
+        <span class="n">cooling_data</span> <span class="o">=</span> <span class="n">run_regen_only</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">thrust_chamber</span><span class="p">)</span>
+        <span class="n">cycle_results</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cycle_results</span> <span class="o">=</span> <span class="n">engine_sizer</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">thrust_chamber</span><span class="p">)</span>
+        <span class="n">cooling_data</span> <span class="o">=</span> <span class="n">cooling_data_from_full_cycle</span><span class="p">(</span>
+            <span class="n">cycle_results</span><span class="p">[</span><span class="s2">&quot;block_results&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+    <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">RUN_MODE</span><span class="si">}</span><span class="s2"> simulation completed in </span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s&quot;</span><span class="p">)</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Results</span><span class="p">()</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">RUN_MODE</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;params&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;thrust_chamber&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">thrust_chamber</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;cooling_data&quot;</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">cooling_data</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">cycle_results</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">cycle_results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="n">output_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="n">RESULTS_FILENAME</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Results saved to </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Both modes save the common result contract:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>mode
+params
+thrust_chamber
+cooling_data
+</pre></div>
+</div>
+<p>A full-cycle result also stores:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>net
+stations
+signals
+residuals
+block_results
+</pre></div>
+</div>
+<p>Saving results separates the expensive calculation from visualisation. You can run the cycle once, inspect the residual history, then adjust graph selection, captions, plot order, or report layout repeatedly without rerunning the thermal solver and fixed-point cycle.</p>
+</section>
+<section id="generate-the-report">
+<h2>Generate the report<a class="headerlink" href="#generate-the-report" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">post_process.py</span></code> loads <code class="docutils literal notranslate"><span class="pre">results.pkl</span></code> and first generates report tabs that are meaningful for either run mode: input parameters, thrust-chamber geometry, cooling data, combustion properties, and through-wall thermal gradients.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">add_common_report_content</span><span class="p">(</span><span class="n">report</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">thrust_chamber</span><span class="p">,</span> <span class="n">cooling_data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add report tabs available for both regen-only and full-cycle results.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Parameters</span>
+    <span class="n">tab_params</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">&quot;Parameters&quot;</span><span class="p">)</span>
+    <span class="n">tab_params</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span>
+        <span class="n">params</span><span class="p">,</span>
+        <span class="n">caption</span><span class="o">=</span><span class="s2">&quot;Input Parameters&quot;</span><span class="p">,</span>
+        <span class="n">key_title</span><span class="o">=</span><span class="s2">&quot;Parameter&quot;</span><span class="p">,</span>
+        <span class="n">value_title</span><span class="o">=</span><span class="s2">&quot;Value&quot;</span><span class="p">,</span>
+        <span class="n">precision</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">tab_params</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span>
+        <span class="n">thrust_chamber</span><span class="o">.</span><span class="n">combustion_transport</span><span class="o">.</span><span class="n">optimum</span><span class="p">,</span>
+        <span class="n">caption</span><span class="o">=</span><span class="s2">&quot;Optimal Values&quot;</span><span class="p">,</span>
+        <span class="n">key_title</span><span class="o">=</span><span class="s2">&quot;Parameter&quot;</span><span class="p">,</span>
+        <span class="n">value_title</span><span class="o">=</span><span class="s2">&quot;Value&quot;</span><span class="p">,</span>
+        <span class="n">precision</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Engine overview</span>
+    <span class="n">tab_overview</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">&quot;Engine Overview&quot;</span><span class="p">)</span>
+    <span class="n">engine_viewer</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">make_engine_3d</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">tab_overview</span><span class="o">.</span><span class="n">add_iframe</span><span class="p">(</span><span class="n">engine_viewer</span><span class="o">.</span><span class="n">data_url</span><span class="p">,</span> <span class="n">caption</span><span class="o">=</span><span class="s2">&quot;Engine 3D&quot;</span><span class="p">)</span>
+    <span class="n">engine_viewer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">tab_overview</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotContour</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="o">.</span><span class="n">contour</span><span class="p">))</span>
+
+    <span class="c1"># Cooling data</span>
+    <span class="n">ordered_cooling_data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cooling_data</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">tab_cooling</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">&quot;Cooling Data&quot;</span><span class="p">)</span>
+    <span class="n">tab_cooling</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotWallTemperature</span><span class="p">(</span>
+            <span class="o">*</span><span class="n">ordered_cooling_data</span><span class="p">,</span>
+            <span class="n">plot_hot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">plot_coolant_wall</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">plot_interfaces</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">tab_cooling</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotCoolantTemperature</span><span class="p">(</span><span class="o">*</span><span class="n">ordered_cooling_data</span><span class="p">))</span>
+    <span class="n">tab_cooling</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotCoolantPressure</span><span class="p">(</span><span class="o">*</span><span class="n">ordered_cooling_data</span><span class="p">))</span>
+    <span class="n">tab_cooling</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotHeatFlux</span><span class="p">(</span><span class="o">*</span><span class="n">ordered_cooling_data</span><span class="p">))</span>
+    <span class="n">tab_cooling</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotVelocity</span><span class="p">(</span><span class="o">*</span><span class="n">ordered_cooling_data</span><span class="p">))</span>
+
+    <span class="c1"># Thrust-chamber properties</span>
+    <span class="n">tab_chamber</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">&quot;Thrust Chamber Properties&quot;</span><span class="p">)</span>
+    <span class="n">tab_chamber</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotCoolantArea</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="p">))</span>
+    <span class="n">tab_chamber</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotHydraulicDiameter</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="p">))</span>
+    <span class="n">tab_chamber</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotRadiusOfCurvature</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="p">),</span>
+        <span class="n">caption</span><span class="o">=</span><span class="s2">&quot;Radius-of-curvature computation is still experimental.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">tab_chamber</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotdAdxThermalHotGas</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="p">))</span>
+    <span class="n">tab_chamber</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotdAdxThermalCoolant</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="p">))</span>
+    <span class="n">tab_chamber</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotdAdxCoolantArea</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="p">))</span>
+
+    <span class="c1"># Combustion transport</span>
+    <span class="n">tab_combustion</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">&quot;Combustion&quot;</span><span class="p">)</span>
+    <span class="n">transport</span> <span class="o">=</span> <span class="n">thrust_chamber</span><span class="o">.</span><span class="n">combustion_transport</span>
+    <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;M&quot;</span><span class="p">,</span> <span class="s2">&quot;gamma&quot;</span><span class="p">,</span> <span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">,</span> <span class="s2">&quot;cp&quot;</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="s2">&quot;mu&quot;</span><span class="p">,</span> <span class="s2">&quot;Pr&quot;</span><span class="p">,</span> <span class="s2">&quot;rho&quot;</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">):</span>
+        <span class="n">tab_combustion</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
+            <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotTransportProperty</span><span class="p">(</span><span class="n">transport</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="n">prop</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Through-wall temperatures at three axial locations</span>
+    <span class="n">tab_gradient</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">&quot;Thermal Gradient&quot;</span><span class="p">)</span>
+    <span class="n">fuel_throat_data</span> <span class="o">=</span> <span class="n">cooling_data</span><span class="p">[</span><span class="s2">&quot;fuel_throat&quot;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">):</span>
+        <span class="n">tab_gradient</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
+            <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotTemperatureProfile</span><span class="p">(</span>
+                <span class="n">fuel_throat_data</span><span class="p">,</span>
+                <span class="n">thrust_chamber</span><span class="p">,</span>
+                <span class="mi">0</span><span class="p">,</span>
+                <span class="n">x</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+<p>For a full-cycle result, the post-processing script adds a dedicated cycle tab containing the convergence history, station pressure/temperature/mass-flow plots, and fuel/oxidizer pressure-temperature paths.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">add_full_cycle_report_content</span><span class="p">(</span><span class="n">report</span><span class="p">,</span> <span class="n">results</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add network and station plots that require a full-cycle result.&quot;&quot;&quot;</span>
+
+    <span class="n">stations</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;stations&quot;</span><span class="p">]</span>
+    <span class="n">residuals</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;residuals&quot;</span><span class="p">]</span>
+
+    <span class="n">tab_cycle</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">&quot;Engine Cycle&quot;</span><span class="p">)</span>
+    <span class="n">tab_cycle</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotResidualHistory</span><span class="p">(</span><span class="n">residuals</span><span class="p">),</span>
+        <span class="n">caption</span><span class="o">=</span><span class="s2">&quot;Maximum relative residual per fixed-point iteration.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">fuel_stations</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;fu_engine_in&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fu_pump_in&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fu_pump_out&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fu_regen_in&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fu_regen_out&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fu_turbine_in&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fu_turbine_out&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fu_injector_plenum&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;fu_chamber_in&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="n">oxidizer_stations</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;ox_engine_in&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ox_pump_in&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ox_pump_out&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ox_regen_in&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ox_regen_1_in&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ox_regen_1_out&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ox_regen_out&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ox_turbine_in&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ox_turbine_out&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ox_injector_plenum&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ox_chamber_in&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">property_name</span><span class="p">,</span> <span class="n">caption</span> <span class="ow">in</span> <span class="p">(</span>
+        <span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="s2">&quot;Fuel-side pressure&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="s2">&quot;Fuel-side temperature&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;mdot&quot;</span><span class="p">,</span> <span class="s2">&quot;Fuel-side mass flow&quot;</span><span class="p">),</span>
+    <span class="p">):</span>
+        <span class="n">tab_cycle</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
+            <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotStationProperty</span><span class="p">(</span>
+                <span class="n">station_dicts</span><span class="o">=</span><span class="n">stations</span><span class="p">,</span>
+                <span class="n">station_list</span><span class="o">=</span><span class="n">fuel_stations</span><span class="p">,</span>
+                <span class="n">property_name</span><span class="o">=</span><span class="n">property_name</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">caption</span><span class="o">=</span><span class="n">caption</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">property_name</span><span class="p">,</span> <span class="n">caption</span> <span class="ow">in</span> <span class="p">(</span>
+        <span class="p">(</span><span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="s2">&quot;Oxidizer-side pressure&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="s2">&quot;Oxidizer-side temperature&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;mdot&quot;</span><span class="p">,</span> <span class="s2">&quot;Oxidizer-side mass flow&quot;</span><span class="p">),</span>
+    <span class="p">):</span>
+        <span class="n">tab_cycle</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
+            <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotStationProperty</span><span class="p">(</span>
+                <span class="n">station_dicts</span><span class="o">=</span><span class="n">stations</span><span class="p">,</span>
+                <span class="n">station_list</span><span class="o">=</span><span class="n">oxidizer_stations</span><span class="p">,</span>
+                <span class="n">property_name</span><span class="o">=</span><span class="n">property_name</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">caption</span><span class="o">=</span><span class="n">caption</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">tab_cycle</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotPTDiagram</span><span class="p">(</span>
+            <span class="n">station_dicts</span><span class="o">=</span><span class="p">[</span><span class="n">stations</span><span class="p">],</span>
+            <span class="n">station_list</span><span class="o">=</span><span class="n">fuel_stations</span><span class="p">,</span>
+            <span class="n">fluid_name</span><span class="o">=</span><span class="s2">&quot;methane&quot;</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Fuel-side P-T path&quot;</span><span class="p">,</span>
+            <span class="n">scale</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">tab_cycle</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotPTDiagram</span><span class="p">(</span>
+            <span class="n">station_dicts</span><span class="o">=</span><span class="p">[</span><span class="n">stations</span><span class="p">],</span>
+            <span class="n">station_list</span><span class="o">=</span><span class="n">oxidizer_stations</span><span class="p">,</span>
+            <span class="n">fluid_name</span><span class="o">=</span><span class="s2">&quot;oxygen&quot;</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Oxidizer-side P-T path&quot;</span><span class="p">,</span>
+            <span class="n">scale</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, the script validates the saved result contract, chooses the appropriate report content from <code class="docutils literal notranslate"><span class="pre">mode</span></code>, and writes the HTML report.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">script_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span>
+    <span class="n">input_path</span> <span class="o">=</span> <span class="n">script_dir</span> <span class="o">/</span> <span class="n">RESULTS_FILENAME</span>
+    <span class="n">output_path</span> <span class="o">=</span> <span class="n">script_dir</span> <span class="o">/</span> <span class="n">REPORT_FILENAME</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Results</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
+
+    <span class="n">required_keys</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;params&quot;</span><span class="p">,</span> <span class="s2">&quot;thrust_chamber&quot;</span><span class="p">,</span> <span class="s2">&quot;cooling_data&quot;</span><span class="p">}</span>
+    <span class="n">missing_keys</span> <span class="o">=</span> <span class="n">required_keys</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">missing_keys</span><span class="p">:</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing_keys</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">input_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> does not use the expected result format. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Missing: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">mode</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;mode&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;regen_only&quot;</span><span class="p">,</span> <span class="s2">&quot;full_cycle&quot;</span><span class="p">}:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown result mode: </span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generating </span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s2"> report from </span><span class="si">{</span><span class="n">input_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">report</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">Report</span><span class="p">(</span><span class="s2">&quot;Methane Engine&quot;</span><span class="p">)</span>
+    <span class="n">add_common_report_content</span><span class="p">(</span>
+        <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;params&quot;</span><span class="p">],</span>
+        <span class="n">thrust_chamber</span><span class="o">=</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;thrust_chamber&quot;</span><span class="p">],</span>
+        <span class="n">cooling_data</span><span class="o">=</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;cooling_data&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;full_cycle&quot;</span><span class="p">:</span>
+        <span class="n">required_cycle_keys</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;stations&quot;</span><span class="p">,</span> <span class="s2">&quot;residuals&quot;</span><span class="p">}</span>
+        <span class="n">missing_cycle_keys</span> <span class="o">=</span> <span class="n">required_cycle_keys</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">missing_cycle_keys</span><span class="p">:</span>
+            <span class="n">missing</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing_cycle_keys</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Full-cycle result is missing required data: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">add_full_cycle_report_content</span><span class="p">(</span><span class="n">report</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+
+    <span class="n">report</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Report saved to </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A regeneration-only result produces a thrust-chamber and cooling report without an engine-cycle tab. A full-cycle result includes both the chamber analysis and the coupled-cycle diagnostics.</p>
+</section>
 </section>
 
         </article>
@@ -470,8 +1415,26 @@
       <footer>
         
         <div class="related-pages">
-          
-          
+          <a class="next-page" href="../howto/mixture-ratio-optimisation.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Optimise mixture ratio</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="minimal-simulation.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Minimal Simulation</div>
+                
+              </div>
+            </a>
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -490,8 +1453,40 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Engine-Cycle Simulation</a><ul>
+<li><a class="reference internal" href="#choose-the-run-mode">Choose the run mode</a></li>
+<li><a class="reference internal" href="#define-the-design-point">Define the design point</a></li>
+<li><a class="reference internal" href="#build-the-thrust-chamber">Build the thrust chamber</a></li>
+<li><a class="reference internal" href="#initial-station-guesses">Initial station guesses</a></li>
+<li><a class="reference internal" href="#initial-scalar-signals">Initial scalar signals</a></li>
+<li><a class="reference internal" href="#create-the-engine-network">Create the engine network</a><ul>
+<li><a class="reference internal" href="#fluid-and-signal-blocks">Fluid and signal blocks</a></li>
+<li><a class="reference internal" href="#fuel-side-blocks-and-the-pump-load">Fuel-side blocks and the pump load</a></li>
+<li><a class="reference internal" href="#oxidizer-side-blocks">Oxidizer-side blocks</a></li>
+<li><a class="reference internal" href="#seed-pressure-drop-signals-and-solve">Seed pressure-drop signals and solve</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#normalize-cooling-results-and-save-the-simulation">Normalize cooling results and save the simulation</a></li>
+<li><a class="reference internal" href="#generate-the-report">Generate the report</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

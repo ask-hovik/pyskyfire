@@ -201,6 +201,7 @@
 <p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../tutorials/minimal-simulation.html">Minimal Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials/advanced-simulation.html">Engine-Cycle Simulation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
 <ul>
@@ -470,17 +471,17 @@
 <dl class="field-list">
 <dt class="field-odd">Attributes<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
-<dt><strong>h</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a></span></dt><dd><p>Channel height array [m, shape (N,)].</p>
+<dt><strong>h</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a></span></dt><dd><p>Channel height array [m, shape (N,)].</p>
 </dd>
-<dt><strong>theta</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a></span></dt><dd><p>Included wedge angle at each station [rad, shape (N,)].</p>
+<dt><strong>theta</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a></span></dt><dd><p>Included wedge angle at each station [rad, shape (N,)].</p>
 </dd>
-<dt><strong>t_wall</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a></span></dt><dd><p>Wall thickness between coolant and hot-gas side [m, shape (N,)].</p>
+<dt><strong>t_wall</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a></span></dt><dd><p>Wall thickness between coolant and hot-gas side [m, shape (N,)].</p>
 </dd>
-<dt><strong>centerline</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a></span></dt><dd><p>Centerline coordinates <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">r,</span> <span class="pre">θ)</span></code> or equivalent system [shape (N, 3)].</p>
+<dt><strong>centerline</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a></span></dt><dd><p>Centerline coordinates <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">r,</span> <span class="pre">θ)</span></code> or equivalent system [shape (N, 3)].</p>
 </dd>
-<dt><strong>local_coords</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a></span></dt><dd><p>Local orthonormal frames <code class="docutils literal notranslate"><span class="pre">(t,</span> <span class="pre">n,</span> <span class="pre">b)</span></code> at each station [shape (N, 3, 3)].</p>
+<dt><strong>local_coords</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a></span></dt><dd><p>Local orthonormal frames <code class="docutils literal notranslate"><span class="pre">(t,</span> <span class="pre">n,</span> <span class="pre">b)</span></code> at each station [shape (N, 3, 3)].</p>
 </dd>
-<dt><strong>blockage_ratio</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a></span></dt><dd><p>Fraction [0–1] describing coolant blockage (1 = fully blocked).</p>
+<dt><strong>blockage_ratio</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a></span></dt><dd><p>Fraction [0–1] describing coolant blockage (1 = fully blocked).</p>
 </dd>
 </dl>
 </dd>

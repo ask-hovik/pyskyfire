@@ -201,6 +201,7 @@
 <p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../tutorials/minimal-simulation.html">Minimal Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials/advanced-simulation.html">Engine-Cycle Simulation</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
 <ul>
@@ -529,9 +530,9 @@ data points, so the code interpolates in the length fraction, area ratio, theta 
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
-<dt><strong>xs</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-array_like" title="(in NumPy v2.4)"><span>array_like</span></a></span></dt><dd><p>Monotone-increasing axial coordinates [m].</p>
+<dt><strong>xs</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-array_like" title="(in NumPy v2.5)"><span>array_like</span></a></span></dt><dd><p>Monotone-increasing axial coordinates [m].</p>
 </dd>
-<dt><strong>rs</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-array_like" title="(in NumPy v2.4)"><span>array_like</span></a></span></dt><dd><p>Radii [m] corresponding to <code class="docutils literal notranslate"><span class="pre">xs</span></code>.</p>
+<dt><strong>rs</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-array_like" title="(in NumPy v2.5)"><span>array_like</span></a></span></dt><dd><p>Radii [m] corresponding to <code class="docutils literal notranslate"><span class="pre">xs</span></code>.</p>
 </dd>
 </dl>
 </dd>
@@ -543,7 +544,7 @@ data points, so the code interpolates in the length fraction, area ratio, theta 
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>Uses <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.trapezoid.html#numpy.trapezoid" title="(in NumPy v2.4)"><code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.trapezoid()</span></code></a> for the integral. If the throat occurs at the
+<p>Uses <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.trapezoid.html#numpy.trapezoid" title="(in NumPy v2.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.trapezoid()</span></code></a> for the integral. If the throat occurs at the
 first point, returns <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
 </dd></dl>
 
@@ -556,9 +557,9 @@ first point, returns <code class="docutils literal notranslate"><span class="pre
 <dd class="field-odd"><dl>
 <dt><strong>V_goal</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>Target volume [m³].</p>
 </dd>
-<dt><strong>xs_chamber</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-array_like" title="(in NumPy v2.4)"><span>array_like</span></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code> (N,)</span></dt><dd><p>Axial coordinates; must include non-positive values.</p>
+<dt><strong>xs_chamber</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-array_like" title="(in NumPy v2.5)"><span>array_like</span></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code> (N,)</span></dt><dd><p>Axial coordinates; must include non-positive values.</p>
 </dd>
-<dt><strong>ys_chamber</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-array_like" title="(in NumPy v2.4)"><span>array_like</span></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code> (N,)</span></dt><dd><p>Radii corresponding to <code class="docutils literal notranslate"><span class="pre">xs_chamber</span></code>.</p>
+<dt><strong>ys_chamber</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-array_like" title="(in NumPy v2.5)"><span>array_like</span></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code> (N,)</span></dt><dd><p>Radii corresponding to <code class="docutils literal notranslate"><span class="pre">xs_chamber</span></code>.</p>
 </dd>
 </dl>
 </dd>
@@ -621,7 +622,7 @@ volume exceeds the total available volume.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a>]</dt><dd><p><code class="docutils literal notranslate"><span class="pre">(xs,</span> <span class="pre">ys)</span></code> arrays defining the contour.</p>
+<dt><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a>]</dt><dd><p><code class="docutils literal notranslate"><span class="pre">(xs,</span> <span class="pre">ys)</span></code> arrays defining the contour.</p>
 </dd>
 </dl>
 </dd>
@@ -682,7 +683,7 @@ and post-processes them to ensure strictly increasing <code class="docutils lite
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a>]</dt><dd><p><code class="docutils literal notranslate"><span class="pre">(xs,</span> <span class="pre">ys)</span></code> where <code class="docutils literal notranslate"><span class="pre">xs</span></code> are axial coordinates [m] and <code class="docutils literal notranslate"><span class="pre">ys</span></code> are
+<dt><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></a>]</dt><dd><p><code class="docutils literal notranslate"><span class="pre">(xs,</span> <span class="pre">ys)</span></code> where <code class="docutils literal notranslate"><span class="pre">xs</span></code> are axial coordinates [m] and <code class="docutils literal notranslate"><span class="pre">ys</span></code> are
 radii [m], strictly increasing in <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
 </dd>
 </dl>
@@ -737,9 +738,9 @@ angle vs. area ratio.</p></li>
 <dd class="field-odd"><dl>
 <dt><strong>L_c</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>Positive cutoff length (m).</p>
 </dd>
-<dt><strong>xs_chamber</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-array_like" title="(in NumPy v2.4)"><span>array_like</span></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code> (N,)</span></dt><dd><p>Axial coordinates; must include non-positive values.</p>
+<dt><strong>xs_chamber</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-array_like" title="(in NumPy v2.5)"><span>array_like</span></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code> (N,)</span></dt><dd><p>Axial coordinates; must include non-positive values.</p>
 </dd>
-<dt><strong>ys_chamber</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-array_like" title="(in NumPy v2.4)"><span>array_like</span></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code> (N,)</span></dt><dd><p>Radii corresponding to <code class="docutils literal notranslate"><span class="pre">xs_chamber</span></code>.</p>
+<dt><strong>ys_chamber</strong><span class="classifier"><a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-array_like" title="(in NumPy v2.5)"><span>array_like</span></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code> (N,)</span></dt><dd><p>Radii corresponding to <code class="docutils literal notranslate"><span class="pre">xs_chamber</span></code>.</p>
 </dd>
 </dl>
 </dd>
