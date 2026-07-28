@@ -284,6 +284,4 @@ Finally, the script validates the saved result contract, chooses the appropriate
 ```
 
 A regeneration-only result produces a thrust-chamber and cooling report without an engine-cycle tab. A full-cycle result includes both the chamber analysis and the coupled-cycle diagnostics. You can view the report here: 
-<a href="../_static/tutorial-artifacts/advanced-simulation/methane-engine-report.html"> Engine Cycle Report</a>
-
-
+<a href="../_static/tutorial-artifacts/advanced-simulation/methane_engine_report.html"> Engine Cycle Report</a>
