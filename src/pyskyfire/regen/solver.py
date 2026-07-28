@@ -1,8 +1,13 @@
-import numpy as np
 import math
-import pyskyfire.regen.physics as physics
-from scipy.optimize import least_squares
 import warnings
+from dataclasses import dataclass
+
+import numpy as np
+from scipy.optimize import least_squares
+
+from pyskyfire.regen import physics
+
+
 def short_warning(message, category, filename, lineno, file=None, line=None):
     return f"{category.__name__}: {message}\n"
 warnings.formatwarning = short_warning
@@ -23,6 +28,24 @@ class BoundaryConditions:
         self.T_coolant_in = T_coolant_in
         self.p_coolant_in = p_coolant_in
         self.mdot_coolant = mdot_coolant
+
+@dataclass
+class RegenResult:
+    circuit_name: str
+    circuit_index: int
+    x: np.ndarray
+    T: np.ndarray
+    T_static: np.ndarray
+    T_stagnation: np.ndarray
+    p_static: np.ndarray
+    p_stagnation: np.ndarray
+    dQ_dA: np.ndarray
+    velocity: np.ndarray
+    h_hot: np.ndarray
+    h_hot_enthalpy: np.ndarray
+    h_cold: np.ndarray
+    T_aw_hot: np.ndarray
+    residuals: tuple[np.ndarray, np.ndarray]
 
 # ================================================================
 # Physics Class: Encapsulate the heat exchanger calculations
@@ -542,8 +565,7 @@ def solve_heat_exchanger(thrust_chamber, boundary_conditions, n_nodes, circuit_i
     p_static_corrected = np.zeros_like(p_stagnation_arr)
     for i in range(n_nodes):
         # use density at node i (assumes rho(T,p) weakly depends on p)
-        rho_i = thrust_chamber.cooling_circuits[circuit_index] \
-                   .coolant_transport.get_rho(T_cool_arr[i], p_stagnation_arr[i])
+        rho_i = thrust_chamber.cooling_circuits[circuit_index].coolant_transport.get_rho(T_cool_arr[i], p_stagnation_arr[i])
         q_dyn = 0.5 * rho_i * velocity_arr[i]**2
         p_static_corrected[i] = p_stagnation_arr[i] - q_dyn
 
@@ -566,23 +588,24 @@ def solve_heat_exchanger(thrust_chamber, boundary_conditions, n_nodes, circuit_i
 
     global_R, final_R = analyse_residuals(residual_log, n_nodes)
     #print(f"TP was acessed {physics_helper.counter} times")
-    cooling_data = {
-        "x"             : x_domain,
-        "T"             : T_full,
-        "T_static"      : T_cool_arr,
-        "T_stagnation"  : T_stagnation_arr,
-        "p_static"      : p_static_arr,
-        "p_stagnation"  : p_stagnation_arr,
-        "dQ_dA"         : dQ_dA_arr,
-        "velocity"      : velocity_arr,
-        "h_hot"         : h_hot_arr,
-        "h_hot_enthalpy": h_hot_enthalpy_arr,
-        "h_cold"        : h_cold_arr,
-        "T_aw_hot"      : T_aw_hot_arr,
-        "residuals"     : (global_R, final_R)
-    }
 
-    return cooling_data
+    return RegenResult(
+        circuit_name=thrust_chamber.cooling_circuits[circuit_index].name,
+        circuit_index=circuit_index,
+        x=x_domain,
+        T=T_full,
+        T_static=T_cool_arr,
+        T_stagnation=T_stagnation_arr,
+        p_static=p_static_arr,
+        p_stagnation=p_stagnation_arr,
+        dQ_dA=dQ_dA_arr,
+        velocity=velocity_arr,
+        h_hot=h_hot_arr,
+        h_hot_enthalpy=h_hot_enthalpy_arr,
+        h_cold=h_cold_arr,
+        T_aw_hot=T_aw_hot_arr,
+        residuals=(global_R, final_R),
+    )
 
 def analyse_residuals(residual_log, n_cells, p=2):
     """Aggregate local solver residuals into global history and final per-cell vector.

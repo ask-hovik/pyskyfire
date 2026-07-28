@@ -494,8 +494,10 @@ _HTML_TEMPLATE = r'''<!doctype html>
 <body>
   <div class="toolbar">
     <h1>__TITLE__</h1>
+    <button id="save-layout" type="button">Save Layout</button>
     <div class="hint">
-      Drag blocks to arrange the schematic. Scroll to pan; Ctrl/Cmd + scroll to zoom.
+      Drag nodes to arrange the schematic, then use Save Layout to download the
+      current positions. Scroll to pan; Ctrl/Cmd + scroll to zoom.
     </div>
   </div>
   <div id="network-canvas"></div>
@@ -615,6 +617,61 @@ _HTML_TEMPLATE = r'''<!doctype html>
       };
       graph.addEdge(config);
     }
+
+    function currentLayout() {
+      const nodes = {};
+
+      // Save all visible nodes, including boundary station and signal nodes,
+      // so loading the layout restores the complete schematic.
+      const graphNodes = graph.getNodes()
+        .slice()
+        .sort((left, right) => left.id.localeCompare(right.id));
+
+      for (const node of graphNodes) {
+        const position = node.position();
+        nodes[node.id] = {
+          x: position.x,
+          y: position.y,
+        };
+      }
+
+      return {
+        version: 1,
+        nodes,
+        edges: {},
+      };
+    }
+
+    function layoutFilename() {
+      const slug = String(payload.title || "pyskyfire-engine-network")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      return `${slug || "pyskyfire-engine-network"}.layout.json`;
+    }
+
+    function saveLayout() {
+      const json = `${JSON.stringify(currentLayout(), null, 2)}\n`;
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = layoutFilename();
+      link.style.display = "none";
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    document
+      .getElementById("save-layout")
+      .addEventListener("click", saveLayout);
 
     function nodeCenter(node) {
       const bbox = node.getBBox();

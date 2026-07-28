@@ -135,76 +135,19 @@ class PlotContour(PlotBase):
         # Equal aspect: lock y to x
         self.fig.update_yaxes(scaleanchor="x", scaleratio=1)
 
-class PlotWallTemperature(PlotBase):
-    """
-    Build a wall-temperature plot from one or more cooling-data dicts.
-
-    Each input dict must contain:
-      - 'x': 1D array of axial positions
-      - 'T': 2D array (len(x) × n_layers)
-
-    Optional per-dataset label:
-      - 'name': str  (used as legendgroup; defaults to 'Set {i+1}')
-    """
-    def __init__(self,
-                 *cooling_data_dicts,
-                 plot_hot: bool = True,
-                 plot_interfaces: bool = False,
-                 plot_coolant_wall: bool = False,
-                 template: str = "plotly_white"):
-        super().__init__(go.Figure())
-        self.template(template)
-
-        # --- domain building ---
-        for i, data in enumerate(cooling_data_dicts):
-            x = np.asarray(data["x"])
-            T = np.asarray(data["T"])
-            dataset_name = data.get("name", f"Set {i+1}")
-
-            cols = []
-            if plot_coolant_wall and T.shape[1] > 1:
-                cols.append(1)
-            if plot_interfaces and T.shape[1] > 2:
-                cols += list(range(2, T.shape[1] - 1))
-            if plot_hot:
-                cols.append(T.shape[1] - 1)
-
-            for col in cols:
-                dash = "dash" if (plot_interfaces and 2 <= col <= T.shape[1] - 2) else "solid"
-                self.fig.add_trace(go.Scatter(
-                    x=x,
-                    y=T[:, col],
-                    name=(
-                        "Cold Wall" if (col == 1 and plot_coolant_wall)
-                        else "Hot Wall" if (col == T.shape[1] - 1 and plot_hot)
-                        else f"Interface {col - 1}"
-                    ),
-                    legendgroup=dataset_name,
-                    showlegend=True,
-                    line=dict(dash=dash),
-                ))
-
-        # sensible defaults
-        self.layout(
-            title="Wall Temperature",
-            xaxis=dict(title="Axial Position (m)"),
-            yaxis=dict(title="Temperature (K)")
-        )
-
 
 class PlotCoolantTemperature(PlotBase):
-    """
-    Expects dicts with keys: 'x', 'T_static', optional 'name'.
-    """
-    def __init__(self, *cooling_data_dicts):
+    """Plot bulk static coolant temperature from one or more ``RegenResult`` objects."""
+    def __init__(self, *regen_results):
         super().__init__(go.Figure())
         self.template("plotly_white")
 
-        for i, data in enumerate(cooling_data_dicts):
-            x = np.asarray(data["x"])
-            y = np.asarray(data["T_static"])
-            name = data.get("name", f"Set {i+1}")
-            self.fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name=name, showlegend=True))
+        for result in regen_results:
+            x = np.asarray(result.x)
+            y = np.asarray(result.T_static)
+            self.fig.add_trace(
+                go.Scatter(x=x, y=y, mode="lines", name=result.circuit_name, showlegend=True)
+            )
 
         self.fig.update_layout(
             title="Coolant Temperature",
@@ -214,56 +157,149 @@ class PlotCoolantTemperature(PlotBase):
             margin=dict(l=60, r=20, t=60, b=60),
         )
 
-
 class PlotCoolantPressure(PlotBase):
     """
-    Expects dicts with keys: 'x', 'p_static', 'p_stagnation' (either/both may exist), optional 'name'.
-    Use flags to include static and/or stagnation traces.
+    Plot static and/or stagnation coolant pressure for one or more circuits.
+
+    Each input is a ``RegenResult``. The circuit name is used as the legend-group title.
     """
-    def __init__(self, *cooling_data_dicts, static: bool = True, stagnation: bool = True):
+
+    def __init__(
+        self,
+        *regen_results,
+        static: bool = True,
+        stagnation: bool = True,
+        template: str = "plotly_white",
+    ):
         super().__init__(go.Figure())
-        self.template("plotly_white")
+        self.template(template)
 
-        for i, data in enumerate(cooling_data_dicts):
-            x = np.asarray(data["x"])
-            name = data.get("name", f"Set {i+1}")
+        for result in regen_results:
+            x = np.asarray(result.x)
+            circuit_name = result.circuit_name
 
-            if static and "p_static" in data:
-                y_static = np.asarray(data["p_static"])
-                self.fig.add_trace(go.Scatter(
-                    x=x, y=y_static, mode="lines",
-                    name=f"{name} — Static", showlegend=True
-                ))
+            if static:
+                self.fig.add_trace(
+                    go.Scatter(
+                        x=x,
+                        y=np.asarray(result.p_static),
+                        mode="lines",
+                        name="Static Pressure",
+                        legendgroup=circuit_name,
+                        legendgrouptitle=dict(text=circuit_name),
+                        showlegend=True,
+                        line=dict(dash="solid"),
+                    )
+                )
 
-            if stagnation and "p_stagnation" in data:
-                y_stag = np.asarray(data["p_stagnation"])
-                self.fig.add_trace(go.Scatter(
-                    x=x, y=y_stag, mode="lines",
-                    name=f"{name} — Stagnation", showlegend=True
-                ))
+            if stagnation:
+                self.fig.add_trace(
+                    go.Scatter(
+                        x=x,
+                        y=np.asarray(result.p_stagnation),
+                        mode="lines",
+                        name="Stagnation Pressure",
+                        legendgroup=circuit_name,
+                        legendgrouptitle=dict(text=circuit_name),
+                        showlegend=True,
+                        line=dict(dash="dash"),
+                    )
+                )
 
         self.fig.update_layout(
             title="Coolant Pressure",
             xaxis=dict(title="Axial Position (m)"),
             yaxis=dict(title="Pressure (Pa)"),
-            legend=dict(title=None),
+            legend=dict(
+                title=None,
+                tracegroupgap=10,
+            ),
             margin=dict(l=60, r=20, t=60, b=60),
         )
 
+class PlotWallTemperature(PlotBase):
+    """
+    Build a wall-temperature plot from one or more ``RegenResult`` objects.
+
+    ``T`` must have shape ``(len(x), n_layers)``. The circuit name is used as the
+    legend-group title.
+    """
+
+    def __init__(
+        self,
+        *regen_results,
+        plot_hot: bool = True,
+        plot_interfaces: bool = False,
+        plot_coolant_wall: bool = False,
+        template: str = "plotly_white",
+    ):
+        super().__init__(go.Figure())
+        self.template(template)
+
+        for result in regen_results:
+            x = np.asarray(result.x)
+            T = np.asarray(result.T)
+            circuit_name = result.circuit_name
+
+            cols = []
+
+            if plot_coolant_wall and T.shape[1] > 1:
+                cols.append(1)
+
+            if plot_interfaces and T.shape[1] > 2:
+                cols.extend(range(2, T.shape[1] - 1))
+
+            if plot_hot:
+                cols.append(T.shape[1] - 1)
+
+            for col in cols:
+                is_cold_wall = col == 1 and plot_coolant_wall
+                is_hot_wall = col == T.shape[1] - 1 and plot_hot
+                is_interface = plot_interfaces and 2 <= col <= T.shape[1] - 2
+
+                if is_cold_wall:
+                    trace_name = "Cold Wall"
+                elif is_hot_wall:
+                    trace_name = "Hot Wall"
+                else:
+                    trace_name = f"Interface {col - 1}"
+
+                self.fig.add_trace(
+                    go.Scatter(
+                        x=x,
+                        y=T[:, col],
+                        mode="lines",
+                        name=trace_name,
+                        legendgroup=circuit_name,
+                        legendgrouptitle=dict(text=circuit_name),
+                        showlegend=True,
+                        line=dict(dash="dash" if is_interface else "solid"),
+                    )
+                )
+
+        self.fig.update_layout(
+            title="Wall Temperature",
+            xaxis=dict(title="Axial Position (m)"),
+            yaxis=dict(title="Temperature (K)"),
+            legend=dict(
+                title=None,
+                tracegroupgap=10,
+            ),
+            margin=dict(l=60, r=20, t=60, b=60),
+        )
 
 class PlotHeatFlux(PlotBase):
-    """
-    Expects dicts with keys: 'x', 'dQ_dA', optional 'name'.
-    """
-    def __init__(self, *cooling_data_dicts):
+    """Plot wall heat flux from one or more ``RegenResult`` objects."""
+    def __init__(self, *regen_results):
         super().__init__(go.Figure())
         self.template("plotly_white")
 
-        for i, data in enumerate(cooling_data_dicts):
-            x = np.asarray(data["x"])
-            y = np.asarray(data["dQ_dA"])
-            name = data.get("name", f"Set {i+1}")
-            self.fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name=name, showlegend=True))
+        for result in regen_results:
+            x = np.asarray(result.x)
+            y = np.asarray(result.dQ_dA)
+            self.fig.add_trace(
+                go.Scatter(x=x, y=y, mode="lines", name=result.circuit_name, showlegend=True)
+            )
 
         self.fig.update_layout(
             title="Heat Flux",
@@ -275,18 +311,17 @@ class PlotHeatFlux(PlotBase):
 
 
 class PlotVelocity(PlotBase):
-    """
-    Expects dicts with keys: 'x', 'velocity', optional 'name'.
-    """
-    def __init__(self, *cooling_data_dicts):
+    """Plot coolant velocity from one or more ``RegenResult`` objects."""
+    def __init__(self, *regen_results):
         super().__init__(go.Figure())
         self.template("plotly_white")
 
-        for i, data in enumerate(cooling_data_dicts):
-            x = np.asarray(data["x"])
-            y = np.asarray(data["velocity"])
-            name = data.get("name", f"Set {i+1}")
-            self.fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name=name, showlegend=True))
+        for result in regen_results:
+            x = np.asarray(result.x)
+            y = np.asarray(result.velocity)
+            self.fig.add_trace(
+                go.Scatter(x=x, y=y, mode="lines", name=result.circuit_name, showlegend=True)
+            )
 
         self.fig.update_layout(
             title="Coolant Velocity",
@@ -459,27 +494,28 @@ class PlotTemperatureProfile(PlotBase):
     boundary layer at a given axial location x_query.
 
     Inputs:
-      - results: dict with keys "x", "T" (N×n_layers), "T_static", "dQ_dA", "p_static"
+      - result: ``RegenResult`` containing ``x``, ``T`` (N×n_layers), ``T_static``,
+        ``dQ_dA``, and ``p_static``
       - thrust_chamber: provides combustion_transport and cooling circuits
       - circuit_index: which cooling circuit to use for coolant props
       - x_query: axial location (m) to sample
     """
 
-    def __init__(self, results, thrust_chamber, circuit_index: int, x_query: float, n_bl: int = 1000):
+    def __init__(self, result, thrust_chamber, circuit_index: int, x_query: float, n_bl: int = 1000):
         super().__init__(go.Figure())
         self.template("plotly_white")
 
         # ---- 1) nearest axial node ----
-        x_arr = np.asarray(results["x"], dtype=float)
+        x_arr = np.asarray(result.x, dtype=float)
         i = int(np.argmin(np.abs(x_arr - x_query)))
         x0 = float(x_arr[i])
 
         # ---- 2) extract temps & heat flux ----
         T_inf = float(thrust_chamber.combustion_transport.get_T(x0))
-        T_hw  = float(results["T"][i, -1])    # hot-wall
-        T_cw  = float(results["T"][i,  1])    # coolant-side wall
-        T_c   = float(results["T_static"][i]) # bulk coolant
-        qpp   = float(results["dQ_dA"][i])
+        T_hw  = float(result.T[i, -1])    # hot-wall
+        T_cw  = float(result.T[i,  1])    # coolant-side wall
+        T_c   = float(result.T_static[i]) # bulk coolant
+        qpp   = float(result.dQ_dA[i])
 
         # ---- 3) gas-side BL (1/7th power law) ----
         k_g   = float(thrust_chamber.combustion_transport.get_k(x0))
@@ -493,7 +529,7 @@ class PlotTemperatureProfile(PlotBase):
         )
 
         # ---- 4) wall layers (hot→coolant) ----
-        Ts_rev   = results["T"][i, 1:]       # coolant-side → hot-side
+        Ts_rev   = result.T[i, 1:]       # coolant-side → hot-side
         Ts_wall  = Ts_rev[::-1]              # hot-side → coolant-side (interfaces included)
         walls    = thrust_chamber.cooling_circuits[circuit_index].walls
         thicknesses = [float(w.thickness(x0)) for w in walls]
@@ -501,7 +537,7 @@ class PlotTemperatureProfile(PlotBase):
         wall_thickness = float(y_w[-1])
 
         # ---- 5) coolant BL (1/7th power law) ----
-        p_static = float(results["p_static"][i])
+        p_static = float(result.p_static[i])
         T_film   = 0.5 * (T_c + T_cw)
         coolant  = thrust_chamber.cooling_circuits[circuit_index].coolant_transport
         k_c      = float(coolant.get_k(T_film, p_static))
@@ -595,32 +631,30 @@ class PlotHeatTransferCoefficient(PlotBase):
     """
     Plot returned regenerative-cooling heat transfer coefficients.
 
-    Expects dicts with keys:
-      - 'x'
-      - 'h_hot'   : effective hot-side temperature-based h [W/m²/K]
-      - 'h_cold'  : coolant-side h [W/m²/K]
-    Optional:
-      - 'name'
+    Expects one or more ``RegenResult`` objects.
+
+    ``h_hot`` is the effective hot-side temperature-based coefficient and
+    ``h_cold`` is the coolant-side coefficient, both in W/m²/K.
     """
 
-    def __init__(self, *cooling_data_dicts, hot: bool = True, cold: bool = True):
+    def __init__(self, *regen_results, hot: bool = True, cold: bool = True):
         super().__init__(go.Figure())
         self.template("plotly_white")
 
-        for i, data in enumerate(cooling_data_dicts):
-            x = np.asarray(data["x"])
-            name = data.get("name", f"Set {i+1}")
+        for result in regen_results:
+            x = np.asarray(result.x)
+            name = result.circuit_name
 
-            if hot and "h_hot" in data:
-                y_hot = np.asarray(data["h_hot"])
+            if hot:
+                y_hot = np.asarray(result.h_hot)
                 self.fig.add_trace(go.Scatter(
                     x=x, y=y_hot, mode="lines",
                     name=f"{name} — Hot side",
                     showlegend=True,
                 ))
 
-            if cold and "h_cold" in data:
-                y_cold = np.asarray(data["h_cold"])
+            if cold:
+                y_cold = np.asarray(result.h_cold)
                 self.fig.add_trace(go.Scatter(
                     x=x, y=y_cold, mode="lines",
                     name=f"{name} — Coolant side",

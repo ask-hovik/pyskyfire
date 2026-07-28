@@ -99,11 +99,6 @@ class FilmCooling:
 class CoolingCircuit:
     """
     Simulation-only representation of a cooling circuit.
-
-    Notes
-    -----
-    - No OCC / geometry generation here.
-    - Does NOT compute true local frames; those are a visualization concern.
     """
 
     def __init__(
@@ -269,8 +264,9 @@ class CoolingCircuit:
         # Get 1-point profiles at x (needed by cross-section closure)
         prof_x = self.section_profiles_at(x)
 
-        # Representative wall conductivity (use liner/wall[0]; consistent with your wall stack usage)
-        k_wall = float(self.walls[0].material.get_k(T_wall_rep))
+        # Representative wall conductivity consistent with your wall stack usage)
+        # Uses material next to coolant as material. Beware if added nickel coating is used TODO: implement a callout for which meterial is used as rib. 
+        k_wall = float(self.walls[-1].material.get_k(T_wall_rep))
 
         # Cross-section provides R per unit channel length
         R_s = float(self.cross_section.R_coolant_per_len(prof_x, np.array([h_c]), k_wall)[0])
@@ -367,8 +363,6 @@ class ThrustChamber:
     • Compute per-circuit wedge angles (theta) and heights (h)
     • Trigger each circuit's precompute/finalize (A, Dh, perimeters, volume)
     • (Optionally) trigger combustion aerothermodynamics
-
-    No visualization, no OCC/GMsh imports, no multiple angular copies.
     """
 
     def __init__(

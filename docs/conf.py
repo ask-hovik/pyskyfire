@@ -156,10 +156,13 @@ def copy_docs_artifacts(app) -> None:
         destination=(
             output_static
             / "tutorial-artifacts"
-            / "advanced-cycle-simulation"
+            / "advanced-simulation"
         ),
         required_files={
             "methane_engine_report.html",
+            "contour.html",
+            "network.html",
+            "engine-3d.html"
         },
     )
 

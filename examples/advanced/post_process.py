@@ -15,7 +15,7 @@ REPORT_FILENAME = "methane_engine_report.html"
 
 
 # tutorial:start:common-report
-def add_common_report_content(report, params, thrust_chamber, cooling_data):
+def add_common_report_content(output_dir, report, params, thrust_chamber, cooling_data):
     """Add report tabs available for both regen-only and full-cycle results."""
 
     # Parameters
@@ -39,8 +39,12 @@ def add_common_report_content(report, params, thrust_chamber, cooling_data):
     tab_overview = report.add_tab("Engine Overview")
     """engine_viewer = psf.viz.make_engine_3d(thrust_chamber, show=False)
     tab_overview.add_iframe(engine_viewer.data_url, caption="Engine 3D")
+    engine_viewer.save_html(output_dir / "engine-3d.html")
     engine_viewer.close()"""
-    tab_overview.add_figure(psf.viz.PlotContour(thrust_chamber.contour))
+
+    contour_plot = psf.viz.PlotContour(thrust_chamber.contour)
+    tab_overview.add_figure(contour_plot)
+    contour_plot.save_html(output_dir / "contour.html")
 
     # Cooling data
     ordered_cooling_data = list(cooling_data.values())
@@ -94,11 +98,12 @@ def add_common_report_content(report, params, thrust_chamber, cooling_data):
 
 
 # tutorial:start:cycle-report
-def add_full_cycle_report_content(report, results):
+def add_full_cycle_report_content(output_dir, report, results):
     """Add network and station plots that require a full-cycle result."""
 
     stations = results["stations"]
     residuals = results["residuals"]
+    net = results["net"]
 
     tab_cycle = report.add_tab("Engine Cycle")
     tab_cycle.add_figure(
@@ -122,8 +127,6 @@ def add_full_cycle_report_content(report, results):
         "ox_pump_in",
         "ox_pump_out",
         "ox_regen_in",
-        "ox_regen_1_in",
-        "ox_regen_1_out",
         "ox_regen_out",
         "ox_turbine_in",
         "ox_turbine_out",
@@ -134,7 +137,6 @@ def add_full_cycle_report_content(report, results):
     for property_name, caption in (
         ("p", "Fuel-side pressure"),
         ("T", "Fuel-side temperature"),
-        ("mdot", "Fuel-side mass flow"),
     ):
         tab_cycle.add_figure(
             psf.viz.PlotStationProperty(
@@ -148,7 +150,6 @@ def add_full_cycle_report_content(report, results):
     for property_name, caption in (
         ("p", "Oxidizer-side pressure"),
         ("T", "Oxidizer-side temperature"),
-        ("mdot", "Oxidizer-side mass flow"),
     ):
         tab_cycle.add_figure(
             psf.viz.PlotStationProperty(
@@ -158,6 +159,9 @@ def add_full_cycle_report_content(report, results):
             ),
             caption=caption,
         )
+
+    sankey = psf.viz.PlotMassFlowSankey(engine_network=net, title="Methane Engine Mass Flow",)
+    tab_cycle.add_figure(sankey)
 
     tab_cycle.add_figure(
         psf.viz.PlotPTDiagram(
@@ -178,11 +182,17 @@ def add_full_cycle_report_content(report, results):
         )
     )
 
+    NETWORK_LAYOUT_PATH = (
+    Path(__file__).resolve()
+    .with_name("methane-engine-cycle.layout.json")
+)
     tab_network = report.add_tab("Engine Network")
     viewer = psf.viz.make_network_viz(
         results["net"],
         title="Methane engine cycle",
+        layout=NETWORK_LAYOUT_PATH,
     )
+    viewer.save_html(path=output_dir / "network.html")
     tab_network.add_iframe(
         viewer.data_url,
         caption="Editable engine-cycle schematic",
@@ -193,10 +203,14 @@ def add_full_cycle_report_content(report, results):
 
 
 # tutorial:start:generate-report
-def main():
+def main(output_dir: Path | None = None):
     script_dir = Path(__file__).resolve().parent
     input_path = script_dir / RESULTS_FILENAME
     output_path = script_dir / REPORT_FILENAME
+
+    if output_dir is None:
+        output_dir = Path(__file__).parent
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     results = psf.common.Results.load(input_path)
 
@@ -217,6 +231,7 @@ def main():
 
     report = psf.viz.Report("Methane Engine")
     add_common_report_content(
+        output_dir=output_dir,
         report=report,
         params=results["params"],
         thrust_chamber=results["thrust_chamber"],
@@ -231,7 +246,7 @@ def main():
             raise ValueError(
                 f"Full-cycle result is missing required data: {missing}."
             )
-        add_full_cycle_report_content(report, results)
+        add_full_cycle_report_content(output_dir, report, results)
 
     report.save_html(output_path)
     print(f"Report saved to {output_path}")

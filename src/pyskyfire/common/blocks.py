@@ -400,8 +400,8 @@ class RegenBlock(FluidBlock):
                        )
 
         # downstream thermo state
-        T_out = cooling_data["T_stagnation"][-1]
-        p_out = cooling_data["p_stagnation"][-1]
+        T_out = cooling_data.T_stagnation[-1]
+        p_out = cooling_data.p_stagnation[-1]
 
         # pressure loss across the circuit (positive number)
         dp = p_in - p_out
