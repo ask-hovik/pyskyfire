@@ -1,6 +1,6 @@
 
-import os
 import math
+import os
 import warnings
 from typing import Optional
 
@@ -8,14 +8,15 @@ from typing import Optional
 script_dir = os.path.dirname(os.path.abspath(__file__))
 trans_path = os.path.join(script_dir, "data", r"trans.lib")
 os.environ["CEA_TRANS_LIB"] = trans_path
-import CEA_Wrap as cea
+# TODO: I think with the upgraded CEA_Wrap, I can remove this.
 
-from dataclasses import dataclass, asdict
-import numpy as np
 from bisect import bisect_left
 
+import CEA_Wrap as cea
+import numpy as np
 
-class Aerothermodynamics:  
+
+class Aerothermodynamics:
     """Aerothermodynamic property precomputation and lookup along an engine contour.
 
     This class computes 2-D thermo/fluid property maps along a prescribed
@@ -180,19 +181,19 @@ class Aerothermodynamics:
 
         for prop, frac in zip(ox.propellants, ox.fractions):
             oxs.append(cea.Oxidizer(prop, wt=frac, temp=T_ox_in))
-        
-        rp = cea.RocketProblem(o_f = MR, 
+
+        rp = cea.RocketProblem(o_f = MR,
                                pressure=p_c*0.000145038, # Convert Pa to psi
-                               materials=[*oxs, *fus], 
-                               sup=eps) 
+                               materials=[*oxs, *fus],
+                               sup=eps)
         R = rp.run()
-        
+
         #names = cea.ThermoInterface.keys()
         #print(names)
 
-        c_star = float(getattr(R, "cstar"))           
+        c_star = float(getattr(R, "cstar"))
         Isp_ideal_amb = float(getattr(R, "isp"))      # perfectly expanded Isp
-        Isp_vac = float(getattr(R, "ivac"))           
+        Isp_vac = float(getattr(R, "ivac"))
         rho_c = float(getattr(R, "c_rho"))
         T_c = float(getattr(R, "c_t"))
         T_t = float(getattr(R, "t_t"))
@@ -229,7 +230,7 @@ class Aerothermodynamics:
         )
 
         return cls(optimum)
-    
+
     @classmethod
     def from_F_pe_Lstar(cls, fu, ox, MR, p_c, F, p_e, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, npts=15):
         """Construct from thrust, area ratio, and L* at a given chamber pressure.
@@ -284,20 +285,20 @@ class Aerothermodynamics:
 
         for prop, frac in zip(ox.propellants, ox.fractions):
             oxs.append(cea.Oxidizer(prop, wt=frac, temp=T_ox_in))
-        
-        rp = cea.RocketProblem(o_f = MR, 
+
+        rp = cea.RocketProblem(o_f = MR,
                                pressure=p_c*0.000145038, # Convert Pa to psi
-                               materials=[*oxs, *fus], 
-                               pip=p_c/p_e) 
+                               materials=[*oxs, *fus],
+                               pip=p_c/p_e)
         R = rp.run()
-        
+
         #names = cea.ThermoInterface.keys()
         #print(names)
-        
+
         eps = float(getattr(R, "ae"))
-        c_star = float(getattr(R, "cstar"))           
+        c_star = float(getattr(R, "cstar"))
         Isp_ideal_amb = float(getattr(R, "isp"))      # perfectly expanded Isp
-        Isp_vac = float(getattr(R, "ivac"))           
+        Isp_vac = float(getattr(R, "ivac"))
         rho_c = float(getattr(R, "c_rho"))
         T_c = float(getattr(R, "c_t"))
         T_t = float(getattr(R, "t_t"))
@@ -404,7 +405,7 @@ class Aerothermodynamics:
 
         for prop, frac in zip(ox.propellants, ox.fractions):
             oxs.append(cea.Oxidizer(prop, wt=frac, temp=self.T_ox_in))
-        
+
 
         for i, (x, eps) in enumerate(zip(self.x_nodes, eps_nodes)):
             output = True
@@ -464,7 +465,7 @@ class Aerothermodynamics:
                 self.h_map[i, j]     = getattr(Rt, "h", None)
                 self.a_map[i, j]     = getattr(Rt, "son", None)
                 self.mu_map[i, j]    = getattr(Rt, "visc", None)
-                self.k_map[i, j]     = getattr(Rt, "cond", None) / 10 # there is a unit handling mismatch between TPProblem and RocketProblem in CEA_Wrap. 
+                self.k_map[i, j]     = getattr(Rt, "cond", None) / 10 # there is a unit handling mismatch between TPProblem and RocketProblem in CEA_Wrap.
                 self.Pr_map[i, j]    = getattr(Rt, "pran", None)
                 self.mw_map[i, j]    = getattr(Rt, "mw", None)
 
@@ -513,8 +514,8 @@ class Aerothermodynamics:
             print(f"a:     \n{self.a_map}")
             print(f"mu:    \n{self.mu_map}")
             print(f"k:     \n{self.k_map}")
-            print(f"X_map:     \n{self.X_map}")   
-            s = input() 
+            print(f"X_map:     \n{self.X_map}")
+            s = input()
 
     # ---------- Getter functionality ----------
     def _interp_scalar(self, x: float, xs: np.ndarray, ys: np.ndarray) -> float:
@@ -797,4 +798,3 @@ def _mw_from_exploded(chemrep: str) -> float:
             raise KeyError(f"Element {sym!r} not in periodic table; extend _PERIODIC.")
         mw += _PERIODIC[sym] * n
     return mw
-

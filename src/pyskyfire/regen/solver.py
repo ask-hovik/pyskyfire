@@ -104,7 +104,7 @@ class HeatExchangerPhysics:
         H_g = self.thrust_chamber.combustion_transport.get_h(x)
         try:
             H_hw = self.thrust_chamber.combustion_transport.get_h(x, T=T_hw)
-        except:
+        except Exception: # noqa: BLE001
             H_hw = H_g
 
         M_g = self.thrust_chamber.combustion_transport.get_M(x)

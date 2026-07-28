@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import numpy as np
-from math import gcd
-from functools import reduce
 from dataclasses import dataclass
 from typing import Optional
 
+import numpy as np
+
 from pyskyfire.regen.cross_section import SectionProfiles
-from pyskyfire.regen.channel_placement import SurfacePlacement, InternalPlacement
 from pyskyfire.skycea.coolant_transport import CoolantTransport
 
 
@@ -149,7 +147,7 @@ class CoolingCircuit:
         return np.sum(parts, axis=0, dtype=float)
 
     # ---------------- profiles bundle ----------------
-    def _prof(self, centerline: np.ndarray) -> "SectionProfiles":
+    def _prof(self, centerline: np.ndarray) -> SectionProfiles:
         """
         Build a SectionProfiles with trivial frames (analytics don't use them).
         """
