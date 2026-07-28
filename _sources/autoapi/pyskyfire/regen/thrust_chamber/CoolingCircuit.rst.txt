@@ -18,10 +18,6 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
 
 
 
-   .. rubric:: Notes
-
-   - No OCC / geometry generation here.
-   - Does NOT compute true local frames; those are a visualization concern.
 
 
 

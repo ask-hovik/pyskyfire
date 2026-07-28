@@ -1,0 +1,202 @@
+pyskyfire.viz.sankey.PlotMassFlowSankey
+=======================================
+
+.. py:class:: pyskyfire.viz.sankey.PlotMassFlowSankey(engine_network: Any, *, title: str | None = 'Engine Mass-Flow Sankey', template: str = 'plotly_white', min_mdot: float = 1e-12, node_thickness: int = 20, node_pad: int = 18, orientation: Literal['h', 'v'] = 'v', arrangement: Literal['snap', 'perpendicular', 'freeform', 'fixed'] = 'freeform', height: int | None = 800, width: int | None = None)
+
+   Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.viz.sankey.PlotMassFlowSankey
+      :parts: 1
+      :private-bases:
+
+
+   
+   Render a converged engine network as a mass-flow Sankey diagram.
+
+
+   :Parameters:
+
+       **engine_network:**
+           A converged :class:`~pyskyfire.common.EngineNetwork`.  It must expose
+           ``stations`` and ``blocks``.  The station map supplies the converged
+           mass flows; block ``station_inputs`` / ``station_outputs`` metadata
+           supplies connectivity.
+
+       **title:**
+           Figure title.  Set to ``None`` to omit it.
+
+       **template:**
+           Plotly template name.
+
+       **min_mdot:**
+           Positive links at or below this threshold [kg/s] are omitted.  Their
+           station nodes remain visible, which helps reveal unconnected or
+           effectively closed branches.
+
+       **node_thickness, node_pad:**
+           Plotly Sankey node geometry in pixels.
+
+       **orientation:**
+           ``"v"`` (default) draws the engine flow from top to bottom.  This gives
+           Plotly native horizontal node bars and horizontal station labels, which
+           remain attached during every Plotly redraw.  Use ``"h"`` for the
+           conventional left-to-right Sankey orientation.
+
+       **arrangement:**
+           Plotly node-placement mode.  ``"freeform"`` (default) lets the user drag
+           stations anywhere in the Sankey canvas after the automatic layout has
+           been generated.  Use ``"perpendicular"`` to restrict dragging across
+           the flow direction, ``"snap"`` for Plotly-managed spacing, or
+           ``"fixed"`` to disable node dragging.
+
+       **height, width:**
+           Optional figure dimensions in pixels.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   Stations are the Sankey nodes, while fluid blocks are the links.  The
+   layout uses the first appearance of each station in the ordered block list
+   to form the main flow progression.  Links that return to an earlier
+   station are retained as Plotly cyclic links, allowing pump recirculation
+   and other closed engine flows to be displayed.
+
+   A literal ``station -> same station`` block cannot be represented directly
+   by Plotly.  In that rare case the plot adds a small virtual return node so
+   the physical loop remains visible without creating a broken self-link.
+
+   ``"freeform"`` changes the browser-side figure only.  Regenerating the
+   plot from Python recreates the automatic initial layout unless the edited
+   node coordinates are later saved and supplied back to the plot.
+
+   Station nodes and flow links are coloured by fluid medium.  A pure fluid
+   such as ``CH4`` or ``O2`` receives a deterministic colour.  A mixture is
+   keyed by its sorted species/fraction pairs, so for example
+   ``O2 + H2O + CO2`` is distinct from pure ``O2`` while receiving the same
+   colour in every generated Sankey diagram.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _build_links(*, stations: dict[str, Any], blocks: list[Any], virtual_nodes: dict[str, tuple[str, str]]) -> list[_FlowLink]
+
+      
+      Translate declared fluid-block topology into station-to-station links.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _layout_nodes(node_names: list[str], links: list[_FlowLink], node_order: list[str], node_media: dict[str, str], *, orientation: Literal['h', 'v']) -> tuple[list[float], list[float]]
+      :staticmethod:
+
+
+      
+      Assign deterministic node positions while retaining cycles.
+
+      Stations are initially ordered by first appearance in the block list.
+      A link to an earlier station becomes a feedback link.  Removing only
+      these feedback links leaves an acyclic graph for progression assignment;
+      the original feedback links are still passed to Plotly and are rendered
+      as recirculation loops.
+
+      The internal coordinate layout always uses progress on x and fluid
+      lanes on y.  Plotly rotates that internal layout when
+      ``orientation="v"`` is selected, producing a top-to-bottom flow with
+      side-by-side fluid lanes on screen.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _station_media(stations: dict[str, Any], blocks: list[Any]) -> dict[str, str]
+      :staticmethod:
+
+
+      
+      Associate every station with the first fluid medium that touches it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _station_order(stations: dict[str, Any], blocks: list[Any]) -> list[str]
+      :staticmethod:
+
+
+      
+      Return deterministic station order led by fluid-block declaration order.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

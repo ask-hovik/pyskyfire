@@ -1,0 +1,270 @@
+pyskyfire.viz.sankey
+====================
+
+.. py:module:: pyskyfire.viz.sankey
+
+.. autoapi-nested-parse::
+
+   Mass-flow Sankey diagrams for converged PyskyFire engine networks.
+
+   The diagram uses fluid stations as Sankey nodes and fluid blocks as the links
+   between them.  This gives splitters and mergers their expected Sankey meaning:
+
+   * a splitter's branch-link widths are the outlet-station mass flows;
+   * a merger's branch-link widths are the inlet-station mass flows; and
+   * an ordinary one-in/one-out block uses its outlet-station mass flow.
+
+   The only required input is a converged :class:`~pyskyfire.common.EngineNetwork`.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/viz/sankey/PlotMassFlowSankey
+   /autoapi/pyskyfire/viz/sankey/_FlowLink
+
+.. autoapisummary::
+
+   pyskyfire.viz.sankey.PlotMassFlowSankey
+   pyskyfire.viz.sankey._FlowLink
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.viz.sankey._darken
+   pyskyfire.viz.sankey._finite_positive
+   pyskyfire.viz.sankey._flatten_station_keys
+   pyskyfire.viz.sankey._format_fraction
+   pyskyfire.viz.sankey._format_station_hover
+   pyskyfire.viz.sankey._medium_color
+   pyskyfire.viz.sankey._medium_identity
+   pyskyfire.viz.sankey._pretty_station_name
+   pyskyfire.viz.sankey._rgba
+
+
+Module Contents
+---------------
+
+.. py:function:: _darken(hex_color: str, factor: float = 0.72) -> str
+
+   
+   Return a darker version of a ``#RRGGBB`` colour for node borders.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _finite_positive(value: Any, min_mdot: float) -> float | None
+
+   
+   Return a usable mass flow, or ``None`` when it cannot form a Sankey link.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _flatten_station_keys(value: Any) -> list[str]
+
+   
+   Return station keys from scalar or nested-list block metadata.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _format_fraction(value: Any) -> str
+
+   
+   Return a compact, deterministic representation of a mixture fraction.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _format_station_hover(name: str, station: Any, medium: str) -> str
+
+   
+   Build a compact HTML hover label for a station node.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _medium_color(medium_identity: str) -> str
+
+   
+   Return a deterministic, medium-specific colour.
+
+   The digest gives each canonical medium identity a stable pseudo-random hue.
+   Saturation and value are also varied slightly so common media remain
+   visually distinguishable without requiring a user-managed colour table.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _medium_identity(medium: Any) -> str
+
+   
+   Return a stable identity string for a pure fluid or fluid mixture.
+
+   Strings are treated as pure-fluid identifiers.  Objects exposing
+   ``propellants`` and ``fractions`` are canonicalised as sorted
+   species/fraction pairs, so the same mixture receives the same colour even
+   when components were supplied in a different order.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _pretty_station_name(name: str) -> str
+
+   
+   Make underscore-separated station keys easier to read without changing them.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _rgba(hex_color: str, alpha: float) -> str
+
+   
+   Convert a ``#RRGGBB`` colour to Plotly-compatible rgba text.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

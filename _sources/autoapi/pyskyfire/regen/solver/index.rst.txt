@@ -12,11 +12,13 @@ Classes
 
    /autoapi/pyskyfire/regen/solver/BoundaryConditions
    /autoapi/pyskyfire/regen/solver/HeatExchangerPhysics
+   /autoapi/pyskyfire/regen/solver/RegenResult
 
 .. autoapisummary::
 
    pyskyfire.regen.solver.BoundaryConditions
    pyskyfire.regen.solver.HeatExchangerPhysics
+   pyskyfire.regen.solver.RegenResult
 
 
 Functions

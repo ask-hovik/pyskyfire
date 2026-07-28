@@ -1,7 +1,7 @@
 pyskyfire.viz.plot_regen.PlotVelocity
 =====================================
 
-.. py:class:: pyskyfire.viz.plot_regen.PlotVelocity(*cooling_data_dicts)
+.. py:class:: pyskyfire.viz.plot_regen.PlotVelocity(*regen_results)
 
    Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
 
@@ -11,7 +11,7 @@ pyskyfire.viz.plot_regen.PlotVelocity
 
 
    
-   Expects dicts with keys: 'x', 'velocity', optional 'name'.
+   Plot coolant velocity from one or more ``RegenResult`` objects.
 
 
 

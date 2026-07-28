@@ -1,0 +1,25 @@
+pyskyfire.viz.sankey._FlowLink
+==============================
+
+.. py:class:: pyskyfire.viz.sankey._FlowLink
+
+   
+   One directed mass-flow connection in the rendered Sankey graph.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

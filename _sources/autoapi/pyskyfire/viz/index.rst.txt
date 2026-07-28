@@ -20,5 +20,6 @@ Submodules
    /autoapi/pyskyfire/viz/plot_regen/index
    /autoapi/pyskyfire/viz/plot_skycea/index
    /autoapi/pyskyfire/viz/report/index
+   /autoapi/pyskyfire/viz/sankey/index
 
 

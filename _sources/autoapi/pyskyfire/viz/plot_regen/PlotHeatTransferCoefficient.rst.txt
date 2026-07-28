@@ -1,7 +1,7 @@
 pyskyfire.viz.plot_regen.PlotHeatTransferCoefficient
 ====================================================
 
-.. py:class:: pyskyfire.viz.plot_regen.PlotHeatTransferCoefficient(*cooling_data_dicts, hot: bool = True, cold: bool = True)
+.. py:class:: pyskyfire.viz.plot_regen.PlotHeatTransferCoefficient(*regen_results, hot: bool = True, cold: bool = True)
 
    Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
 
@@ -13,12 +13,10 @@ pyskyfire.viz.plot_regen.PlotHeatTransferCoefficient
    
    Plot returned regenerative-cooling heat transfer coefficients.
 
-   Expects dicts with keys:
-     - 'x'
-     - 'h_hot'   : effective hot-side temperature-based h [W/m²/K]
-     - 'h_cold'  : coolant-side h [W/m²/K]
-   Optional:
-     - 'name'
+   Expects one or more ``RegenResult`` objects.
+
+   ``h_hot`` is the effective hot-side temperature-based coefficient and
+   ``h_cold`` is the coolant-side coefficient, both in W/m²/K.
 
 
 

@@ -26,8 +26,6 @@ pyskyfire.regen.thrust_chamber.ThrustChamber
    • Trigger each circuit's precompute/finalize (A, Dh, perimeters, volume)
    • (Optionally) trigger combustion aerothermodynamics
 
-   No visualization, no OCC/GMsh imports, no multiple angular copies.
-
 
 
    ..

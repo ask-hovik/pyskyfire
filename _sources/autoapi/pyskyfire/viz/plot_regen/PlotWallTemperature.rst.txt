@@ -1,7 +1,7 @@
 pyskyfire.viz.plot_regen.PlotWallTemperature
 ============================================
 
-.. py:class:: pyskyfire.viz.plot_regen.PlotWallTemperature(*cooling_data_dicts, plot_hot: bool = True, plot_interfaces: bool = False, plot_coolant_wall: bool = False, template: str = 'plotly_white')
+.. py:class:: pyskyfire.viz.plot_regen.PlotWallTemperature(*regen_results, plot_hot: bool = True, plot_interfaces: bool = False, plot_coolant_wall: bool = False, template: str = 'plotly_white')
 
    Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
 
@@ -11,14 +11,10 @@ pyskyfire.viz.plot_regen.PlotWallTemperature
 
 
    
-   Build a wall-temperature plot from one or more cooling-data dicts.
+   Build a wall-temperature plot from one or more ``RegenResult`` objects.
 
-   Each input dict must contain:
-     - 'x': 1D array of axial positions
-     - 'T': 2D array (len(x) × n_layers)
-
-   Optional per-dataset label:
-     - 'name': str  (used as legendgroup; defaults to 'Set {i+1}')
+   ``T`` must have shape ``(len(x), n_layers)``. The circuit name is used as the
+   legend-group title.
 
 
 

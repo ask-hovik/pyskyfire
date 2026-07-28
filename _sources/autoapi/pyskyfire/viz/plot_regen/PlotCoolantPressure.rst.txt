@@ -1,7 +1,7 @@
 pyskyfire.viz.plot_regen.PlotCoolantPressure
 ============================================
 
-.. py:class:: pyskyfire.viz.plot_regen.PlotCoolantPressure(*cooling_data_dicts, static: bool = True, stagnation: bool = True)
+.. py:class:: pyskyfire.viz.plot_regen.PlotCoolantPressure(*regen_results, static: bool = True, stagnation: bool = True, template: str = 'plotly_white')
 
    Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
 
@@ -11,9 +11,9 @@ pyskyfire.viz.plot_regen.PlotCoolantPressure
 
 
    
-   Expects dicts with keys: 'x', 'p_static', 'p_stagnation' (either/both may exist), optional 'name'.
-   Use flags to include static and/or stagnation traces.
+   Plot static and/or stagnation coolant pressure for one or more circuits.
 
+   Each input is a ``RegenResult``. The circuit name is used as the legend-group title.
 
 
 

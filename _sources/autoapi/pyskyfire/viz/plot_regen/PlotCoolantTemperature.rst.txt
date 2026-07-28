@@ -1,7 +1,7 @@
 pyskyfire.viz.plot_regen.PlotCoolantTemperature
 ===============================================
 
-.. py:class:: pyskyfire.viz.plot_regen.PlotCoolantTemperature(*cooling_data_dicts)
+.. py:class:: pyskyfire.viz.plot_regen.PlotCoolantTemperature(*regen_results)
 
    Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
 
@@ -11,7 +11,7 @@ pyskyfire.viz.plot_regen.PlotCoolantTemperature
 
 
    
-   Expects dicts with keys: 'x', 'T_static', optional 'name'.
+   Plot bulk static coolant temperature from one or more ``RegenResult`` objects.
 
 
 
