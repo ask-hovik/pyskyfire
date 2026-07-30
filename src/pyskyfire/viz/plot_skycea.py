@@ -7,11 +7,10 @@ _PROP_INFO = {
     "M":   ("M", ""),
     "gamma": ("γ", ""),
     "T":   ("T", "K"),
-    "p":   ("p", "Pa"),          # note: p_map in Aerothermodynamics stores bar in maps;
-                                 # here we still plot the equilibrium column raw unless you prefer Pa.
-    "h":   ("h", "kJ/kg"),       # maps are kJ/kg; change label if you convert
-    "cp":  ("cₚ (mass)", "kJ/(kg·K)"),
-    "cv":  ("cᵥ (mass)", "kJ/(kg·K)"),
+    "p":   ("p", "Pa"),
+    "h":   ("h", "J/kg"),
+    "cp":  ("cₚ (mass)", "J/(kg·K)"),
+    "cv":  ("cᵥ (mass)", "J/(kg·K)"),
     "k":   ("k", "W/(m·K)"),
     "mu":  ("μ", "Pa·s"),
     "Pr":  ("Pr", "–"),
@@ -21,12 +20,10 @@ _PROP_INFO = {
 
 class PlotTransportProperty(PlotBase):
     """
-    Plot a single transport-property map (equilibrium column vs x) for one or more
-    Aerothermodynamics objects.
+    Plot one equilibrium transport property against axial position.
 
-    Each object must have:
-      - .x_nodes (built by compute_aerothermodynamics)
-      - .<prop>_map with shape (Nx, Nt); we use column 0 (equilibrium).
+    The current live-solve interface is sampled through ``get_<prop>``.  Old
+    precomputed-map objects remain supported for compatibility.
     """
 
     def __init__(self, *ats, prop: str, template: str = "plotly_white"):
@@ -41,14 +38,22 @@ class PlotTransportProperty(PlotBase):
 
         for i, at in enumerate(ats):
             x = np.asarray(getattr(at, "x_nodes"), dtype=float)
-            Z = np.asarray(getattr(at, map_attr), dtype=float)   # (Nx, Nt)
-            y = Z[:, 0]  # equilibrium column
+            getter = getattr(at, f"get_{prop}", None)
+            if getter is not None:
+                y = np.asarray([getter(x_i) for x_i in x], dtype=float)
+            else:
+                Z = np.asarray(getattr(at, map_attr), dtype=float)
+                y = Z[:, 0]
+                if prop == "p":       # legacy maps store bar
+                    y = y * 1.0e5
+                elif prop in {"h", "cp", "cv"}:  # legacy maps store kJ units
+                    y = y * 1.0e3
 
             name = getattr(at, "name", f"Set {i+1}")
             self.fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name=name, showlegend=True))
 
         self.fig.update_layout(
-            title=f"{y_label} map",
+            title=f"{y_label} profile",
             xaxis=dict(title="Axial position, x (m)"),
             yaxis=dict(title=f"{y_label}" + (f" ({unit})" if unit else "")),
             legend=dict(title=None),

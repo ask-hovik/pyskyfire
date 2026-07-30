@@ -1,5 +1,4 @@
 import math
-import warnings
 from dataclasses import dataclass
 
 import numpy as np
@@ -7,10 +6,6 @@ from scipy.optimize import least_squares
 
 from pyskyfire.regen import physics
 
-
-def short_warning(message, category, filename, lineno, file=None, line=None):
-    return f"{category.__name__}: {message}\n"
-warnings.formatwarning = short_warning
 
 class BoundaryConditions:
     """Boundary conditions for the coolant-side inlet.
@@ -71,7 +66,108 @@ class HeatExchangerPhysics:
         self.circuit_index = circuit_index
         self.counter = 0
 
-    def hot_side_coefficients(self, x, T_hw):
+    def hot_side_coefficients(self, x, T_hw, T_gr_mode="reference"):
+        """Hot-side heat input using the enthalpy-driven Bartz form.
+    
+        Parameters
+        ----------
+        x : float
+            Axial coordinate [m].
+        T_hw : float
+            Hot-side wall temperature [K].
+        T_gr_mode : {'reference', 'film'}, default 'reference'
+            How to evaluate the reference temperature in the variable-property
+            factor.  ``'reference'`` uses the temperature CEA returns for the
+            HP solve at ``H_gr``; ``'film'`` uses the old ``(T_hw + T_g)/2``.
+    
+        Returns
+        -------
+        dict
+            ``h_hot``, ``h_g``, ``h_gr``, ``T_aw``, ``qpp_hot`` -- same keys as
+            before, plus ``H_gr``, ``H_aw``, ``H_hw`` and ``T_gr`` for diagnostics.
+    
+        Notes
+        -----
+        Must be called *inside* the wall-temperature loop.  ``H_gr`` contains
+        ``H_hw``, so the reference state moves with the wall -- the gas properties
+        can no longer be hoisted out the way the temperature-driven version
+        allowed.
+        """
+        ct = self.thrust_chamber.combustion_transport
+    
+        h_gas_corr = self.thrust_chamber.h_gas_corr
+        D_hyd = 2 * self.thrust_chamber.contour.r(x)
+        A_chmb = self.thrust_chamber.contour.A(x)
+        mdot_g = ct.mdot
+    
+        # --- free-stream station state: one solve, cached ---------------
+        gas = ct.get_state(x)
+        T_g = gas.T
+        H_g = gas.h
+        M_g = gas.M
+        a_g = gas.a
+        gamma = gas.gamma
+    
+        # Early iterations may not have a usable wall guess yet; fall back to the
+        # free-stream enthalpy rather than crashing the simulation.
+        try:
+            H_hw = ct.get_h(x, T=T_hw)
+        except Exception:                                            # noqa: BLE001
+            H_hw = H_g
+    
+        # --- reference enthalpy -----------------------------------------
+        # H_g0 - H_g = 0.5 * (M_g * a_g)**2
+        dynamic_enthalpy = 0.5 * M_g ** 2 * a_g ** 2
+        H_gr = 0.5 * (H_hw + H_g) + 0.18 * dynamic_enthalpy
+    
+        # --- properties AT the reference enthalpy (the fix) -------------
+        ref = ct.get_state(x, h=H_gr)
+        Cp_gr = ref.cp
+        mu_gr = ref.mu
+        k_gr = ref.k
+        Pr_gr = ref.Pr
+    
+        if T_gr_mode == "reference":
+            T_gr = ref.T
+        elif T_gr_mode == "film":
+            T_gr = 0.5 * (T_hw + T_g)
+        else:
+            raise ValueError("T_gr_mode must be 'reference' or 'film'")
+    
+        # --- the glorious Bartz equation, unchanged ---------------------
+        h_gr = physics.h_gas_bartz_enthalpy_driven(
+            k_gr, D_hyd, Cp_gr, mu_gr, mdot_g, A_chmb, T_g, T_gr
+        ) * h_gas_corr
+    
+        h_g = h_gr / Cp_gr                      # enthalpy-driven coefficient
+    
+        # --- adiabatic wall ---------------------------------------------
+        r_recovery = Pr_gr ** (1.0 / 3.0)       # turbulent recovery factor
+        H_aw = H_g + r_recovery * dynamic_enthalpy
+        T_aw = physics.T_aw(gamma=gamma, M_inf=M_g, T_inf=T_g, Pr=Pr_gr)
+    
+        qpp_hot = h_g * (H_aw - H_hw)           # [W m^-2]
+    
+        # Temperature-based coefficient, for plotting and reporting only.
+        # Guard the singularity at T_aw == T_hw, which the old version hit
+        # whenever the wall approached recovery temperature.
+        dT = T_aw - T_hw
+        h_hot = qpp_hot / dT if abs(dT) > 1.0e-9 else float("nan")
+    
+        return {
+            "h_hot": h_hot,
+            "h_g": h_g,
+            "h_gr": h_gr,
+            "T_aw": T_aw,
+            "qpp_hot": qpp_hot,
+            # diagnostics
+            "H_gr": H_gr,
+            "H_aw": H_aw,
+            "H_hw": H_hw,
+            "T_gr": T_gr,
+        }
+
+    '''def hot_side_coefficients(self, x, T_hw):
         """Hot-side heat input per unit length using Bartz-style correlation.
 
         Parameters
@@ -143,7 +239,7 @@ class HeatExchangerPhysics:
             "h_gr": h_gr,
             "T_aw": T_aw,
             "qpp_hot": qpp_hot,
-        }
+        }'''
 
     def cold_side_coefficients(self, x, T_cw, T_cool):
         """Coolant-side heat removal per unit length.

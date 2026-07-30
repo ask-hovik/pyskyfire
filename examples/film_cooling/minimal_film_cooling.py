@@ -3,6 +3,8 @@
 # ============================================================
 
 import os
+from pathlib import Path
+
 import pyskyfire as psf
 
 # Input parameters for your engine
@@ -169,9 +171,14 @@ cooling_data = psf.regen.steady_heating_analysis(
 # Plotting / report
 # ============================================================
 
-plot_3d, viewer = psf.viz.make_engine_3d(thrust_chamber)
-plot_3d.show()
-del plot_3d 
+output_dir = None
+if output_dir is None:
+    output_dir = Path(__file__).parent
+
+output_dir.mkdir(parents=True, exist_ok=True)
+
+engine_viewer = psf.viz.make_engine_3d(thrust_chamber, show=False)
+engine_viewer.save_html(output_dir / "film_engine.html")
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
