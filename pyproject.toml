@@ -16,14 +16,7 @@ dependencies = [
   "scipy>=1.16",
   "coolprop>=7.0",
   "cea>=3.3",
-  "pandas>=2.3",
   "cloudpickle>=3.1",
-  "pyvis>=0.3",
-  "plotly>=6.3",
-  "gmsh>=4.14",
-  "trimesh>=4.8",
-  "pyvista",
-  "cantera"
 ]
 
 classifiers = [
@@ -48,16 +41,32 @@ include = [
 ]
 
 [project.optional-dependencies]
+viz = [
+  "plotly>=6.3",
+  "pyvista",
+]
+
+[dependency-groups]
+test = [
+  "pytest>=8",
+]
+
 docs = [
-  "sphinx >= 8.0",
+  "sphinx>=8.0",
   "furo",
   "myst-parser",
   "sphinx-copybutton",
   "sphinx-design",
-  "sphinx-autoapi >= 3.8",
+  "sphinx-autoapi>=3.8",
   "numpydoc",
   "sphinx-autodoc-typehints",
+  "plotly>=6.3",
   "pyvista[jupyter]",
+]
+
+dev = [
+  { include-group = "test" },
+  { include-group = "docs" },
 ]
 
 # ================================================================

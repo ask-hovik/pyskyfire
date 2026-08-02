@@ -122,7 +122,11 @@ def make_channel_height_fn(
         h_val = H_funcs[0](x)
         for xi, H_next, tw in zip(bounds_x[1:], H_funcs[1:], tw_list):
             k = logistic_k / tw
-            w = 1.0 / (1.0 + np.exp(-k * (x - xi)))
+            # ``exp(-logaddexp(0, -z))`` is the logistic function expressed in
+            # a numerically stable form when a narrow transition makes
+            # the magnitude of ``z`` very large.
+            z = (x - xi) * k
+            w = np.exp(-np.logaddexp(0, -z))
             h_val = (1 - w)*h_val + w*H_next(x)
         return h_val
 

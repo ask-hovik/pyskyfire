@@ -72,24 +72,53 @@ class Aerothermodynamics:
             dtype=float,
         )
 
+        reactant_mix, product_mix = self._make_mixtures()
+        self._reactant_enthalpy = reactant_mix.calc_property(
+            cea.ENTHALPY, self.reactant_weights, self.reactant_temperatures
+        ) / cea.R
+
+        self._make_solvers(reactant_mix, product_mix)
+        self.contour = None
+        self._cache_enabled = cache
+        self._cache = {}
+
+    def _make_mixtures(self):
+        """Build the CEA mixtures represented by this object's Python state."""
         reactants = [
             cea.Reactant(name, temperature=float(T))
             for name, T in zip(self.reactant_names, self.reactant_temperatures)
         ]
         reactant_mix = cea.Mixture(reactants)
         product_mix = cea.Mixture(reactants, products_from_reactants=True)
-        self._reactant_enthalpy = reactant_mix.calc_property(
-            cea.ENTHALPY, self.reactant_weights, self.reactant_temperatures
-        ) / cea.R
+        return reactant_mix, product_mix
+
+    def _make_solvers(self, reactant_mix=None, product_mix=None):
+        """Create the native CEA handles, which cannot themselves be pickled."""
+        cea.init()
+        if reactant_mix is None or product_mix is None:
+            reactant_mix, product_mix = self._make_mixtures()
 
         self._eq_solver = cea.EqSolver(product_mix, reactants=reactant_mix, transport=True)
         self._eq_solution = cea.EqSolution(self._eq_solver)
-        self._rocket_solver = cea.RocketSolver(product_mix, reactants=reactant_mix,
-                                               transport=True)
+        self._rocket_solver = cea.RocketSolver(product_mix, reactants=reactant_mix, transport=True)
         self._rocket_solution = cea.RocketSolution(self._rocket_solver)
-        self.contour = None
-        self._cache_enabled = cache
-        self._cache = {}
+
+    def __getstate__(self):
+        """Return state without the Cython objects that wrap native pointers."""
+        state = self.__dict__.copy()
+        for name in (
+            "_eq_solver",
+            "_eq_solution",
+            "_rocket_solver",
+            "_rocket_solution",
+        ):
+            state.pop(name, None)
+        return state
+
+    def __setstate__(self, state):
+        """Restore Python state and recreate the process-local CEA handles."""
+        self.__dict__.update(state)
+        self._make_solvers()
 
     @classmethod
     def _from_design(cls, fu, ox, MR, p_c, *, eps=None, p_e=None,

@@ -10,8 +10,11 @@ Subpackages:
     viz     - Visualisation
 """
 
+from importlib import import_module
+
 try:
-    from importlib.metadata import version, PackageNotFoundError
+    from importlib.metadata import PackageNotFoundError, version
+
     __version__ = version("pyskyfire")
 except PackageNotFoundError:  # during editable installs without metadata
     __version__ = "0+unknown"
@@ -21,7 +24,16 @@ from . import pump
 from . import turbine
 from . import common
 from . import skycea
-from . import viz
 
 
-__all__ = ["regen", "pump", "turbine", "common", "skycea", "viz"]
+__all__ = ["regen", "pump", "turbine", "common", "skycea"]
+
+
+def __getattr__(name: str):
+    """Load optional subpackages only when they are accessed."""
+
+    if name == "viz":
+        module = import_module(".viz", __name__)
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

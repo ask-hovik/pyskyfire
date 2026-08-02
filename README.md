@@ -37,17 +37,23 @@ The first iteration of pyskyfire was written as part of the master thesis of Ask
 [Documentation](https://ask-hovik.github.io/pyskyfire) for the project is available, and written in a pedagogic style. The package with examples and validation cases is still being developed, so the documentation does not cover everything the package is capable of. Look into the validation cases and advanced examples to see everything the package can do.
 
 # Installation
-The package is available on PyPI, and is simply installed with 
+The core package is available on PyPI and can be installed without the optional visualisation dependencies:
 
 ```
 uv pip install pyskyfire
 ```
 
-For the bleeding edge version clone the repository and install in an editable environment. 
+To include the interactive plots, 3D visualisations, and HTML reports, install the `viz` extra:
 
-``` 
-uv pip install -e . 
-```  
+```
+uv pip install "pyskyfire[viz]"
+```
+
+For the bleeding edge version, clone the repository and install the development environment. This includes the visualisation, test, and documentation dependencies.
+
+```
+uv sync
+```
 
 # Contributions
 

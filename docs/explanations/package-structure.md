@@ -39,7 +39,7 @@ The most important folder for the actual library code is `src/`. The other folde
 | `.gitattributes` | Gives GitHub extra instructions about how to treat certain files. In Pyskyfire it marks generated HTML reports in `examples/` and `validation/` as generated, so they do not dominate GitHub's language statistics. |
 | `LICENSE` | States the legal terms for using and modifying the project. Pyskyfire uses the MIT License, which is permissive, but also makes clear that the software is provided without warranty. |
 | `README.md` | The front page of the GitHub repository. It introduces what Pyskyfire is, shows the main capabilities, gives a minimal installation command, and points users toward examples and validation cases. |
-| `pyproject.toml` | The main configuration file for the Python package. It defines the package name, version, dependencies, build system, optional documentation dependencies, and tells the build system that the importable package lives in `src/pyskyfire`. |
+| `pyproject.toml` | The main configuration file for the Python package. It defines the package name, version, core and optional dependencies, developer dependency groups, build system, and tells the build system that the importable package lives in `src/pyskyfire`. |
 | `docs/` | Contains the documentation website. This includes tutorials, how-to guides, explanations such as this page, and generated API reference pages. |
 | `examples/` | Contains scripts that demonstrate how to use the package. These are primarily teaching material: they show workflows and interfaces that users can copy and adapt. |
 | `images/` | Stores figures used in the README and documentation, such as plots, screenshots, and rendered engine or cooling-channel images. |
