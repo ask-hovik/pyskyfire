@@ -1,0 +1,441 @@
+pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics
+==========================================================
+
+.. py:class:: pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics(thrust_chamber, boundary_conditions, circuit_index, film_model=None, coolant_state: Optional[pyskyfire.regen.coolant_state.CoolantState] = None)
+
+   
+   Heat-exchanger physics whose hot side may be gas- or film-driven.
+
+   The bare-wall hot side uses the enthalpy-driven Bartz model. Where a film
+   covers the wall, :meth:`hot_side_coefficients` substitutes the appropriate
+   liquid- or gaseous-film boundary condition. The shared wall, coolant, and
+   pressure models consume the resulting ``qpp_hot`` regardless of its source.
+
+   :Parameters:
+
+       **thrust_chamber, boundary_conditions, circuit_index**
+           As for the base class.
+
+       **film_model** : :obj:`FilmHeatFluxModel` or :data:`python:None`, :obj:`optional`
+           Film boundary condition. ``None`` reproduces the base class exactly.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _coolant_pressure(p_cool)
+
+      
+      Resolve the pressure to evaluate coolant properties at [Pa].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _gas_side_coefficients(x, T_hw, T_gr_mode='reference')
+
+      
+      Return the bare-gas, enthalpy-driven Bartz heat-transfer state.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: bulk_density(T_cool, p_cool, quality=None)
+
+      
+      Bulk coolant density [kg m⁻³], homogeneous inside the boiling dome.
+
+
+      :Parameters:
+
+          **T_cool** : :class:`python:float`
+              Bulk coolant temperature [K].
+
+          **p_cool** : :class:`python:float`
+              Coolant pressure [Pa].
+
+          **quality** : :class:`python:float`, :obj:`optional`
+              Vapour mass fraction. ``None`` or ``nan`` means single-phase, in
+              which case density comes from an ordinary ``(T, p)`` lookup.
+
+
+
+
+
+
+
+
+
+
+
+      .. rubric:: Notes
+
+      The two-phase value is the homogeneous, no-slip mixture density. It
+      captures the large acceleration effect through the dome but not slip,
+      so it is an under-estimate of the true momentum flux.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: cold_side_coefficients(x, T_cw, T_cool, p_cool=None, quality=None)
+
+      
+      Coolant-side heat transfer coefficient at ``x``.
+
+      Coolant properties are evaluated at the local coolant pressure.
+
+      :Parameters:
+
+          **x** : :class:`python:float`
+              Axial coordinate [m].
+
+          **T_cw** : :class:`python:float`
+              Coolant-side wall temperature [K].
+
+          **T_cool** : :class:`python:float`
+              Bulk coolant temperature [K].
+
+          **p_cool** : :class:`python:float`, :obj:`optional`
+              Local coolant pressure [Pa]. Defaults to the inlet pressure, which
+              is the best available guess outside a march.
+
+          **quality** : :class:`python:float`, :obj:`optional`
+              Bulk vapour mass fraction, used for the two-phase bulk density.
+              ``None``/``nan`` outside the dome.
+
+
+
+      :Returns:
+
+          :class:`python:dict`
+              ``h_cold``, ``phi_curv``, ``Re_c``.
+
+
+
+
+
+
+
+
+      .. rubric:: Notes
+
+      This is a **single-phase** correlation everywhere, including inside the
+      boiling dome, where it is evaluated on saturated-liquid properties. It
+      therefore models neither flow-boiling enhancement nor dryout. See
+      :mod:`pyskyfire.regen.coolant_state`.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: coolant_enthalpy_rate(Q_cold)
+
+      
+      Return the coolant specific-enthalpy change from ``Q_cold`` [J kg⁻¹].
+
+      The state variable of the coolant march. Unlike
+      :meth:`coolant_temperature_rate` this stays valid through the boiling
+      dome, where added heat raises enthalpy at constant temperature.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: coolant_pressure_rate(x, T_cool, p_cool, quality=None)
+
+      
+      Return static and stagnation coolant-pressure rates [Pa m⁻¹].
+
+
+      :Parameters:
+
+          **quality** : :class:`python:float`, :obj:`optional`
+              Bulk vapour mass fraction. Inside the dome the homogeneous mixture
+              density is used, which captures the acceleration through the dome
+              but not the two-phase friction multiplier, so :math:`\Delta p` is
+              under-predicted at appreciable quality.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: coolant_temperature_rate(T_cool, p_cool, Q_cold)
+
+      
+      Return the coolant temperature change caused by ``Q_cold`` [K].
+
+      Single-phase only -- it assumes all the heat is sensible. Used for
+      coolants that cannot support the enthalpy march (mixtures, and backends
+      without saturation data); see :func:`.coolant_state.probe_coolant`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: dQ_cold_dx(x, T_cw, T_cool, p_cool=None, quality=None)
+
+      
+      Heat removed by the coolant per unit length [W m⁻¹].
+
+
+      :Parameters:
+
+          **x** : :class:`python:float`
+              Axial coordinate [m].
+
+          **T_cw** : :class:`python:float`
+              Coolant-side wall temperature [K].
+
+          **T_cool** : :class:`python:float`
+              Bulk coolant temperature [K].
+
+          **p_cool** : :class:`python:float`, :obj:`optional`
+              Local coolant pressure [Pa], forwarded to
+              :meth:`cold_side_coefficients`.
+
+          **quality** : :class:`python:float`, :obj:`optional`
+              Bulk vapour mass fraction, forwarded to
+              :meth:`cold_side_coefficients`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: dQ_cond_dx(x, T_hw, T_cw)
+
+      
+      Return conduction through the wall stack per unit length [W m⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: dQ_hot_dx(x, T_hw)
+
+      
+      Return hot-side heat flow per unit axial length [W m⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: hot_side_coefficients(x, T_hw, T_gr_mode='reference')
+
+      
+      Hot-side coefficients, from the film where there is one.
+
+
+      :Parameters:
+
+          **x** : :class:`python:float`
+              Axial coordinate [m].
+
+          **T_hw** : :class:`python:float`
+              Hot-side wall temperature [K].
+
+          **T_gr_mode** : {'reference', 'film'}, :obj:`optional`
+              Passed through to the gas-side model; ignored behind a liquid film.
+
+
+
+      :Returns:
+
+          :class:`python:dict`
+              Same keys as the base implementation, plus ``regime`` and
+              ``q_rad``. Behind a liquid film the wall never sees the gas, so the
+              Bartz diagnostics (``h_g``, ``h_gr``, ``H_gr``, ``H_aw``, ``H_hw``,
+              ``T_gr``) are ``nan`` and no CEA solve is done.
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: interface_temperatures(x, T_hw, T_cw)
+
+      
+      Return wall-interface temperatures from the hot to the cold face.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: mdot_per_channel()
+
+      
+      Coolant mass flow through a single channel [kg s⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

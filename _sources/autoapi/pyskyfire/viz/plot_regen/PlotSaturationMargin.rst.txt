@@ -1,0 +1,50 @@
+pyskyfire.viz.plot_regen.PlotSaturationMargin
+=============================================
+
+.. py:class:: pyskyfire.viz.plot_regen.PlotSaturationMargin(*regen_results, template: str = 'plotly_white')
+
+   Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.viz.plot_regen.PlotSaturationMargin
+      :parts: 1
+      :private-bases:
+
+
+   
+   Plot bulk coolant temperature against its saturation temperature.
+
+   The subcooling margin ``T_sat - T_bulk`` is what decides whether the coolant
+   is anywhere near boiling, and it is the quantity to watch on a circuit that
+   never enters the dome -- where :class:`PlotCoolantQuality` has nothing to
+   show. Both curves are temperatures, so they share one axis; the gap between
+   them is shaded.
+
+   :Parameters:
+
+       **\*regen_results** : :obj:`RegenResult`
+           One or more solved circuits.
+
+       **template** : :class:`python:str`, :obj:`optional`
+           Plotly template name.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   A positive margin does not mean no boiling at the wall. Subcooled nucleate
+   boiling starts once the *wall* passes ``T_sat`` while the bulk is still
+   below it, and that is not modelled -- so this plot bounds the bulk
+   behaviour only.
+
+
+
+   ..
+       !! processed by numpydoc !!

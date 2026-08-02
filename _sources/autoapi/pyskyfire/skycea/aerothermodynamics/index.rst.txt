@@ -3,16 +3,29 @@ pyskyfire.skycea.aerothermodynamics
 
 .. py:module:: pyskyfire.skycea.aerothermodynamics
 
+.. autoapi-nested-parse::
+
+   CEA-backed gas properties along a rocket-engine contour.
+
+   All public values use base SI units. The old constructor and getter API is
+   retained, but the implementation has only one design path and one state path.
+
+   ..
+       !! processed by numpydoc !!
+
 
 Attributes
 ----------
 
 .. autoapisummary::
 
-   pyskyfire.skycea.aerothermodynamics._PERIODIC
-   pyskyfire.skycea.aerothermodynamics._PROP_SPEC
-   pyskyfire.skycea.aerothermodynamics.script_dir
-   pyskyfire.skycea.aerothermodynamics.trans_path
+   pyskyfire.skycea.aerothermodynamics.BAR_TO_PA
+   pyskyfire.skycea.aerothermodynamics.G0
+   pyskyfire.skycea.aerothermodynamics.KJ_TO_J
+   pyskyfire.skycea.aerothermodynamics.MILLIPOISE_TO_PA_S
+   pyskyfire.skycea.aerothermodynamics.MW_PER_CM_K_TO_W_PER_M_K
+   pyskyfire.skycea.aerothermodynamics.PA_TO_BAR
+   pyskyfire.skycea.aerothermodynamics.SEA_LEVEL_PRESSURE
 
 
 Classes
@@ -22,10 +35,12 @@ Classes
    :hidden:
 
    /autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics
+   /autoapi/pyskyfire/skycea/aerothermodynamics/GasState
 
 .. autoapisummary::
 
    pyskyfire.skycea.aerothermodynamics.Aerothermodynamics
+   pyskyfire.skycea.aerothermodynamics.GasState
 
 
 Functions
@@ -33,17 +48,16 @@ Functions
 
 .. autoapisummary::
 
-   pyskyfire.skycea.aerothermodynamics._mw_from_exploded
+   pyskyfire.skycea.aerothermodynamics.verify_state_scaling
 
 
 Module Contents
 ---------------
 
-.. py:function:: _mw_from_exploded(chemrep: str) -> float
+.. py:function:: verify_state_scaling(aero, T=3000.0, P=2000000.0, rtol=0.0001)
 
    
-   Compute molar mass [kg/mol] from an exploded formula like 'C 2 H 6 O 1'.
-   Supports one- or two-letter symbols; coefficients must be integers.
+   Check TP -> HP and, if available, TP -> SP round trips.
 
 
 
@@ -63,11 +77,31 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:data:: _PERIODIC
+.. py:data:: BAR_TO_PA
+   :value: 100000.0
 
-.. py:data:: _PROP_SPEC
 
-.. py:data:: script_dir
+.. py:data:: G0
+   :value: 9.81
 
-.. py:data:: trans_path
+
+.. py:data:: KJ_TO_J
+   :value: 1000.0
+
+
+.. py:data:: MILLIPOISE_TO_PA_S
+   :value: 0.0001
+
+
+.. py:data:: MW_PER_CM_K_TO_W_PER_M_K
+   :value: 0.1
+
+
+.. py:data:: PA_TO_BAR
+   :value: 1e-05
+
+
+.. py:data:: SEA_LEVEL_PRESSURE
+   :value: 101325.0
+
 

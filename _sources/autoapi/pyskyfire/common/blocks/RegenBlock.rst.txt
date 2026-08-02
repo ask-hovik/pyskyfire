@@ -97,7 +97,7 @@ pyskyfire.common.blocks.RegenBlock
           !! processed by numpydoc !!
 
 
-   .. py:method:: post_process(stations: dict[str, pyskyfire.common.engine_network.Station], signals: dict[str, float]) -> dict[str, any]
+   .. py:method:: post_process(stations: dict[str, pyskyfire.common.engine_network.Station], signals: dict[str, float]) -> pyskyfire.regen.coupled_solver.RegenResult
 
       
       Re-run the solver on a finer grid to collect detailed outputs.

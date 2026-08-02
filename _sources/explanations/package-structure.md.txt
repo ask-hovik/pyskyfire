@@ -39,7 +39,7 @@ The most important folder for the actual library code is `src/`. The other folde
 | `.gitattributes` | Gives GitHub extra instructions about how to treat certain files. In Pyskyfire it marks generated HTML reports in `examples/` and `validation/` as generated, so they do not dominate GitHub's language statistics. |
 | `LICENSE` | States the legal terms for using and modifying the project. Pyskyfire uses the MIT License, which is permissive, but also makes clear that the software is provided without warranty. |
 | `README.md` | The front page of the GitHub repository. It introduces what Pyskyfire is, shows the main capabilities, gives a minimal installation command, and points users toward examples and validation cases. |
-| `pyproject.toml` | The main configuration file for the Python package. It defines the package name, version, dependencies, build system, optional documentation dependencies, and tells the build system that the importable package lives in `src/pyskyfire`. |
+| `pyproject.toml` | The main configuration file for the Python package. It defines the package name, version, core and optional dependencies, developer dependency groups, build system, and tells the build system that the importable package lives in `src/pyskyfire`. |
 | `docs/` | Contains the documentation website. This includes tutorials, how-to guides, explanations such as this page, and generated API reference pages. |
 | `examples/` | Contains scripts that demonstrate how to use the package. These are primarily teaching material: they show workflows and interfaces that users can copy and adapt. |
 | `images/` | Stores figures used in the README and documentation, such as plots, screenshots, and rendered engine or cooling-channel images. |
@@ -69,7 +69,7 @@ Each subfolder is a *subpackage*. A subpackage is a folder containing related Py
 For example:
 
 ```text
-src/pyskyfire/regen/solver.py
+src/pyskyfire/regen/coupled_solver.py
 ```
 
 is a module, and it belongs to the subpackage:
@@ -233,7 +233,7 @@ For regenerative cooling, start with:
 |---|---|
 | `examples/` or `validation/regen_vali/...` | Shows a complete setup script where the objects are actually created and connected. |
 | `regen/thrust_chamber.py` | Shows how the physical thrust chamber, wall layers, and cooling circuits are represented. |
-| `regen/solver.py` | Shows the main regenerative-cooling solve procedure. |
+| `regen/coupled_solver.py` | Shows the regenerative and film-coupled cooling solve procedure. |
 | `regen/physics.py` | Shows the local equations and correlations used by the solver. |
 | `skycea/aerothermodynamics.py` | Shows where the hot-gas properties come from. |
 | `viz/plot_regen.py` | Shows how regenerative-cooling results are plotted. |

@@ -1,0 +1,175 @@
+pyskyfire.regen.coupled_solver.FilmHeatFluxModel
+================================================
+
+.. py:class:: pyskyfire.regen.coupled_solver.FilmHeatFluxModel(liquid_results: pyskyfire.regen.film_solver.LiquidFilmResults, gaseous_results: Optional[pyskyfire.regen.film_solver.GaseousFilmResults], x_injection: float, h_liquid_wall: Union[float, Callable[[float], float]] = DEFAULT_H_LIQUID_WALL)
+
+   
+   Turn a Grisson film solution into a hot-side boundary condition.
+
+
+   :Parameters:
+
+       **liquid_results** : :obj:`LiquidFilmResults`
+           Output of the liquid-film march.
+
+       **gaseous_results** : :obj:`GaseousFilmResults` or :data:`python:None`
+           Output of the gaseous-film march, empty/``None`` when the liquid film
+           never dries out inside the domain.
+
+       **x_injection** : :class:`python:float`
+           Axial station where the film is injected [m]. No film upstream of it.
+
+       **h_liquid_wall** : :class:`python:float` or :func:`python:callable`, :obj:`optional`
+           Film-to-wall conductance behind the liquid film [W m⁻² K⁻¹], either a
+           constant or ``h(x)``. See the module docstring.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   ``x`` outside the solved film range is clamped to the nearest solved
+   station, so a regenerative grid finer than the film grid is fine.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _h_liquid(x: float) -> float
+
+
+   .. py:method:: covers(x: float) -> bool
+
+      
+      True when the film -- liquid or gaseous -- sets the wall flux at ``x``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_thrust_chamber(thrust_chamber, boundary_conditions, x_array: Optional[Sequence[float]] = None, h_liquid_wall: Union[float, Callable[[float], float]] = DEFAULT_H_LIQUID_WALL) -> FilmHeatFluxModel
+      :classmethod:
+
+
+      
+      Solve the Grisson film model for ``thrust_chamber`` and wrap it.
+
+
+      :Parameters:
+
+          **thrust_chamber** : :obj:`Any`
+              Chamber carrying a ``film_cooling`` object.
+
+          **boundary_conditions** : :obj:`BoundaryConditions`
+              Film injection temperature/pressure are taken from here.
+
+          **x_array** : :term:`python:sequence` :obj:`of` :class:`python:float`, :obj:`optional`
+              Grid for the film march. Defaults to the contour's own ``xs``.
+
+          **h_liquid_wall** : :class:`python:float` or :func:`python:callable`, :obj:`optional`
+              See the class docstring.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: regime(x: float) -> str
+
+      
+      Return the hot-side regime at ``x``.
+
+
+
+
+
+      :Returns:
+
+          :class:`python:str`
+              ``'gas'`` where the wall sees the combustion gas directly,
+              ``'liquid_film'`` behind the liquid film, ``'gaseous_film'``
+              behind its vapour downstream of dryout.
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: state(x: float) -> Optional[dict]
+
+      
+      Film boundary condition at ``x``, or ``None`` where the wall is bare.
+
+
+      :Parameters:
+
+          **x** : :class:`python:float`
+              Axial coordinate [m].
+
+
+
+      :Returns:
+
+          :class:`python:dict` or :data:`python:None`
+              ``regime``, ``T_drive`` [K], ``q_rad`` [W m⁻²] and ``h_wall``
+              [W m⁻² K⁻¹]. ``h_wall`` is ``None`` in the gaseous-film region,
+              where the caller supplies the gas-side coefficient instead.
+              ``None`` when the station is not film-cooled at all.
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

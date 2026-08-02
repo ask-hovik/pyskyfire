@@ -1,0 +1,7 @@
+pyskyfire.skycea.aerothermodynamics.GasState
+============================================
+
+.. py:class:: pyskyfire.skycea.aerothermodynamics.GasState
+
+   .. py:method:: __repr__()
+

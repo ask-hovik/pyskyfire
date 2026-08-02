@@ -1,0 +1,51 @@
+pyskyfire.viz.plot_regen.PlotCoolantQuality
+===========================================
+
+.. py:class:: pyskyfire.viz.plot_regen.PlotCoolantQuality(*regen_results, shade_dome: bool = True, template: str = 'plotly_white')
+
+   Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.viz.plot_regen.PlotCoolantQuality
+      :parts: 1
+      :private-bases:
+
+
+   
+   Plot bulk vapour quality along the circuit from ``RegenResult`` objects.
+
+   Quality is only defined inside the boiling dome, so the solved values are
+   drawn as a solid line and the subcooled/superheated stretches either side
+   are carried at 0 and 1 by a dashed line. The dashed parts are bookkeeping,
+   not model output -- the distinction is the point of the two line styles.
+
+   :Parameters:
+
+       **\*regen_results** : :obj:`RegenResult`
+           One or more solved circuits.
+
+       **shade_dome** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           Shade the axial extent of the two-phase region. Default True.
+
+       **template** : :class:`python:str`, :obj:`optional`
+           Plotly template name.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   A quality profile says *where* the coolant boils, not how hot the wall gets
+   there: the coolant-side coefficient is still a single-phase correlation
+   inside the dome. See :mod:`pyskyfire.regen.coolant_state`.
+
+
+
+   ..
+       !! processed by numpydoc !!

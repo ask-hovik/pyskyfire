@@ -1,0 +1,45 @@
+pyskyfire.regen.coolant_state.CoolantCapability
+===============================================
+
+.. py:class:: pyskyfire.regen.coolant_state.CoolantCapability
+
+   
+   What two-phase machinery is usable for a given coolant.
+
+
+
+   :Attributes:
+
+       **enthalpy_march** : :ref:`bool <python:bltin-boolean-values>`
+           Whether the coolant supports the ``(h, p)`` march. ``False`` sends the
+           solver back to the temperature march.
+
+       **saturation** : :ref:`bool <python:bltin-boolean-values>`
+           Whether saturation properties (and therefore quality) are available.
+
+       **is_mixture** : :ref:`bool <python:bltin-boolean-values>`
+           Whether the CoolProp string names more than one component.
+
+       **backend** : :class:`python:str`
+           CoolProp backend prefix, e.g. ``'HEOS'`` or ``'INCOMP'``.
+
+       **p_crit, T_crit** : :class:`python:float` or :data:`python:None`
+           Critical point [Pa], [K]. ``None`` when it could not be determined.
+
+       **reason** : :class:`python:str` or :data:`python:None`
+           Human-readable explanation when something is unavailable.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

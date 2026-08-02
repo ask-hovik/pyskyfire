@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html"><link rel="next" title="pyskyfire.regen.film_solver.ContourGeometryEvaluator" href="ContourGeometryEvaluator.html"><link rel="prev" title="pyskyfire.regen.cross_section.SectionProfiles" href="../cross_section/SectionProfiles.html">
+<link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html"><link rel="next" title="pyskyfire.regen.film_solver.GasEmittanceCalculator" href="GasEmittanceCalculator.html"><link rel="prev" title="pyskyfire.regen.cross_section.SectionProfiles" href="../cross_section/SectionProfiles.html">
         <link rel="prefetch" href="../../../../_static/pyskyfire_header.png" as="image">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
@@ -268,7 +268,21 @@
 <li class="toctree-l3"><a class="reference internal" href="../contour/ContourToroidalAerospike.html">pyskyfire.regen.contour.ContourToroidalAerospike</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../cross_section/index.html">pyskyfire.regen.cross_section</a><input aria-label="Toggle navigation of pyskyfire.regen.cross_section" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../coolant_state/index.html">pyskyfire.regen.coolant_state</a><input aria-label="Toggle navigation of pyskyfire.regen.coolant_state" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../coolant_state/BulkState.html">pyskyfire.regen.coolant_state.BulkState</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../coolant_state/CoolantCapability.html">pyskyfire.regen.coolant_state.CoolantCapability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../coolant_state/CoolantState.html">pyskyfire.regen.coolant_state.CoolantState</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../coolant_state/SaturationState.html">pyskyfire.regen.coolant_state.SaturationState</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../coupled_solver/index.html">pyskyfire.regen.coupled_solver</a><input aria-label="Toggle navigation of pyskyfire.regen.coupled_solver" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../coupled_solver/BoundaryConditions.html">pyskyfire.regen.coupled_solver.BoundaryConditions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../coupled_solver/CoupledHeatExchangerPhysics.html">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../coupled_solver/FilmHeatFluxModel.html">pyskyfire.regen.coupled_solver.FilmHeatFluxModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../coupled_solver/RegenResult.html">pyskyfire.regen.coupled_solver.RegenResult</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cross_section/index.html">pyskyfire.regen.cross_section</a><input aria-label="Toggle navigation of pyskyfire.regen.cross_section" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../cross_section/ChannelSection.html">pyskyfire.regen.cross_section.ChannelSection</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../cross_section/CrossSectionRounded.html">pyskyfire.regen.cross_section.CrossSectionRounded</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../cross_section/CrossSectionRoundedInternal.html">pyskyfire.regen.cross_section.CrossSectionRoundedInternal</a></li>
@@ -276,34 +290,16 @@
 <li class="toctree-l3"><a class="reference internal" href="../cross_section/SectionProfiles.html">pyskyfire.regen.cross_section.SectionProfiles</a></li>
 </ul>
 </li>
-<li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">pyskyfire.regen.film_solver</a><input aria-label="Toggle navigation of pyskyfire.regen.film_solver" checked="" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="ContourGeometryEvaluator.html">pyskyfire.regen.film_solver.ContourGeometryEvaluator</a></li>
+<li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">pyskyfire.regen.film_solver</a><input aria-label="Toggle navigation of pyskyfire.regen.film_solver" checked="" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="GasEmittanceCalculator.html">pyskyfire.regen.film_solver.GasEmittanceCalculator</a></li>
-<li class="toctree-l3"><a class="reference internal" href="GasProperties.html">pyskyfire.regen.film_solver.GasProperties</a></li>
 <li class="toctree-l3"><a class="reference internal" href="GaseousFilmResults.html">pyskyfire.regen.film_solver.GaseousFilmResults</a></li>
 <li class="toctree-l3"><a class="reference internal" href="GaseousFilmSolver.html">pyskyfire.regen.film_solver.GaseousFilmSolver</a></li>
 <li class="toctree-l3"><a class="reference internal" href="GrissonFilmCoolingModel.html">pyskyfire.regen.film_solver.GrissonFilmCoolingModel</a></li>
-<li class="toctree-l3"><a class="reference internal" href="LiquidCoolantProperties.html">pyskyfire.regen.film_solver.LiquidCoolantProperties</a></li>
 <li class="toctree-l3"><a class="reference internal" href="LiquidFilmResults.html">pyskyfire.regen.film_solver.LiquidFilmResults</a></li>
 <li class="toctree-l3"><a class="reference internal" href="LiquidFilmSolver.html">pyskyfire.regen.film_solver.LiquidFilmSolver</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../film_solver_2/index.html">pyskyfire.regen.film_solver_2</a><input aria-label="Toggle navigation of pyskyfire.regen.film_solver_2" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../film_solver_2/GasEmittanceCalculator.html">pyskyfire.regen.film_solver_2.GasEmittanceCalculator</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../film_solver_2/GaseousFilmResults.html">pyskyfire.regen.film_solver_2.GaseousFilmResults</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../film_solver_2/GaseousFilmSolver.html">pyskyfire.regen.film_solver_2.GaseousFilmSolver</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../film_solver_2/GrissonFilmCoolingModel.html">pyskyfire.regen.film_solver_2.GrissonFilmCoolingModel</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../film_solver_2/LiquidFilmResults.html">pyskyfire.regen.film_solver_2.LiquidFilmResults</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../film_solver_2/LiquidFilmSolver.html">pyskyfire.regen.film_solver_2.LiquidFilmSolver</a></li>
-</ul>
-</li>
 <li class="toctree-l2"><a class="reference internal" href="../physics/index.html">pyskyfire.regen.physics</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../solver/index.html">pyskyfire.regen.solver</a><input aria-label="Toggle navigation of pyskyfire.regen.solver" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../solver/BoundaryConditions.html">pyskyfire.regen.solver.BoundaryConditions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../solver/HeatExchangerPhysics.html">pyskyfire.regen.solver.HeatExchangerPhysics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../solver/RegenResult.html">pyskyfire.regen.solver.RegenResult</a></li>
-</ul>
-</li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../thrust_chamber/index.html">pyskyfire.regen.thrust_chamber</a><input aria-label="Toggle navigation of pyskyfire.regen.thrust_chamber" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../thrust_chamber/CoolingCircuit.html">pyskyfire.regen.thrust_chamber.CoolingCircuit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../thrust_chamber/FilmCooling.html">pyskyfire.regen.thrust_chamber.FilmCooling</a></li>
@@ -338,6 +334,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../skycea/index.html">pyskyfire.skycea</a><input aria-label="Toggle navigation of pyskyfire.skycea" class="toctree-checkbox" id="toctree-checkbox-19" name="toctree-checkbox-19" role="switch" type="checkbox"/><label for="toctree-checkbox-19"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../skycea/aerothermodynamics/index.html">pyskyfire.skycea.aerothermodynamics</a><input aria-label="Toggle navigation of pyskyfire.skycea.aerothermodynamics" class="toctree-checkbox" id="toctree-checkbox-20" name="toctree-checkbox-20" role="switch" type="checkbox"/><label for="toctree-checkbox-20"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../skycea/aerothermodynamics/Aerothermodynamics.html">pyskyfire.skycea.aerothermodynamics.Aerothermodynamics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../skycea/aerothermodynamics/GasState.html">pyskyfire.skycea.aerothermodynamics.GasState</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../skycea/coolant_transport/index.html">pyskyfire.skycea.coolant_transport</a><input aria-label="Toggle navigation of pyskyfire.skycea.coolant_transport" class="toctree-checkbox" id="toctree-checkbox-21" name="toctree-checkbox-21" role="switch" type="checkbox"/><label for="toctree-checkbox-21"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -345,43 +342,37 @@
 <li class="toctree-l3"><a class="reference internal" href="../../skycea/coolant_transport/TransportProperties.html">pyskyfire.skycea.coolant_transport.TransportProperties</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../skycea/nozzle_solver/index.html">pyskyfire.skycea.nozzle_solver</a><input aria-label="Toggle navigation of pyskyfire.skycea.nozzle_solver" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../skycea/nozzle_solver/EquilNozzleInputs.html">pyskyfire.skycea.nozzle_solver.EquilNozzleInputs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../skycea/nozzle_solver/EquilibriumNozzle.html">pyskyfire.skycea.nozzle_solver.EquilibriumNozzle</a></li>
 </ul>
 </li>
-</ul>
-</li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../viz/index.html">pyskyfire.viz</a><input aria-label="Toggle navigation of pyskyfire.viz" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/core/index.html">pyskyfire.viz.core</a><input aria-label="Toggle navigation of pyskyfire.viz.core" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../viz/index.html">pyskyfire.viz</a><input aria-label="Toggle navigation of pyskyfire.viz" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/core/index.html">pyskyfire.viz.core</a><input aria-label="Toggle navigation of pyskyfire.viz.core" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/core/PlotBase.html">pyskyfire.viz.core.PlotBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/core/_Adder.html">pyskyfire.viz.core._Adder</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/core/_Node.html">pyskyfire.viz.core._Node</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/engine_viz/index.html">pyskyfire.viz.engine_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.engine_viz" class="toctree-checkbox" id="toctree-checkbox-25" name="toctree-checkbox-25" role="switch" type="checkbox"/><label for="toctree-checkbox-25"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/engine_viz/index.html">pyskyfire.viz.engine_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.engine_viz" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/engine_viz/Engine3DViewer.html">pyskyfire.viz.engine_viz.Engine3DViewer</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../viz/impeller_viz/index.html">pyskyfire.viz.impeller_viz</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/lookup_tables/index.html">pyskyfire.viz.lookup_tables</a><input aria-label="Toggle navigation of pyskyfire.viz.lookup_tables" class="toctree-checkbox" id="toctree-checkbox-26" name="toctree-checkbox-26" role="switch" type="checkbox"/><label for="toctree-checkbox-26"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/lookup_tables/index.html">pyskyfire.viz.lookup_tables</a><input aria-label="Toggle navigation of pyskyfire.viz.lookup_tables" class="toctree-checkbox" id="toctree-checkbox-25" name="toctree-checkbox-25" role="switch" type="checkbox"/><label for="toctree-checkbox-25"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/lookup_tables/PlotMoodyDiagram.html">pyskyfire.viz.lookup_tables.PlotMoodyDiagram</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/lookup_tables/PlotThetaVsEpsilon.html">pyskyfire.viz.lookup_tables.PlotThetaVsEpsilon</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/network_viz/index.html">pyskyfire.viz.network_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.network_viz" class="toctree-checkbox" id="toctree-checkbox-27" name="toctree-checkbox-27" role="switch" type="checkbox"/><label for="toctree-checkbox-27"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/network_viz/index.html">pyskyfire.viz.network_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.network_viz" class="toctree-checkbox" id="toctree-checkbox-26" name="toctree-checkbox-26" role="switch" type="checkbox"/><label for="toctree-checkbox-26"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/network_viz/NetworkVisualizer.html">pyskyfire.viz.network_viz.NetworkVisualizer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/network_viz/_BlockSpec.html">pyskyfire.viz.network_viz._BlockSpec</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_common/index.html">pyskyfire.viz.plot_common</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_common" class="toctree-checkbox" id="toctree-checkbox-28" name="toctree-checkbox-28" role="switch" type="checkbox"/><label for="toctree-checkbox-28"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../viz/plot_common/PlotEngineNetwork.html">pyskyfire.viz.plot_common.PlotEngineNetwork</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_common/index.html">pyskyfire.viz.plot_common</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_common" class="toctree-checkbox" id="toctree-checkbox-27" name="toctree-checkbox-27" role="switch" type="checkbox"/><label for="toctree-checkbox-27"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_common/PlotPTDiagram.html">pyskyfire.viz.plot_common.PlotPTDiagram</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_common/PlotResidualHistory.html">pyskyfire.viz.plot_common.PlotResidualHistory</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_common/PlotStationProperty.html">pyskyfire.viz.plot_common.PlotStationProperty</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_film_cooling/index.html">pyskyfire.viz.plot_film_cooling</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_film_cooling" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_film_cooling/index.html">pyskyfire.viz.plot_film_cooling</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_film_cooling" class="toctree-checkbox" id="toctree-checkbox-28" name="toctree-checkbox-28" role="switch" type="checkbox"/><label for="toctree-checkbox-28"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_film_cooling/PlotFilmBoundaryLayer.html">pyskyfire.viz.plot_film_cooling.PlotFilmBoundaryLayer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_film_cooling/PlotFilmDryout.html">pyskyfire.viz.plot_film_cooling.PlotFilmDryout</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_film_cooling/PlotFilmEffectiveWallHTC.html">pyskyfire.viz.plot_film_cooling.PlotFilmEffectiveWallHTC</a></li>
@@ -394,15 +385,18 @@
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_film_cooling/PlotGaseousFilmTemperatureGap.html">pyskyfire.viz.plot_film_cooling.PlotGaseousFilmTemperatureGap</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_regen/index.html">pyskyfire.viz.plot_regen</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_regen" class="toctree-checkbox" id="toctree-checkbox-30" name="toctree-checkbox-30" role="switch" type="checkbox"/><label for="toctree-checkbox-30"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_regen/index.html">pyskyfire.viz.plot_regen</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_regen" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotContour.html">pyskyfire.viz.plot_regen.PlotContour</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotCoolantArea.html">pyskyfire.viz.plot_regen.PlotCoolantArea</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotCoolantPhase.html">pyskyfire.viz.plot_regen.PlotCoolantPhase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotCoolantPressure.html">pyskyfire.viz.plot_regen.PlotCoolantPressure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotCoolantQuality.html">pyskyfire.viz.plot_regen.PlotCoolantQuality</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotCoolantTemperature.html">pyskyfire.viz.plot_regen.PlotCoolantTemperature</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotHeatFlux.html">pyskyfire.viz.plot_regen.PlotHeatFlux</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotHeatTransferCoefficient.html">pyskyfire.viz.plot_regen.PlotHeatTransferCoefficient</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotHydraulicDiameter.html">pyskyfire.viz.plot_regen.PlotHydraulicDiameter</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotRadiusOfCurvature.html">pyskyfire.viz.plot_regen.PlotRadiusOfCurvature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotSaturationMargin.html">pyskyfire.viz.plot_regen.PlotSaturationMargin</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotTemperatureProfile.html">pyskyfire.viz.plot_regen.PlotTemperatureProfile</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotVelocity.html">pyskyfire.viz.plot_regen.PlotVelocity</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotWallTemperature.html">pyskyfire.viz.plot_regen.PlotWallTemperature</a></li>
@@ -411,19 +405,19 @@
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotdAdxThermalHotGas.html">pyskyfire.viz.plot_regen.PlotdAdxThermalHotGas</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_skycea/index.html">pyskyfire.viz.plot_skycea</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_skycea" class="toctree-checkbox" id="toctree-checkbox-31" name="toctree-checkbox-31" role="switch" type="checkbox"/><label for="toctree-checkbox-31"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_skycea/index.html">pyskyfire.viz.plot_skycea</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_skycea" class="toctree-checkbox" id="toctree-checkbox-30" name="toctree-checkbox-30" role="switch" type="checkbox"/><label for="toctree-checkbox-30"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_skycea/PlotTransportProperty.html">pyskyfire.viz.plot_skycea.PlotTransportProperty</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_skycea/PlotTransportPropertyField.html">pyskyfire.viz.plot_skycea.PlotTransportPropertyField</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/report/index.html">pyskyfire.viz.report</a><input aria-label="Toggle navigation of pyskyfire.viz.report" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/report/index.html">pyskyfire.viz.report</a><input aria-label="Toggle navigation of pyskyfire.viz.report" class="toctree-checkbox" id="toctree-checkbox-31" name="toctree-checkbox-31" role="switch" type="checkbox"/><label for="toctree-checkbox-31"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/report/Report.html">pyskyfire.viz.report.Report</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/report/Tab.html">pyskyfire.viz.report.Tab</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/report/_Block.html">pyskyfire.viz.report._Block</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/report/_Block.html">pyskyfire.viz.report._Block</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-33" name="toctree-checkbox-33" role="switch" type="checkbox"/><label for="toctree-checkbox-33"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/sankey/PlotMassFlowSankey.html">pyskyfire.viz.sankey.PlotMassFlowSankey</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/sankey/_FlowLink.html">pyskyfire.viz.sankey._FlowLink</a></li>
 </ul>
@@ -470,29 +464,6 @@
         <article role="main" id="furo-main-content">
           <section id="module-pyskyfire.regen.film_solver">
 <span id="pyskyfire-regen-film-solver"></span><h1>pyskyfire.regen.film_solver<a class="headerlink" href="#module-pyskyfire.regen.film_solver" title="Link to this heading">¶</a></h1>
-<p>film_solver.py</p>
-<p>Contour-based Grisson-style film cooling model for pyskyfire.</p>
-<section id="key-design-choices-in-this-version">
-<h2>Key design choices in this version<a class="headerlink" href="#key-design-choices-in-this-version" title="Link to this heading">¶</a></h2>
-<ul class="simple">
-<li><p>Geometry is read directly from thrust_chamber.contour.</p></li>
-<li><p>Film-cooling inputs live on thrust_chamber.film_cooling.</p></li>
-<li><p>ThrustChamber is expected to resolve film_cooling.x_fraction -&gt; film_cooling.x
-before this solver is used.</p></li>
-<li><p>Coolant liquid/vapor properties are pulled from CoolProp through the existing
-coolant transport object on the selected cooling circuit.</p></li>
-<li><p>H2O and CO2 mole fractions used by the current Grisson gas-radiation model
-are taken directly from FilmCooling, not from combustion_transport.</p></li>
-</ul>
-</section>
-<section id="important-assumptions">
-<h2>Important assumptions<a class="headerlink" href="#important-assumptions" title="Link to this heading">¶</a></h2>
-<ul class="simple">
-<li><p>The injected coolant is a pure fluid.</p></li>
-<li><p>Gas-side mean molecular weight is still expected to be available from
-thrust_chamber.combustion_transport.</p></li>
-</ul>
-</section>
 <section id="attributes">
 <h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">¶</a></h2>
 <div class="table-wrapper autosummary longtable docutils container">
@@ -512,13 +483,7 @@ thrust_chamber.combustion_transport.</p></li>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="ContourGeometryEvaluator.html#pyskyfire.regen.film_solver.ContourGeometryEvaluator" title="pyskyfire.regen.film_solver.ContourGeometryEvaluator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ContourGeometryEvaluator</span></code></a></p></td>
-<td><p>Thin adapter exposing the geometry that the film model actually needs.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="GasEmittanceCalculator.html#pyskyfire.regen.film_solver.GasEmittanceCalculator" title="pyskyfire.regen.film_solver.GasEmittanceCalculator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GasEmittanceCalculator</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="GasProperties.html#pyskyfire.regen.film_solver.GasProperties" title="pyskyfire.regen.film_solver.GasProperties"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GasProperties</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="GasEmittanceCalculator.html#pyskyfire.regen.film_solver.GasEmittanceCalculator" title="pyskyfire.regen.film_solver.GasEmittanceCalculator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GasEmittanceCalculator</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="GaseousFilmResults.html#pyskyfire.regen.film_solver.GaseousFilmResults" title="pyskyfire.regen.film_solver.GaseousFilmResults"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GaseousFilmResults</span></code></a></p></td>
@@ -528,15 +493,12 @@ thrust_chamber.combustion_transport.</p></li>
 <td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="GrissonFilmCoolingModel.html#pyskyfire.regen.film_solver.GrissonFilmCoolingModel" title="pyskyfire.regen.film_solver.GrissonFilmCoolingModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GrissonFilmCoolingModel</span></code></a></p></td>
-<td><p>Full contour-based Grisson film cooling model attached to a pyskyfire ThrustChamber.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="LiquidCoolantProperties.html#pyskyfire.regen.film_solver.LiquidCoolantProperties" title="pyskyfire.regen.film_solver.LiquidCoolantProperties"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LiquidCoolantProperties</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="LiquidFilmResults.html#pyskyfire.regen.film_solver.LiquidFilmResults" title="pyskyfire.regen.film_solver.LiquidFilmResults"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LiquidFilmResults</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="LiquidFilmResults.html#pyskyfire.regen.film_solver.LiquidFilmResults" title="pyskyfire.regen.film_solver.LiquidFilmResults"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LiquidFilmResults</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="LiquidFilmSolver.html#pyskyfire.regen.film_solver.LiquidFilmSolver" title="pyskyfire.regen.film_solver.LiquidFilmSolver"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LiquidFilmSolver</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="LiquidFilmSolver.html#pyskyfire.regen.film_solver.LiquidFilmSolver" title="pyskyfire.regen.film_solver.LiquidFilmSolver"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LiquidFilmSolver</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -548,25 +510,13 @@ thrust_chamber.combustion_transport.</p></li>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.regen.film_solver._build_coolant_properties" title="pyskyfire.regen.film_solver._build_coolant_properties"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_build_coolant_properties</span></code></a>(→ LiquidCoolantProperties)</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.regen.film_solver._build_gas_properties" title="pyskyfire.regen.film_solver._build_gas_properties"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_build_gas_properties</span></code></a>(→ GasProperties)</p></td>
-<td><p></p></td>
-</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.regen.film_solver._coolprop_fluid_name" title="pyskyfire.regen.film_solver._coolprop_fluid_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_coolprop_fluid_name</span></code></a>(→ str)</p></td>
 <td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.regen.film_solver._coolprop_scalar" title="pyskyfire.regen.film_solver._coolprop_scalar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_coolprop_scalar</span></code></a>(→ float)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.regen.film_solver._extract_gas_molecular_weight" title="pyskyfire.regen.film_solver._extract_gas_molecular_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_extract_gas_molecular_weight</span></code></a>(→ float)</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.regen.film_solver._require" title="pyskyfire.regen.film_solver._require"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_require</span></code></a>(→ Any)</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.regen.film_solver._try_call" title="pyskyfire.regen.film_solver._try_call"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_try_call</span></code></a>(obj, method_name, *args[, default])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.regen.film_solver._require" title="pyskyfire.regen.film_solver._require"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_require</span></code></a>(→ Any)</p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -575,16 +525,6 @@ thrust_chamber.combustion_transport.</p></li>
 </section>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">¶</a></h2>
-<dl class="py function">
-<dt class="sig sig-object py" id="pyskyfire.regen.film_solver._build_coolant_properties">
-<span class="sig-prename descclassname"><span class="pre">pyskyfire.regen.film_solver.</span></span><span class="sig-name descname"><span class="pre">_build_coolant_properties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thrust_chamber</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary_conditions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circuit_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="LiquidCoolantProperties.html#pyskyfire.regen.film_solver.LiquidCoolantProperties" title="pyskyfire.regen.film_solver.LiquidCoolantProperties"><span class="pre">LiquidCoolantProperties</span></a></span></span><a class="headerlink" href="#pyskyfire.regen.film_solver._build_coolant_properties" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pyskyfire.regen.film_solver._build_gas_properties">
-<span class="sig-prename descclassname"><span class="pre">pyskyfire.regen.film_solver.</span></span><span class="sig-name descname"><span class="pre">_build_gas_properties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thrust_chamber</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">film_cooling</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="GasProperties.html#pyskyfire.regen.film_solver.GasProperties" title="pyskyfire.regen.film_solver.GasProperties"><span class="pre">GasProperties</span></a></span></span><a class="headerlink" href="#pyskyfire.regen.film_solver._build_gas_properties" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="py function">
 <dt class="sig sig-object py" id="pyskyfire.regen.film_solver._coolprop_fluid_name">
 <span class="sig-prename descclassname"><span class="pre">pyskyfire.regen.film_solver.</span></span><span class="sig-name descname"><span class="pre">_coolprop_fluid_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coolant_transport</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="headerlink" href="#pyskyfire.regen.film_solver._coolprop_fluid_name" title="Link to this definition">¶</a></dt>
@@ -596,18 +536,8 @@ thrust_chamber.combustion_transport.</p></li>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="pyskyfire.regen.film_solver._extract_gas_molecular_weight">
-<span class="sig-prename descclassname"><span class="pre">pyskyfire.regen.film_solver.</span></span><span class="sig-name descname"><span class="pre">_extract_gas_molecular_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">combustion_transport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="headerlink" href="#pyskyfire.regen.film_solver._extract_gas_molecular_weight" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="pyskyfire.regen.film_solver._require">
 <span class="sig-prename descclassname"><span class="pre">pyskyfire.regen.film_solver.</span></span><span class="sig-name descname"><span class="pre">_require</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#pyskyfire.regen.film_solver._require" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pyskyfire.regen.film_solver._try_call">
-<span class="sig-prename descclassname"><span class="pre">pyskyfire.regen.film_solver.</span></span><span class="sig-name descname"><span class="pre">_try_call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyskyfire.regen.film_solver._try_call" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py data">
@@ -623,12 +553,12 @@ thrust_chamber.combustion_transport.</p></li>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="ContourGeometryEvaluator.html">
+          <a class="next-page" href="GasEmittanceCalculator.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">pyskyfire.regen.film_solver.ContourGeometryEvaluator</div>
+                <div class="title">pyskyfire.regen.film_solver.GasEmittanceCalculator</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -674,19 +604,13 @@ thrust_chamber.combustion_transport.</p></li>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">pyskyfire.regen.film_solver</a><ul>
-<li><a class="reference internal" href="#key-design-choices-in-this-version">Key design choices in this version</a></li>
-<li><a class="reference internal" href="#important-assumptions">Important assumptions</a></li>
 <li><a class="reference internal" href="#attributes">Attributes</a></li>
 <li><a class="reference internal" href="#classes">Classes</a></li>
 <li><a class="reference internal" href="#functions">Functions</a></li>
 <li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
-<li><a class="reference internal" href="#pyskyfire.regen.film_solver._build_coolant_properties"><code class="docutils literal notranslate"><span class="pre">_build_coolant_properties()</span></code></a></li>
-<li><a class="reference internal" href="#pyskyfire.regen.film_solver._build_gas_properties"><code class="docutils literal notranslate"><span class="pre">_build_gas_properties()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.regen.film_solver._coolprop_fluid_name"><code class="docutils literal notranslate"><span class="pre">_coolprop_fluid_name()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.regen.film_solver._coolprop_scalar"><code class="docutils literal notranslate"><span class="pre">_coolprop_scalar()</span></code></a></li>
-<li><a class="reference internal" href="#pyskyfire.regen.film_solver._extract_gas_molecular_weight"><code class="docutils literal notranslate"><span class="pre">_extract_gas_molecular_weight()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.regen.film_solver._require"><code class="docutils literal notranslate"><span class="pre">_require()</span></code></a></li>
-<li><a class="reference internal" href="#pyskyfire.regen.film_solver._try_call"><code class="docutils literal notranslate"><span class="pre">_try_call()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.regen.film_solver.PropsSI"><code class="docutils literal notranslate"><span class="pre">PropsSI</span></code></a></li>
 </ul>
 </li>

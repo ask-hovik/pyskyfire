@@ -1,0 +1,45 @@
+pyskyfire.viz.plot_regen.PlotCoolantPhase
+=========================================
+
+.. py:class:: pyskyfire.viz.plot_regen.PlotCoolantPhase(*regen_results, label_bands: bool = True, template: str = 'plotly_white')
+
+   Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.viz.plot_regen.PlotCoolantPhase
+      :parts: 1
+      :private-bases:
+
+
+   
+   Plot the coolant phase regime as a band along the circuit.
+
+   One horizontal strip per circuit, split into contiguous phase regions. This
+   is the at-a-glance companion to :class:`PlotCoolantQuality`: it answers
+   "does this coolant boil, and where" without reading a curve.
+
+   :Parameters:
+
+       **\*regen_results** : :obj:`RegenResult`
+           One or more solved circuits.
+
+       **label_bands** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           Write the phase name inside bands wide enough to hold it. Default True.
+
+       **template** : :class:`python:str`, :obj:`optional`
+           Plotly template name.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

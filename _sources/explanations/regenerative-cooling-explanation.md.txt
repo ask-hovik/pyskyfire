@@ -1,6 +1,6 @@
 # Regenerative Cooling
 
-This page explains the regenerative cooling model implemented in `pyskyfire.regen`. It traces the path through `solver.py`, shows how `solver.py` calls the equations in `physics.py`, and explains how the hot-gas aerothermodynamic properties are prepared by `pyskyfire.skycea.aerothermodynamics`.
+This page explains the regenerative cooling model implemented in `pyskyfire.regen`. It traces the path through `coupled_solver.py`, shows how the solver calls the equations in `physics.py`, and explains how the hot-gas aerothermodynamic properties are prepared by `pyskyfire.skycea.aerothermodynamics`.
 
 The model is a quasi-one-dimensional steady heat-exchanger calculation. At each axial station, it balances three heat-transfer paths:
 
@@ -17,11 +17,12 @@ The result is a streamwise solution for wall temperatures, coolant bulk temperat
 The public entry point is:
 
 ```python
-steady_heating_analysis(
+coupled_steady_heating_analysis(
     thrust_chamber,
     boundary_conditions,
     n_nodes=100,
     circuit_index=0,
+    film="auto",
     solver="newton",
     output=True,
 )
@@ -30,7 +31,7 @@ steady_heating_analysis(
 For the current implementation, the only accepted solver name is `"newton"`. This dispatches to:
 
 ```python
-solve_heat_exchanger(
+solve_coupled_heat_exchanger(
     thrust_chamber,
     boundary_conditions,
     n_nodes,
@@ -44,7 +45,7 @@ The coolant temperature and pressure are marched explicitly, but the two wall te
 The helper class:
 
 ```python
-HeatExchangerPhysics(thrust_chamber, boundary_conditions, circuit_index)
+CoupledHeatExchangerPhysics(thrust_chamber, boundary_conditions, circuit_index)
 ```
 
 collects the local physics calculations used by the marching solver:
@@ -650,7 +651,7 @@ $$
 The hot-side calculation is performed by:
 
 ```python
-HeatExchangerPhysics.hot_side_coefficients(x, T_hw)
+CoupledHeatExchangerPhysics.hot_side_coefficients(x, T_hw)
 ```
 
 ### 6.1 Local gas-side geometry and state
@@ -1430,12 +1431,11 @@ The current regenerative cooling solver is an engineering heat-exchanger model. 
 
 There are also a few important implementation details to keep in mind:
 
-- `H_gr` is calculated in the hot-side model, but the current gas properties used in the Bartz equation are still queried at `x`, not at the computed reference enthalpy.
+- The Bartz gas properties are evaluated at the computed reference enthalpy `H_gr`.
 - `phi_curv` is computed in the coolant-side model, but the current Colburn call passes `phi_curv=1`, so curvature does not currently modify `h_cold`.
-- `coolant_pressure_rate` computes an equivalent-length curvature factor, but does not apply it to the returned pressure gradients.
 - `compute_aerothermodynamics(contour, Nt=...)` currently overwrites `Nt` with `len(self.x_nodes)`.
 - `get_p(x, T=..., h=...)` always returns the equilibrium-column pressure and ignores the supplied temperature or enthalpy.
-- In `cold_side_coefficients`, coolant properties are evaluated using `combustion_transport.get_p(x)` rather than the marched coolant pressure. Other coolant calculations use the coolant pressure array.
+- In `cold_side_coefficients`, coolant properties are evaluated using the marched coolant pressure.
 
 These are limitations in the current implementation that is being worked on for future versions. Nevertheless, the exact behavior is reported here so results using the program are interpreted correctly. 
 
@@ -1443,7 +1443,7 @@ These are limitations in the current implementation that is being worked on for 
 
 ## 15. Returned data structure
 
-`steady_heating_analysis` returns the dictionary produced by `solve_heat_exchanger`:
+`coupled_steady_heating_analysis` returns a `RegenResult` produced by `solve_coupled_heat_exchanger`. Its core fields are:
 
 ```python
 {
@@ -1460,6 +1460,9 @@ These are limitations in the current implementation that is being worked on for 
     "h_cold": h_cold_arr,
     "T_aw_hot": T_aw_hot_arr,
     "residuals": (global_R, final_R),
+    "film_regime": film_regime,
+    "liquid_film": liquid_film_or_none,
+    "gaseous_film": gaseous_film_or_none,
 }
 ```
 ---

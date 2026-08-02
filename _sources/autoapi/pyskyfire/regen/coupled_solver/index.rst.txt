@@ -1,0 +1,343 @@
+pyskyfire.regen.coupled_solver
+==============================
+
+.. py:module:: pyskyfire.regen.coupled_solver
+
+.. autoapi-nested-parse::
+
+   Coupled film + regenerative cooling solver.
+
+   The hot-side boundary condition can come from either the hot combustion gas,
+   a film cooling solution, or a mix of the two along the chamber.
+
+   Three usage modes fall out of the same machinery:
+
+   * **Regenerative only** -- call :func:`coupled_steady_heating_analysis` with
+     ``film=False`` (or on a chamber without ``film_cooling``).
+   * **Film only** -- call :func:`solve_film_cooling`, which runs the Grisson
+     film model on its own and returns the liquid/gaseous film results.
+   * **Both** -- call :func:`coupled_steady_heating_analysis` on a chamber that
+     carries a :class:`~pyskyfire.regen.thrust_chamber.FilmCooling` object. The
+     film model is solved first, and the resulting wall heat flux replaces the
+     hot-gas heat flux everywhere the film covers the wall.
+
+   How the coupling works
+   ----------------------
+
+   Every hot-side model in here reduces to a wall heat flux ``qpp_hot``, so the
+   wall/coolant stack downstream never needs to know which model produced it.
+   :class:`FilmHeatFluxModel` decides, per station, which one does:
+
+   ==================  =====================================================
+   Region              Wall heat flux
+   ==================  =====================================================
+   upstream of the     enthalpy-driven Bartz, unchanged:
+   injector            :math:`q'' = h_g (H_\text{aw} - H_\text{hw})`
+   liquid film         conduction into the saturated film:
+                       :math:`q'' = h_\text{liq} (T_\text{sat} - T_\text{hw})`
+   gaseous film        Bartz coefficient, film recovery temperature:
+                       :math:`q'' = h_\text{hot} (T_\text{aw,film} - T_\text{hw}) + q''_\text{rad}`
+   ==================  =====================================================
+
+   In the gaseous-film region only the *driving* state is replaced, by the film's
+   adiabatic wall temperature from the Grisson march. The gas-side coefficient
+   itself is left at its bare-wall Bartz value, which is conservative: a real film
+   both thickens the boundary layer and blows through it, and both effects reduce
+   it.
+
+   Note in particular that Grisson's ``h_conv`` for the gaseous film is *not*
+   used as the wall coefficient. It is :math:`C_p \, dM_\text{bl,e}/dx`, the
+   rate at which free-stream gas is entrained into the boundary layer, and it
+   runs several times larger than the wall-side Bartz value; feeding it to the
+   wall would make the film appear to *heat* the chamber.
+
+   The coupling is **one-way**: the Grisson model assumes every joule reaching the
+   liquid film goes into evaporating it, so the film solution does not respond to
+   heat lost through the wall into the coolant. Dryout location is therefore a
+   slight under-estimate of the film's reach. Radiation transmitted *through* the
+   liquid film to the wall (the complement of ``liquid_absorptivity``) is not
+   modelled either, so the liquid-film region is optimistic by of order
+   0.1 MW m⁻².
+
+   The one empirical knob: ``h_liquid_wall``
+   -----------------------------------------
+
+   Behind a liquid film the wall is bathed in saturated liquid, so the driving
+   temperature collapses from the gas recovery temperature (thousands of kelvin)
+   to :math:`T_\text{sat}` (hundreds). What is *not* pinned down by the Grisson
+   model is the film-to-wall conductance, because the model never resolves the
+   film thickness. ``h_liquid_wall`` supplies it, defaulting to
+   :data:`DEFAULT_H_LIQUID_WALL` -- an order-of-magnitude estimate for a thin
+   saturated film (:math:`k_l/\delta` with :math:`k_l \sim 0.15`
+   W m⁻¹ K⁻¹ and :math:`\delta \sim 30` µm). Set it very large (``1e6``) to
+   recover the textbook idealisation :math:`T_\text{hw} = T_\text{sat}`, or pass
+   a callable ``h(x)`` for a spatially varying estimate. It is the number to
+   calibrate first if you have wall-temperature data.
+
+   Note also that the film mass flow is *not* subtracted from the regenerative
+   circuit's mass flow here -- set ``BoundaryConditions.mdot_coolant`` to whatever
+   actually reaches the channels.
+
+   Coolant properties are evaluated at the coolant pressure
+   --------------------------------------------------------
+
+   :meth:`CoupledHeatExchangerPhysics.cold_side_coefficients` evaluates the
+   coolant film properties at the coolant pressure. The coolant pressure is what
+   the march already tracks and what ``coolant_pressure_rate`` and
+   ``coolant_enthalpy_rate`` already use, so it is threaded through here too.
+
+   The coolant march: enthalpy where possible, temperature otherwise
+   -----------------------------------------------------------------
+
+   The coolant state is advanced on **specific enthalpy**, so the march stays
+   valid through the boiling dome and reports vapour quality. Temperature is not a
+   usable state variable there -- inside the dome it is pinned to
+   :math:`T_\text{sat}(p)` while the fluid keeps absorbing heat -- and a
+   temperature march stepping past saturation silently lands on the superheated
+   vapour branch, with a ~19x density error. See
+   :mod:`pyskyfire.regen.coolant_state` for the full argument and for what the
+   two-phase treatment does and does not cover.
+
+   Two coolants keep the old temperature march, via
+   :func:`~pyskyfire.regen.coolant_state.probe_coolant`:
+
+   * **mixtures**, because a mixture ``(h, p)`` flash costs ~374 ms against ~57 us
+     for a pure fluid and would put a 100-node run into the hours;
+   * **backends without saturation data**, such as ``INCOMP::``.
+
+   On those the solver behaves exactly as it did before -- no quality, no dome --
+   and says so through a ``RuntimeWarning`` plus a printed note when ``output`` is
+   enabled.
+
+   What is still missing is **two-phase heat transfer**. Inside the dome
+   ``h_cold`` remains the single-phase Colburn value on saturated-liquid
+   properties, so it captures neither the flow-boiling enhancement nor dryout, and
+   nucleate boiling and CHF are not modelled at all. Read the quality profile as
+   telling you *where* the coolant boils, not how hot the wall gets there. Nodes
+   where the energy balance fails to close are flagged by a ``RuntimeWarning``, so
+   check for those before trusting a profile.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.regen.coupled_solver.DEFAULT_H_LIQUID_WALL
+   pyskyfire.regen.coupled_solver.RESIDUAL_TOL
+   pyskyfire.regen.coupled_solver.SATURATION_NUDGE
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/regen/coupled_solver/BoundaryConditions
+   /autoapi/pyskyfire/regen/coupled_solver/CoupledHeatExchangerPhysics
+   /autoapi/pyskyfire/regen/coupled_solver/FilmHeatFluxModel
+   /autoapi/pyskyfire/regen/coupled_solver/RegenResult
+
+.. autoapisummary::
+
+   pyskyfire.regen.coupled_solver.BoundaryConditions
+   pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics
+   pyskyfire.regen.coupled_solver.FilmHeatFluxModel
+   pyskyfire.regen.coupled_solver.RegenResult
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.regen.coupled_solver.coupled_steady_heating_analysis
+   pyskyfire.regen.coupled_solver.solve_coupled_heat_exchanger
+   pyskyfire.regen.coupled_solver.solve_film_cooling
+
+
+Module Contents
+---------------
+
+.. py:function:: coupled_steady_heating_analysis(thrust_chamber, boundary_conditions, n_nodes: int = 100, circuit_index: int = 0, film: Union[bool, str] = 'auto', film_model: Optional[FilmHeatFluxModel] = None, h_liquid_wall: Union[float, Callable[[float], float]] = DEFAULT_H_LIQUID_WALL, film_x_array: Optional[Sequence[float]] = None, solver: str = 'newton', output: bool = True) -> RegenResult
+
+   
+   Run a steady heating analysis with film cooling, regen cooling, or both.
+
+
+   :Parameters:
+
+       **thrust_chamber** : :obj:`Any`
+           Chamber model exposing the required geometry & property APIs.
+
+       **boundary_conditions** : :obj:`BoundaryConditions`
+           Coolant inlet boundary conditions. Also supplies the film injection
+           temperature and pressure.
+
+       **n_nodes** : :class:`python:int`, :obj:`optional`
+           Number of axial nodes for the regenerative march. Default 100.
+
+       **circuit_index** : :class:`python:int`, :obj:`optional`
+           Cooling-circuit index. Default 0.
+
+       **film** : :ref:`bool <python:bltin-boolean-values>` or 'auto', :obj:`optional`
+           Whether to include film cooling. ``'auto'`` (default) enables it when
+           ``thrust_chamber.film_cooling`` is present. ``True`` requires it.
+
+       **film_model** : :obj:`FilmHeatFluxModel`, :obj:`optional`
+           Pre-solved film boundary condition. Supplying it skips the film solve
+           and overrides ``film``.
+
+       **h_liquid_wall** : :class:`python:float` or :func:`python:callable`, :obj:`optional`
+           Film-to-wall conductance behind the liquid film [W m⁻² K⁻¹]. See the
+           module docstring.
+
+       **film_x_array** : :term:`python:sequence` :obj:`of` :class:`python:float`, :obj:`optional`
+           Grid for the film march. Defaults to the contour's own ``xs``.
+
+       **solver** : {'newton'}, :obj:`optional`
+           Solver selector. Only ``'newton'`` is implemented.
+
+       **output** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           If True, print progress. Default True.
+
+
+
+   :Returns:
+
+       :obj:`RegenResult`
+           ..
+
+
+
+
+   :Raises:
+
+       :obj:`ValueError`
+           If ``film=True`` but the chamber carries no ``film_cooling``, or the
+           solver name is unknown.
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: solve_coupled_heat_exchanger(thrust_chamber, boundary_conditions, n_nodes, circuit_index, output, film_model: Optional[FilmHeatFluxModel] = None, log_residuals: bool = True) -> RegenResult
+
+   
+   March the 1-D wall energy balance with an optional film boundary condition.
+
+
+   :Parameters:
+
+       **thrust_chamber** : :obj:`Any`
+           Chamber model exposing geometry and property methods.
+
+       **boundary_conditions** : :obj:`BoundaryConditions`
+           Coolant inlet conditions.
+
+       **n_nodes** : :class:`python:int`
+           Number of axial nodes.
+
+       **circuit_index** : :class:`python:int`
+           Which cooling circuit to simulate.
+
+       **output** : :ref:`bool <python:bltin-boolean-values>`
+           If True, print progress to stdout.
+
+       **film_model** : :obj:`FilmHeatFluxModel` or :data:`python:None`, :obj:`optional`
+           Film-derived hot-side boundary condition. ``None`` gives a pure
+           regeneratively cooled solve.
+
+       **log_residuals** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           If True, record local residuals for every Newton iteration per cell.
+
+
+
+   :Returns:
+
+       :obj:`RegenResult`
+           ..
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   The wall-temperature bracket is derived from the local driving temperature
+   rather than the free-stream gas temperature, and reversed heat flow
+   (``T_hw < T_cw``) is admitted wherever the drive falls below the bulk
+   coolant temperature -- which does happen behind a liquid film once the
+   coolant has heated past :math:`T_\text{sat}`.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: solve_film_cooling(thrust_chamber, boundary_conditions, x_array: Optional[Sequence[float]] = None) -> tuple[pyskyfire.regen.film_solver.LiquidFilmResults, pyskyfire.regen.film_solver.GaseousFilmResults]
+
+   
+   Run the film cooling model on its own.
+
+
+   :Parameters:
+
+       **thrust_chamber** : :obj:`Any`
+           Chamber carrying a ``film_cooling`` object.
+
+       **boundary_conditions** : :obj:`BoundaryConditions`
+           Film injection temperature/pressure come from here.
+
+       **x_array** : :term:`python:sequence` :obj:`of` :class:`python:float`, :obj:`optional`
+           Axial grid for the film march. Defaults to ``thrust_chamber.contour.xs``.
+
+
+
+   :Returns:
+
+       :class:`python:tuple`
+           ``(liquid_results, gaseous_results)``. The gaseous results are empty
+           when the liquid film survives to the end of the grid.
+
+
+
+
+   :Raises:
+
+       :obj:`ValueError`
+           If the chamber has no ``film_cooling`` attached.
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: DEFAULT_H_LIQUID_WALL
+   :value: 5000.0
+
+
+.. py:data:: RESIDUAL_TOL
+   :value: 0.0001
+
+
+.. py:data:: SATURATION_NUDGE
+   :value: 0.001
+
+

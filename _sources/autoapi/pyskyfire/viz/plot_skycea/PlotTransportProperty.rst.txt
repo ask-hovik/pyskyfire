@@ -11,12 +11,10 @@ pyskyfire.viz.plot_skycea.PlotTransportProperty
 
 
    
-   Plot a single transport-property map (equilibrium column vs x) for one or more
-   Aerothermodynamics objects.
+   Plot one equilibrium transport property against axial position.
 
-   Each object must have:
-     - .x_nodes (built by compute_aerothermodynamics)
-     - .<prop>_map with shape (Nx, Nt); we use column 0 (equilibrium).
+   The current live-solve interface is sampled through ``get_<prop>``.  Old
+   precomputed-map objects remain supported for compatibility.
 
 
 

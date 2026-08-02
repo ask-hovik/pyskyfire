@@ -1,0 +1,31 @@
+pyskyfire.regen.coupled_solver.RegenResult
+==========================================
+
+.. py:class:: pyskyfire.regen.coupled_solver.RegenResult
+
+   
+   Regenerative-cooling result with optional film-cooling data.
+
+   The coolant-state fields (``coolant_enthalpy`` onwards) describe the bulk
+   coolant along the circuit. ``coolant_enthalpy`` and ``coolant_quality`` are
+   all-``nan`` when the coolant fell back to the temperature march, and
+   ``coolant_quality`` is ``nan`` at any station outside the boiling dome --
+   including supercritical stations, where no dome exists. Use
+   ``coolant_phase`` to tell those cases apart.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

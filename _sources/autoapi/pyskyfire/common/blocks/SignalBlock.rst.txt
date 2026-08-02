@@ -90,7 +90,7 @@ pyskyfire.common.blocks.SignalBlock
           !! processed by numpydoc !!
 
 
-   .. py:method:: post_process(stations: dict[str, pyskyfire.common.engine_network.Station], signals: dict[str, float]) -> dict[str, any]
+   .. py:method:: post_process(stations: dict[str, pyskyfire.common.engine_network.Station], signals: dict[str, float]) -> Any
 
       
       Optional finalization hook run **after convergence**.

@@ -1,0 +1,75 @@
+pyskyfire.regen.coolant_state.BulkState
+=======================================
+
+.. py:class:: pyskyfire.regen.coolant_state.BulkState
+
+   
+   Resolved bulk coolant state at one axial station.
+
+
+
+   :Attributes:
+
+       **T** : :class:`python:float`
+           Bulk temperature [K]. Equal to ``T_sat`` inside the dome.
+
+       **p** : :class:`python:float`
+           Pressure the state was resolved at [Pa].
+
+       **h** : :class:`python:float`
+           Specific enthalpy [J kg⁻¹]. ``nan`` under the temperature march.
+
+       **quality** : :class:`python:float`
+           Vapour mass fraction, ``nan`` outside the dome (including subcooled
+           liquid, where it is *not* zero but undefined-by-convention here --
+           see :attr:`phase` for the distinction).
+
+       **rho** : :class:`python:float`
+           Density [kg m⁻³], homogeneous inside the dome.
+
+       **phase** : :class:`python:str`
+           One of the ``PHASE_*`` constants.
+
+       **T_sat** : :class:`python:float`
+           Local saturation temperature [K], ``nan`` when unavailable.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:property:: is_two_phase
+      :type: bool
+
+
+      
+      True when the bulk sits inside the boiling dome.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

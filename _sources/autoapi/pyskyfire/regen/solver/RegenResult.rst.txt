@@ -1,4 +1,0 @@
-pyskyfire.regen.solver.RegenResult
-==================================
-
-.. py:class:: pyskyfire.regen.solver.RegenResult

@@ -23,3 +23,26 @@ Submodules
    /autoapi/pyskyfire/viz/sankey/index
 
 
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.viz._VIZ_DEPENDENCIES
+   pyskyfire.viz._missing_dependencies
+   pyskyfire.viz.missing
+
+
+Package Contents
+----------------
+
+.. py:data:: _VIZ_DEPENDENCIES
+   :value: ('plotly', 'pyvista')
+
+
+.. py:data:: _missing_dependencies
+
+.. py:data:: missing
+   :value: ''
+
+

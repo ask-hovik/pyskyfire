@@ -1,0 +1,99 @@
+pyskyfire.regen.coolant_state.SaturationState
+=============================================
+
+.. py:class:: pyskyfire.regen.coolant_state.SaturationState
+
+   
+   Saturation properties at one pressure.
+
+   Built once per axial station and cached, so that the inner wall solve --
+   which may evaluate the coolant side a couple of hundred times per node --
+   never triggers a flash.
+
+
+   :Attributes:
+
+       **p** : :class:`python:float`
+           Pressure [Pa].
+
+       **T_sat** : :class:`python:float`
+           Saturation temperature [K].
+
+       **h_f, h_g** : :class:`python:float`
+           Saturated liquid and vapour specific enthalpy [J kg⁻¹].
+
+       **rho_f, rho_g** : :class:`python:float`
+           Saturated liquid and vapour density [kg m⁻³].
+
+       **mu_f, k_f, cp_f** : :class:`python:float`
+           Saturated liquid viscosity [Pa s], conductivity [W m⁻¹ K⁻¹] and
+           specific heat [J kg⁻¹ K⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: homogeneous_density(quality: float) -> float
+
+      
+      Homogeneous (no-slip) two-phase density [kg m⁻³].
+
+
+      :Parameters:
+
+          **quality** : :class:`python:float`
+              Vapour mass fraction, clipped into ``[0, 1]``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: h_fg
+      :type: float
+
+
+      
+      Latent heat of vaporisation [J kg⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

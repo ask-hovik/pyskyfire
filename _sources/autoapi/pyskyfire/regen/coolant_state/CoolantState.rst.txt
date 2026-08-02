@@ -1,0 +1,216 @@
+pyskyfire.regen.coolant_state.CoolantState
+==========================================
+
+.. py:class:: pyskyfire.regen.coolant_state.CoolantState(coolant_transport, p_ref: float)
+
+   
+   Resolve coolant states from ``(h, p)``, with cached saturation data.
+
+
+   :Parameters:
+
+       **coolant_transport** : :obj:`Any`
+           Object carrying a CoolProp fluid string on ``.fluid``, normally a
+           :class:`~pyskyfire.skycea.coolant_transport.CoolantTransport`.
+
+       **p_ref** : :class:`python:float`
+           Reference pressure for the capability probe [Pa], normally the coolant
+           inlet pressure.
+
+   :Attributes:
+
+       **capability** : :obj:`CoolantCapability`
+           Result of :func:`probe_coolant`. Check ``enthalpy_march`` before using
+           :meth:`from_hp`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _build_saturation(p: float) -> Optional[SaturationState]
+
+
+   .. py:method:: _liquid_transport(output: str, T_sat: float, p: float)
+
+
+   .. py:method:: enthalpy(T: float, p: float) -> float
+
+      
+      Specific enthalpy at ``(T, p)`` [J kg⁻¹].
+
+      Used once, to turn the inlet boundary condition into the march's state
+      variable.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: film_properties(T_film: float, p: float, getters) -> tuple
+
+      
+      Coolant film properties for the Colburn correlation.
+
+
+      :Parameters:
+
+          **T_film** : :class:`python:float`
+              Film temperature :math:`(T_\text{cool} + T_\text{cw})/2` [K].
+
+          **p** : :class:`python:float`
+              Coolant pressure [Pa].
+
+          **getters** : :term:`python:sequence` :obj:`of` :func:`python:callable`
+              Property getters taking ``(T, p)``, in the order
+              ``(conductivity, cp, viscosity)``.
+
+
+
+      :Returns:
+
+          :class:`python:tuple`
+              ``(k, cp, mu)`` at the film condition.
+
+
+
+
+
+
+
+
+      .. rubric:: Notes
+
+      The film temperature routinely exceeds :math:`T_\text{sat}` while the
+      bulk is still subcooled liquid, because the wall is hot. A raw ``(T, p)``
+      lookup there returns *vapour* properties, which is physically wrong --
+      the fluid at the wall is superheated liquid on the verge of nucleating,
+      not vapour -- and puts a cliff in ``h_cold`` that the local wall solve
+      can fail to cross. Clamping to saturated liquid removes the cliff. It is
+      still not a boiling model: the real coefficient in that region is higher
+      than this returns.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_hp(h: float, p: float) -> BulkState
+
+      
+      Resolve the bulk state from specific enthalpy and pressure.
+
+
+      :Parameters:
+
+          **h** : :class:`python:float`
+              Specific enthalpy [J kg⁻¹].
+
+          **p** : :class:`python:float`
+              Static pressure [Pa].
+
+
+
+      :Returns:
+
+          :obj:`BulkState`
+              ..
+
+
+
+
+
+
+
+
+      .. rubric:: Notes
+
+      Inside the dome the temperature is taken as ``T_sat`` and the density as
+      the homogeneous mixture value, rather than trusting a flash to land on
+      the right branch. Outside it, both come from an ``(h, p)`` flash, which
+      is unambiguous on either side.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_tp(T: float, p: float) -> BulkState
+
+      
+      Resolve the bulk state from ``(T, p)``, for the temperature march.
+
+      Cannot represent a two-phase state -- that is the whole limitation of
+      the temperature march -- so the phase is reported as
+      :data:`PHASE_UNKNOWN` unless the fluid is known to be supercritical.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: saturation(p: float) -> Optional[SaturationState]
+
+      
+      Saturation state at ``p`` [Pa], or ``None`` where there is no dome.
+
+      ``None`` means either that the fluid has no usable saturation data or
+      that ``p`` is at/above the critical pressure. Results are cached on
+      ``p``, so the inner wall solve costs nothing after the first call at a
+      station.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

@@ -10,6 +10,10 @@ Attributes
 .. autoapisummary::
 
    pyskyfire.viz.plot_regen.IndexLike
+   pyskyfire.viz.plot_regen.PHASE_COLORS
+   pyskyfire.viz.plot_regen.PHASE_LABELS
+   pyskyfire.viz.plot_regen.PHASE_ORDER
+   pyskyfire.viz.plot_regen._INK_SECONDARY
 
 
 Classes
@@ -20,12 +24,15 @@ Classes
 
    /autoapi/pyskyfire/viz/plot_regen/PlotContour
    /autoapi/pyskyfire/viz/plot_regen/PlotCoolantArea
+   /autoapi/pyskyfire/viz/plot_regen/PlotCoolantPhase
    /autoapi/pyskyfire/viz/plot_regen/PlotCoolantPressure
+   /autoapi/pyskyfire/viz/plot_regen/PlotCoolantQuality
    /autoapi/pyskyfire/viz/plot_regen/PlotCoolantTemperature
    /autoapi/pyskyfire/viz/plot_regen/PlotHeatFlux
    /autoapi/pyskyfire/viz/plot_regen/PlotHeatTransferCoefficient
    /autoapi/pyskyfire/viz/plot_regen/PlotHydraulicDiameter
    /autoapi/pyskyfire/viz/plot_regen/PlotRadiusOfCurvature
+   /autoapi/pyskyfire/viz/plot_regen/PlotSaturationMargin
    /autoapi/pyskyfire/viz/plot_regen/PlotTemperatureProfile
    /autoapi/pyskyfire/viz/plot_regen/PlotVelocity
    /autoapi/pyskyfire/viz/plot_regen/PlotWallTemperature
@@ -37,12 +44,15 @@ Classes
 
    pyskyfire.viz.plot_regen.PlotContour
    pyskyfire.viz.plot_regen.PlotCoolantArea
+   pyskyfire.viz.plot_regen.PlotCoolantPhase
    pyskyfire.viz.plot_regen.PlotCoolantPressure
+   pyskyfire.viz.plot_regen.PlotCoolantQuality
    pyskyfire.viz.plot_regen.PlotCoolantTemperature
    pyskyfire.viz.plot_regen.PlotHeatFlux
    pyskyfire.viz.plot_regen.PlotHeatTransferCoefficient
    pyskyfire.viz.plot_regen.PlotHydraulicDiameter
    pyskyfire.viz.plot_regen.PlotRadiusOfCurvature
+   pyskyfire.viz.plot_regen.PlotSaturationMargin
    pyskyfire.viz.plot_regen.PlotTemperatureProfile
    pyskyfire.viz.plot_regen.PlotVelocity
    pyskyfire.viz.plot_regen.PlotWallTemperature
@@ -57,6 +67,9 @@ Functions
 .. autoapisummary::
 
    pyskyfire.viz.plot_regen._normalize_indices
+   pyskyfire.viz.plot_regen._phase_array
+   pyskyfire.viz.plot_regen._phase_segments
+   pyskyfire.viz.plot_regen._segment_bounds
 
 
 Module Contents
@@ -64,5 +77,99 @@ Module Contents
 
 .. py:function:: _normalize_indices(thrust_chamber, circuit_index: IndexLike)
 
+.. py:function:: _phase_array(result) -> Optional[numpy.ndarray]
+
+   
+   Per-station phase labels for a ``RegenResult``, or ``None`` if absent.
+
+   Results produced before the two-phase coolant march carry no phase data, so
+   every plot here degrades to an explanatory annotation rather than raising.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _phase_segments(phase: numpy.ndarray)
+
+   
+   Split a phase label array into contiguous runs.
+
+
+
+
+
+
+   :Yields:
+
+       :class:`python:tuple`
+           ``(label, i_start, i_end)`` with both indices inclusive.
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _segment_bounds(x: numpy.ndarray, i0: int, i1: int)
+
+   
+   Axial extent of a segment, ordered low→high.
+
+   Edges fall on the midpoints between neighbouring nodes, so adjacent
+   segments share a boundary exactly instead of leaving a one-node hole -- the
+   phase really does change somewhere inside that interval, and a visible gap
+   would misread as a fourth state.
+
+   Cooling circuits may march in either direction, so ``x`` is not guaranteed
+   to increase and the raw endpoints cannot be used as ``x0``/``x1``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
 .. py:data:: IndexLike
+
+.. py:data:: PHASE_COLORS
+
+.. py:data:: PHASE_LABELS
+
+.. py:data:: PHASE_ORDER
+   :value: ('liquid', 'two_phase', 'vapour', 'supercritical', 'unknown')
+
+
+.. py:data:: _INK_SECONDARY
+   :value: '#52514e'
+
 

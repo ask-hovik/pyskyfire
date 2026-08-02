@@ -12,6 +12,5 @@ Submodules
 
    /autoapi/pyskyfire/skycea/aerothermodynamics/index
    /autoapi/pyskyfire/skycea/coolant_transport/index
-   /autoapi/pyskyfire/skycea/nozzle_solver/index
 
 
