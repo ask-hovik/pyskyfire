@@ -1,9 +1,78 @@
-"""Minimal regenerative-cooling simulation for Pyskyfire."""
+"""Boiling simulation for Pyskyfire."""
 
 import argparse
 from pathlib import Path
 
+import numpy as np
 import pyskyfire as psf
+
+
+def validate_boiling_result(
+    cooling_data,
+    thrust_chamber,
+    boundary_conditions,
+    *,
+    energy_tolerance: float = 0.05,
+) -> None:
+    """Fail the example when its boiling and energy invariants regress."""
+    if not cooling_data.enthalpy_march:
+        raise RuntimeError("boiling example fell back to the temperature march")
+
+    phase = np.asarray(cooling_data.coolant_phase)
+    quality = np.asarray(cooling_data.coolant_quality, dtype=float)
+    two_phase = phase == "two_phase"
+
+    if not np.any(two_phase):
+        raise RuntimeError("coolant never entered the boiling dome")
+    if not np.all(np.isfinite(quality[two_phase])):
+        raise RuntimeError("vapour quality is not finite inside the boiling dome")
+    if np.any((quality[two_phase] < 0.0) | (quality[two_phase] > 1.0)):
+        raise RuntimeError("vapour quality left the physical range [0, 1]")
+    if np.any(np.isfinite(quality[~two_phase])):
+        raise RuntimeError("vapour quality is defined outside the boiling dome")
+
+    temperature = np.asarray(cooling_data.T_static, dtype=float)
+    saturation_temperature = np.asarray(cooling_data.coolant_T_sat, dtype=float)
+    if not np.allclose(
+        temperature[two_phase],
+        saturation_temperature[two_phase],
+        rtol=0.0,
+        atol=1e-3,
+    ):
+        raise RuntimeError("two-phase coolant did not remain at saturation temperature")
+
+    enthalpy = np.asarray(cooling_data.coolant_enthalpy, dtype=float)
+    if not np.all(np.isfinite(enthalpy)):
+        raise RuntimeError("enthalpy march produced non-finite coolant enthalpy")
+
+    circuit = thrust_chamber.cooling_circuits[0]
+    n_channels = (
+        circuit.placement.n_channel_positions
+        * circuit.placement.n_channels_per_leaf
+    )
+    wall_heat_rate = np.asarray(cooling_data.qpp_hot, dtype=float) * np.asarray(
+        [circuit.dA_dx_thermal_exhaust(x) for x in cooling_data.x]
+    )
+    wall_heat = abs(np.trapezoid(wall_heat_rate, cooling_data.x))
+    coolant_heat = abs(
+        (enthalpy[-1] - enthalpy[0])
+        * boundary_conditions.mdot_coolant
+        / n_channels
+    )
+    energy_error = abs(wall_heat - coolant_heat) / max(wall_heat, 1.0)
+    if energy_error > energy_tolerance:
+        raise RuntimeError(
+            "wall-to-coolant energy balance failed: "
+            f"wall={wall_heat:.1f} W, coolant={coolant_heat:.1f} W per channel "
+            f"({energy_error:.1%} error; limit {energy_tolerance:.1%})"
+        )
+
+    print(
+        "Boiling checks passed: "
+        f"{np.count_nonzero(two_phase)} two-phase nodes, "
+        f"quality {np.min(quality[two_phase]):.3f}--{np.max(quality[two_phase]):.3f}, "
+        f"energy error {energy_error:.2%}"
+    )
 
 
 def main(output_dir: Path | None = None) -> None:
@@ -124,6 +193,7 @@ def main(output_dir: Path | None = None) -> None:
         boundary_conditions=boundary_conditions,
         output=True,
     )
+    validate_boiling_result(cooling_data, thrust_chamber, boundary_conditions)
     # tutorial:end:simulation
 
     # tutorial:start:report

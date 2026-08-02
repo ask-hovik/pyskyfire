@@ -88,7 +88,6 @@ docs/_build/
 /notes
 
 # Specific test scripts
-count_lines.py
 test_cantera_2.py
 test_cantera_3.py
 test_cantera_4.py
@@ -112,7 +111,6 @@ claudeAttempt2.py
 useful_commands.md
 test_sankey.py
 /trash
-/tools
 /film_testing
 /papers
 /cea_files

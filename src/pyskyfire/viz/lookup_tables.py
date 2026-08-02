@@ -93,37 +93,36 @@ class PlotThetaVsEpsilon(PlotBase):
                     font=dict(size=13, color="black")
                 )
 
+        for tr in self.fig.data:
+            xs = np.asarray(tr.x, float); ys = np.asarray(tr.y, float)
+            m = np.isfinite(xs) & np.isfinite(ys)
+            if not m.any():
+                continue
+            i = np.where(m)[0][-1]
 
-            for tr in self.fig.data:
-                xs = np.asarray(tr.x, float); ys = np.asarray(tr.y, float)
-                m = np.isfinite(xs) & np.isfinite(ys)
-                if not m.any():
-                    continue
-                i = np.where(m)[0][-1]
+            # family: prefer legendgroup, fall back to meta
+            lg = (getattr(tr, "legendgroup", "") or "").lower()
+            fam = "e" if lg == "theta_e" else "n" if lg == "theta_n" else (tr.meta if tr.meta in ("e","n") else None)
 
-                # family: prefer legendgroup, fall back to meta
-                lg = (getattr(tr, "legendgroup", "") or "").lower()
-                fam = "e" if lg == "theta_e" else "n" if lg == "theta_n" else (tr.meta if tr.meta in ("e","n") else None)
+            # percent from name like "80%"
+            txt = tr.name or ""
+            m_pct = re.search(r"(\d+)%", txt)
+            pct = int(m_pct.group(1)) if m_pct else None
 
-                # percent from name like "80%"
-                txt = tr.name or ""
-                m_pct = re.search(r"(\d+)%", txt)
-                pct = int(m_pct.group(1)) if m_pct else None
+            yshift = (y_tweak_e.get(pct, 0) if fam == "e"
+                    else y_tweak_n.get(pct, 0) if fam == "n"
+                    else 0)
+            color = (getattr(getattr(tr, "line", None), "color", None) or "black")
 
-                yshift = (y_tweak_e.get(pct, 0) if fam == "e"
-                        else y_tweak_n.get(pct, 0) if fam == "n"
-                        else 0)
-                color = (getattr(getattr(tr, "line", None), "color", None) or "black")
-
-                self.fig.add_annotation(
-                    x=float(xs[i]), y=float(ys[i]),
-                    xref="x", yref="y",
-                    text=txt,                       # e.g., "80%"
-                    xanchor="left", yanchor="middle",
-                    xshift=6, yshift=yshift,
-                    showarrow=False,
-                    font=dict(size=11, color=color),
-                )
+            self.fig.add_annotation(
+                x=float(xs[i]), y=float(ys[i]),
+                xref="x", yref="y",
+                text=txt,                       # e.g., "80%"
+                xanchor="left", yanchor="middle",
+                xshift=6, yshift=yshift,
+                showarrow=False,
+                font=dict(size=11, color=color),
+            )
 
         self.fig.update_layout(
             title=r"$\theta \ \text{vs}\ \varepsilon$",

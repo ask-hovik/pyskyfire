@@ -701,7 +701,7 @@ def engine_sizer(params, thrust_chamber):
 
     # tutorial:start:network-solve
     net = psf.common.EngineNetwork(stations, signals, blocks)
-    net.run_fixed_point(tol=1e-5, max_iter=100)
+    net.run_fixed_point(tol=1e-2, max_iter=100)
 
     return {
         "net": net,

@@ -59,7 +59,13 @@ class PlotBase:
     def template(self, name: str): self.fig.update_layout(template=name); return self
     def config(self, **cfg):       self._config = cfg; return self
     def show(self):                return self.fig.show(config=getattr(self, "_config", None))
-    def save_html(self, path: str): self.fig.write_html(path, include_plotlyjs="cdn"); return self
+    def save_html(self, path: str):
+        self.fig.write_html(
+            path,
+            include_plotlyjs="cdn",
+            include_mathjax="cdn",
+        )
+        return self
     def save_png(self, path: str, scale: float = 2): self.fig.write_image(path, scale=scale); return self
 
     # Plotly passthrough: call any go.Figure method directly if needed

@@ -56,6 +56,12 @@ Explanations describe the engineering models, code structure, and analysis metho
 * {doc}`Regenerative Cooling <explanations/regenerative-cooling-explanation>`
   Explanation of the regenerative-cooling model, solver structure, heat-transfer paths, and governing quantities.
 
+* {doc}`The Moody Diagram <explanations/moody-diagram>`
+  Explanation of the friction-factor model used for cooling-channel pressure loss.
+
+* {doc}`Rao Nozzle Contour Angles <explanations/rao-nozzle>`
+  Explanation of the angle data used to construct Rao-style bell nozzles.
+
 ### Reference
 
 The reference section is generated from the source code and documents the available Python interfaces.
@@ -114,6 +120,8 @@ howto/mixture-ratio-optimisation
 explanations/capabilities
 explanations/package-structure
 explanations/regenerative-cooling-explanation
+explanations/moody-diagram
+explanations/rao-nozzle
 ```
 
 ```{toctree}

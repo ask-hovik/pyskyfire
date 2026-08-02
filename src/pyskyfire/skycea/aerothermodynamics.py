@@ -104,13 +104,14 @@ class Aerothermodynamics:
         self._rocket_solution = cea.RocketSolution(self._rocket_solver)
 
     def __getstate__(self):
-        """Return state without the Cython objects that wrap native pointers."""
+        """Return persistent state without native handles or runtime cache."""
         state = self.__dict__.copy()
         for name in (
             "_eq_solver",
             "_eq_solution",
             "_rocket_solver",
             "_rocket_solution",
+            "_cache",
         ):
             state.pop(name, None)
         return state
@@ -118,6 +119,7 @@ class Aerothermodynamics:
     def __setstate__(self, state):
         """Restore Python state and recreate the process-local CEA handles."""
         self.__dict__.update(state)
+        self._cache = {}
         self._make_solvers()
 
     @classmethod
@@ -326,9 +328,12 @@ class Aerothermodynamics:
         if T is not None and h is not None:
             raise ValueError("Provide only one of T or h")
 
-        key = (float(x), None if T is None else float(T),
-               None if h is None else float(h), self.transport)
-        if self._cache_enabled and key in self._cache:
+        # Only the contour state is stable enough to reuse. Temperature- and
+        # enthalpy-conditioned states are Newton trial points that almost never
+        # recur and made this cache grow without bound during coupled solves.
+        cacheable = self._cache_enabled and T is None and h is None
+        key = (float(x), None, None, self.transport)
+        if cacheable and key in self._cache:
             return self._cache[key]
 
         if T is not None or h is not None:
@@ -379,7 +384,7 @@ class Aerothermodynamics:
                    for name, values in sol.mole_fractions.items()},
             )
 
-        if self._cache_enabled:
+        if cacheable:
             self._cache[key] = state
         return state
 

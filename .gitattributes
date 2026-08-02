@@ -1,3 +1,4 @@
 # Treat example/report outputs as generated (excluded from language stats)
 examples/**/*.html linguist-generated=true
 validation/**/*.html  linguist-generated=true
+docs/_static/explanation-artifacts/*.html linguist-generated=true

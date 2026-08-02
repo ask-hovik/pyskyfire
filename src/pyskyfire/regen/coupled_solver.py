@@ -116,6 +116,7 @@ from __future__ import annotations
 import math
 import warnings
 from dataclasses import dataclass
+from functools import wraps
 from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
@@ -136,6 +137,25 @@ from .film_solver import (
 )
 
 ResidualResult = tuple[np.ndarray, np.ndarray] | tuple[None, None]
+
+
+def _clear_gas_cache_after(func):
+    """Bound combustion-property cache lifetime to one simulation call."""
+    @wraps(func)
+    def wrapped(thrust_chamber, *args, **kwargs):
+        try:
+            return func(thrust_chamber, *args, **kwargs)
+        finally:
+            combustion_transport = getattr(
+                thrust_chamber,
+                "combustion_transport",
+                None,
+            )
+            clear_cache = getattr(combustion_transport, "clear_cache", None)
+            if callable(clear_cache):
+                clear_cache()
+
+    return wrapped
 
 
 @dataclass
@@ -826,6 +846,7 @@ class CoupledHeatExchangerPhysics:
         return temperatures
 
 
+@_clear_gas_cache_after
 def solve_film_cooling(
     thrust_chamber,
     boundary_conditions,
@@ -866,6 +887,7 @@ def solve_film_cooling(
     return model.solve(x_array)
 
 
+@_clear_gas_cache_after
 def solve_coupled_heat_exchanger(
     thrust_chamber,
     boundary_conditions,
