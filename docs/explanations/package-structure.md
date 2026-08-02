@@ -69,7 +69,7 @@ Each subfolder is a *subpackage*. A subpackage is a folder containing related Py
 For example:
 
 ```text
-src/pyskyfire/regen/solver.py
+src/pyskyfire/regen/coupled_solver.py
 ```
 
 is a module, and it belongs to the subpackage:
@@ -233,7 +233,7 @@ For regenerative cooling, start with:
 |---|---|
 | `examples/` or `validation/regen_vali/...` | Shows a complete setup script where the objects are actually created and connected. |
 | `regen/thrust_chamber.py` | Shows how the physical thrust chamber, wall layers, and cooling circuits are represented. |
-| `regen/solver.py` | Shows the main regenerative-cooling solve procedure. |
+| `regen/coupled_solver.py` | Shows the regenerative and film-coupled cooling solve procedure. |
 | `regen/physics.py` | Shows the local equations and correlations used by the solver. |
 | `skycea/aerothermodynamics.py` | Shows where the hot-gas properties come from. |
 | `viz/plot_regen.py` | Shows how regenerative-cooling results are plotted. |

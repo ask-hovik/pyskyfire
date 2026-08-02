@@ -4,7 +4,7 @@ from scipy.optimize import fsolve
 def h_gas_bartz_enthalpy_driven(k_gr, D_hyd, Cp_gr, mu_gr, mdot_g, A_chmb, T_g, T_gr): 
     """Compute the hot-gas-side heat-transfer coefficient (Bartz correlation, enthalpy-based).
 
-    Parameters
+    Parameters 
     ----------
     k_gr : float
         Thermal conductivity at the reference enthalpy condition [W m⁻¹ K⁻¹].

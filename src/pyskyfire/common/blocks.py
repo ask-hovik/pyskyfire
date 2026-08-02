@@ -1,13 +1,19 @@
 from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from typing import Dict, List, Any
+
 import CoolProp.CoolProp as CP
 import numpy as np
-from copy import deepcopy
-from abc import ABC, abstractmethod
-from typing import Dict, List
 
 # internal imports
 from pyskyfire.common.engine_network import Station
-from pyskyfire.regen.solver import BoundaryConditions, steady_heating_analysis
+from pyskyfire.regen.coupled_solver import (
+    BoundaryConditions,
+    RegenResult,
+    coupled_steady_heating_analysis,
+)
+
 
 class FluidBlock(ABC):
     """Abstract base for blocks that transform **fluid** states.
@@ -91,7 +97,7 @@ class FluidBlock(ABC):
         self,
         stations: dict[str, "Station"],
         signals : dict[str, float],
-    ) -> dict[str, any]:
+    ) -> Any:
         """Optional finalization hook run **after convergence**.
 
         Parameters
@@ -160,7 +166,7 @@ class SignalBlock(ABC):
         self,
         stations: dict[str, "Station"],
         signals : dict[str, float],
-    ) -> dict[str, any]:
+    ) -> Any:
         """Optional finalization hook run **after convergence**.
 
         Parameters
@@ -390,7 +396,7 @@ class RegenBlock(FluidBlock):
              )
 
 
-        cooling_data = steady_heating_analysis(
+        cooling_data = coupled_steady_heating_analysis(
                            self.thrust_chamber,
                            n_nodes        = 100,
                            circuit_index  = self.circuit_index,
@@ -423,7 +429,7 @@ class RegenBlock(FluidBlock):
         self,
         stations: dict[str, "Station"],
         signals : dict[str, float],
-    ) -> dict[str, any]:
+    ) -> RegenResult:
         
         """Re-run the solver on a finer grid to collect detailed outputs.
 
@@ -451,7 +457,7 @@ class RegenBlock(FluidBlock):
 
 
         # Use a finer axial grid for the final report
-        cooling_data = steady_heating_analysis(
+        cooling_data = coupled_steady_heating_analysis(
             self.thrust_chamber,
             n_nodes        = 50,
             circuit_index  = self.circuit_index,

@@ -1,5 +1,5 @@
 # ==================================================================
-# Coupled film + regenerative cooling (pyskyfire.regen.solver_2)
+# Coupled film + regenerative cooling
 #
 # The film is injected part-way down the chamber rather than at the
 # injector face, so the barrel upstream of it is cooled regeneratively
@@ -12,12 +12,24 @@
 #      wherever it covers the wall
 # ==================================================================
 
-import os
+import argparse
 from pathlib import Path
 
 import numpy as np
 
 import pyskyfire as psf
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--output-dir",
+    type=Path,
+    help="Directory for generated HTML outputs.",
+)
+args = parser.parse_args()
+
+output_dir = args.output_dir or Path(__file__).resolve().parent
+output_dir.mkdir(parents=True, exist_ok=True)
 
 params = dict(
     # Chamber parameters
@@ -233,8 +245,6 @@ for regime in ("gas", "liquid_film", "gaseous_film"):
 # ==================================================================
 # Report
 # ==================================================================
-script_dir = Path(__file__).parent
-
 print("\nStarted generating report")
 report = psf.viz.Report("Coupled Film + Regenerative Cooling")
 
@@ -331,6 +341,6 @@ for fig, caption in [
 ]:
     tab_cooling.add_figure(fig, caption=caption)
 
-out_path = os.path.join(script_dir, "coupled_film_report.html")
+out_path = output_dir / "coupled_film_report.html"
 report.save_html(out_path)
 print(f"Report saved to {out_path}")

@@ -10,23 +10,23 @@ def main(output_dir: Path | None = None) -> None:
     # tutorial:start:engine-inputs
     params = dict(
         p_c=20e5,                                                                               # Chamber Pressure (Pa)
-        F=10e3,                                                                                  # Thrust (N)
+        F=2e3,                                                                                  # Thrust (N)
         eps=6,                                                                                 # Nozzle area ratio
         L_star=1.2,                                                                             # Combustion chamber characteristic length 
         MR=2.8,                                                                                 # Mixture ratio
-        AR_c=1.5,                                                                               # Chamber aspect ratio
+        AR_c=3,                                                                               # Chamber aspect ratio
         cea_fu=psf.common.Fluid(type="fuel", propellants=["C2H5OH"], fractions=[1.0]),          # Ethanol
         cea_ox=psf.common.Fluid(type="oxidizer", propellants=["N2O"], fractions=[1.0]),         # Nitrous oxide
         coolprop_fu=psf.common.Fluid(type="fuel", propellants=["ethanol"], fractions=[1.0]),    # Ethanol
-        T_coolant_in=273.15,                                                                    # Coolant inlet temperature
+        T_coolant_in=350,                                                                    # Coolant inlet temperature
         p_coolant_in=23e5,                                                                      # Coolant inlet pressure
-        material=psf.common.solids.StainlessSteel304,                                           # Wall material
-        wall_thickness=0.5e-3,                                                                  # Wall thickness
+        material=psf.common.solids.GRCop42,                                           # Wall material
+        wall_thickness=0.2e-3,                                                                  # Wall thickness
         n_channels=60,                                                                          # Number of cooling channels
         blockage_ratio=0.1,                                                                     # Fraction of cooling channel cross section filled with ribs
         roughness_height=10e-6,                                                                 # Cooling channel roughness parameter
         helix_angle=45,                                                                         # Cooling channel helix angle
-        channel_height=2e-3                                                                     # Cooling channel height
+        channel_height=3e-3                                                                     # Cooling channel height
     )
     # tutorial:end:engine-inputs
 
@@ -132,7 +132,7 @@ def main(output_dir: Path | None = None) -> None:
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    report = psf.viz.Report("Minimal Engine")
+    report = psf.viz.Report("Minimal Engine boiling")
 
     # Parameters tab
     # --------------
@@ -158,7 +158,6 @@ def main(output_dir: Path | None = None) -> None:
 
     # 3D engine
     engine_viewer = psf.viz.make_engine_3d(thrust_chamber, show=False)
-    engine_viewer.save_html(output_dir / "engine-3d.html")
     tab_overview.add_iframe(
         engine_viewer.data_url,
         caption="Engine 3D",
@@ -167,7 +166,6 @@ def main(output_dir: Path | None = None) -> None:
 
     # Engine contour
     contour_plot = psf.viz.PlotContour(thrust_chamber.contour)
-    contour_plot.save_html(output_dir / "contour.html")
     tab_overview.add_figure(contour_plot)
 
     # Cooling data tab
@@ -182,7 +180,6 @@ def main(output_dir: Path | None = None) -> None:
     )
 
     heat_flux = psf.viz.PlotHeatFlux(cooling_data)
-    heat_flux.save_html(output_dir / "heat-flux.html")
     tab_cooling_data.add_figure(psf.viz.PlotCoolantTemperature(cooling_data))
     tab_cooling_data.add_figure(psf.viz.PlotCoolantPressure(cooling_data))
     tab_cooling_data.add_figure(heat_flux)
@@ -225,7 +222,7 @@ def main(output_dir: Path | None = None) -> None:
 
     # Save report
     # -----------
-    report_path = output_dir / "minimal-report.html"
+    report_path = output_dir / "boiling-report.html"
     report.save_html(report_path)
     print(f"Report saved to {report_path}")
     # tutorial:end:report

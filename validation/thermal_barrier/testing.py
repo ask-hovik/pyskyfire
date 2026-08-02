@@ -126,11 +126,11 @@ boundary_conditions = psf.regen.BoundaryConditions(T_coolant_in = T_coolant_in, 
 
 # direct running of project
 start_time = time.time()
-cooling_data_2 = psf.regen.steady_heating_analysis(thrust_chamber, n_nodes = 30, circuit_index=1, boundary_conditions=boundary_conditions, solver="newton", output=True)
+cooling_data_2 = psf.regen.coupled_steady_heating_analysis(thrust_chamber, n_nodes = 30, circuit_index=1, boundary_conditions=boundary_conditions, solver="newton", output=True)
 T_out = cooling_data_2['T_static'][-1] # note that the endpoint of the analysis is always at the end index, no matter the direction of coolant flow
 p_out = cooling_data_2['p_static'][-1]
 boundary_conditions_2 = psf.regen.BoundaryConditions(T_coolant_in = T_out, p_coolant_in = p_out, mdot_coolant = mdot_fu)
-cooling_data = psf.regen.steady_heating_analysis(thrust_chamber, n_nodes = 100, circuit_index=0, boundary_conditions=boundary_conditions_2, solver="newton", output=True)
+cooling_data = psf.regen.coupled_steady_heating_analysis(thrust_chamber, n_nodes = 100, circuit_index=0, boundary_conditions=boundary_conditions_2, solver="newton", output=True)
 end_time = time.time()
 elapsed = end_time - start_time
 print(f"Process took {elapsed:.4f} seconds")

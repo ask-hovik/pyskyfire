@@ -78,7 +78,7 @@ cantera_combustion = psf.skycea.CombustionReaction.from_F_eps_Lstar(fu=params["c
 
 
 CEA_optimals = aerothermodynamics.optimum
-#Cantera_optimals = cantera_combustion.optimum
+Cantera_optimals = cantera_combustion.optimum
 
 print(f"CEA throat temperature: {CEA_optimals["T_t"]}")
 print(f"Cantera throat temperature: {Cantera_optimals["T_t"]}")
@@ -167,7 +167,7 @@ boundary_conditions_a = psf.regen.BoundaryConditions(T_coolant_in = params["T_co
                                                      p_coolant_in = params["p_coolant_in"], 
                                                      mdot_coolant = mdot_fu)
 
-cooling_data_a = psf.regen.steady_heating_analysis(thrust_chamber, 
+cooling_data_a = psf.regen.coupled_steady_heating_analysis(thrust_chamber, 
                                                    n_nodes = 30, 
                                                    circuit_index=0, 
                                                    boundary_conditions=boundary_conditions_a, 
@@ -181,7 +181,7 @@ boundary_conditions_b = psf.regen.BoundaryConditions(T_coolant_in = T_out,
                                                      p_coolant_in = p_out, 
                                                      mdot_coolant = mdot_fu)
 
-cooling_data_b = psf.regen.steady_heating_analysis(thrust_chamber, 
+cooling_data_b = psf.regen.coupled_steady_heating_analysis(thrust_chamber, 
                                                    n_nodes = 80, 
                                                    circuit_index=1, 
                                                    boundary_conditions=boundary_conditions_b, 

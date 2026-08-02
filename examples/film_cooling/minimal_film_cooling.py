@@ -2,10 +2,22 @@
 # Welcome to the minimal example showing how to use Pyskyfire!
 # ============================================================
 
-import os
+import argparse
 from pathlib import Path
 
 import pyskyfire as psf
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--output-dir",
+    type=Path,
+    help="Directory for generated HTML outputs.",
+)
+args = parser.parse_args()
+
+output_dir = args.output_dir or Path(__file__).resolve().parent
+output_dir.mkdir(parents=True, exist_ok=True)
 
 # Input parameters for your engine
 params = dict(
@@ -159,11 +171,12 @@ else:
 # ============================================================
 # Regenerative cooling simulation (run second)
 # ============================================================
-cooling_data = psf.regen.steady_heating_analysis(
+cooling_data = psf.regen.coupled_steady_heating_analysis(
     thrust_chamber,
     n_nodes=100,
     circuit_index=0,
     boundary_conditions=boundary_conditions,
+    film=False,
     output=True,
 )
 
@@ -171,16 +184,8 @@ cooling_data = psf.regen.steady_heating_analysis(
 # Plotting / report
 # ============================================================
 
-output_dir = None
-if output_dir is None:
-    output_dir = Path(__file__).parent
-
-output_dir.mkdir(parents=True, exist_ok=True)
-
 engine_viewer = psf.viz.make_engine_3d(thrust_chamber, show=False)
 engine_viewer.save_html(output_dir / "film_engine.html")
-
-script_dir = os.path.dirname(os.path.abspath(__file__))
 
 print("Started generating report")
 report = psf.viz.Report("Minimal Engine")
@@ -242,6 +247,6 @@ tab_cooling_data.add_figure(fig_coolant_velocity)
 tab_cooling_data.add_figure(fig_heat_transfer_coefficient)
 
 # After all the content has been added, the report can be written to file
-out_path = os.path.join(script_dir, "film_report.html")
+out_path = output_dir / "film_report.html"
 report.save_html(out_path)
 print(f"Report saved to {out_path}")

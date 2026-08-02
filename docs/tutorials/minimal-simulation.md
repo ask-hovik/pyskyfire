@@ -139,7 +139,7 @@ The cooling simulation needs a coolant inlet temperature, inlet pressure, and ma
 :dedent: 4
 ```
 
-`steady_heating_analysis` returns `cooling_data`, which contains the axial solution for coolant state, wall temperatures, heat flux, flow velocity, and related quantities. Below the heat flux is shown as an example. 
+`coupled_steady_heating_analysis` returns `cooling_data`, which contains the axial solution for coolant state, wall temperatures, heat flux, flow velocity, and related quantities. Below the heat flux is shown as an example.
 
 ```{raw} html
 <div class="psf-wide-frame">

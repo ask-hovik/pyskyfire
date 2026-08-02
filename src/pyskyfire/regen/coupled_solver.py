@@ -1,14 +1,12 @@
 """Coupled film + regenerative cooling solver.
 
-This is a drop-in alternative to :mod:`pyskyfire.regen.solver` that lets the
-hot-side boundary condition come from either the hot combustion gas, a film
-cooling solution, or a mix of the two along the chamber.
+The hot-side boundary condition can come from either the hot combustion gas,
+a film cooling solution, or a mix of the two along the chamber.
 
 Three usage modes fall out of the same machinery:
 
 * **Regenerative only** -- call :func:`coupled_steady_heating_analysis` with
-  ``film=False`` (or on a chamber without ``film_cooling``). Identical physics
-  to :func:`pyskyfire.regen.solver.steady_heating_analysis`.
+  ``film=False`` (or on a chamber without ``film_cooling``).
 * **Film only** -- call :func:`solve_film_cooling`, which runs the Grisson
   film model on its own and returns the liquid/gaseous film results.
 * **Both** -- call :func:`coupled_steady_heating_analysis` on a chamber that
@@ -76,23 +74,41 @@ actually reaches the channels.
 Coolant properties are evaluated at the coolant pressure
 --------------------------------------------------------
 
-:meth:`CoupledHeatExchangerPhysics.cold_side_coefficients` overrides the base
-implementation, which evaluates the coolant film properties at
-``combustion_transport.get_p(x)`` -- the *gas* pressure. The coolant pressure
-is what the march already tracks and what ``coolant_pressure_rate`` and
-``coolant_temperature_rate`` already use, so it is threaded through here too.
-This makes results from this module differ from
-:func:`pyskyfire.regen.solver.steady_heating_analysis` even with no film.
+:meth:`CoupledHeatExchangerPhysics.cold_side_coefficients` evaluates the
+coolant film properties at the coolant pressure. The coolant pressure is what
+the march already tracks and what ``coolant_pressure_rate`` and
+``coolant_enthalpy_rate`` already use, so it is threaded through here too.
 
-What this does **not** fix is the absence of any two-phase treatment. Where the
-coolant film temperature ``(T_cool + T_cw)/2`` crosses the local saturation
-temperature, ``h_cold`` still steps discontinuously as CoolProp switches
-branches, and the local wall solve can fail to cross the jump to reach the true
-root. Correcting the pressure moves that crossing to where it physically
-belongs rather than removing it -- and a wall above coolant saturation means
-nucleate boiling, which the Colburn correlation in use does not describe at
-all. Nodes where the balance fails to close are flagged by a
-``RuntimeWarning``, so check for those before trusting a profile.
+The coolant march: enthalpy where possible, temperature otherwise
+-----------------------------------------------------------------
+
+The coolant state is advanced on **specific enthalpy**, so the march stays
+valid through the boiling dome and reports vapour quality. Temperature is not a
+usable state variable there -- inside the dome it is pinned to
+:math:`T_\\text{sat}(p)` while the fluid keeps absorbing heat -- and a
+temperature march stepping past saturation silently lands on the superheated
+vapour branch, with a ~19x density error. See
+:mod:`pyskyfire.regen.coolant_state` for the full argument and for what the
+two-phase treatment does and does not cover.
+
+Two coolants keep the old temperature march, via
+:func:`~pyskyfire.regen.coolant_state.probe_coolant`:
+
+* **mixtures**, because a mixture ``(h, p)`` flash costs ~374 ms against ~57 us
+  for a pure fluid and would put a 100-node run into the hours;
+* **backends without saturation data**, such as ``INCOMP::``.
+
+On those the solver behaves exactly as it did before -- no quality, no dome --
+and says so through a ``RuntimeWarning`` plus a printed note when ``output`` is
+enabled.
+
+What is still missing is **two-phase heat transfer**. Inside the dome
+``h_cold`` remains the single-phase Colburn value on saturated-liquid
+properties, so it captures neither the flow-boiling enhancement nor dryout, and
+nucleate boiling and CHF are not modelled at all. Read the quality profile as
+telling you *where* the coolant boils, not how hot the wall gets there. Nodes
+where the energy balance fails to close are flagged by a ``RuntimeWarning``, so
+check for those before trusting a profile.
 """
 
 from __future__ import annotations
@@ -106,24 +122,90 @@ import numpy as np
 from scipy.optimize import least_squares
 
 from . import physics
+from .coolant_state import (
+    _SATURATION_NUDGE,
+    PHASE_SUPERCRITICAL,
+    PHASE_TWO_PHASE,
+    CoolantState,
+    _off_saturation,
+)
 from .film_solver import (
     GaseousFilmResults,
     GrissonFilmCoolingModel,
     LiquidFilmResults,
 )
-from .solver import (
-    BoundaryConditions,
-    HeatExchangerPhysics,
-    RegenResult,
-    analyse_residuals,
-)
+
+ResidualResult = tuple[np.ndarray, np.ndarray] | tuple[None, None]
+
+
+@dataclass
+class BoundaryConditions:
+    """Boundary conditions for the coolant-side inlet.
+
+    Parameters
+    ----------
+    T_coolant_in : float
+        Coolant static temperature at the channel inlet [K].
+    p_coolant_in : float
+        Coolant static pressure at the channel inlet [Pa].
+    mdot_coolant : float
+        Coolant mass-flow rate through the cooling channel [kg s⁻¹].
+    """
+    T_coolant_in: float
+    p_coolant_in: float
+    mdot_coolant: float
+
+
+@dataclass
+class RegenResult:
+    """Regenerative-cooling result with optional film-cooling data.
+
+    The coolant-state fields (``coolant_enthalpy`` onwards) describe the bulk
+    coolant along the circuit. ``coolant_enthalpy`` and ``coolant_quality`` are
+    all-``nan`` when the coolant fell back to the temperature march, and
+    ``coolant_quality`` is ``nan`` at any station outside the boiling dome --
+    including supercritical stations, where no dome exists. Use
+    ``coolant_phase`` to tell those cases apart.
+    """
+
+    circuit_name: str
+    circuit_index: int
+    x: np.ndarray
+    T: np.ndarray
+    T_static: np.ndarray
+    T_stagnation: np.ndarray
+    p_static: np.ndarray
+    p_stagnation: np.ndarray
+    dQ_dA: np.ndarray
+    velocity: np.ndarray
+    h_hot: np.ndarray
+    h_hot_enthalpy: np.ndarray
+    h_cold: np.ndarray
+    T_aw_hot: np.ndarray
+    residuals: ResidualResult
+    qpp_hot: Optional[np.ndarray] = None
+    T_drive: Optional[np.ndarray] = None
+    film_regime: Optional[np.ndarray] = None
+    liquid_film: Optional[LiquidFilmResults] = None
+    gaseous_film: Optional[GaseousFilmResults] = None
+    #: Bulk coolant specific enthalpy [J kg⁻¹]; ``nan`` under the T-march.
+    coolant_enthalpy: Optional[np.ndarray] = None
+    #: Bulk vapour mass fraction; ``nan`` outside the dome.
+    coolant_quality: Optional[np.ndarray] = None
+    #: Local coolant saturation temperature [K]; ``nan`` where undefined.
+    coolant_T_sat: Optional[np.ndarray] = None
+    #: Per-station ``PHASE_*`` label from :mod:`pyskyfire.regen.coolant_state`.
+    coolant_phase: Optional[np.ndarray] = None
+    #: True when the coolant advanced on enthalpy rather than temperature.
+    enthalpy_march: bool = False
 
 __all__ = [
+    "BoundaryConditions",
+    "RegenResult",
     "DEFAULT_H_LIQUID_WALL",
     "RESIDUAL_TOL",
     "SATURATION_NUDGE",
     "FilmHeatFluxModel",
-    "CoupledRegenResult",
     "CoupledHeatExchangerPhysics",
     "solve_film_cooling",
     "solve_coupled_heat_exchanger",
@@ -135,7 +217,8 @@ __all__ = [
 DEFAULT_H_LIQUID_WALL = 5.0e3
 
 #: Temperature step used to leave CoolProp's saturation-line exclusion band [K].
-SATURATION_NUDGE = 1.0e-3
+#: Kept as an alias so the two modules cannot drift.
+SATURATION_NUDGE = _SATURATION_NUDGE
 
 #: Scaled energy-balance residual above which a node is reported as suspect.
 #: The residual is normalised by the node's reference heat load, so this is a
@@ -146,34 +229,6 @@ RESIDUAL_TOL = 1.0e-4
 REGIME_GAS = "gas"
 REGIME_LIQUID_FILM = "liquid_film"
 REGIME_GASEOUS_FILM = "gaseous_film"
-
-
-@dataclass
-class CoupledRegenResult(RegenResult):
-    """:class:`~pyskyfire.regen.solver.RegenResult` plus film-coupling output.
-
-    Attributes
-    ----------
-    qpp_hot : ndarray
-        Hot-side wall heat flux actually used by the solve [W m⁻²]. Equal to
-        ``dQ_dA``; kept under an explicit name because it may come from the
-        film model rather than the gas.
-    T_drive : ndarray
-        Driving temperature of the hot-side boundary condition [K]: gas
-        adiabatic-wall temperature, film saturation temperature, or film
-        adiabatic-wall temperature depending on the regime.
-    film_regime : ndarray of str
-        Per-station regime, one of ``'gas'``, ``'liquid_film'``,
-        ``'gaseous_film'``.
-    liquid_film, gaseous_film : results or None
-        Raw Grisson film solutions, ``None`` when no film was used.
-    """
-
-    qpp_hot: Optional[np.ndarray] = None
-    T_drive: Optional[np.ndarray] = None
-    film_regime: Optional[np.ndarray] = None
-    liquid_film: Optional[LiquidFilmResults] = None
-    gaseous_film: Optional[GaseousFilmResults] = None
 
 
 class FilmHeatFluxModel:
@@ -227,9 +282,12 @@ class FilmHeatFluxModel:
             self._x_liquid_end = self.x_injection
 
         # --- gaseous branch -----------------------------------------------
-        x_gas = np.asarray(getattr(gaseous_results, "x", []) or [], dtype=float)
-        self._has_gaseous = x_gas.size > 0
-        if self._has_gaseous:
+        x_gas = np.asarray(
+            gaseous_results.x if gaseous_results is not None else [],
+            dtype=float,
+        )
+        if gaseous_results is not None and x_gas.size > 0:
+            self._has_gaseous = True
             self._x_gas = x_gas
             # The film-cooled adiabatic wall temperature is the whole point of
             # the gaseous march; its h_conv is an entrainment conductance and
@@ -238,6 +296,7 @@ class FilmHeatFluxModel:
             self._q_rad_gas = np.asarray(gaseous_results.Q_rad, dtype=float)
             self._x_gas_end = float(self._x_gas[-1])
         else:
+            self._has_gaseous = False
             self._x_gas_end = self._x_liquid_end
 
     # ------------------------------------------------------------------
@@ -342,13 +401,13 @@ class FilmHeatFluxModel:
         }
 
 
-class CoupledHeatExchangerPhysics(HeatExchangerPhysics):
+class CoupledHeatExchangerPhysics:
     """Heat-exchanger physics whose hot side may be gas- or film-driven.
 
-    Identical to :class:`~pyskyfire.regen.solver.HeatExchangerPhysics` except
-    that :meth:`hot_side_coefficients` defers to ``film_model`` wherever the
-    film covers the wall. Everything downstream (conduction, coolant side,
-    pressure drop) consumes ``qpp_hot`` and is untouched.
+    The bare-wall hot side uses the enthalpy-driven Bartz model. Where a film
+    covers the wall, :meth:`hot_side_coefficients` substitutes the appropriate
+    liquid- or gaseous-film boundary condition. The shared wall, coolant, and
+    pressure models consume the resulting ``qpp_hot`` regardless of its source.
 
     Parameters
     ----------
@@ -358,9 +417,89 @@ class CoupledHeatExchangerPhysics(HeatExchangerPhysics):
         Film boundary condition. ``None`` reproduces the base class exactly.
     """
 
-    def __init__(self, thrust_chamber, boundary_conditions, circuit_index, film_model=None):
-        super().__init__(thrust_chamber, boundary_conditions, circuit_index)
+    def __init__(
+        self,
+        thrust_chamber,
+        boundary_conditions,
+        circuit_index,
+        film_model=None,
+        coolant_state: Optional[CoolantState] = None,
+    ):
+        self.thrust_chamber = thrust_chamber
+        self.boundary_conditions = boundary_conditions
+        self.circuit_index = circuit_index
         self.film_model = film_model
+
+        circuit = thrust_chamber.cooling_circuits[circuit_index]
+        self.coolant_state = coolant_state or CoolantState(
+            circuit.coolant_transport, boundary_conditions.p_coolant_in
+        )
+
+    def _gas_side_coefficients(self, x, T_hw, T_gr_mode="reference"):
+        """Return the bare-gas, enthalpy-driven Bartz heat-transfer state."""
+        ct = self.thrust_chamber.combustion_transport
+
+        D_hyd = 2 * self.thrust_chamber.contour.r(x)
+        A_chmb = self.thrust_chamber.contour.A(x)
+
+        gas = ct.get_state(x)
+        T_g = gas.T
+        H_g = gas.h
+        M_g = gas.M
+        a_g = gas.a
+
+        try:
+            H_hw = ct.get_h(x, T=T_hw)
+        except Exception:  # noqa: BLE001
+            H_hw = H_g
+
+        dynamic_enthalpy = 0.5 * M_g**2 * a_g**2
+        H_gr = 0.5 * (H_hw + H_g) + 0.18 * dynamic_enthalpy
+
+        ref = ct.get_state(x, h=H_gr)
+        if T_gr_mode == "reference":
+            T_gr = ref.T
+        elif T_gr_mode == "film":
+            T_gr = 0.5 * (T_hw + T_g)
+        else:
+            raise ValueError("T_gr_mode must be 'reference' or 'film'")
+
+        h_gr = physics.h_gas_bartz_enthalpy_driven(
+            ref.k,
+            D_hyd,
+            ref.cp,
+            ref.mu,
+            ct.mdot,
+            A_chmb,
+            T_g,
+            T_gr,
+        ) * self.thrust_chamber.h_gas_corr
+        h_g = h_gr / ref.cp
+
+        recovery_factor = ref.Pr ** (1.0 / 3.0)
+        H_aw = H_g + recovery_factor * dynamic_enthalpy
+        T_aw = physics.T_aw(
+            gamma=gas.gamma,
+            M_inf=M_g,
+            T_inf=T_g,
+            Pr=ref.Pr,
+        )
+        qpp_hot = h_g * (H_aw - H_hw)
+
+        delta_T = T_aw - T_hw
+        h_hot = qpp_hot / delta_T if abs(delta_T) > 1.0e-9 else float("nan")
+
+        return {
+            "h_hot": h_hot,
+            "h_g": h_g,
+            "h_gr": h_gr,
+            "T_aw": T_aw,
+            "qpp_hot": qpp_hot,
+            "H_gr": H_gr,
+            "H_aw": H_aw,
+            "H_hw": H_hw,
+            "T_gr": T_gr,
+        }
 
     # ------------------------------------------------------------------
     # coolant side: evaluated at the coolant pressure, not the gas pressure
@@ -371,33 +510,40 @@ class CoupledHeatExchangerPhysics(HeatExchangerPhysics):
             return float(p_cool)
         return float(self.boundary_conditions.p_coolant_in)
 
-    @staticmethod
-    def _off_saturation(getter, T, p):
-        """Evaluate a coolant property, stepping off CoolProp's saturation guard.
+    _off_saturation = staticmethod(_off_saturation)
 
-        CoolProp refuses a ``(T, p)`` pair within 1e-4 % of the saturation
-        line, because the liquid and vapour branches are both valid there and
-        it will not choose. The wall solve lands on that line often enough to
-        kill a run outright, so retry a millikelvin to the liquid side.
+    def bulk_density(self, T_cool, p_cool, quality=None):
+        """Bulk coolant density [kg m⁻³], homogeneous inside the boiling dome.
 
-        This is a crash guard, not a model: it only fires inside that
-        microscopic band, and the bulk coolant on either side of it is
-        subcooled liquid, which is what the Colburn correlation in use assumes.
-        Property calls made at the *bulk* coolant temperature elsewhere in the
-        march are not wrapped -- only the film temperature here carries the
-        wall temperature into the property lookup.
+        Parameters
+        ----------
+        T_cool : float
+            Bulk coolant temperature [K].
+        p_cool : float
+            Coolant pressure [Pa].
+        quality : float, optional
+            Vapour mass fraction. ``None`` or ``nan`` means single-phase, in
+            which case density comes from an ordinary ``(T, p)`` lookup.
+
+        Notes
+        -----
+        The two-phase value is the homogeneous, no-slip mixture density. It
+        captures the large acceleration effect through the dome but not slip,
+        so it is an under-estimate of the true momentum flux.
         """
-        try:
-            return getter(T, p)
-        except ValueError:
-            return getter(T - SATURATION_NUDGE, p)
+        p = self._coolant_pressure(p_cool)
+        if quality is not None and np.isfinite(quality):
+            sat = self.coolant_state.saturation(p)
+            if sat is not None:
+                return sat.homogeneous_density(quality)
 
-    def cold_side_coefficients(self, x, T_cw, T_cool, p_cool=None):
+        circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
+        return _off_saturation(circuit.coolant_transport.get_rho, T_cool, p)
+
+    def cold_side_coefficients(self, x, T_cw, T_cool, p_cool=None, quality=None):
         """Coolant-side heat transfer coefficient at ``x``.
 
-        Mirrors :meth:`~pyskyfire.regen.solver.HeatExchangerPhysics.cold_side_coefficients`
-        with one substitution: coolant properties are evaluated at the coolant
-        pressure rather than at ``combustion_transport.get_p(x)``.
+        Coolant properties are evaluated at the local coolant pressure.
 
         Parameters
         ----------
@@ -410,11 +556,21 @@ class CoupledHeatExchangerPhysics(HeatExchangerPhysics):
         p_cool : float, optional
             Local coolant pressure [Pa]. Defaults to the inlet pressure, which
             is the best available guess outside a march.
+        quality : float, optional
+            Bulk vapour mass fraction, used for the two-phase bulk density.
+            ``None``/``nan`` outside the dome.
 
         Returns
         -------
         dict
             ``h_cold``, ``phi_curv``, ``Re_c``.
+
+        Notes
+        -----
+        This is a **single-phase** correlation everywhere, including inside the
+        boiling dome, where it is evaluated on saturated-liquid properties. It
+        therefore models neither flow-boiling enhancement nor dryout. See
+        :mod:`pyskyfire.regen.coolant_state`.
         """
         circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
         n_chan = (
@@ -427,15 +583,21 @@ class CoupledHeatExchangerPhysics(HeatExchangerPhysics):
         T_coolant_film = 0.5 * (T_cool + T_cw)
 
         ct = circuit.coolant_transport
-        k_cf = self._off_saturation(ct.get_k, T_coolant_film, p)
-        Cp_cr = self._off_saturation(ct.get_cp, T_coolant_film, p)
-        mu_cf = self._off_saturation(ct.get_mu, T_coolant_film, p)
+        # Clamped to saturated liquid once the film temperature crosses T_sat,
+        # rather than falling through to CoolProp's vapour branch.
+        k_cf, Cp_cr, mu_cf = self.coolant_state.film_properties(
+            T_coolant_film, p, (ct.get_k, ct.get_cp, ct.get_mu)
+        )
 
         D_c = circuit.Dh_coolant(x)
         A_channel = circuit.A_coolant(x)
 
-        rho_bulk = self._off_saturation(ct.get_rho, T_cool, p)
-        mu_bulk = self._off_saturation(ct.get_mu, T_cool, p)
+        rho_bulk = self.bulk_density(T_cool, p, quality)
+        if quality is not None and np.isfinite(quality):
+            sat = self.coolant_state.saturation(p)
+            mu_bulk = sat.mu_f if sat is not None else _off_saturation(ct.get_mu, T_cool, p)
+        else:
+            mu_bulk = _off_saturation(ct.get_mu, T_cool, p)
         u_c = physics.u_coolant(rho_bulk, mdot_c_single_channel, A_channel)
         Re_c = physics.reynolds(rho_bulk, u_c, D_c, mu_bulk)
 
@@ -452,7 +614,7 @@ class CoupledHeatExchangerPhysics(HeatExchangerPhysics):
             "Re_c": Re_c,
         }
 
-    def dQ_cold_dx(self, x, T_cw, T_cool, p_cool=None):
+    def dQ_cold_dx(self, x, T_cw, T_cool, p_cool=None, quality=None):
         """Heat removed by the coolant per unit length [W m⁻¹].
 
         Parameters
@@ -466,9 +628,14 @@ class CoupledHeatExchangerPhysics(HeatExchangerPhysics):
         p_cool : float, optional
             Local coolant pressure [Pa], forwarded to
             :meth:`cold_side_coefficients`.
+        quality : float, optional
+            Bulk vapour mass fraction, forwarded to
+            :meth:`cold_side_coefficients`.
         """
         circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
-        h_c = self.cold_side_coefficients(x, T_cw, T_cool, p_cool=p_cool)["h_cold"]
+        h_c = self.cold_side_coefficients(
+            x, T_cw, T_cool, p_cool=p_cool, quality=quality
+        )["h_cold"]
 
         T_rep = 0.5 * (T_cw + T_cool)
         R_cool_per_len = circuit.R_coolant_per_len(x, h_c=h_c, T_wall_rep=T_rep)
@@ -516,7 +683,7 @@ class CoupledHeatExchangerPhysics(HeatExchangerPhysics):
                 "regime": REGIME_LIQUID_FILM,
             }
 
-        coeffs = super().hot_side_coefficients(x, T_hw, T_gr_mode=T_gr_mode)
+        coeffs = self._gas_side_coefficients(x, T_hw, T_gr_mode=T_gr_mode)
         coeffs["regime"] = REGIME_GAS
         coeffs["q_rad"] = 0.0
 
@@ -545,6 +712,118 @@ class CoupledHeatExchangerPhysics(HeatExchangerPhysics):
             )
 
         return coeffs
+
+    def dQ_hot_dx(self, x, T_hw):
+        """Return hot-side heat flow per unit axial length [W m⁻¹]."""
+        qpp_hot = self.hot_side_coefficients(x, T_hw)["qpp_hot"]
+        circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
+        return qpp_hot * circuit.dA_dx_thermal_exhaust(x)
+
+    def dQ_cond_dx(self, x, T_hw, T_cw):
+        """Return conduction through the wall stack per unit length [W m⁻¹]."""
+        circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
+        dA_dx_hot = circuit.dA_dx_thermal_exhaust(x)
+        T_wall = 0.5 * (T_hw + T_cw)
+        resistance = sum(
+            wall.thickness(x) / (wall.material.get_k(T_wall) * dA_dx_hot)
+            for wall in circuit.walls
+        )
+        return (T_hw - T_cw) / resistance
+
+    def mdot_per_channel(self):
+        """Coolant mass flow through a single channel [kg s⁻¹]."""
+        circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
+        n_channels = (
+            circuit.placement.n_channel_positions
+            * circuit.placement.n_channels_per_leaf
+        )
+        return self.boundary_conditions.mdot_coolant / n_channels
+
+    def coolant_enthalpy_rate(self, Q_cold):
+        """Return the coolant specific-enthalpy change from ``Q_cold`` [J kg⁻¹].
+
+        The state variable of the coolant march. Unlike
+        :meth:`coolant_temperature_rate` this stays valid through the boiling
+        dome, where added heat raises enthalpy at constant temperature.
+        """
+        return Q_cold / self.mdot_per_channel()
+
+    def coolant_temperature_rate(self, T_cool, p_cool, Q_cold):
+        """Return the coolant temperature change caused by ``Q_cold`` [K].
+
+        Single-phase only -- it assumes all the heat is sensible. Used for
+        coolants that cannot support the enthalpy march (mixtures, and backends
+        without saturation data); see :func:`.coolant_state.probe_coolant`.
+        """
+        circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
+        cp = circuit.coolant_transport.get_cp(T_cool, p_cool)
+        return Q_cold / (self.mdot_per_channel() * cp)
+
+    def coolant_pressure_rate(self, x, T_cool, p_cool, quality=None):
+        """Return static and stagnation coolant-pressure rates [Pa m⁻¹].
+
+        Parameters
+        ----------
+        quality : float, optional
+            Bulk vapour mass fraction. Inside the dome the homogeneous mixture
+            density is used, which captures the acceleration through the dome
+            but not the two-phase friction multiplier, so :math:`\\Delta p` is
+            under-predicted at appreciable quality.
+        """
+        circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
+        mdot_channel = self.mdot_per_channel()
+        coolant = circuit.coolant_transport
+
+        rho_cool = self.bulk_density(T_cool, p_cool, quality)
+        two_phase = quality is not None and np.isfinite(quality)
+        sat = self.coolant_state.saturation(p_cool) if two_phase else None
+        mu_cool = sat.mu_f if sat is not None else coolant.get_mu(T_cool, p_cool)
+
+        area = circuit.A_coolant(x)
+        velocity = physics.u_coolant(rho_cool, mdot_channel, area)
+        hydraulic_diameter = circuit.Dh_coolant(x)
+        reynolds = physics.reynolds(
+            rho_cool,
+            velocity,
+            hydraulic_diameter,
+            mu_cool,
+        )
+        friction = physics.f_darcy(
+            reynolds,
+            hydraulic_diameter,
+            x,
+            circuit.roughness,
+        )
+
+        dp_stagnation_dx = (
+            -friction
+            / hydraulic_diameter
+            * rho_cool
+            * velocity**2
+            / 2
+            * circuit.ds_dx(x)
+        )
+        dp_static_dx = (
+            dp_stagnation_dx
+            - rho_cool * velocity**2 / area * circuit.dA_dx_coolant(x)
+        )
+        return dp_static_dx, dp_stagnation_dx
+
+    def interface_temperatures(self, x, T_hw, T_cw):
+        """Return wall-interface temperatures from the hot to the cold face."""
+        circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
+        dA_dx_hot = circuit.dA_dx_thermal_exhaust(x)
+        qdx = self.dQ_cond_dx(x, T_hw, T_cw)
+        T_wall = 0.5 * (T_hw + T_cw)
+        temperatures = [T_hw]
+
+        for wall in circuit.walls:
+            resistance = wall.thickness(x) / (
+                wall.material.get_k(T_wall) * dA_dx_hot
+            )
+            temperatures.append(temperatures[-1] - qdx * resistance)
+
+        return temperatures
 
 
 def solve_film_cooling(
@@ -595,7 +874,7 @@ def solve_coupled_heat_exchanger(
     output,
     film_model: Optional[FilmHeatFluxModel] = None,
     log_residuals: bool = True,
-) -> CoupledRegenResult:
+) -> RegenResult:
     """March the 1-D wall energy balance with an optional film boundary condition.
 
     Parameters
@@ -618,7 +897,7 @@ def solve_coupled_heat_exchanger(
 
     Returns
     -------
-    CoupledRegenResult
+    RegenResult
 
     Notes
     -----
@@ -650,15 +929,48 @@ def solve_coupled_heat_exchanger(
     p_stagnation_arr = np.zeros(n_nodes)
     dQ_dA_arr = np.zeros(n_nodes)
     regime_arr = np.empty(n_nodes, dtype=object)
+    h_cool_arr = np.full(n_nodes, np.nan)
+    quality_arr = np.full(n_nodes, np.nan)
+    T_sat_arr = np.full(n_nodes, np.nan)
+    phase_arr = np.empty(n_nodes, dtype=object)
 
     T_cool_in = boundary_conditions.T_coolant_in
     p_cool_in = boundary_conditions.p_coolant_in
-    T_cool_arr[0] = T_cool_in
     p_static_arr[0] = p_cool_in
     p_stagnation_arr[0] = p_cool_in  # assuming no velocity at inlet
 
+    # 3) Decide how the coolant state is advanced. Enthalpy where CoolProp can
+    #    support it, temperature otherwise -- see coolant_state.probe_coolant.
+    coolant_state = CoolantState(circuit.coolant_transport, p_cool_in)
+    capability = coolant_state.capability
+    use_enthalpy = capability.enthalpy_march
+
+    if not use_enthalpy:
+        warnings.warn(
+            f"coolant march fell back to temperature for circuit "
+            f"{circuit.name!r}: {capability.reason} Coolant temperatures past "
+            f"the saturation point are not physical.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+
+    if use_enthalpy:
+        h_cool_arr[0] = coolant_state.enthalpy(T_cool_in, p_cool_in)
+        bulk = coolant_state.from_hp(h_cool_arr[0], p_cool_in)
+    else:
+        bulk = coolant_state.from_tp(T_cool_in, p_cool_in)
+
+    T_cool_arr[0] = bulk.T
+    quality_arr[0] = bulk.quality
+    T_sat_arr[0] = bulk.T_sat
+    phase_arr[0] = bulk.phase
+
     physics_helper = CoupledHeatExchangerPhysics(
-        thrust_chamber, boundary_conditions, circuit_index, film_model=film_model
+        thrust_chamber,
+        boundary_conditions,
+        circuit_index,
+        film_model=film_model,
+        coolant_state=coolant_state,
     )
 
     # Initial guesses for the wall temperatures
@@ -673,6 +985,15 @@ def solve_coupled_heat_exchanger(
             f"Started coupled heat exchanger simulation with {n_nodes} nodes "
             f"({covered} film-cooled)"
         )
+        if use_enthalpy:
+            note = (
+                "no boiling dome at inlet pressure (supercritical)"
+                if bulk.phase == PHASE_SUPERCRITICAL
+                else f"T_sat = {bulk.T_sat:.1f} K at inlet"
+            )
+            print(f"Coolant march: enthalpy, {note}")
+        else:
+            print(f"Coolant march: temperature -- {capability.reason}")
 
     # ==============
     # --- SOLVER ---
@@ -724,7 +1045,11 @@ def solve_coupled_heat_exchanger(
             Q_hot_val = physics_helper.dQ_hot_dx(x_i, T_hw_trial) * dx
             Q_cond_val = physics_helper.dQ_cond_dx(x_i, T_hw_trial, T_cw_trial) * dx
             Q_cold_val = physics_helper.dQ_cold_dx(
-                x_i, T_cw_trial, T_cool_arr[i], p_cool=p_stagnation_arr[i]
+                x_i,
+                T_cw_trial,
+                T_cool_arr[i],
+                p_cool=p_stagnation_arr[i],
+                quality=quality_arr[i],
             ) * dx
 
             R1 = Q_hot_val - Q_cond_val
@@ -795,22 +1120,55 @@ def solve_coupled_heat_exchanger(
         # Update guesses for the next node
         T_hw_guess, T_cw_guess = T_hw_sol, T_cw_sol
 
-        # Update coolant temperature and pressure for the next node
+        # Update the coolant state and pressure for the next node
         if i < n_nodes - 1:
             Q_cold_val = physics_helper.dQ_cold_dx(
-                x_i, T_cw_sol, T_cool_arr[i], p_cool=p_stagnation_arr[i]
+                x_i,
+                T_cw_sol,
+                T_cool_arr[i],
+                p_cool=p_stagnation_arr[i],
+                quality=quality_arr[i],
             ) * dx
-            dT = physics_helper.coolant_temperature_rate(
-                T_cool_arr[i], p_stagnation_arr[i], Q_cold_val
-            )
             dp_static, dp_stagnation = physics_helper.coolant_pressure_rate(
-                x_i, T_cool_arr[i], p_stagnation_arr[i]
+                x_i, T_cool_arr[i], p_stagnation_arr[i], quality=quality_arr[i]
             )
-            dp_static = dp_static * dx
-            dp_stagnation = dp_stagnation * dx
-            T_cool_arr[i + 1] = T_cool_arr[i] + dT
-            p_static_arr[i + 1] = p_static_arr[i] + dp_static
-            p_stagnation_arr[i + 1] = p_stagnation_arr[i] + dp_stagnation
+            p_static_arr[i + 1] = p_static_arr[i] + dp_static * dx
+            p_stagnation_arr[i + 1] = p_stagnation_arr[i] + dp_stagnation * dx
+
+            # A non-positive pressure is always a modelling error, not a
+            # solution: the circuit cannot pass this mass flow. Catch it here,
+            # because the property flash downstream would otherwise fail with a
+            # CoolProp message that says nothing about the cause.
+            if p_stagnation_arr[i + 1] <= 0.0:
+                raise RuntimeError(
+                    f"coolant stagnation pressure fell to "
+                    f"{p_stagnation_arr[i + 1]/1e5:.3g} bar at node {i + 1} "
+                    f"(x = {x_domain[i + 1]:.4g} m) on circuit {circuit.name!r}, "
+                    f"starting from {p_cool_in/1e5:.3g} bar. The channel cannot "
+                    f"pass {boundary_conditions.mdot_coolant:.4g} kg/s: raise the "
+                    f"inlet pressure, enlarge the channel, or lower the flow."
+                )
+
+            # Advance the state variable, then resolve (T, quality) from it at
+            # the *new* pressure -- the dome moves with pressure, so resolving
+            # against the upstream pressure would misplace the crossing.
+            if use_enthalpy:
+                h_cool_arr[i + 1] = h_cool_arr[i] + physics_helper.coolant_enthalpy_rate(
+                    Q_cold_val
+                )
+                bulk = coolant_state.from_hp(h_cool_arr[i + 1], p_stagnation_arr[i + 1])
+            else:
+                dT = physics_helper.coolant_temperature_rate(
+                    T_cool_arr[i], p_stagnation_arr[i], Q_cold_val
+                )
+                bulk = coolant_state.from_tp(
+                    T_cool_arr[i] + dT, p_stagnation_arr[i + 1]
+                )
+
+            T_cool_arr[i + 1] = bulk.T
+            quality_arr[i + 1] = bulk.quality
+            T_sat_arr[i + 1] = bulk.T_sat
+            phase_arr[i + 1] = bulk.phase
 
     if output is True:
         print(f'\rSimulating: {100}%\n', end='', flush=True)
@@ -827,7 +1185,11 @@ def solve_coupled_heat_exchanger(
     for i, x_i in enumerate(x_domain):
         hot = physics_helper.hot_side_coefficients(x_i, T_hw_arr[i])
         cold = physics_helper.cold_side_coefficients(
-            x_i, T_cw_arr[i], T_cool_arr[i], p_cool=p_stagnation_arr[i]
+            x_i,
+            T_cw_arr[i],
+            T_cool_arr[i],
+            p_cool=p_stagnation_arr[i],
+            quality=quality_arr[i],
         )
 
         h_hot_arr[i] = hot["h_hot"]
@@ -846,13 +1208,19 @@ def solve_coupled_heat_exchanger(
     for i, x_i in enumerate(x_domain):
         A_channel = thrust_chamber.cooling_circuits[circuit_index].A_coolant(x_i)
         mdot_c_single = boundary_conditions.mdot_coolant / n_chan
-        rho_cool = thrust_chamber.cooling_circuits[circuit_index].coolant_transport.get_rho(
-            T_cool_arr[i], p_static_arr[i]
+        rho_cool = physics_helper.bulk_density(
+            T_cool_arr[i], p_static_arr[i], quality_arr[i]
         )
         velocity_arr[i] = physics.u_coolant(rho_cool, mdot_c_single, A_channel)
 
     T_stagnation_arr = np.zeros_like(T_cool_arr)
     for i, x_i in enumerate(x_domain):
+        # Inside the dome there is no stagnation *temperature* rise to speak
+        # of: bringing a saturated mixture to rest condenses vapour at fixed
+        # T_sat rather than heating it, and cp is not even finite there.
+        if phase_arr[i] == PHASE_TWO_PHASE:
+            T_stagnation_arr[i] = T_cool_arr[i]
+            continue
         cp_cool = thrust_chamber.cooling_circuits[circuit_index].coolant_transport.get_cp(
             T_cool_arr[i], p_static_arr[i]
         )
@@ -870,17 +1238,38 @@ def solve_coupled_heat_exchanger(
 
     p_static_corrected = np.zeros_like(p_stagnation_arr)
     for i in range(n_nodes):
-        rho_i = thrust_chamber.cooling_circuits[circuit_index].coolant_transport.get_rho(
-            T_cool_arr[i], p_stagnation_arr[i]
+        rho_i = physics_helper.bulk_density(
+            T_cool_arr[i], p_stagnation_arr[i], quality_arr[i]
         )
         q_dyn = 0.5 * rho_i * velocity_arr[i] ** 2
         p_static_corrected[i] = p_stagnation_arr[i] - q_dyn
 
     p_static_arr = p_static_corrected
 
+    # The quality profile says where the coolant boils; it does not say how hot
+    # the wall gets there, because h_cold is still a single-phase correlation.
+    boiling = np.flatnonzero(phase_arr == PHASE_TWO_PHASE)
+    if boiling.size:
+        i0 = int(boiling[0])
+        warnings.warn(
+            f"coolant enters the boiling dome at x = {x_domain[i0]:.4g} m "
+            f"(node {i0}) and reaches a quality of "
+            f"{np.nanmax(quality_arr):.3f} on circuit {circuit.name!r}. "
+            f"Two-phase heat transfer is not modelled -- h_cold remains the "
+            f"single-phase correlation on saturated-liquid properties, so wall "
+            f"temperatures downstream of that station are not trustworthy.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        if output is True:
+            print(
+                f"Coolant boils from x = {x_domain[i0]:.4g} m; exit quality "
+                f"{quality_arr[-1]:.3f} (two-phase h_cold not modelled)"
+            )
+
     global_R, final_R = analyse_residuals(residual_log, n_nodes)
 
-    return CoupledRegenResult(
+    return RegenResult(
         circuit_name=thrust_chamber.cooling_circuits[circuit_index].name,
         circuit_index=circuit_index,
         x=x_domain,
@@ -901,6 +1290,11 @@ def solve_coupled_heat_exchanger(
         film_regime=regime_arr.astype(str),
         liquid_film=film_model.liquid_results if film_model else None,
         gaseous_film=film_model.gaseous_results if film_model else None,
+        coolant_enthalpy=h_cool_arr,
+        coolant_quality=quality_arr,
+        coolant_T_sat=T_sat_arr,
+        coolant_phase=phase_arr.astype(str),
+        enthalpy_march=use_enthalpy,
     )
 
 
@@ -915,7 +1309,7 @@ def coupled_steady_heating_analysis(
     film_x_array: Optional[Sequence[float]] = None,
     solver: str = "newton",
     output: bool = True,
-) -> CoupledRegenResult:
+) -> RegenResult:
     """Run a steady heating analysis with film cooling, regen cooling, or both.
 
     Parameters
@@ -947,7 +1341,7 @@ def coupled_steady_heating_analysis(
 
     Returns
     -------
-    CoupledRegenResult
+    RegenResult
 
     Raises
     ------
@@ -985,3 +1379,53 @@ def coupled_steady_heating_analysis(
         output,
         film_model=film_model,
     )
+
+
+def analyse_residuals(residual_log, n_cells, p=2) -> ResidualResult:
+    """Aggregate local solver residuals into global history and final per-cell vector.
+
+    Parameters
+    ----------
+    residual_log : list or None
+        List of tuples ``(cell, iter, R1, R2)`` recorded during solves.
+        If ``None`` or empty, returns ``(None, None)``.
+    n_cells : int
+        Number of axial cells.
+    p : int or float, optional
+        Norm order for global residual history: ``2`` for RMS,
+        ``np.inf`` for :math:`L_\\infty`, etc. Default is 2.
+
+    Returns
+    -------
+    history : ndarray or None
+        Global residual norm for iterations ``0..k_max``, or ``None``.
+    final_per_cell : ndarray or None
+        Final residual magnitude per cell at its last local iteration, or ``None``.
+    """
+    if not residual_log:                          # catches [] and None
+        return None, None
+
+    log = np.asarray(residual_log)                # shape (m,4)
+    cells = log[:, 0].astype(int)
+    iters = log[:, 1].astype(int)
+    rmag  = np.hypot(log[:, 2], log[:, 3])        # L2 of (R1,R2)
+
+    # ---- global norm history  -----------------------------
+    k_max = iters.max()
+    history = np.empty(k_max + 1)
+
+    for k in range(k_max + 1):
+        mask = iters == k
+        if p == np.inf:
+            history[k] = rmag[mask].max()
+        else:
+            history[k] = (rmag[mask] ** p).mean() ** (1.0 / p)
+
+    # ---- per‑cell residual at final local iteration -------
+    final_per_cell = np.full(n_cells, np.nan)
+    for c in range(n_cells):
+        mask = cells == c
+        if mask.any():
+            final_per_cell[c] = rmag[mask][-1]    # last entry for cell c
+
+    return history, final_per_cell

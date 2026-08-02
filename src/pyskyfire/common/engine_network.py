@@ -2,8 +2,10 @@
 # ---------------------------------------------------------------------
 import numpy as np
 from dataclasses import dataclass
-from typing      import Dict, List, Iterable, Any
+from typing      import TYPE_CHECKING, Dict, List, Iterable, Any
 
+if TYPE_CHECKING:
+    from pyskyfire.common.blocks import Block
 
 @dataclass
 class Station:

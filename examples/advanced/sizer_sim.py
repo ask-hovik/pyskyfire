@@ -13,6 +13,7 @@ Full-cycle results additionally include:
     net, stations, signals, residuals, block_results
 """
 
+import argparse
 from pathlib import Path
 import time
 
@@ -274,7 +275,7 @@ def _solve_regen_circuit(
         mdot_coolant=mdot_coolant,
     )
 
-    return psf.regen.steady_heating_analysis(
+    return psf.regen.coupled_steady_heating_analysis(
         thrust_chamber,
         n_nodes=n_nodes,
         circuit_index=circuit_index,
@@ -725,7 +726,7 @@ def cooling_data_from_full_cycle(block_results):
 
 # tutorial:end:full-cycle-cooling-data
 
-def main():
+def main(output_dir: Path | None = None):
     # tutorial:start:run-and-save
     if RUN_MODE not in {"regen_only", "full_cycle"}:
         raise ValueError(
@@ -759,11 +760,23 @@ def main():
         for name, value in cycle_results.items():
             results.add(name=name, obj=value)
 
-    output_path = Path(__file__).resolve().parent / RESULTS_FILENAME
+    if output_dir is None:
+        output_dir = Path(__file__).resolve().parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    output_path = output_dir / RESULTS_FILENAME
     results.save(output_path)
     print(f"Results saved to {output_path}")
     # tutorial:end:run-and-save
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help="Directory for generated simulation results.",
+    )
+
+    args = parser.parse_args()
+    main(output_dir=args.output_dir)

@@ -7,6 +7,7 @@ name = "pyskyfire"
 version = "0.2.1"
 description = "A Python library for rocket engine simulation and design."
 readme = "README.md"
+requires-python = ">=3.14"
 license = { file = "LICENSE" }
 authors = [{ name = "Ask Haugerud Hovik", email = "ask.hovik@gmail.com" }]
 
@@ -27,6 +28,7 @@ dependencies = [
 
 classifiers = [
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.14",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent"
 ]
@@ -57,3 +59,62 @@ docs = [
   "sphinx-autodoc-typehints",
   "pyvista[jupyter]",
 ]
+
+# ================================================================
+# Ruff: report probable defects, not stylistic preferences
+# ================================================================
+
+[tool.ruff.lint]
+select = [
+  "E9",   # Syntax and parser-level errors
+  "F63",  # Invalid comparisons and related mistakes
+  "F7",   # Invalid control flow: return/break/continue misuse
+  "F82",  # Undefined and unbound names
+  "B",    # Common Python bugs and footguns
+  "W605", # Invalid escape sequences
+]
+
+# These Bugbear rules are useful in some projects, but are mostly
+# noise for this project's current stage.
+ignore = [
+  "B007", # Unused loop variable
+  "B009", # getattr() with a constant attribute name
+  "B028", # warnings.warn() without stacklevel
+  "B905", # zip() without an explicit strict= argument
+]
+
+
+# ================================================================
+# BasedPyright: red means likely execution failure;
+# type-contract disagreements are yellow warnings
+# ================================================================
+
+[tool.basedpyright]
+pythonVersion = "3.14"
+typeCheckingMode = "off"
+
+# Likely runtime failures: show as red errors.
+reportMissingImports = "error"
+reportUndefinedVariable = "error"
+reportUnboundVariable = "error"
+reportUnusedCoroutine = "error"
+
+# Type-contract disagreements: useful, but not "code cannot run".
+reportGeneralTypeIssues = "warning"
+reportReturnType = "warning"
+reportArgumentType = "warning"
+reportAssignmentType = "warning"
+reportAttributeAccessIssue = "warning"
+reportCallIssue = "warning"
+reportIndexIssue = "warning"
+reportOperatorIssue = "warning"
+reportUnhashable = "warning"
+
+# Possible None access: potentially wrong, but often requires
+# runtime knowledge that the type checker doesn't have.
+reportOptionalSubscript = "warning"
+reportOptionalMemberAccess = "warning"
+reportOptionalCall = "warning"
+reportOptionalIterable = "warning"
+reportOptionalContextManager = "warning"
+reportOptionalOperand = "warning"

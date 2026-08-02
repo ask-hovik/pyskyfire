@@ -10,8 +10,7 @@ import sys
 #       from centrifugal_pump.centrifugal_pump import Impeller
 #
 # The exact import depends on how your package is structured.
-from centrifugal_pump import Impeller
-from centrifugal_pump import plot
+from pyskyfire.pump import Impeller
 
 
 def main():
@@ -34,8 +33,8 @@ def main():
     # Create an Impeller object with the user-specified arguments
     imp = Impeller(Q=args.Q, H=args.H, n=args.n)
     print(imp)
-    plot.plot_impeller_views(imp)
-    plot.plot_impeller_3D(imp)
+    #plot.plot_impeller_views(imp)
+    #plot.plot_impeller_3D(imp)
     
     # Print some results
     # The Impeller class in your code places results in imp.results
