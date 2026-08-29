@@ -426,7 +426,7 @@ def add_regen_tabs(report, results):
         show=False,
         stride=2,
         # Circuits are ordered short (half pass), then long (full pass).
-        circuit_colors=(PYSKYFIRE_RED, PYSKYFIRE_RED),
+        circuit_colors=("#2b2d31", PYSKYFIRE_RED),
     )
     save_path = os.path.join(script_dir, "engine-3d.html")
     engine_viewer.save_html(save_path)

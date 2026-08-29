@@ -47,20 +47,20 @@ Pyskyfire is an open-source python package, meant as an alternative to RPA, NPSS
   · <a href="https://ask-hovik.github.io/pyskyfire/validation/rl10a-3-3a.html">Read the full RL10A-3-3A validation report</a></em>
 </p>
 
-The first iteration of pyskyfire was written as part of the master thesis of Ask Haugerud Hovik, which can be read [here](https://drive.google.com/file/d/1sZJmt-8UWtUChprji67LmnazS3Ei_K3a/view). The motivation to start writing the software came purely from a curiosity standpoint and from an innate wish to spread the understanding of rocket engines and propel us further into the space age. Please use this software responsibly and make sure you, your team memebers and everyone else stay safe in your rocket engine endeavours.
+The first iteration of pyskyfire was written as part of the master thesis of Ask Haugerud Hovik. [Read my thesis](papers/thesis-Ask-Haugerud_Hovik.pdf). The motivation to start writing the software came purely from a curiosity standpoint and from an innate wish to spread the understanding of rocket engines and propel us further into the space age. Please use this software responsibly and make sure you, your team memebers and everyone else stay safe in your rocket engine endeavours.
 
 # Program Capabilities
+- Full engine cycle solution, with pumps, turbines and regenerative cooling.
 - Chemical-equilibrium and hot-gas property calculations
 - Rao nozzle and combustion-chamber contour generation
 - Multi-pass regenerative-cooling analysis
 - Configurable channel geometry and wall materials
-- Pump, turbine, and engine-cycle component models
 - Interactive 3D visualizations and HTML engineering reports
 - Validation cases based on published engine data 
 - View the full overview of the [capabilities of pyskyfire](https://ask-hovik.github.io/pyskyfire/explanations/capabilities.html).
 
 # Documentaion
-[Documentation](https://ask-hovik.github.io/pyskyfire) for the project is available, and written in a pedagogic style. The package with examples and validation cases is still being developed, so the documentation does not cover everything the package is capable of. Look into the validation cases and advanced examples to see everything the package can do.
+[Documentation](https://ask-hovik.github.io/pyskyfire) for the project is available, and written in a pedagogic style using the Diátaxis framework. 
 
 # Installation
 The core package is available on PyPI and can be installed without the optional visualisation dependencies:
@@ -75,7 +75,11 @@ To include the interactive plots, 3D visualisations, and HTML reports, install t
 uv pip install "pyskyfire[viz]"
 ```
 
-For the bleeding edge version, clone the repository and install the development environment. This includes the visualisation, test, and documentation dependencies.
+Using ```uv pip``` and not plain ```pip``` is optional. For the bleeding edge version, clone the repository and install the development environment. This includes the visualisation, test, and documentation dependencies. For example:
+
+```
+uv sync
+```
 
 
 # Contributing
