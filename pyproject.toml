@@ -65,6 +65,8 @@ docs = [
   "sphinx-autodoc-typehints",
   "plotly>=6.3",
   "pyvista[jupyter]",
+  # Static Plotly export for the README charts; drives a headless Chrome.
+  "kaleido>=1.0",
 ]
 
 dev = [

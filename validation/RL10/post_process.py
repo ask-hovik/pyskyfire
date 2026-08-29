@@ -284,6 +284,84 @@ def group_comparison_legend(
 # Regenerative cooling tabs
 # ==========================
 
+def build_wall_temperature_comparison(cooling_data_a, cooling_data_b):
+    """Build the styled hot-wall temperature comparison figure.
+
+    Shared by the validation report and by the README chart export in
+    ``tools/generate_readme_charts.py`` so the two cannot drift apart.
+    """
+
+    reference_wall_temp_path = os.path.join(
+        reference_dir, "reference_wall_temperature.json"
+    )
+    reference_wall_temperature_data = load_reference(
+        path=reference_wall_temp_path,
+        prop_key="T_hot_wall",
+        excluded_models={"RL10_design_report"},
+    )
+
+    fig_wall_temp_comparison = psf.viz.PlotWallTemperature(*reference_wall_temperature_data,
+                                                cooling_data_a,
+                                                cooling_data_b,
+                                                mark_nonconverged=False,
+                                                template="plotly_white"
+                                                )
+
+    # Update traces and legends
+    fig_wall_temp_comparison.update_traces(
+        name="New System Model", # Name on legend
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="diamond", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(legendgroup="New System Model", name="Hot Wall"), # which one are you editing
+        )
+
+    fig_wall_temp_comparison.update_traces(
+        name="P&W Simulation",
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="triangle-up", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(legendgroup="P&W Simulation", name="Hot Wall"),
+        )
+
+    fig_wall_temp_comparison.update_traces(
+        name="RTE Model",
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="square", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(legendgroup="RTE Model", name="Hot Wall"),
+        )
+
+    fig_wall_temp_comparison.update_traces(
+        name="Short Tubes",
+        line=dict(color=PYSKYFIRE_RED, dash="dash"),
+        mode="lines",
+        selector=dict(legendgroup="Half Pass", name="Hot Wall"),
+        )
+
+    fig_wall_temp_comparison.update_traces(
+        name="Long Tubes",
+        line=dict(color=PYSKYFIRE_RED, dash="solid"),
+        mode="lines",
+        selector=dict(legendgroup="Full Pass", name="Hot Wall"),
+        )
+
+    group_comparison_legend(
+        fig_wall_temp_comparison,
+        reference_trace_names={
+            "New System Model",
+            "P&W Simulation",
+            "RTE Model",
+        },
+        pyskyfire_trace_names={
+            "Short Tubes",
+            "Long Tubes",
+        },
+    )
+
+    return fig_wall_temp_comparison
+
+
 def add_regen_tabs(report, results):
     """Add the regenerative-cooling validation tabs."""
     params = results.params
@@ -436,70 +514,8 @@ def add_regen_tabs(report, results):
     tab2.add_markdown(COOLING_DATA_NOTE)
 
     # -------- Wall temperature comparison ----------
-    reference_wall_temp_path = os.path.join(reference_dir, "reference_wall_temperature.json")
-    reference_wall_temperature_data = load_reference(
-        path=reference_wall_temp_path,
-        prop_key="T_hot_wall",
-        excluded_models={"RL10_design_report"},
-    )
-
-    fig_wall_temp_comparison = psf.viz.PlotWallTemperature(*reference_wall_temperature_data,
-                                                cooling_data_a,
-                                                cooling_data_b,
-                                                mark_nonconverged=False,
-                                                template="plotly_white"
-                                                )
-
-    # Update traces and legends
-    fig_wall_temp_comparison.update_traces(
-        name="New System Model", # Name on legend
-        line=dict(color="black"),
-        mode="lines+markers",
-        marker=dict(symbol="diamond", size=7, color="white", line=dict(color="black", width=1)),
-        selector=dict(legendgroup="New System Model", name="Hot Wall"), # which one are you editing
-        )
-
-    fig_wall_temp_comparison.update_traces(
-        name="P&W Simulation",
-        line=dict(color="black"),
-        mode="lines+markers",
-        marker=dict(symbol="triangle-up", size=7, color="white", line=dict(color="black", width=1)),
-        selector=dict(legendgroup="P&W Simulation", name="Hot Wall"),
-        )
-
-    fig_wall_temp_comparison.update_traces(
-        name="RTE Model",
-        line=dict(color="black"),
-        mode="lines+markers",
-        marker=dict(symbol="square", size=7, color="white", line=dict(color="black", width=1)),
-        selector=dict(legendgroup="RTE Model", name="Hot Wall"),
-        )
-
-    fig_wall_temp_comparison.update_traces(
-        name="Short Tubes",
-        line=dict(color=PYSKYFIRE_RED, dash="dash"),
-        mode="lines",
-        selector=dict(legendgroup="Half Pass", name="Hot Wall"),
-        )
-
-    fig_wall_temp_comparison.update_traces(
-        name="Long Tubes",
-        line=dict(color=PYSKYFIRE_RED, dash="solid"),
-        mode="lines",
-        selector=dict(legendgroup="Full Pass", name="Hot Wall"),
-        )
-
-    group_comparison_legend(
-        fig_wall_temp_comparison,
-        reference_trace_names={
-            "New System Model",
-            "P&W Simulation",
-            "RTE Model",
-        },
-        pyskyfire_trace_names={
-            "Short Tubes",
-            "Long Tubes",
-        },
+    fig_wall_temp_comparison = build_wall_temperature_comparison(
+        cooling_data_a, cooling_data_b
     )
 
     # add figure into report
