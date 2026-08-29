@@ -40,7 +40,7 @@ literature or validation references where possible.
 
 ## Development setup
 
-Pyskyfire requires Python 3.14 or newer and uses
+Pyskyfire requires Python 3.12 or newer and uses
 [`uv`](https://docs.astral.sh/uv/) for dependency and environment management.
 
 Fork the repository, clone your fork, and create a branch for the change:
@@ -88,8 +88,8 @@ During development, you can run an individual test file or test by passing its
 path to pytest:
 
 ```bash
-uv run --group test pytest -q tests/test_package.py
-uv run --group test pytest -q tests/test_package.py::<test-name>
+uv run --group test pytest -q tests/packaging/test_package.py
+uv run --group test pytest -q tests/packaging/test_package.py::<test-name>
 ```
 
 Some example tests use optional visualisation dependencies and may require a
@@ -133,8 +133,3 @@ In the pull request description, explain:
 
 By submitting a contribution, you agree that it will be distributed under the
 project's [MIT License](LICENSE).
-
-## Other useful commands
-```bash
-.venv/bin/python validation/RL10_2/optimize_channel_heights.py --target heat_flux
-``` 

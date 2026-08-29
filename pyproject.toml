@@ -7,13 +7,13 @@ name = "pyskyfire"
 version = "0.2.1"
 description = "A Python library for rocket engine simulation and design."
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 license = { file = "LICENSE" }
 authors = [{ name = "Ask Haugerud Hovik", email = "ask.hovik@gmail.com" }]
 
 dependencies = [
   "numpy>=2.3",
-  "scipy>=1.16",
+  "scipy>=1.18",
   "coolprop>=7.0",
   "cea>=3.3",
   "cloudpickle>=3.1",
@@ -21,6 +21,8 @@ dependencies = [
 
 classifiers = [
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent"
@@ -100,7 +102,7 @@ ignore = [
 # ================================================================
 
 [tool.basedpyright]
-pythonVersion = "3.14"
+pythonVersion = "3.12"
 typeCheckingMode = "off"
 
 # Likely runtime failures: show as red errors.

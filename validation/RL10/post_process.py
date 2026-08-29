@@ -41,10 +41,12 @@ REF_RECOP = "[R3]"
 REPORT_INTRODUCTION = (
     "This report reconstructs the RL10A-3-3A thrust chamber, regenerative "
     "cooling jacket, and engine cycle in Pyskyfire, then compares the results "
-    "with published RL10 data. The geometry and most validation curves were "
-    "digitized from Binder et al.'s NASA modeling report; older design curves "
-    "come from Pratt & Whitney's 1966 RL10A-3-3 design report; and the cooling-"
-    "tube dimensions come from the RECOP passage-design study. The source, "
+    "with published RL10 data. The geometry and validation curves plotted here "
+    "were digitized from Binder et al.'s NASA modeling report; older design "
+    "curves from Pratt & Whitney's 1966 RL10A-3-3 design report are retained "
+    "in the reference dataset but are not plotted because they are not one-to-"
+    "one comparisons; and the cooling-tube dimensions come from the RECOP "
+    "passage-design study. The source, "
     "page, and way each dataset is used are listed on the References tab as "
     f"{REF_BINDER}, {REF_DESIGN_REPORT}, and {REF_RECOP}."
 )
@@ -110,17 +112,16 @@ overwritten by the reproduction workflow.
 | `reference_silver_insert.json` | Inner and outer profiles of the throat silver insert, used to calculate its thickness and throat radius. |
 | `reference_channel_height.json` | Digitized cooling-tube outside-height data used to define the tube geometry. |
 | `reference_channel_width.json` | Digitized cooling-tube outside-width branches used in the tube-width comparison. |
-| `reference_wall_temperature.json` | Published hot-wall temperature curves used both for cooling-node placement and report comparisons. |
+| `reference_wall_temperature.json` | Published hot-wall temperature curves used both for cooling-node placement and report comparisons; the older RL10A-3-3 design-report curve is retained but not plotted. |
 | `reference_heat_flux.json` | Published hot-gas heat-flux curves used both for cooling-node placement and report comparisons. |
-| `reference_coolant_static_temperature.json` | Published coolant static-temperature curves used both for cooling-node placement and report comparisons. |
-| `reference_coolant_static_pressure.json` | Published coolant static-pressure curves used for cooling-node placement, circuit transition locations, and report comparisons. |
+| `reference_coolant_static_temperature.json` | Published coolant static-temperature curves used both for cooling-node placement and report comparisons; the older RL10A-3-3 design-report curve is retained but not plotted. |
+| `reference_coolant_static_pressure.json` | Published coolant static-pressure curves used for cooling-node placement, circuit transition locations, and report comparisons; the older RL10A-3-3 design-report curve is retained but not plotted. |
 | `reference_station_data.json` | Published fuel- and oxidizer-side engine station data used as cycle inputs and as the station-by-station comparison reference. |
 """
 
 COOLING_DATA_NOTE = (
     "These plots compare the Pyskyfire solution with digitized reference "
-    f"curves from {REF_BINDER} and, where shown in the legend, the earlier "
-    f"RL10 Design Report {REF_DESIGN_REPORT}. Exact agreement is not expected. "
+    f"curves from {REF_BINDER}. Exact agreement is not expected. "
     "The sources represent different model generations and operating balances; "
     "Pyskyfire uses its own gas-property and heat-transfer correlations; and "
     "reading curves from scanned figures introduces finite digitization error. "
@@ -245,7 +246,7 @@ def add_references_tab(report):
 | Reference | Source | Data used in this report |
 | --- | --- | --- |
 | [R1] | Binder, M., Tomsik, T., and Veres, J. P., *RL10A-3-3A Rocket Engine Modeling Project*, NASA TM-107318, 1997, [NTRS 19970010379](https://ntrs.nasa.gov/citations/19970010379). | Operating point (Tables 2.4.1 and 2.5.1); cooling-jacket layout and silver insert (p. 55); cooling comparisons (pp. 56–59); engine profile (Figure E1, p. 141); area-ratio stations (Table E1, p. 139); and engine station data. |
-| [R2] | Pratt & Whitney Aircraft, *Design Report for RL10A-3-3 Rocket Engine*, PWA FR-1769, 28 February 1966, [NTRS 19670005471](https://ntrs.nasa.gov/citations/19670005471). | Digitized wall-temperature, coolant-temperature, and coolant-pressure curves from Appendix D, Figure D-3, p. D-4. |
+| [R2] | Pratt & Whitney Aircraft, *Design Report for RL10A-3-3 Rocket Engine*, PWA FR-1769, 28 February 1966, [NTRS 19670005471](https://ntrs.nasa.gov/citations/19670005471). | Digitized wall-temperature, coolant-temperature, and coolant-pressure curves from Appendix D, Figure D-3, p. D-4. Retained in the reference datasets for possible future use but excluded from the comparison plots because the RL10A-3-3 curves are not one-to-one comparisons with this RL10A-3-3A case. |
 | [R3] | Tomsik, T. M., *A Hydrogen-Oxygen Rocket Engine Coolant Passage Design Program (RECOP) for Fluid-Cooled Thrust Chambers and Nozzles*, 1994, [NTRS 19950002773](https://ntrs.nasa.gov/citations/19950002773). | Digitized RL10A-3-3A tube outside-height and outside-width design points from Figure 10, document p. 172 (PDF p. 5). |
         """
     )
@@ -429,7 +430,11 @@ def add_regen_tabs(report, results):
 
     # -------- Wall temperature comparison ----------
     reference_wall_temp_path = os.path.join(reference_dir, "reference_wall_temperature.json")
-    reference_wall_temperature_data = load_reference(path=reference_wall_temp_path, prop_key="T_hot_wall")
+    reference_wall_temperature_data = load_reference(
+        path=reference_wall_temp_path,
+        prop_key="T_hot_wall",
+        excluded_models={"RL10_design_report"},
+    )
 
     fig_wall_temp_comparison = psf.viz.PlotWallTemperature(*reference_wall_temperature_data,
                                                 cooling_data_a,
@@ -464,14 +469,6 @@ def add_regen_tabs(report, results):
         )
 
     fig_wall_temp_comparison.update_traces(
-        name="RL10 Design Report",
-        line=dict(color="black"),
-        mode="lines+markers",
-        marker=dict(symbol="hexagon", size=7, color="white", line=dict(color="black", width=1)),
-        selector=dict(legendgroup="RL10 Design Report", name="Hot Wall"),
-        )
-
-    fig_wall_temp_comparison.update_traces(
         name="Short Tubes",
         line=dict(color=PYSKYFIRE_RED, dash="dash"),
         mode="lines",
@@ -491,7 +488,6 @@ def add_regen_tabs(report, results):
             "New System Model",
             "P&W Simulation",
             "RTE Model",
-            "RL10 Design Report",
         },
         pyskyfire_trace_names={
             "Short Tubes",
@@ -504,11 +500,8 @@ def add_regen_tabs(report, results):
         fig_wall_temp_comparison,
         caption=(
             "Hot-wall temperature from the models reproduced in Binder "
-            f"{REF_BINDER}, the RL10 Design Report curve from Appendix D, "
-            f"Figure D-3, p. D-4 {REF_DESIGN_REPORT}, and the Pyskyfire short- "
-            "and long-tube circuits. The older design report concerns the "
-            "RL10A-3-3 rather than the later A-3-3A model, and the peak is "
-            "especially sensitive to the hot-gas correlation and digitized "
+            f"{REF_BINDER} and the Pyskyfire short- and long-tube circuits. "
+            "The peak is especially sensitive to the hot-gas correlation and digitized "
             "throat location; both effects can produce visible discrepancies."
         ),
     )
@@ -570,7 +563,7 @@ def add_regen_tabs(report, results):
     reference_coolant_temperature_data = load_reference(
         path=reference_coolant_temp_path,
         prop_key="T_static",
-        excluded_models={"Binder_et_al"},
+        excluded_models={"Binder_et_al", "RL10_design_report"},
     )
 
     fig_coolant_temperature = psf.viz.PlotCoolantTemperature(*reference_coolant_temperature_data, cooling_data_a, cooling_data_b, )
@@ -601,14 +594,6 @@ def add_regen_tabs(report, results):
         )
 
     fig_coolant_temperature.update_traces(
-        name="RL10 Design Report",
-        line=dict(color="black"),
-        mode="lines+markers",
-        marker=dict(symbol="hexagon", size=7, color="white", line=dict(color="black", width=1)),
-        selector=dict(name="RL10 Design Report"),
-        )
-
-    fig_coolant_temperature.update_traces(
         name="Short Tubes",
         line=dict(color=PYSKYFIRE_RED, dash="dash"),
         mode="lines",
@@ -635,7 +620,6 @@ def add_regen_tabs(report, results):
             "New System Model",
             "P&W Simulation",
             "RTE Model",
-            "RL10 Design Report",
             "Test Data",
         },
         pyskyfire_trace_names={
@@ -647,9 +631,8 @@ def add_regen_tabs(report, results):
     tab2.add_figure(
         fig_coolant_temperature,
         caption=(
-            f"Static coolant temperature compared with {REF_BINDER} and with "
-            "the RL10 Design Report Appendix D, Figure D-3, p. D-4 "
-            f"{REF_DESIGN_REPORT}. Differences accumulate with absorbed heat "
+            f"Static coolant temperature compared with {REF_BINDER}. "
+            "Differences accumulate with absorbed heat "
             "along the flow path and therefore reflect both the local heat-flux "
             "prediction and differences in mass flow, inlet state, passage "
             "geometry, and the source model's treatment of the two tube passes."
@@ -661,7 +644,7 @@ def add_regen_tabs(report, results):
     reference_coolant_pressure_data = load_reference(
         path=reference_coolant_pressure_path,
         prop_key="p_static",
-        excluded_models={"Binder_et_al"},
+        excluded_models={"Binder_et_al", "RL10_design_report"},
     )
     fig_coolant_pressure = psf.viz.PlotCoolantPressure(*reference_coolant_pressure_data, cooling_data_b, static = True, stagnation=False)
 
@@ -694,15 +677,6 @@ def add_regen_tabs(report, results):
         )
 
     fig_coolant_pressure.update_traces(
-        name="RL10 Design Report",
-        legendgrouptitle=dict(text=None),
-        line=dict(color="black"),
-        mode="lines+markers",
-        marker=dict(symbol="hexagon", size=7, color="white", line=dict(color="black", width=1)),
-        selector=dict(legendgroup="RL10 Design Report", name="Static Pressure"),
-        )
-
-    fig_coolant_pressure.update_traces(
         name="Long Tubes",
         legendgrouptitle=dict(text=None),
         line=dict(color=PYSKYFIRE_RED, dash="solid"),
@@ -723,7 +697,6 @@ def add_regen_tabs(report, results):
             "New System Model",
             "P&W Simulation",
             "RTE Model",
-            "RL10 Design Report",
             "Test Data",
         },
         pyskyfire_trace_names={"Long Tubes"},
@@ -731,9 +704,8 @@ def add_regen_tabs(report, results):
     tab2.add_figure(
         fig_coolant_pressure,
         caption=(
-            f"Static coolant pressure compared with {REF_BINDER} and with the "
-            "RL10 Design Report Appendix D, Figure D-3, p. D-4 "
-            f"{REF_DESIGN_REPORT}. Pressure discrepancies are driven chiefly by "
+            f"Static coolant pressure compared with {REF_BINDER}. Pressure "
+            "discrepancies are driven chiefly by "
             "the reconstructed passage area and hydraulic diameter, friction "
             "and acceleration-loss correlations, and losses at the tube-"
             "interlacing transition that a one-dimensional model can only "

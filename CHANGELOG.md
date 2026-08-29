@@ -9,51 +9,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Coupled regenerative-cooling solves now accept independent wall,
-  heat-flux, and lumped coolant node grids through the `nodes` argument.
-- Wall-temperature plots mark nodes that exceed the solver's scaled residual
-  tolerance with red `x` symbols.
-- `ThrustChamber.coolant_volume` reports the wetted coolant volume of all
-  cooling circuits combined, and `CoolingCircuit.n_channels` gives a circuit's
-  total physical channel count.
-
-### Fixed
-- `CoolingCircuit.compute_volume` counted circumferential leaves only, so a
-  placement with `n_channels_per_leaf > 1` under-reported its coolant volume by
-  that factor. Circuit and solver now share one channel count,
-  `CoolingCircuit.n_channels`.
-- The coolant march now integrates static pressure against the full momentum
-  equation, `dp/dx = -friction - rho*u*du/dx`, instead of marching stagnation
-  pressure against friction alone and recovering static pressure as
-  `p0 - rho*u^2/2`. The old scheme counted heating-driven acceleration at half
-  strength, because at constant area the acceleration loss is `G^2 d(1/rho)`,
-  which is twice the change in dynamic head. On the RL10 validation case the
-  predicted jacket static-pressure drop rises from 0.50 to 0.63 MPa against a
-  reference range of 0.94 to 1.39 MPa.
+- A new coupled cooling solver that balances hot-gas convection, conduction
+  through multi-material walls, and coolant heat pickup. It supports separate
+  wall, heat-flux, and coolant grids, reports convergence at every wall node,
+  and returns a richer `RegenResult` for post-processing.
+- Enthalpy-based coolant marching for pure fluids, including saturation-state,
+  phase, vapour-quality, and boiling-region diagnostics. Mixtures and fluids
+  without saturation data retain a temperature-based fallback.
+- Standalone and regeneratively coupled subcritical film-cooling analysis based
+  on the Grisson model, including liquid-film evaporation and dryout, gaseous
+  film entrainment and radiation, and result plots and examples.
+- A redesigned cooling-channel geometry system supporting straight, slanted,
+  helical, and interleaved circuits; multiple channels per placement leaf;
+  variable channel dimensions, and uneven number of channels in each interleaved circuit. 
+- Interactive 3D views of the chamber and its actual cooling
+  passages.
+- Interactive engine-cycle network diagrams, mass-flow Sankey diagrams, and a
+  much broader plotting suite for regenerative cooling, film cooling, wall
+  layers, coolant phase, hot-gas fields, and engineering reference charts.
+- Markdown blocks, responsive layouts, improved tables, and embedded
+  interactive content in standalone HTML engineering reports.
+- A full Sphinx documentation site with API reference, tutorials, design
+  examples, theory explanations, and project contribution guidance.
+- Automated tests and CI coverage for package imports, examples, solver
+  physics, geometry, serialization, plotting, reports, and validation data.
+- End-to-end minimal, advanced engine, mixture-ratio optimization, boiling,
+  curvature-correction, and film-cooling examples.
+- A comprehensively rebuilt RL10A-3-3A validation case covering engine sizing,
+  cycle layout, regenerative cooling, channel geometry, published reference data, and a single consolidated report.
 
 ### Changed
-- `CoupledHeatExchangerPhysics.coolant_pressure_rate` is replaced by
-  `coolant_friction_rate`, which returns only the friction gradient. The
-  acceleration term is applied by the march station to station. The removed
-  method also had a sign error in its static-pressure return value, which
-  predicted a static-pressure *rise* through a contraction; that return value
-  was unused by the solver.
-- `CoupledHeatExchangerPhysics.bulk_velocity` returns the bulk density and
-  single-channel velocity at a station.
-- Visualization now chooses the resolution of hot-gas property plots.
-  `PlotTransportProperty` takes exactly one of `results=` (reuse the axial
-  stations of a solved run, the recommended default), `nodes=` (uniform grid
-  over the contour), or `x=` (explicit coordinates). Repeated plots over the
-  same grid reuse the transport object's station cache, so CEA runs once per
-  station no matter how many properties are plotted.
+- Regenerative cooling was overhauled from the legacy heat-exchanger ODE into
+  a station-marching coupled solution. That is, film cooling and regenerative cooling is available in the same engine. Coolant energy is advanced on enthalpy
+  where possible, wall temperatures come from local nonlinear heat balances,
+  and pressure loss follows the full friction-and-acceleration momentum balance. Performance was improved by utilising caching during solve. 
+- Hot-side, coolant-side, curvature, channel-rib, and multi-layer wall models
+  were revised and made consistent with the physical channel count used by the
+  solver, geometry, volume calculations, and visualizations.
+- `Aerothermodynamics` was rebuilt around the native `cea` package. Gas states
+  are now evaluated on demand along the attached contour, cached by station,
+  serializable without native solver handles, and available for equilibrium or
+  frozen transport calculations.
+- Thrust-chamber contours, circuit placement, cross-sections, and 3D geometry
+  generation were substantially reworked for stable interpolation and a common
+  representation of real channel centerlines and dimensions.
+- Hot-gas plot resolution is now selected when plotting rather than when
+  attaching a contour. Plots can use a solved result grid, a uniform node
+  count, or explicit coordinates and reuse cached CEA states across properties.
+- Visualization dependencies moved to the optional `pyskyfire[viz]` extra, so
+  the core installation no longer requires the plotting and meshing stack.
+- The supported runtime is now Python 3.12 or newer, and development,
+  documentation, and test dependencies are organized into dedicated groups.
+
+### Fixed
+- Corrected coolant pressure-drop calculations to include acceleration from
+  heating and area changes with the correct sign and magnitude.
+- Corrected physical channel counting and coolant-volume calculations when a
+  placement leaf represents more than one channel.
+- Fixed geometry errors affecting ribs, rounded cross-sections,
+  helical passages, contour splines and curvature, wall layers, and their 3D
+  representations.
+- Improved hot-gas property caching and low-temperature behavior, result
+  serialization, report sizing and table layout, and solver diagnostics for
+  unconverged wall nodes.
 
 ### Removed
-- The `npts` argument of every `Aerothermodynamics` sizing constructor, and the
-  uniform `x_nodes` grid that `compute_aerothermodynamics` built when a contour
-  was attached. Gas states are solved live at the requested coordinate, so the
-  simulation no longer carries a visualization resolution. Pass the grid at
-  plotting time instead. `compute_aerothermodynamics` also no longer accepts
-  the deprecated, ignored `Nt` argument.
+- The legacy `regen.solver` implementation and its `steady_heating_analysis`
+  entry point; use `coupled_steady_heating_analysis` and the new result model.
+- Deprecated `CoolingCircuitGroup` and `WallGroup` wrappers; cooling circuits
+  are passed directly to `ThrustChamber`, and wall layers are defined per
+  circuit.
+- The Cantera combustion path and obsolete combustion/nozzle-solver modules.
+  Chemical-equilibrium and hot-gas calculations now use `Aerothermodynamics`
+  backed by `cea`.
+- The `npts` sizing-constructor argument, stored aerothermodynamic plotting
+  grid, and deprecated `Nt` argument. Resolution now belongs to the requested
+  solve or visualization.
 
 ---
 
