@@ -80,7 +80,9 @@ def add_common_report_content(output_dir, report, params, thrust_chamber, coolin
     transport = thrust_chamber.combustion_transport
     for prop in ("M", "gamma", "T", "p", "h", "cp", "k", "mu", "Pr", "rho", "a"):
         tab_combustion.add_figure(
-            psf.viz.PlotTransportProperty(transport, prop=prop)
+            psf.viz.PlotTransportProperty(
+                transport, prop=prop, results=ordered_cooling_data
+            )
         )
 
     # Through-wall temperatures at three axial locations

@@ -1,5 +1,182 @@
 import numpy as np
-from scipy.optimize import fsolve
+from scipy.optimize import brentq, fsolve
+
+
+def kader_temperature_plus(y_plus, prandtl, eta):
+    """Return Kader's dimensionless turbulent temperature profile.
+
+    Parameters
+    ----------
+    y_plus : float or array-like
+        Wall-normal distance in viscous units.
+    prandtl : float
+        Molecular Prandtl number at the representative fluid state.
+    eta : float or array-like
+        Outer coordinate ``y / delta``. Values must lie between zero at the
+        wall and one at the thermal-boundary-layer edge.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Dimensionless temperature difference
+        ``abs(T - T_wall) / T_tau``.
+
+    Notes
+    -----
+    This is the smooth-wall, fully turbulent interpolation of Kader (1981),
+    including its outer-layer correction. It blends the conductive sublayer
+    and logarithmic layer without assuming a molecular Prandtl number near
+    unity. Fluid properties are nevertheless treated as locally constant.
+    """
+    y_plus_array = np.asarray(y_plus, dtype=float)
+    eta_array = np.asarray(eta, dtype=float)
+    scalar = y_plus_array.ndim == 0 and eta_array.ndim == 0
+
+    if not np.isfinite(prandtl) or prandtl <= 0.0:
+        raise ValueError("prandtl must be finite and positive")
+    if np.any(~np.isfinite(y_plus_array)) or np.any(y_plus_array < 0.0):
+        raise ValueError("y_plus must be finite and non-negative")
+    if np.any(~np.isfinite(eta_array)) or np.any(
+        (eta_array < 0.0) | (eta_array > 1.0)
+    ):
+        raise ValueError("eta must be finite and lie in [0, 1]")
+
+    y_plus_array, eta_array = np.broadcast_arrays(y_plus_array, eta_array)
+    with np.errstate(over="ignore", invalid="ignore"):
+        gamma = (
+            0.01 * (prandtl * y_plus_array) ** 4
+            / (1.0 + 5.0 * prandtl**3 * y_plus_array)
+        )
+    beta = (
+        (3.85 * prandtl ** (1.0 / 3.0) - 1.3) ** 2
+        + 2.12 * np.log(prandtl)
+    )
+    outer_factor = (
+        1.5 * (2.0 - eta_array)
+        / (1.0 + 2.0 * (1.0 - eta_array) ** 2)
+    )
+
+    inverse_gamma = np.full_like(gamma, np.inf)
+    np.divide(1.0, gamma, out=inverse_gamma, where=gamma > 0.0)
+    theta_plus = (
+        prandtl * y_plus_array * np.exp(-gamma)
+        + (
+            2.12 * np.log((1.0 + y_plus_array) * outer_factor)
+            + beta
+        )
+        * np.exp(-inverse_gamma)
+    )
+    theta_plus = np.where(y_plus_array == 0.0, 0.0, theta_plus)
+    if scalar:
+        return float(theta_plus)
+    return theta_plus
+
+
+def friction_velocity(velocity, darcy_factor):
+    """Return friction velocity from a bulk velocity and Darcy factor.
+
+    The Darcy-Weisbach convention gives
+    ``u_tau = abs(velocity) * sqrt(f_D / 8)``.
+    """
+    velocity = float(velocity)
+    darcy_factor = float(darcy_factor)
+    if not np.isfinite(velocity):
+        raise ValueError("velocity must be finite")
+    if not np.isfinite(darcy_factor) or darcy_factor <= 0.0:
+        raise ValueError("darcy_factor must be finite and positive")
+    return abs(velocity) * np.sqrt(darcy_factor / 8.0)
+
+
+def kader_temperature_profile(
+    T_wall,
+    T_edge,
+    h,
+    rho,
+    cp,
+    mu,
+    prandtl,
+    u_tau,
+    n_points=200,
+):
+    """Reconstruct one local turbulent thermal boundary layer with Kader.
+
+    The supplied heat-transfer coefficient fixes the convective wall flux as
+    ``h * (T_edge - T_wall)``. The Kader edge condition is inverted for the
+    friction Reynolds number, so this is a local profile reconstruction, not
+    an axial boundary-layer-growth calculation.
+
+    Returns
+    -------
+    distance : numpy.ndarray
+        Distance from the wall, from zero to ``delta`` [m].
+    temperature : numpy.ndarray
+        Temperature at each returned distance [K].
+    delta : float
+        Reconstructed thermal-boundary-layer thickness [m].
+    """
+    values = {
+        "T_wall": T_wall,
+        "T_edge": T_edge,
+        "h": h,
+        "rho": rho,
+        "cp": cp,
+        "mu": mu,
+        "prandtl": prandtl,
+        "u_tau": u_tau,
+    }
+    values = {name: float(value) for name, value in values.items()}
+    if any(not np.isfinite(value) for value in values.values()):
+        raise ValueError("Kader profile inputs must be finite")
+    for name in ("h", "rho", "cp", "mu", "prandtl", "u_tau"):
+        if values[name] <= 0.0:
+            raise ValueError(f"{name} must be positive")
+    if int(n_points) != n_points or n_points < 2:
+        raise ValueError("n_points must be an integer of at least two")
+
+    T_wall = values["T_wall"]
+    T_edge = values["T_edge"]
+    if T_edge == T_wall:
+        distance = np.zeros(int(n_points), dtype=float)
+        return distance, np.full_like(distance, T_wall), 0.0
+
+    temperature_span = abs(T_edge - T_wall)
+    heat_flux = values["h"] * temperature_span
+    friction_temperature = heat_flux / (
+        values["rho"] * values["cp"] * values["u_tau"]
+    )
+    theta_edge = temperature_span / friction_temperature
+
+    def log_edge_residual(log_re_tau):
+        return (
+            kader_temperature_plus(
+                np.exp(log_re_tau), values["prandtl"], 1.0
+            )
+            - theta_edge
+        )
+
+    lower_log = -50.0
+    upper_log = np.log(100.0)
+    while log_edge_residual(upper_log) < 0.0 and upper_log < 700.0:
+        upper_log += np.log(10.0)
+    if log_edge_residual(upper_log) < 0.0:
+        raise ValueError("Kader edge condition could not be bracketed")
+
+    re_tau = np.exp(brentq(log_edge_residual, lower_log, upper_log))
+    delta = re_tau * values["mu"] / (
+        values["rho"] * values["u_tau"]
+    )
+    eta = np.linspace(0.0, 1.0, int(n_points))
+    theta_plus = kader_temperature_plus(
+        eta * re_tau,
+        values["prandtl"],
+        eta,
+    )
+    direction = np.sign(T_edge - T_wall)
+    temperature = T_wall + direction * friction_temperature * theta_plus
+    temperature[0] = T_wall
+    temperature[-1] = T_edge
+    distance = eta * delta
+    return distance, temperature, float(delta)
 
 def h_gas_bartz_enthalpy_driven(k_gr, D_hyd, Cp_gr, mu_gr, mdot_g, A_chmb, T_g, T_gr): 
     """Compute the hot-gas-side heat-transfer coefficient (Bartz correlation, enthalpy-based).
@@ -170,8 +347,18 @@ def reynolds(rho, u, L, mu):
     """
     return rho*u*L/mu
 
-def phi_curv(Re_c, D_c, R_curv): 
-    """Curvature correction factor for the coolant-side heat-transfer coefficient.
+def _curvature_group(Re_c, length_scale, R_curv):
+    """Return ``Re * (length_scale / |R|)^2`` or zero if straight."""
+    values = (Re_c, length_scale, R_curv)
+    if not all(np.isfinite(value) for value in values):
+        return 0.0
+    if Re_c <= 0.0 or length_scale <= 0.0 or R_curv == 0.0:
+        return 0.0
+    return float(Re_c * (length_scale / abs(R_curv)) ** 2)
+
+
+def phi_curv(Re_c, D_c, R_curv):
+    """RL10 curvature factor for coolant-side Colburn heat transfer.
 
     Parameters
     ----------
@@ -186,13 +373,34 @@ def phi_curv(Re_c, D_c, R_curv):
     Returns
     -------
     float
-        Curvature factor ``φ`` (dimensionless).
+        Curvature factor ``φ`` (dimensionless). Positive radii are concave
+        and enhance heat transfer; negative radii are convex and reduce it.
+
+    Notes
+    -----
+    The RL10 model uses
+    ``[Re * (0.5 D_h / R)^2]**(+/- 0.05)``.  Its expression has no sensible
+    zero-curvature limit if extrapolated below a group of one, so this
+    implementation returns one there.  That makes the straight-channel limit
+    finite and joins the correlation continuously at its neutral value.
     """
-    if R_curv == float("inf"):
-        return 1
-    else:
-        phi = (Re_c*(0.5*D_c/R_curv)**2)**0.05
-        return phi
+    group = _curvature_group(Re_c, 0.5 * D_c, R_curv)
+    if group <= 1.0:
+        return 1.0
+    exponent = 0.05 if R_curv > 0.0 else -0.05
+    return group**exponent
+
+
+def phi_curv_friction(Re_c, D_c, R_curv):
+    """RTE/Ito curvature multiplier for the Darcy friction factor.
+
+    The correlation uses hydraulic radius ``r_h = D_h/4`` and applies only
+    for ``Re * (r_h/R)^2 > 6``.  It is independent of bend direction.
+    """
+    group = _curvature_group(Re_c, 0.25 * D_c, R_curv)
+    if group <= 6.0:
+        return 1.0
+    return group**0.05
 
 ReDh_laminar = 2300         # Maximum Reynolds number for laminar flow in a pipe
 ReDh_turbulent = 3500  # TODO: move to common constants page

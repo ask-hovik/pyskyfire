@@ -171,7 +171,7 @@ else:
 regen_only = psf.regen.coupled_steady_heating_analysis(
     thrust_chamber,
     boundary_conditions,
-    n_nodes=100,
+    nodes=100,
     circuit_index=0,
     film=False,
 )
@@ -182,7 +182,7 @@ regen_only = psf.regen.coupled_steady_heating_analysis(
 coupled = psf.regen.coupled_steady_heating_analysis(
     thrust_chamber,
     boundary_conditions,
-    n_nodes=100,
+    nodes=100,
     circuit_index=0,
     film=True,
     h_liquid_wall=psf.regen.DEFAULT_H_LIQUID_WALL,

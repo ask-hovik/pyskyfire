@@ -398,7 +398,7 @@ class RegenBlock(FluidBlock):
 
         cooling_data = coupled_steady_heating_analysis(
                            self.thrust_chamber,
-                           n_nodes        = 100,
+                           nodes          = 100,
                            circuit_index  = self.circuit_index,
                            boundary_conditions = bc,
                            solver         = "newton",
@@ -459,7 +459,7 @@ class RegenBlock(FluidBlock):
         # Use a finer axial grid for the final report
         cooling_data = coupled_steady_heating_analysis(
             self.thrust_chamber,
-            n_nodes        = 50,
+            nodes          = 50,
             circuit_index  = self.circuit_index,
             boundary_conditions = bc,
             solver         = "newton",
@@ -555,7 +555,16 @@ class TurbineBlock(FluidBlock):
         Raises
         ------
         ValueError
-            If inlet mass flow is non-positive.
+            If inlet mass flow is non-positive, or if no physical expansion
+            can supply the requested power.
+
+        Notes
+        -----
+        Total-to-total expansion evaluated on enthalpy and entropy rather
+        than on temperature and pressure, so no ideal-gas or constant-``c_p``
+        assumption is made. The isentropic enthalpy drop ``w_req / η`` sets
+        the exit pressure at constant inlet entropy; the actual drop
+        ``w_req`` then sets the exit temperature at that pressure.
         """
 
         st_i   = stations[self.st_in]
@@ -567,18 +576,39 @@ class TurbineBlock(FluidBlock):
 
         w_req  = P_req / mdot                      # J kg⁻¹
 
-        # thermodynamic properties at inlet
-        c_p    = CP.PropsSI("Cpmass", "T", st_i.T,
+        # inlet state (stagnation; the network carries total conditions)
+        h_in   = CP.PropsSI("Hmass", "T", st_i.T,
                             "P", st_i.p, self.medium)
-        c_v    = CP.PropsSI("Cvmass", "T", st_i.T,
+        s_in   = CP.PropsSI("Smass", "T", st_i.T,
                             "P", st_i.p, self.medium)
-        gamma  = c_p / c_v
 
-        # isentropic outlet temperature drop
-        T_out  = st_i.T - w_req / (self.eta * c_p)
-        # pressure ratio from ideal-gas isentropic relation
-        TPR    = (T_out / st_i.T) ** (gamma / (gamma - 1.0))
-        p_out  = st_i.p * TPR
+        # η relates the actual work to the isentropic work, so the isentropic
+        # enthalpy drop is the larger of the two and is what sets the exit
+        # pressure. The actual drop equals the extracted work and sets the
+        # exit temperature.
+        h_out_s = h_in - w_req / self.eta          # isentropic exit enthalpy
+        h_out   = h_in - w_req                     # actual exit enthalpy
+
+        try:
+            p_out = CP.PropsSI("P", "Hmass", h_out_s,
+                               "Smass", s_in, self.medium)
+            # allow a hair of numerical overshoot so that w_req -> 0 (which
+            # gives p_out == p_in) is a valid pass-through rather than an error
+            ok = np.isfinite(p_out) and 0.0 < p_out <= st_i.p * (1.0 + 1e-9)
+            p_out = min(p_out, st_i.p)
+        except ValueError:
+            ok = False
+
+        if not ok:
+            raise ValueError(
+                f"{self.name}: cannot extract {P_req:.4g} W from {mdot:.4g} kg/s "
+                f"of {self.medium} at {st_i.T:.4g} K / {st_i.p:.4g} Pa "
+                f"(eta={self.eta:.3g}); no physical expansion satisfies the "
+                f"required power"
+            )
+
+        T_out  = CP.PropsSI("T", "Hmass", h_out,
+                            "P", p_out, self.medium)
 
         dp     = st_i.p - p_out                    # positive number
 

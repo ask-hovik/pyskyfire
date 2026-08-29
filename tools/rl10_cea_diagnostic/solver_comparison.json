@@ -1,0 +1,60 @@
+{
+  "results_path": "/home/askho/MyFiles/Area/pyskyfire/validation/RL10_2/regen_results.pkl",
+  "inlet_x_m": 1.1683999999999999,
+  "pyskyfire_minimum_cea_temperature_K": 200.0,
+  "ice_liquid_transition_K": 273.15,
+  "cases": [
+    {
+      "name": "baseline",
+      "inlet_x_m": 1.1683999999999999,
+      "inlet_hot_wall_temperature_K": 219.07445174703892,
+      "inlet_scaled_residual": 9.016383136897628e-09,
+      "inlet_converged": true,
+      "failed_wall_nodes": 5,
+      "maximum_scaled_residual": 0.03870518633279956,
+      "failed_x_m": [
+        0.7432483221476509,
+        0.7333610738255033,
+        0.7234738255033557,
+        0.713586577181208,
+        0.35764563758389256
+      ]
+    },
+    {
+      "name": "cea_smooth_species_truncation",
+      "inlet_x_m": 1.1683999999999999,
+      "inlet_hot_wall_temperature_K": 202.315846525799,
+      "inlet_scaled_residual": 6.2954271355125974e-09,
+      "inlet_converged": true,
+      "failed_wall_nodes": 5,
+      "maximum_scaled_residual": 0.023780473466019098,
+      "failed_x_m": [
+        0.6641503355704698,
+        0.654263087248322,
+        0.6443758389261744,
+        0.6344885906040267,
+        0.31809664429530193
+      ]
+    },
+    {
+      "name": "conductivity_only_clamp_smoothing",
+      "inlet_x_m": 1.1683999999999999,
+      "inlet_hot_wall_temperature_K": 219.07445051257992,
+      "inlet_scaled_residual": 7.673674102580946e-09,
+      "inlet_converged": true,
+      "failed_wall_nodes": 5,
+      "maximum_scaled_residual": 0.03870518633274967,
+      "failed_x_m": [
+        0.7432483221476509,
+        0.7333610738255033,
+        0.7234738255033557,
+        0.713586577181208,
+        0.35764563758389256
+      ]
+    }
+  ],
+  "causal_checks": {
+    "conductivity_only_smoothing_resolves_inlet": false,
+    "cea_smooth_species_truncation_resolves_inlet": false
+  }
+}

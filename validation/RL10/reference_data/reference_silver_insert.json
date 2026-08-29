@@ -1,0 +1,63 @@
+{
+  "name": "RL10A-3-3A silver throat insert profile",
+  "source": "Binder, M., Tomsik, T., and Veres, J. P., 'RL10A-3-3A Rocket Engine Modeling Project', NASA TM-107318, 1997, p. 55 (NTRS 19970010379).",
+  "units": {
+    "x": "m",
+    "r": "m"
+  },
+  "coordinate_system": {
+    "x": "axial position relative to the throat; positive downstream",
+    "r": "radius measured from the engine centerline"
+  },
+  "conversion": "Source coordinates digitized in inches and multiplied by exactly 0.0254 m/in; the physical throat point is normalized to x = 0 m and r = 0.062776 m.",
+  "notes": [
+    "The inner and outer curves share their first and last points.",
+    "The normalized inner-curve throat radius is the physical silver-insert throat used by the RL10_2 simulation."
+  ],
+  "curves": {
+    "inner": {
+      "description": "Hot-gas-facing surface following the combustion-chamber and nozzle contour.",
+      "x": [
+        -0.02514911546501081,
+        -0.01280524016319091,
+        0.0,
+        0.01270684534112768,
+        0.02467138856874919
+      ],
+      "r": [
+        0.06778488301876877,
+        0.06526524095197611,
+        0.062776,
+        0.07031342959434519,
+        0.07767300610432123
+      ]
+    },
+    "outer": {
+      "description": "Tube-facing surface following the shape of the cooling tubes.",
+      "x": [
+        -0.02514911546501081,
+        -0.0127941095272109,
+        -0.007923343222362938,
+        -0.003574381132257372,
+        0.0,
+        0.002285008260334172,
+        0.004999102537697356,
+        0.00772098826024652,
+        0.01263961629980848,
+        0.02467138856874919
+      ],
+      "r": [
+        0.06778488301876877,
+        0.06601878500782225,
+        0.06556966384602902,
+        0.06535439734617604,
+        0.06545390523183704,
+        0.06579505922462421,
+        0.06665924180211133,
+        0.06805090521869078,
+        0.07084202349703539,
+        0.07767300610432123
+      ]
+    }
+  }
+}

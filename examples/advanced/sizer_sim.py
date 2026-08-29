@@ -138,7 +138,6 @@ def setup_thrust_chamber(params):
         p_e=params["p_e"],
         L_star=params["L_star"],
         p_amb=1e5,
-        npts=15,
     )
 
     xs, rs = psf.regen.contour.get_contour(
@@ -277,7 +276,7 @@ def _solve_regen_circuit(
 
     return psf.regen.coupled_steady_heating_analysis(
         thrust_chamber,
-        n_nodes=n_nodes,
+        nodes=n_nodes,
         circuit_index=circuit_index,
         boundary_conditions=boundary_conditions,
         solver="newton",

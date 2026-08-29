@@ -179,9 +179,31 @@ def copy_docs_artifacts(app) -> None:
         },
     )
 
+
+def publish_validation_reports(app, exception) -> None:
+    """Replace validation stubs with their standalone HTML reports."""
+
+    if exception is not None or app.builder.format != "html":
+        return
+
+    repository_root = Path(__file__).resolve().parent.parent
+    source = repository_root / "validation" / "RL10" / "RL10A-3-3A_Report.html"
+    destination = Path(app.outdir) / "validation" / "rl10a-3-3a.html"
+
+    if not source.is_file():
+        raise SphinxError(
+            f"Missing generated validation report: {source}\n\n"
+            "Run validation/RL10/post_process.py before building docs."
+        )
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
+
+
 def setup(app):
     app.connect("autoapi-skip-member", skip_autoapi_members)
     app.connect("builder-inited", copy_docs_artifacts)
+    app.connect("build-finished", publish_validation_reports)
 
 # Logo
 html_logo = "_static/pyskyfire_header.png"   # or .png

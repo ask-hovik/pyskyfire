@@ -16,17 +16,94 @@ _PROP_INFO = {
     "Pr":  ("Pr", "–"),
     "rho": ("ρ", "kg/m³"),
     "a":   ("a", "m/s"),
+    "v":   ("v", "m/s"),
 }
+
+
+def _iter_results(results):
+    if results is None:
+        return []
+    if isinstance(results, dict):
+        if any(key in results for key in ("x", "x_wall", "x_heat_flux")):
+            return [results]
+        return list(results.values())
+    if isinstance(results, (list, tuple)):
+        return list(results)
+    return [results]
+
+
+def result_gas_x(results) -> np.ndarray:
+    """Return the unique gas-side coordinates used by solved results."""
+    grids = []
+    for result in _iter_results(results):
+        def field(name):
+            if isinstance(result, dict):
+                return result.get(name)
+            return getattr(result, name, None)
+
+        result_grids = []
+        for attribute in ("x_wall", "x_heat_flux"):
+            grid = field(attribute)
+            if grid is not None:
+                result_grids.append(np.asarray(grid, dtype=float))
+        if not result_grids or all(grid.size == 0 for grid in result_grids):
+            grid = field("x")
+            if grid is not None:
+                result_grids.append(np.asarray(grid, dtype=float))
+        grids.extend(result_grids)
+    if not grids:
+        raise ValueError("results do not contain an axial calculation grid")
+    return np.unique(np.concatenate(grids))
+
+
+def _visualization_x(at, *, x, results, nodes):
+    supplied = sum(value is not None for value in (x, results, nodes))
+    if supplied > 1:
+        raise ValueError("provide only one of x, results, or nodes")
+    if results is not None:
+        return result_gas_x(results)
+    if nodes is not None:
+        if not isinstance(nodes, (int, np.integer)) or nodes < 2:
+            raise ValueError("nodes must be an integer of at least 2")
+        contour = getattr(at, "contour", None)
+        if contour is None:
+            raise ValueError("attach a contour before using nodes")
+        return np.linspace(contour.xs[0], contour.xs[-1], int(nodes))
+    if x is not None:
+        values = np.asarray(x, dtype=float)
+        if values.ndim != 1 or values.size == 0:
+            raise ValueError("x must be a non-empty one-dimensional array")
+        return values
+
+    # Compatibility for precomputed/legacy transport objects. New live CEA
+    # objects do not create x_nodes when a contour is attached.
+    legacy = getattr(at, "x_nodes", None)
+    if legacy is not None:
+        return np.asarray(legacy, dtype=float)
+    raise ValueError(
+        "choose the visualization grid with results=..., nodes=..., or x=..."
+    )
 
 class PlotTransportProperty(PlotBase):
     """
     Plot one equilibrium transport property against axial position.
 
-    The current live-solve interface is sampled through ``get_<prop>``.  Old
-    precomputed-map objects remain supported for compatibility.
+    The current live-solve interface is sampled through ``get_<prop>``. Pass
+    ``results`` to reuse the gas-side coordinates of an actual regenerative
+    run, ``nodes`` for a uniform visualization grid, or ``x`` for explicit
+    coordinates. Repeated property plots reuse the transport object's live
+    state cache. Old precomputed-map objects remain supported for compatibility.
     """
 
-    def __init__(self, *ats, prop: str, template: str = "plotly_white"):
+    def __init__(
+        self,
+        *ats,
+        prop: str,
+        results=None,
+        nodes: int | None = None,
+        x=None,
+        template: str = "plotly_white",
+    ):
         if prop not in _PROP_INFO:
             raise ValueError(f"Unknown property '{prop}'. Valid keys: {list(_PROP_INFO)}")
 
@@ -37,10 +114,17 @@ class PlotTransportProperty(PlotBase):
         y_label, unit = _PROP_INFO[prop]
 
         for i, at in enumerate(ats):
-            x = np.asarray(getattr(at, "x_nodes"), dtype=float)
+            x_values = _visualization_x(
+                at, x=x, results=results, nodes=nodes
+            )
             getter = getattr(at, f"get_{prop}", None)
             if getter is not None:
-                y = np.asarray([getter(x_i) for x_i in x], dtype=float)
+                y = np.asarray([getter(x_i) for x_i in x_values], dtype=float)
+            elif prop == "v":
+                # Legacy maps carry no velocity map; rebuild it from M and a.
+                M = np.asarray(getattr(at, "M_map"), dtype=float)[:, 0]
+                a = np.asarray(getattr(at, "a_map"), dtype=float)[:, 0]
+                y = M * a
             else:
                 Z = np.asarray(getattr(at, map_attr), dtype=float)
                 y = Z[:, 0]
@@ -50,7 +134,9 @@ class PlotTransportProperty(PlotBase):
                     y = y * 1.0e3
 
             name = getattr(at, "name", f"Set {i+1}")
-            self.fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name=name, showlegend=True))
+            self.fig.add_trace(go.Scatter(
+                x=x_values, y=y, mode="lines", name=name, showlegend=True
+            ))
 
         self.fig.update_layout(
             title=f"{y_label} profile",
@@ -64,6 +150,9 @@ class PlotTransportProperty(PlotBase):
 class PlotTransportPropertyField(PlotBase):
     """
     Plot a full precomputed transport-property field as z = property(x, T).
+
+    Only legacy precomputed-map objects carry these attributes; live CEA
+    objects solve states on demand and have no property field to plot.
 
     Uses:
       - at.x_nodes

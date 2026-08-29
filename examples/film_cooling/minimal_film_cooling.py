@@ -173,7 +173,7 @@ else:
 # ============================================================
 cooling_data = psf.regen.coupled_steady_heating_analysis(
     thrust_chamber,
-    n_nodes=100,
+    nodes=100,
     circuit_index=0,
     boundary_conditions=boundary_conditions,
     film=False,

@@ -12,7 +12,8 @@ class SectionProfiles:
     Attributes
     ----------
     h : np.ndarray
-        Channel height array [m, shape (N,)].
+        Measurable channel height array [m, shape (N,)]. For rounded channels,
+        this spans from the bottom of the inner arc to the top of the outer arc.
     theta : np.ndarray
         Included wedge angle at each station [rad, shape (N,)].
     t_wall : np.ndarray
@@ -207,10 +208,8 @@ class CrossSectionSquared(ChannelSection):
 
 
 # ===================== Rounded implementation ===============================
-class CrossSectionRounded(ChannelSection):
-    """Rounded cooling-channel geometry with curved sidewalls."""
-    def __init__(self, n_points: int = 16): # TODO: Does n-points have any funcion left? 
-        super().__init__(n_points=n_points)
+class _RoundedGeometryMixin:
+    """Shared conversion from measurable to base height for rounded sections."""
 
     def _beta_alpha(self, theta: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Return the inner (β) and outer (α) complementary angles."""
@@ -218,13 +217,69 @@ class CrossSectionRounded(ChannelSection):
         alpha = np.pi - beta
         return beta, alpha
 
+    def minimum_channel_height(self, prof: SectionProfiles) -> np.ndarray:
+        """Return the smallest measurable height accepted at each station [m].
+
+        At zero base height the inner and outer lobes form a circle whose
+        radius is ``r*sin(theta/2) - t_wall``. The measurable height is then
+        that circle's diameter.
+        """
+        r = prof.centerline[:, 1]
+        inner_arc_radius = r * np.sin(prof.theta / 2.0) - prof.t_wall
+        return 2.0 * inner_arc_radius
+
+    def base_height(self, prof: SectionProfiles) -> np.ndarray:
+        """Convert measurable full height to the rounded model's base height.
+
+        If ``h_b`` is the old/base height and ``H`` is the measurable height,
+        the arc radii and straight-side length are::
+
+            q_inner = r sin(theta/2) - t_wall
+            q_outer = q_inner + h_b sin(theta/2)
+            L_side  = h_b cos(theta/2)
+
+        Hence ``H = q_inner + L_side + q_outer`` and this method evaluates
+        the exact inverse. A base height of zero is retained as the valid,
+        completely round limiting case.
+        """
+        minimum = self.minimum_channel_height(prof)
+        invalid_radius = minimum <= 0.0
+        if np.any(invalid_radius):
+            i = int(np.flatnonzero(invalid_radius)[0])
+            raise ValueError(
+                "rounded channel inner arc radius must be positive; "
+                f"station {i} gives a minimum measurable height of {minimum[i]:.9g} m"
+            )
+
+        measured = np.asarray(prof.h, dtype=float)
+        tolerance = 16.0 * np.finfo(float).eps * np.maximum(minimum, 1.0)
+        invalid_height = measured < minimum - tolerance
+        if np.any(invalid_height):
+            i = int(np.flatnonzero(invalid_height)[0])
+            raise ValueError(
+                "rounded channel height is below the geometric minimum; "
+                f"station {i} has {measured[i]:.9g} m but requires at least "
+                f"{minimum[i]:.9g} m"
+            )
+
+        half_theta = prof.theta / 2.0
+        denominator = np.sin(half_theta) + np.cos(half_theta)
+        return np.maximum((measured - minimum) / denominator, 0.0)
+
+
+class CrossSectionRounded(_RoundedGeometryMixin, ChannelSection):
+    """Rounded cooling channel whose input height is its full radial extent."""
+    def __init__(self, n_points: int = 16): # TODO: Does n-points have any funcion left? 
+        super().__init__(n_points=n_points)
+
     def A_coolant(self, prof: SectionProfiles) -> np.ndarray:
         """Compute effective coolant cross-sectional area [m²]."""
         r = prof.centerline[:, 1]
+        h_base = self.base_height(prof)
         r1 = r * np.sin(prof.theta/2)
-        r2 = (r + prof.h) * np.sin(prof.theta/2)
+        r2 = (r + h_base) * np.sin(prof.theta/2)
         beta, alpha = self._beta_alpha(prof.theta)
-        L_side = prof.h * np.cos(prof.theta/2)
+        L_side = h_base * np.cos(prof.theta/2)
 
         A1 = 0.5 * (r1 - prof.t_wall)**2 * 2 * beta
         A2 = 0.5 * (r2 - prof.t_wall)**2 * 2 * alpha
@@ -236,10 +291,11 @@ class CrossSectionRounded(ChannelSection):
         """Compute hydraulic diameter [m]."""
         A = self.A_coolant(prof)
         r = prof.centerline[:, 1]
+        h_base = self.base_height(prof)
         r1 = r * np.sin(prof.theta/2)
-        r2 = (r + prof.h) * np.sin(prof.theta/2)
+        r2 = (r + h_base) * np.sin(prof.theta/2)
         beta, alpha = self._beta_alpha(prof.theta)
-        L_side = prof.h * np.cos(prof.theta/2)
+        L_side = h_base * np.cos(prof.theta/2)
         arc1 = (r1 - prof.t_wall) * 2 * beta
         arc2 = (r2 - prof.t_wall) * 2 * alpha
         P = arc1 + arc2 + 2 * L_side
@@ -274,7 +330,7 @@ class CrossSectionRounded(ChannelSection):
         thin copper walls adding the rib has a large effect. 
         """
         P_base = self.P_coolant(prof)
-        h = prof.h
+        h = self.base_height(prof)
 
         # Fin "perimeter contribution" from two side walls
         P_fin = 2.0 * h * np.cos(prof.theta/2)
@@ -290,7 +346,8 @@ class CrossSectionRounded(ChannelSection):
         # Fin efficiency (adiabatic tip rectangular fin)
         m = np.sqrt(2.0 * h_c / (k * t_rib))
         mh = m * h
-        eta = np.tanh(mh) / mh
+        eta = np.ones_like(mh)
+        np.divide(np.tanh(mh), mh, out=eta, where=mh != 0.0)
 
         P_eff = P_base + eta * P_fin
 
@@ -300,24 +357,19 @@ class CrossSectionRounded(ChannelSection):
 
 # ===================== Rounded internal implementation ===============================
 # TODO: not changed from normal rounded!!!!
-class CrossSectionRoundedInternal(ChannelSection):
-    """Rounded cooling-channel geometry with curved sidewalls."""
+class CrossSectionRoundedInternal(_RoundedGeometryMixin, ChannelSection):
+    """Internal rounded channel whose input height is its full radial extent."""
     def __init__(self, n_points: int = 16): # TODO: Does n-points have any funcion left? 
         super().__init__(n_points=n_points)
-
-    def _beta_alpha(self, theta: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        """Return the inner (β) and outer (α) complementary angles."""
-        beta = (np.pi - theta) * 0.5
-        alpha = np.pi - beta
-        return beta, alpha
 
     def A_coolant(self, prof: SectionProfiles) -> np.ndarray:
         """Compute effective coolant cross-sectional area [m²]."""
         r = prof.centerline[:, 1]
+        h_base = self.base_height(prof)
         r1 = r * np.sin(prof.theta/2)
-        r2 = (r + prof.h) * np.sin(prof.theta/2)
+        r2 = (r + h_base) * np.sin(prof.theta/2)
         beta, alpha = self._beta_alpha(prof.theta)
-        L_side = prof.h * np.cos(prof.theta/2)
+        L_side = h_base * np.cos(prof.theta/2)
 
         A1 = 0.5 * (r1 - prof.t_wall)**2 * 2 * beta
         A2 = 0.5 * (r2 - prof.t_wall)**2 * 2 * alpha
@@ -329,10 +381,11 @@ class CrossSectionRoundedInternal(ChannelSection):
         """Compute hydraulic diameter [m]."""
         A = self.A_coolant(prof)
         r = prof.centerline[:, 1]
+        h_base = self.base_height(prof)
         r1 = r * np.sin(prof.theta/2)
-        r2 = (r + prof.h) * np.sin(prof.theta/2)
+        r2 = (r + h_base) * np.sin(prof.theta/2)
         beta, alpha = self._beta_alpha(prof.theta)
-        L_side = prof.h * np.cos(prof.theta/2)
+        L_side = h_base * np.cos(prof.theta/2)
         arc1 = (r1 - prof.t_wall) * 2 * beta
         arc2 = (r2 - prof.t_wall) * 2 * alpha
         P = arc1 + arc2 + 2 * L_side
@@ -351,4 +404,3 @@ class CrossSectionRoundedInternal(ChannelSection):
         r1 = r * np.sin(prof.theta/2)
         angle = np.radians(112.0)
         return ((r1 - prof.t_wall) * angle)*2
-    

@@ -7,7 +7,6 @@ retained, but the implementation has only one design path and one state path.
 from __future__ import annotations
 
 import math
-import warnings
 from dataclasses import dataclass, field
 
 import cea
@@ -20,6 +19,21 @@ BAR_TO_PA = 1e5
 KJ_TO_J = 1e3
 MILLIPOISE_TO_PA_S = 1e-4
 MW_PER_CM_K_TO_W_PER_M_K = 0.1
+# Default lower boundary for direct temperature-conditioned CEA solves [K].
+# Below this configurable boundary, properties are continued along their
+# right-hand C1 tangent instead of being clamped to a constant value.
+MIN_CEA_TEMPERATURE = 200.0
+
+_LOG_TANGENT_FIELDS = (
+    "rho",
+    "cp",
+    "gamma",
+    "a",
+    "mu",
+    "k",
+    "Pr",
+    "mw",
+)
 
 
 @dataclass(slots=True)
@@ -43,7 +57,13 @@ class GasState:
 
 
 class Aerothermodynamics:
-    def __init__(self, optimum, transport="equilibrium", cache=True):
+    def __init__(
+        self,
+        optimum,
+        transport="equilibrium",
+        cache=True,
+        minimum_cea_temperature=MIN_CEA_TEMPERATURE,
+    ):
         self.optimum = optimum
         self.__dict__.update(optimum)
 
@@ -51,6 +71,8 @@ class Aerothermodynamics:
             raise ValueError("transport must be 'equilibrium' or 'frozen'")
 
         self.transport = transport
+        self._temperature_tangent_cache = {}
+        self.minimum_cea_temperature = minimum_cea_temperature
         cea.init()
 
         fuel = np.asarray(self.fu.fractions, dtype=float)
@@ -82,6 +104,23 @@ class Aerothermodynamics:
         self._cache_enabled = cache
         self._cache = {}
 
+    @property
+    def minimum_cea_temperature(self):
+        """Lowest temperature sent directly to CEA [K]."""
+        return self._minimum_cea_temperature
+
+    @minimum_cea_temperature.setter
+    def minimum_cea_temperature(self, value):
+        value = float(value)
+        if not math.isfinite(value) or value <= 0.0:
+            raise ValueError(
+                "minimum_cea_temperature must be finite and positive"
+            )
+        self._minimum_cea_temperature = value
+        tangent_cache = getattr(self, "_temperature_tangent_cache", None)
+        if tangent_cache is not None:
+            tangent_cache.clear()
+
     def _make_mixtures(self):
         """Build the CEA mixtures represented by this object's Python state."""
         reactants = [
@@ -112,6 +151,7 @@ class Aerothermodynamics:
             "_rocket_solver",
             "_rocket_solution",
             "_cache",
+            "_temperature_tangent_cache",
         ):
             state.pop(name, None)
         return state
@@ -119,7 +159,10 @@ class Aerothermodynamics:
     def __setstate__(self, state):
         """Restore Python state and recreate the process-local CEA handles."""
         self.__dict__.update(state)
+        if not hasattr(self, "_minimum_cea_temperature"):
+            self._minimum_cea_temperature = MIN_CEA_TEMPERATURE
         self._cache = {}
+        self._temperature_tangent_cache = {}
         self._make_solvers()
 
     @classmethod
@@ -127,7 +170,7 @@ class Aerothermodynamics:
                      F=None, mdot=None, A_t=None,
                      L_star=None, V_c=None, t_stay=None,
                      T_fu_in=298.15, T_ox_in=298.15,
-                     p_amb=1.013e5, npts=15, **kw):
+                     p_amb=1.013e5, **kw):
         """The single shared path used by every sizing constructor."""
         if (eps is None) == (p_e is None):
             raise ValueError("Provide exactly one of eps or p_e")
@@ -169,7 +212,10 @@ class Aerothermodynamics:
         exit_i = int(solution.num_pts) - 1
         c_star = float(np.atleast_1d(solution.c_star)[0])
         Isp_vac = float(np.atleast_1d(solution.Isp_vacuum)[exit_i]) / G0
-        Isp_ideal_amb = float(np.atleast_1d(solution.Isp)[exit_i]) / G0
+        # CEA's Isp is the exit velocity, i.e. the impulse of a nozzle expanded
+        # exactly to its own exit pressure. It carries no pressure-thrust term
+        # and does not depend on p_amb.
+        Isp_optimum = float(np.atleast_1d(solution.Isp)[exit_i]) / G0
         rho_c = float(np.atleast_1d(solution.density)[0])
         T_c = float(np.atleast_1d(solution.T)[0])
         T_t = float(np.atleast_1d(solution.T)[1])
@@ -202,50 +248,50 @@ class Aerothermodynamics:
         optimum = dict(
             fu=fu, ox=ox, MR=MR, p_c=p_c, p_t=p_t, T_c=T_c, T_t=T_t,
             F=F, eps=eps, L_star=L_star, c_star=c_star, p_amb=p_amb,
-            Isp_ideal_amb=Isp_ideal_amb, Isp_vac=Isp_vac,
+            Isp_optimum=Isp_optimum, Isp_vac=Isp_vac,
             Isp_amb=CF_amb * c_star / G0, Isp_SL=CF_SL * c_star / G0,
             CF_vac=CF_vac, CF_amb=CF_amb, CF_SL=CF_SL,
             mdot=mdot, mdot_fu=mdot_fu, mdot_ox=mdot_ox,
             t_stay=t_stay, A_t=A_t, A_e=A_e,
             r_t=math.sqrt(A_t / math.pi), r_e=math.sqrt(A_e / math.pi), V_c=V_c,
-            T_fu_in=T_fu_in, T_ox_in=T_ox_in, npts=npts,
+            T_fu_in=T_fu_in, T_ox_in=T_ox_in,
         )
         return cls(optimum, **kw)
 
     @classmethod
     def from_F_eps_Lstar(cls, fu, ox, MR, p_c, F, eps, L_star,
-                         T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, npts=15, **kw):
+                         T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, **kw):
         return cls._from_design(fu, ox, MR, p_c, F=F, eps=eps, L_star=L_star,
                                 T_fu_in=T_fu_in, T_ox_in=T_ox_in,
-                                p_amb=p_amb, npts=npts, **kw)
+                                p_amb=p_amb, **kw)
 
     @classmethod
     def from_F_pe_Lstar(cls, fu, ox, MR, p_c, F, p_e, L_star,
-                        T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, npts=15, **kw):
+                        T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, **kw):
         return cls._from_design(fu, ox, MR, p_c, F=F, p_e=p_e, L_star=L_star,
                                 T_fu_in=T_fu_in, T_ox_in=T_ox_in,
-                                p_amb=p_amb, npts=npts, **kw)
+                                p_amb=p_amb, **kw)
 
     @classmethod
     def from_mdot_eps_Lstar(cls, fu, ox, MR, p_c, mdot, eps, L_star,
-                            T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, npts=15, **kw):
+                            T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, **kw):
         return cls._from_design(fu, ox, MR, p_c, mdot=mdot, eps=eps, L_star=L_star,
                                 T_fu_in=T_fu_in, T_ox_in=T_ox_in,
-                                p_amb=p_amb, npts=npts, **kw)
+                                p_amb=p_amb, **kw)
 
     @classmethod
     def from_mdot_pe_Lstar(cls, fu, ox, MR, p_c, mdot, p_e, L_star,
-                           T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, npts=15, **kw):
+                           T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, **kw):
         return cls._from_design(fu, ox, MR, p_c, mdot=mdot, p_e=p_e, L_star=L_star,
                                 T_fu_in=T_fu_in, T_ox_in=T_ox_in,
-                                p_amb=p_amb, npts=npts, **kw)
+                                p_amb=p_amb, **kw)
 
     @classmethod
     def from_At_eps_Lstar(cls, fu, ox, MR, p_c, A_t, eps, L_star,
-                          T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, npts=15, **kw):
+                          T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, **kw):
         return cls._from_design(fu, ox, MR, p_c, A_t=A_t, eps=eps, L_star=L_star,
                                 T_fu_in=T_fu_in, T_ox_in=T_ox_in,
-                                p_amb=p_amb, npts=npts, **kw)
+                                p_amb=p_amb, **kw)
 
     @classmethod
     def from_rt_eps_Lstar(cls, fu, ox, MR, p_c, r_t, eps, L_star, **kw):
@@ -254,17 +300,17 @@ class Aerothermodynamics:
 
     @classmethod
     def from_F_eps_Vc(cls, fu, ox, MR, p_c, F, eps, V_c,
-                      T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, npts=15, **kw):
+                      T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, **kw):
         return cls._from_design(fu, ox, MR, p_c, F=F, eps=eps, V_c=V_c,
                                 T_fu_in=T_fu_in, T_ox_in=T_ox_in,
-                                p_amb=p_amb, npts=npts, **kw)
+                                p_amb=p_amb, **kw)
 
     @classmethod
     def from_F_eps_tstay(cls, fu, ox, MR, p_c, F, eps, t_stay,
-                         T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, npts=15, **kw):
+                         T_fu_in=298.15, T_ox_in=298.15, p_amb=1.013e5, **kw):
         return cls._from_design(fu, ox, MR, p_c, F=F, eps=eps, t_stay=t_stay,
                                 T_fu_in=T_fu_in, T_ox_in=T_ox_in,
-                                p_amb=p_amb, npts=npts, **kw)
+                                p_amb=p_amb, **kw)
 
     @classmethod
     def from_mass_flows_eps_Lstar(cls, fu, ox, p_c, mdot_fu, mdot_ox,
@@ -278,12 +324,9 @@ class Aerothermodynamics:
     def from_optimum(cls, optimum, **kw):
         return cls(optimum, **kw)
 
-    def compute_aerothermodynamics(self, contour, Nt=64):
-        if Nt != 64:
-            warnings.warn("Nt is ignored; station properties are solved live.",
-                          DeprecationWarning, stacklevel=2)
+    def compute_aerothermodynamics(self, contour):
+        """Attach chamber geometry for live, coordinate-driven CEA queries."""
         self.contour = contour
-        self.x_nodes = np.linspace(contour.xs[0], contour.xs[-1], self.npts)
         self.clear_cache()
         return self
 
@@ -323,6 +366,88 @@ class Aerothermodynamics:
 
     _eq_state = equilibrium_state
 
+    @staticmethod
+    def _forward_derivative(values, step):
+        """Second-order right-hand derivative at the first sample."""
+        value_0, value_1, value_2 = values
+        return (-3.0 * value_0 + 4.0 * value_1 - value_2) / (2.0 * step)
+
+    def _temperature_tangent(self, x, pressure):
+        """Build or retrieve the C1 continuation at the configured boundary."""
+        boundary = self.minimum_cea_temperature
+        key = (float(x), float(pressure), boundary, self.transport)
+        cached = self._temperature_tangent_cache.get(key)
+        if cached is not None:
+            return cached
+
+        step = max(0.1, 1.0e-3 * boundary)
+        states = tuple(
+            self.equilibrium_state("tp", boundary + offset * step, pressure)
+            for offset in range(3)
+        )
+        base = states[0]
+        linear_slopes = {
+            "h": self._forward_derivative(
+                tuple(state.h for state in states), step
+            )
+        }
+        log_slopes = {}
+        for name in _LOG_TANGENT_FIELDS:
+            samples = np.asarray(
+                [getattr(state, name) for state in states], dtype=float
+            )
+            if np.all(np.isfinite(samples)) and np.all(samples > 0.0):
+                log_slopes[name] = self._forward_derivative(
+                    tuple(np.log(samples)), step
+                )
+            else:
+                linear_slopes[name] = self._forward_derivative(
+                    tuple(samples), step
+                )
+
+        tangent = (base, linear_slopes, log_slopes)
+        self._temperature_tangent_cache[key] = tangent
+        return tangent
+
+    def _extrapolate_temperature_state(self, x, temperature, pressure):
+        """Continue a temperature-conditioned CEA state below its boundary."""
+        base, linear_slopes, log_slopes = self._temperature_tangent(x, pressure)
+        delta_temperature = float(temperature) - self.minimum_cea_temperature
+        values = {
+            name: getattr(base, name)
+            for name in GasState.__dataclass_fields__
+            if name != "X"
+        }
+        values["T"] = float(temperature)
+        values["p"] = float(pressure)
+        for name, slope in linear_slopes.items():
+            values[name] = getattr(base, name) + slope * delta_temperature
+        for name, slope in log_slopes.items():
+            exponent = np.clip(slope * delta_temperature, -700.0, 700.0)
+            values[name] = getattr(base, name) * math.exp(float(exponent))
+        values["X"] = dict(base.X)
+        return GasState(**values)
+
+    def _extrapolate_enthalpy_state(self, x, enthalpy, pressure):
+        """Invert the same tangent when an HP query falls below its boundary."""
+        base, linear_slopes, _ = self._temperature_tangent(x, pressure)
+        enthalpy_slope = linear_slopes["h"]
+        if not math.isfinite(enthalpy_slope) or enthalpy_slope <= 0.0:
+            raise RuntimeError(
+                "CEA temperature-boundary enthalpy tangent is not invertible"
+            )
+        temperature = self.minimum_cea_temperature + (
+            float(enthalpy) - base.h
+        ) / enthalpy_slope
+        if temperature >= self.minimum_cea_temperature:
+            raise RuntimeError(
+                "CEA HP solve failed for a state above the configured "
+                "temperature boundary"
+            )
+        state = self._extrapolate_temperature_state(x, temperature, pressure)
+        state.h = float(enthalpy)
+        return state
+
     def get_state(self, x, T=None, h=None):
         """Return all properties at x, optionally at an imposed T or h."""
         if T is not None and h is not None:
@@ -337,11 +462,29 @@ class Aerothermodynamics:
             return self._cache[key]
 
         if T is not None or h is not None:
-            state = self.equilibrium_state(
-                "tp" if T is not None else "hp",
-                T if T is not None else h,
-                self.get_state(x).p,
-            )
+            pressure = self.get_state(x).p
+            if T is not None and float(T) < self.minimum_cea_temperature:
+                state = self._extrapolate_temperature_state(
+                    x, float(T), pressure
+                )
+            elif T is not None:
+                state = self.equilibrium_state(
+                    "tp",
+                    float(T),
+                    pressure,
+                )
+            else:
+                try:
+                    state = self.equilibrium_state("hp", h, pressure)
+                except RuntimeError:
+                    state = self._extrapolate_enthalpy_state(
+                        x, h, pressure
+                    )
+                else:
+                    if state.T < self.minimum_cea_temperature:
+                        state = self._extrapolate_enthalpy_state(
+                            x, h, pressure
+                        )
         else:
             if self.contour is None:
                 raise RuntimeError("Attach a contour before querying station properties")
@@ -388,7 +531,24 @@ class Aerothermodynamics:
             self._cache[key] = state
         return state
 
-    def clear_cache(self): self._cache.clear()
+    def clear_cache(self):
+        self._cache.clear()
+        tangent_cache = getattr(self, "_temperature_tangent_cache", None)
+        if tangent_cache is not None:
+            tangent_cache.clear()
+
+    def reset_solver_state(self):
+        """Recreate native CEA handles and clear all cached station states.
+
+        NASA CEA's nonlinear solution handles retain their previous solution
+        as an initial state. That is useful during a single axial march, but
+        separate simulations of the same inputs must not depend on which
+        simulation ran immediately before them. Resetting the native handles
+        provides a deterministic boundary between such simulations without
+        rebuilding this object's design configuration.
+        """
+        self._make_solvers()
+        self.clear_cache()
 
     @property
     def cache_size(self): return len(self._cache)
@@ -402,6 +562,30 @@ class Aerothermodynamics:
     def get_h(self, x, T=None, h=None): return self.get_state(x, T, h).h
     def get_H(self, x, T=None, h=None): return self.get_state(x, T, h).h
     def get_a(self, x, T=None, h=None): return self.get_state(x, T, h).a
+    def get_v(self, x, T=None, h=None):
+        state = self.get_state(x, T, h)
+        return state.M * state.a
+    def get_T0(self, x, T=None, h=None):
+        """Total temperature [K], from conserved total enthalpy.
+
+        Inverted through the equilibrium equation of state rather than taken
+        from the frozen-gamma isentropic relation: gamma is a local property
+        here, so that relation drifts above the chamber value down the nozzle.
+
+        The inversion is done at the *local static* pressure, the same
+        convention the boundary-layer reference and recovery states use, which
+        keeps this comparable with ``T_aw``. It is therefore not the classical
+        isentropic stagnation temperature, and it is not constant along an
+        equilibrium nozzle: total enthalpy is conserved, but as the pressure
+        falls the equilibrium shifts towards dissociation, so the same enthalpy
+        corresponds to a lower temperature. It never exceeds its chamber value.
+        """
+        state = self.get_state(x, T, h)
+        H0 = state.h + 0.5 * (state.M * state.a) ** 2
+        try:
+            return self.get_state(x, h=H0).T
+        except Exception:  # noqa: BLE001
+            return state.T * (1.0 + 0.5 * (state.gamma - 1.0) * state.M ** 2)
     def get_mu(self, x, T=None, h=None): return self.get_state(x, T, h).mu
     def get_k(self, x, T=None, h=None): return self.get_state(x, T, h).k
     def get_Pr(self, x, T=None, h=None): return self.get_state(x, T, h).Pr

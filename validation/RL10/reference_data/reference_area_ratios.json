@@ -1,0 +1,39 @@
+{
+  "name": "RL10A-3-3A hot-gas property node axial locations and expansion ratios",
+  "units": {
+    "x": "m",
+    "area_ratio": "1"
+  },
+  "source": "Binder, M., Tomsik, T., Veres, J. P., 'RL10A-3-3A Rocket Engine Modeling Project', NASA TM-107318, 1997. Table E1, p. 139 (NTRS 19970010379).",
+  "notes": [
+    "These are the fourteen-plus-two axial locations used for the CET93 hot-gas property tables; they coincide with the heat-transfer calculation nodes of the regenerative cooling jacket.",
+    "Axial location is measured with respect to the throat, negative forward (towards the injector).",
+    "Expansion ratio is the local flow area divided by the throat area, A/A_t. Values below the throat station are contraction ratios on the subsonic branch.",
+    "In the published table the rows are ordered by ascending expansion ratio, which interleaves the subsonic and supersonic branches. They are sorted here by ascending axial position instead.",
+    "The throat itself (x = 0, area_ratio = 1) is not a row in the published table."
+  ],
+  "columns": {
+    "x_in": "axial location with respect to the throat [in]",
+    "x": "axial location with respect to the throat [m]",
+    "area_ratio": "local area ratio A/A_t [-]",
+    "branch": "'sub' for the subsonic branch, 'sup' for the supersonic branch"
+  },
+  "stations": [
+    { "x_in": -12.000, "x": -0.3048000, "area_ratio": 4.27, "branch": "sub" },
+    { "x_in": -10.000, "x": -0.2540000, "area_ratio": 4.14, "branch": "sub" },
+    { "x_in":  -8.032, "x": -0.2040128, "area_ratio": 4.00, "branch": "sub" },
+    { "x_in":  -6.068, "x": -0.1541272, "area_ratio": 3.65, "branch": "sub" },
+    { "x_in":  -4.054, "x": -0.1029716, "area_ratio": 2.72, "branch": "sub" },
+    { "x_in":  -2.018, "x": -0.0512572, "area_ratio": 1.62, "branch": "sub" },
+    { "x_in":  -0.500, "x": -0.0127000, "area_ratio": 1.11, "branch": "sub" },
+    { "x_in":   0.485, "x":  0.0123190, "area_ratio": 1.29, "branch": "sup" },
+    { "x_in":   2.035, "x":  0.0516890, "area_ratio": 2.35, "branch": "sup" },
+    { "x_in":   4.215, "x":  0.1070610, "area_ratio": 4.29, "branch": "sup" },
+    { "x_in":   6.588, "x":  0.1673352, "area_ratio": 6.93, "branch": "sup" },
+    { "x_in":   8.989, "x":  0.2283206, "area_ratio": 9.95, "branch": "sup" },
+    { "x_in":  16.540, "x":  0.4201160, "area_ratio": 20.70, "branch": "sup" },
+    { "x_in":  25.050, "x":  0.6362700, "area_ratio": 33.20, "branch": "sup" },
+    { "x_in":  33.410, "x":  0.8486140, "area_ratio": 45.00, "branch": "sup" },
+    { "x_in":  41.840, "x":  1.0627360, "area_ratio": 56.10, "branch": "sup" }
+  ]
+}

@@ -553,6 +553,71 @@ StainlessSteel304 = Material(
 )
 
 # ------------------------------------------
+# 347 stainless, 22–1278 K (conductivity)
+# ------------------------------------------
+
+# Aerojet-General NERVA Materials Development, NASA CR-125889 (1970),
+# Appendix A, DRM M-2, page 4 of 7 (PDF page 248):
+# https://ntrs.nasa.gov/api/citations/19720012948/downloads/19720012948.pdf
+#
+# The source table gives temperature in degF and conductivity in
+# Btu/(hr ft degF).  Its quoted uncertainty is +/-15% from -420 to -320 degF,
+# +/-10% from -320 to 540 degF, and +/-5% above 540 degF.  Preserve the source
+# values here and perform the unit conversion explicitly so they remain easy to
+# audit against the report.
+T_347_NERVA_F = np.array(
+    [-420, -410, -360, -320, -260, -200, -160, -60, -10, 40, 140,
+     540, 1040, 1540, 1840],
+    dtype=float,
+)
+k_347_NERVA_BTU_HR_FT_F = np.array(
+    [1.39, 1.77, 3.50, 4.50, 5.64, 6.44, 6.85, 7.62, 7.93, 8.21,
+     8.73, 10.78, 12.82, 14.93, 16.11],
+    dtype=float,
+)
+T_347_NERVA = (T_347_NERVA_F - 32.0) * 5.0 / 9.0 + 273.15
+k_347_NERVA = k_347_NERVA_BTU_HR_FT_F * 1.730734666371391
+
+k_347_table = TabulatedModel(Ts=T_347_NERVA, Ys=k_347_NERVA)
+k_347 = PiecewiseModel(
+    segments=[(T_347_NERVA[0], T_347_NERVA[-1], k_347_table)],
+    range_policy="warn_clip",
+)
+
+# Density from the same NERVA data release, DRM M-2, page 2 of 7
+# (PDF page 246), in lb/in^3.  The source quotes +/-5% uncertainty.
+T_347_RHO_NERVA_F = np.array(
+    [-459, -279, -99.4, 80.6, 261, 441, 621, 801, 981, 1161, 1341,
+     1521, 1701, 1881, 2061, 2241],
+    dtype=float,
+)
+rho_347_NERVA_LB_IN3 = np.array(
+    [0.289, 0.288, 0.287, 0.285, 0.284, 0.283, 0.281, 0.280, 0.278,
+     0.277, 0.275, 0.273, 0.271, 0.269, 0.267, 0.265],
+    dtype=float,
+)
+T_347_RHO_NERVA = (T_347_RHO_NERVA_F - 32.0) * 5.0 / 9.0 + 273.15
+rho_347_NERVA = rho_347_NERVA_LB_IN3 * 27679.904710191
+
+rho_347_table = TabulatedModel(Ts=T_347_RHO_NERVA, Ys=rho_347_NERVA)
+rho_347 = PiecewiseModel(
+    segments=[(T_347_RHO_NERVA[0], T_347_RHO_NERVA[-1], rho_347_table)],
+    range_policy="warn_clip",
+)
+
+StainlessSteel347 = Material(
+    name="AISI 347",
+    k=k_347,
+    # Room-temperature modulus and 20–100 degC mean expansion coefficient:
+    # https://www.sandmeyersteel.com/wp-content/uploads/Alloy347-SpecSheet.pdf
+    E=ConstantModel(193e9),
+    alpha=ConstantModel(16.0e-6),
+    # Representative room-temperature value for austenitic stainless steel.
+    nu=ConstantModel(0.29),
+    rho=rho_347,
+)
+
+# ------------------------------------------
 # Inconel 718, 4–922 K
 # ------------------------------------------
 
@@ -652,6 +717,58 @@ ZirconiumOxide = Material(
 TEOS = Material(
     name = "TEOS",
     k = ConstantModel(0.5) # Somewhere in the range of 0.5 - 1?
+)
+
+
+# -------------------------
+# Well-annealed pure silver
+# -------------------------
+
+# Recommended high-purity solid-silver values from Ho, Powell, and Liley,
+# "Thermal Conductivity of the Elements", J. Phys. Chem. Ref. Data 1,
+# 279 (1972), doi:10.1063/1.3253100. The source table is in W/(cm K),
+# converted here to W/(m K). Values above 1000 K are estimated by the source.
+T_pure_silver = np.array(
+    [
+        20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 60.0, 70.0,
+        80.0, 90.0, 100.0, 123.2, 150.0, 173.2, 200.0, 223.2,
+        250.0, 273.2, 298.2, 300.0, 323.2, 350.0, 373.2, 400.0,
+        473.2, 500.0, 573.2, 600.0, 673.2, 700.0, 773.2, 800.0,
+        873.2, 900.0, 973.2, 1000.0, 1073.2, 1100.0, 1173.2,
+        1200.0, 1235.08,
+    ],
+    dtype=float,
+)
+k_pure_silver_values = 100.0 * np.array(
+    [
+        51.0, 29.5, 19.3, 13.7, 10.5, 8.4, 7.0, 5.30, 4.82,
+        4.64, 4.51, 4.44, 4.36, 4.32, 4.31, 4.30, 4.30, 4.29,
+        4.29, 4.29, 4.29, 4.28, 4.27, 4.26, 4.25, 4.20, 4.19,
+        4.14, 4.12, 4.07, 4.04, 3.99, 3.96, 3.90, 3.88, 3.82,
+        3.79, 3.73, 3.70, 3.63, 3.61, 3.58,
+    ],
+    dtype=float,
+)
+k_pure_silver = PiecewiseModel(
+    segments=[
+        (
+            T_pure_silver[0],
+            T_pure_silver[-1],
+            TabulatedModel(Ts=T_pure_silver, Ys=k_pure_silver_values),
+        )
+    ],
+    range_policy="warn_clip",
+)
+
+PureSilver = Material(
+    name="Pure silver",
+    k=k_pure_silver,
+    # Room-temperature values from NIST Technical Note 1363,
+    # "Cryogenic Properties of Silver".
+    E=ConstantModel(78.89e9),
+    alpha=ConstantModel(18.9e-6),
+    nu=ConstantModel(0.37),
+    rho=ConstantModel(10492.0),
 )
 
 

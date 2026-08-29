@@ -14,6 +14,7 @@ from pyskyfire.regen.cross_section import (
     CrossSectionSquared,
     CrossSectionRounded,
     CrossSectionRoundedInternal,
+    SectionProfiles,
 )
 
 # ---------------------------------------------------------------------------
@@ -31,7 +32,7 @@ TWO_PI = 2.0 * np.pi
 class Engine3DViewer:
     """Interactive self-contained HTML viewer for a thrust-chamber model."""
 
-    plotter: pv.Plotter
+    plotter: pv.Plotter | None
     data_url: str
 
     def save_html(self, path: str | Path) -> Path:
@@ -51,11 +52,24 @@ class Engine3DViewer:
 
     def show(self):
         """Open the PyVista desktop viewer."""
+        if self.plotter is None:
+            raise RuntimeError("Cannot show a closed Engine3DViewer")
         return self.plotter.show()
 
     def close(self) -> None:
         """Release PyVista rendering resources."""
-        self.plotter.close()
+        plotter = self.plotter
+        if plotter is None:
+            return
+
+        # Release our reference before cleanup so a repeated call is harmless
+        # and the plotter is destroyed while PyVista's module globals still
+        # exist, rather than during interpreter shutdown.
+        self.plotter = None
+        try:
+            plotter.close()
+        finally:
+            plotter.deep_clean()
 
 
 # ---------------------------------------------------------------------------
@@ -476,10 +490,21 @@ def get_section_scalars(circuit, x: float, r_center: float):
     - r_inner   : inner coolant radius (centerline + wall thickness)
     - r_outer   : outer coolant radius (r_inner + h(x))
     - theta_eff : effective wedge angle (blockage applied)
-    plus the raw h, t_wall, and theta_raw.
+    plus the raw h, t_wall, t_channel_wall, and theta_raw.
+
+    ``r_inner``/``r_outer`` follow the squared-section convention, where h(x) is
+    the radial extent of the passage. Rounded sections measure h(x) from the
+    bottom of the inner arc to the top of the outer arc, so they build their
+    lobes from h, t_channel_wall and r_center instead, and only use ``r_inner``
+    to sit the passage on top of the wall stack.
+
+    ``t_wall`` is the full wall stack (used for placement) while
+    ``t_channel_wall`` is the coolant-adjacent layer that the cross-section
+    analytics inset their arcs by.
     """
     h = float(circuit.channel_height(x))
     t_wall = float(circuit.total_thickness(x))
+    t_channel_wall = float(circuit.channel_wall_thickness(x))
     #theta_raw = float(circuit.wedge_angle(x))
     theta_raw = float(circuit.local_sector_angle(x))
     br_here = _blockage_at_x(circuit, x)
@@ -491,6 +516,7 @@ def get_section_scalars(circuit, x: float, r_center: float):
     return {
         "h": h,
         "t_wall": t_wall,
+        "t_channel_wall": t_channel_wall,
         "theta_raw": theta_raw,
         "theta_eff": theta_eff,
         "r_center": r_center,
@@ -518,103 +544,121 @@ def local_section_basis(cl_cyl_point: np.ndarray, t_hat: np.ndarray):
 
 import numpy as np
 import math
-from typing import List, Tuple
+from typing import Tuple
 
 Point3 = Tuple[float, float, float]
 
 
-def _wrap_to_pi(a: float) -> float:
-    """Wrap angle to (-pi, pi]."""
-    a = (a + math.pi) % (2.0 * math.pi) - math.pi
-    return a
+def rounded_base_height(
+    cs,
+    r_center: float,
+    theta_eff: float,
+    t_wall: float,
+    h_measured: float,
+) -> float:
+    """
+    Convert a measurable rounded channel height into the model's base height.
+
+    ``channel_height`` for rounded sections is the full extent from the bottom of
+    the inner arc to the top of the outer arc, while the geometry is built from
+    the radial offset between the two lobe centres. The conversion is delegated to
+    the cross-section object so the picture cannot drift from the analytics.
+    """
+    prof = SectionProfiles(
+        h=np.array([float(h_measured)], dtype=float),
+        theta=np.array([float(theta_eff)], dtype=float),
+        t_wall=np.array([float(t_wall)], dtype=float),
+        centerline=np.array([[0.0, float(r_center), 0.0]], dtype=float),
+    )
+
+    # Clamp instead of raising: a degenerate station should not kill a render.
+    h_min = float(cs.minimum_channel_height(prof)[0])
+    if h_min <= 0.0:
+        raise ValueError(
+            "rounded channel inner arc radius is non-positive at "
+            f"r_center={r_center:.6g} m, theta={theta_eff:.6g} rad, "
+            f"t_wall={t_wall:.6g} m"
+        )
+    prof.h[0] = max(float(h_measured), h_min)
+
+    return float(cs.base_height(prof)[0])
 
 
-def _arc_points_tangent_to_rays_yz(
-    r: float,
+def rounded_lobe_arcs_yz(
+    r_center: float,
     theta_center: float,
     theta_eff: float,
-    n: int,
-    *,
-    use_major_arc: bool,
-) -> List[Tuple[float, float]]:
+    t_wall: float,
+    h_base: float,
+    n: int = 8,
+    r_bottom: float | None = None,
+) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Same construction as _arc_points_tangent_to_rays, but returns (y,z) points
-    in the global y–z plane (no x).
+    Build the inner/outer coolant lobes of a rounded section as (y, z) points.
+
+    Mirrors the analytics of :class:`CrossSectionRounded`: both lobes are circles
+    tangent to the two sector rays, inset by the channel wall thickness, with
+    centres on the sector bisector at radius ``r_center`` and
+    ``r_center + h_base``. The two straight side walls are the edges joining the
+    arc endpoints.
+
+    Parameters
+    ----------
+    r_bottom : float, optional
+        If given, the finished section is translated radially so the bottom of
+        the inner lobe sits at this radius. The analytics centre the inner lobe
+        on the hot contour and ignore any hot-side liner, which would draw the
+        passage sunk into the wall; this shifts it out onto the wall stack the
+        way squared sections are drawn, without changing its shape.
+
+    Returns
+    -------
+    inner_yz : (n,2) array
+        Minor arc, running from the +side tangent point inward to the -side one.
+    outer_yz : (n,2) array
+        Major arc, running from the -side tangent point outward to the +side one.
     """
     if n < 2:
         raise ValueError("n must be >= 2")
     if not (0.0 < theta_eff < math.pi):
-        raise ValueError("theta_eff must satisfy 0 < theta_eff < pi for a well-behaved convex construction.")
+        raise ValueError("theta_eff must satisfy 0 < theta_eff < pi.")
 
     a = 0.5 * theta_eff
-    ca = math.cos(a)
     sa = math.sin(a)
-    if abs(ca) < 1e-12:
-        raise ValueError("theta_eff too close to pi; cos(theta_eff/2) ~ 0.")
 
-    # Rotated 2D frame: bisector is +X axis. Endpoints at angles ±a, radius r.
-    P_right = (r * ca, +r * sa)
-    P_left  = (r * ca, -r * sa)
+    d_in = r_center
+    d_out = r_center + h_base
+    q_in = d_in * sa - t_wall
+    q_out = d_out * sa - t_wall
+    if q_in <= 0.0:
+        raise ValueError(
+            "rounded channel inner arc radius must be positive; got "
+            f"{q_in:.6g} m at r_center={r_center:.6g} m"
+        )
 
-    d = r / ca
-    C = (d, 0.0)
+    if r_bottom is not None:
+        shift = float(r_bottom) - (d_in - q_in)
+        d_in += shift
+        d_out += shift
 
-    R = r * math.tan(a)
+    # Both lobes touch the (inset) side walls at ±(pi/2 + a) in the bisector frame.
+    ang_tangent = 0.5 * math.pi + a
+    ang_in = np.linspace(ang_tangent, 2.0 * math.pi - ang_tangent, n)
+    ang_out = np.linspace(-ang_tangent, ang_tangent, n)
 
-    ang_left  = math.atan2(P_left[1]  - C[1], P_left[0]  - C[0])
-    ang_right = math.atan2(P_right[1] - C[1], P_right[0] - C[0])
+    u_in = d_in + q_in * np.cos(ang_in)
+    v_in = q_in * np.sin(ang_in)
+    u_out = d_out + q_out * np.cos(ang_out)
+    v_out = q_out * np.sin(ang_out)
 
-    delta = _wrap_to_pi(ang_right - ang_left)
-    if use_major_arc:
-        delta = (delta - 2.0 * math.pi) if delta >= 0 else (delta + 2.0 * math.pi)
-
-    pts_rot: List[Tuple[float, float]] = []
-    for i in range(n):
-        t = i / (n - 1)
-        ang = ang_left + t * delta
-        xr = C[0] + R * math.cos(ang)
-        yr = C[1] + R * math.sin(ang)
-        pts_rot.append((xr, yr))
-
-    # Rotate back by theta_center into global (y,z)
+    # Rotate the bisector frame into global (y, z)
     cc = math.cos(theta_center)
     sc = math.sin(theta_center)
 
-    yz: List[Tuple[float, float]] = []
-    for (yr, zr) in pts_rot:
-        y = yr * cc - zr * sc
-        z = yr * sc + zr * cc
-        yz.append((y, z))
+    inner_yz = np.column_stack([u_in * cc - v_in * sc, u_in * sc + v_in * cc])
+    outer_yz = np.column_stack([u_out * cc - v_out * sc, u_out * sc + v_out * cc])
+    return inner_yz, outer_yz
 
-    return yz
-
-def rounded_slice_arcs_yz(
-    r_inner: float,
-    r_outer: float,
-    theta_center: float,
-    theta_eff: float,
-    n: int = 8,
-) -> Tuple[List[Tuple[float, float]], List[Tuple[float, float]]]:
-    if r_inner <= 0 or r_outer <= 0:
-        raise ValueError("r_inner and r_outer must be > 0.")
-    if r_outer <= r_inner:
-        raise ValueError("r_outer must be > r_inner.")
-
-    arc_inner_yz = _arc_points_tangent_to_rays_yz(
-        r=r_inner,
-        theta_center=theta_center,
-        theta_eff=theta_eff,
-        n=n,
-        use_major_arc=False,
-    )
-    arc_outer_yz = _arc_points_tangent_to_rays_yz(
-        r=r_outer,
-        theta_center=theta_center,
-        theta_eff=theta_eff,
-        n=n,
-        use_major_arc=True,
-    )
-    return arc_inner_yz, arc_outer_yz
 
 def build_rounded_section_points(
     P0: np.ndarray,
@@ -622,6 +666,7 @@ def build_rounded_section_points(
     cl_cyl_point: np.ndarray,
     geom: dict,
     n_arc_pts: int,
+    cross_section,
 ):
     """
     Build rounded wedge-like ring segment by rigidly embedding the original
@@ -630,25 +675,33 @@ def build_rounded_section_points(
     No projection to cylinder-plane intersection.
     """
     x_c, r_center, theta_center = cl_cyl_point
-    r_inner = float(geom["r_inner"])
-    r_outer = float(geom["r_outer"])
     theta_eff = float(geom["theta_eff"])
+    t_channel_wall = float(geom["t_channel_wall"])
+    h_measured = float(geom["h"])
 
     # plane basis (perpendicular to tangent)
     e_r, e_phi = local_section_basis(cl_cyl_point, t_hat)
 
-    inner_uv, outer_uv = rounded_slice_arcs_uv(
-        r_inner=r_inner,
-        r_outer=r_outer,
-        r_center=float(r_center),
-        theta_center=float(theta_center),
-        theta_eff=float(theta_eff),
-        n=n_arc_pts,
+    h_base = rounded_base_height(
+        cross_section,
+        float(r_center),
+        theta_eff,
+        t_channel_wall,
+        h_measured,
     )
 
-    # Winding: inner forward, outer reversed
-    outer_uv = outer_uv[::-1]
+    inner_uv, outer_uv = rounded_slice_arcs_uv(
+        r_center=float(r_center),
+        theta_center=float(theta_center),
+        theta_eff=theta_eff,
+        t_wall=t_channel_wall,
+        h_base=h_base,
+        n=n_arc_pts,
+        r_bottom=float(geom["r_inner"]),
+    )
 
+    # Winding: inner arc ends where the outer arc starts, so the two runs already
+    # close the perimeter through the straight side walls.
     inner_pts = plane_uv_to_xyz(P0, e_r, e_phi, inner_uv[:, 0], inner_uv[:, 1])
     outer_pts = plane_uv_to_xyz(P0, e_r, e_phi, outer_uv[:, 0], outer_uv[:, 1])
 
@@ -723,7 +776,8 @@ def build_sections_for_centerlines(
                 )
             elif isinstance(cs, (CrossSectionRounded, CrossSectionRoundedInternal)):
                 section_xyz = build_rounded_section_points(
-                    P0, t_hat, cl_cyl_point, geom, n_arc_pts=n_arc_pts
+                    P0, t_hat, cl_cyl_point, geom, n_arc_pts=n_arc_pts,
+                    cross_section=cs,
                 )
             else:
                 section_xyz = build_squared_section_points(
@@ -1006,12 +1060,13 @@ def yz_to_uv_offsets(
     return u, v
 
 def rounded_slice_arcs_uv(
-    r_inner: float,
-    r_outer: float,
     r_center: float,
     theta_center: float,
     theta_eff: float,
+    t_wall: float,
+    h_base: float,
     n: int = 8,
+    r_bottom: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Build inner/outer rounded arcs as (u,v) offsets in a local 2D cross-section frame,
@@ -1022,12 +1077,14 @@ def rounded_slice_arcs_uv(
     inner_uv : (n,2) array
     outer_uv : (n,2) array
     """
-    inner_yz, outer_yz = rounded_slice_arcs_yz(
-        r_inner=r_inner,
-        r_outer=r_outer,
+    inner_yz, outer_yz = rounded_lobe_arcs_yz(
+        r_center=r_center,
         theta_center=theta_center,
         theta_eff=theta_eff,
+        t_wall=t_wall,
+        h_base=h_base,
         n=n,
+        r_bottom=r_bottom,
     )
 
     # Centerline point in world yz

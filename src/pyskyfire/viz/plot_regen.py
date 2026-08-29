@@ -1,8 +1,17 @@
 from __future__ import annotations
 from typing import Sequence, Optional, Any, Iterable, Union
+import warnings
 import numpy as np
 import plotly.graph_objects as go
+from pyskyfire.regen import physics as regen_physics
 from .core import PlotBase
+from .plot_skycea import _visualization_x
+
+
+def _result_grid(result, attribute: str) -> np.ndarray:
+    """Return a result's native grid, falling back to legacy ``x``."""
+    grid = getattr(result, attribute, None)
+    return np.asarray(result.x if grid is None else grid, dtype=float)
 
 
 class PlotContour(PlotBase):
@@ -13,6 +22,9 @@ class PlotContour(PlotBase):
       • classic: has .xs and .rs
       • aerospike: has .xs_outer, .rs_outer, .xs_inner, .rs_inner
 
+    Classic contours are sampled through their ``r(x)`` method when present.
+    Set ``show_input_points=True`` to overlay the original input stations as
+    ``x`` markers; ``interpolation_points`` controls the line resolution.
     If a contour has a .name attribute, it's used for the legend label.
     """
 
@@ -20,11 +32,15 @@ class PlotContour(PlotBase):
         self,
         *contours: Any,
         show_labels: bool = True,
+        show_input_points: bool = False,
+        interpolation_points: int = 500,
         title: str = "Contour Profiles",
         template: str = "plotly_white",
     ):
         super().__init__(go.Figure())
         self.template(template)
+        if interpolation_points < 2:
+            raise ValueError("interpolation_points must be at least 2")
 
         # ------------ colorway helper (same color for +r and -r; rotate per contour) ------------
         #try:
@@ -53,8 +69,22 @@ class PlotContour(PlotBase):
 
             # ---------- Classic bell nozzle: xs / rs ----------
             if hasattr(contour, "xs") and hasattr(contour, "rs"):
-                xs = np.asarray(contour.xs)
-                rs = np.asarray(contour.rs)
+                knots = np.asarray(contour.xs, dtype=float)
+                if callable(getattr(contour, "r", None)):
+                    xs = np.unique(
+                        np.concatenate(
+                            [
+                                np.linspace(
+                                    knots[0], knots[-1], interpolation_points
+                                ),
+                                knots,
+                            ]
+                        )
+                    )
+                    rs = np.asarray(contour.r(xs), dtype=float)
+                else:
+                    xs = knots
+                    rs = np.asarray(contour.rs, dtype=float)
 
                 # +r (legend)
                 self.fig.add_trace(go.Scatter(
@@ -74,6 +104,35 @@ class PlotContour(PlotBase):
                     showlegend=False,
                     line=dict(color=color),
                 ))
+
+                if show_input_points:
+                    input_xs = np.asarray(
+                        getattr(contour, "input_xs", contour.xs),
+                        dtype=float,
+                    )
+                    input_rs = np.asarray(
+                        getattr(contour, "input_rs", contour.rs),
+                        dtype=float,
+                    )
+                    marker = dict(color=color, symbol="x", size=8)
+                    self.fig.add_trace(go.Scatter(
+                        x=input_xs,
+                        y=input_rs,
+                        mode="markers",
+                        name=f"{label} input points",
+                        legendgroup=group,
+                        showlegend=show_labels,
+                        marker=marker,
+                    ))
+                    self.fig.add_trace(go.Scatter(
+                        x=input_xs,
+                        y=-input_rs,
+                        mode="markers",
+                        name=f"{label} input points (mirror)",
+                        legendgroup=group,
+                        showlegend=False,
+                        marker=marker,
+                    ))
 
             # ---------- Aerospike: outer + inner walls ----------
             elif (hasattr(contour, "xs_outer") and hasattr(contour, "rs_outer")
@@ -143,7 +202,7 @@ class PlotCoolantTemperature(PlotBase):
         self.template("plotly_white")
 
         for result in regen_results:
-            x = np.asarray(result.x)
+            x = _result_grid(result, "x_coolant")
             y = np.asarray(result.T_static)
             self.fig.add_trace(
                 go.Scatter(x=x, y=y, mode="lines", name=result.circuit_name, showlegend=True)
@@ -175,7 +234,7 @@ class PlotCoolantPressure(PlotBase):
         self.template(template)
 
         for result in regen_results:
-            x = np.asarray(result.x)
+            x = _result_grid(result, "x_coolant")
             circuit_name = result.circuit_name
 
             if static:
@@ -213,6 +272,7 @@ class PlotCoolantPressure(PlotBase):
             legend=dict(
                 title=None,
                 tracegroupgap=10,
+                groupclick="toggleitem",
             ),
             margin=dict(l=60, r=20, t=60, b=60),
         )
@@ -222,7 +282,17 @@ class PlotWallTemperature(PlotBase):
     Build a wall-temperature plot from one or more ``RegenResult`` objects.
 
     ``T`` must have shape ``(len(x), n_layers)``. The circuit name is used as the
-    legend-group title.
+    legend-group title. Nodes whose final scaled wall-balance residual exceeds
+    the solver tolerance are shown with red ``x`` markers by default.
+
+    The optional layers extend the plot outwards from the wall stack, cold side
+    first: ``plot_coolant_bulk`` (the bulk coolant the circuit marches on),
+    ``plot_recovery`` (the hot-side recovery temperature ``T_aw_hot``, which is
+    the driving potential behind the reported ``h_hot``), and
+    ``plot_combustion`` (gas static and total temperature, which needs
+    ``thrust_chamber``). Turning them all on gives the full cold-to-hot
+    overview at the cost of stretching the y-axis over the whole range, which
+    flattens the detail inside the wall stack.
     """
 
     def __init__(
@@ -231,17 +301,31 @@ class PlotWallTemperature(PlotBase):
         plot_hot: bool = True,
         plot_interfaces: bool = False,
         plot_coolant_wall: bool = False,
+        plot_coolant_bulk: bool = False,
+        plot_recovery: bool = False,
+        plot_combustion: bool = False,
+        thrust_chamber=None,
+        mark_nonconverged: bool = True,
         template: str = "plotly_white",
     ):
+        if plot_combustion and thrust_chamber is None:
+            raise ValueError(
+                "plot_combustion needs thrust_chamber to reach the combustion "
+                "transport model"
+            )
+
         super().__init__(go.Figure())
         self.template(template)
 
         for result in regen_results:
-            x = np.asarray(result.x)
+            x = _result_grid(result, "x_wall")
             T = np.asarray(result.T)
             circuit_name = result.circuit_name
 
             cols = []
+
+            if plot_coolant_bulk:
+                cols.append(0)
 
             if plot_coolant_wall and T.shape[1] > 1:
                 cols.append(1)
@@ -253,11 +337,14 @@ class PlotWallTemperature(PlotBase):
                 cols.append(T.shape[1] - 1)
 
             for col in cols:
+                is_coolant_bulk = col == 0 and plot_coolant_bulk
                 is_cold_wall = col == 1 and plot_coolant_wall
                 is_hot_wall = col == T.shape[1] - 1 and plot_hot
                 is_interface = plot_interfaces and 2 <= col <= T.shape[1] - 2
 
-                if is_cold_wall:
+                if is_coolant_bulk:
+                    trace_name = "Coolant Bulk"
+                elif is_cold_wall:
                     trace_name = "Cold Wall"
                 elif is_hot_wall:
                     trace_name = "Hot Wall"
@@ -277,6 +364,84 @@ class PlotWallTemperature(PlotBase):
                     )
                 )
 
+            T_aw = getattr(result, "T_aw_hot", None)
+            if plot_recovery and T_aw is not None:
+                self.fig.add_trace(
+                    go.Scatter(
+                        x=_result_grid(result, "x_heat_flux"),
+                        y=np.asarray(T_aw, dtype=float),
+                        mode="lines",
+                        name="Recovery (T_aw)",
+                        legendgroup=circuit_name,
+                        legendgrouptitle=dict(text=circuit_name),
+                        showlegend=True,
+                        line=dict(dash="dot"),
+                    )
+                )
+
+            if plot_combustion:
+                transport = thrust_chamber.combustion_transport
+                x_gas = _visualization_x(transport, x=None, results=result, nodes=None)
+                series = (
+                    ("Combustion Static", transport.get_T),
+                    ("Combustion Total", transport.get_T0),
+                )
+                for trace_name, getter in series:
+                    self.fig.add_trace(
+                        go.Scatter(
+                            x=x_gas,
+                            y=np.asarray(
+                                [getter(float(x_i)) for x_i in x_gas],
+                                dtype=float,
+                            ),
+                            mode="lines",
+                            name=trace_name,
+                            legendgroup=circuit_name,
+                            legendgrouptitle=dict(text=circuit_name),
+                            showlegend=True,
+                            line=dict(dash="dot"),
+                        )
+                    )
+
+            converged = getattr(result, "wall_converged", None)
+            if mark_nonconverged and cols and converged is not None:
+                converged = np.asarray(converged, dtype=bool)
+                if converged.shape != x.shape:
+                    raise ValueError(
+                        "result.wall_converged must have one value per wall node"
+                    )
+                failed = ~converged
+                if np.any(failed):
+                    residual = getattr(result, "wall_residual_scaled", None)
+                    if residual is None:
+                        residual = np.full(x.shape, np.nan)
+                    residual = np.asarray(residual, dtype=float)
+                    if residual.shape != x.shape:
+                        raise ValueError(
+                            "result.wall_residual_scaled must have one value "
+                            "per wall node"
+                        )
+                    marker_col = T.shape[1] - 1 if plot_hot else cols[-1]
+                    self.fig.add_trace(
+                        go.Scatter(
+                            x=x[failed],
+                            y=T[failed, marker_col],
+                            mode="markers",
+                            name="Non-converged wall nodes",
+                            legendgroup=circuit_name,
+                            legendgrouptitle=dict(text=circuit_name),
+                            showlegend=True,
+                            marker=dict(symbol="x", size=11, color="#d62728"),
+                            customdata=residual[failed],
+                            hovertemplate=(
+                                "x = %{x:.6g} m<br>"
+                                "T = %{y:.2f} K<br>"
+                                "scaled residual = %{customdata:.3e}"
+                                "<extra></extra>"
+                            ),
+                        )
+                    )
+
         self.fig.update_layout(
             title="Wall Temperature",
             xaxis=dict(title="Axial Position (m)"),
@@ -284,6 +449,9 @@ class PlotWallTemperature(PlotBase):
             legend=dict(
                 title=None,
                 tracegroupgap=10,
+                # Click a legend entry to toggle that trace alone rather than
+                # its whole circuit group.
+                groupclick="toggleitem",
             ),
             margin=dict(l=60, r=20, t=60, b=60),
         )
@@ -295,7 +463,7 @@ class PlotHeatFlux(PlotBase):
         self.template("plotly_white")
 
         for result in regen_results:
-            x = np.asarray(result.x)
+            x = _result_grid(result, "x_heat_flux")
             y = np.asarray(result.dQ_dA)
             self.fig.add_trace(
                 go.Scatter(x=x, y=y, mode="lines", name=result.circuit_name, showlegend=True)
@@ -317,7 +485,7 @@ class PlotVelocity(PlotBase):
         self.template("plotly_white")
 
         for result in regen_results:
-            x = np.asarray(result.x)
+            x = _result_grid(result, "x_coolant")
             y = np.asarray(result.velocity)
             self.fig.add_trace(
                 go.Scatter(x=x, y=y, mode="lines", name=result.circuit_name, showlegend=True)
@@ -327,6 +495,152 @@ class PlotVelocity(PlotBase):
             title="Coolant Velocity",
             xaxis=dict(title="Axial Position (m)"),
             yaxis=dict(title="Velocity (m/s)"),
+            legend=dict(title=None),
+            margin=dict(l=60, r=20, t=60, b=60),
+        )
+
+
+class PlotReynoldsNumber(PlotBase):
+    """Plot combustion-gas and coolant Reynolds numbers along the chamber.
+
+    Coolant profiles are evaluated on each result's coolant grid using the
+    same bulk-state convention as the regenerative solver.  The laminar and
+    turbulent limits from :mod:`pyskyfire.regen.physics` are drawn only when
+    an individual profile spans the corresponding limit.
+
+    Parameters
+    ----------
+    thrust_chamber : ThrustChamber
+        Chamber carrying the combustion transport model, contour, and cooling
+        circuits.
+    *regen_results : RegenResult
+        Solved cooling circuits to include.
+    combustion, coolant : bool, optional
+        Select which sides to display.
+    combustion_nodes, combustion_x : optional
+        Override the default combustion grid derived from ``regen_results``
+        with a uniform node count or explicit axial coordinates.
+    show_transition_thresholds : bool, optional
+        Label crossed laminar/turbulent limits with horizontal lines.
+    """
+
+    def __init__(
+        self,
+        thrust_chamber,
+        *regen_results,
+        combustion: bool = True,
+        coolant: bool = True,
+        combustion_nodes: int | None = None,
+        combustion_x=None,
+        show_transition_thresholds: bool = True,
+        template: str = "plotly_white",
+    ):
+        super().__init__(go.Figure())
+        self.template(template)
+        profiles = []
+
+        if combustion:
+            transport = thrust_chamber.combustion_transport
+            x_gas = _visualization_x(
+                transport,
+                x=combustion_x,
+                results=regen_results or None,
+                nodes=combustion_nodes,
+            )
+            reynolds_gas = np.empty_like(x_gas)
+            for index, x_i in enumerate(x_gas):
+                state = transport.get_state(float(x_i))
+                reynolds_gas[index] = regen_physics.reynolds(
+                    float(state.rho),
+                    float(state.M * state.a),
+                    float(2.0 * thrust_chamber.contour.r(x_i)),
+                    float(state.mu),
+                )
+            profiles.append(reynolds_gas)
+            self.fig.add_trace(go.Scatter(
+                x=x_gas,
+                y=reynolds_gas,
+                mode="lines",
+                name="Combustion gas",
+                showlegend=True,
+            ))
+
+        if coolant:
+            for result in regen_results:
+                x_coolant = _result_grid(result, "x_coolant")
+                circuit = thrust_chamber.cooling_circuits[result.circuit_index]
+                temperature = np.asarray(result.T_static, dtype=float)
+                pressure = np.asarray(result.p_stagnation, dtype=float)
+                velocity = np.asarray(result.velocity, dtype=float)
+                quality = getattr(result, "coolant_quality", None)
+                if quality is not None:
+                    quality = np.asarray(quality, dtype=float)
+
+                reynolds_coolant = np.empty_like(x_coolant)
+                coolant_state = None
+                if quality is not None and np.isfinite(quality).any():
+                    from pyskyfire.regen.coolant_state import CoolantState
+
+                    coolant_state = CoolantState(
+                        circuit.coolant_transport, float(pressure[0])
+                    )
+
+                for index, x_i in enumerate(x_coolant):
+                    T_i = float(temperature[index])
+                    p_i = float(pressure[index])
+                    if quality is not None and np.isfinite(quality[index]):
+                        saturation = coolant_state.saturation(p_i)
+                    else:
+                        saturation = None
+                    if saturation is not None:
+                        rho_i = saturation.homogeneous_density(quality[index])
+                        mu_i = saturation.mu_f
+                    else:
+                        rho_i = float(
+                            circuit.coolant_transport.get_rho(T_i, p_i)
+                        )
+                        mu_i = float(
+                            circuit.coolant_transport.get_mu(T_i, p_i)
+                        )
+                    reynolds_coolant[index] = regen_physics.reynolds(
+                        rho_i,
+                        float(velocity[index]),
+                        float(circuit.Dh_coolant(x_i)),
+                        mu_i,
+                    )
+
+                profiles.append(reynolds_coolant)
+                self.fig.add_trace(go.Scatter(
+                    x=x_coolant,
+                    y=reynolds_coolant,
+                    mode="lines",
+                    name=f"{result.circuit_name} coolant",
+                    showlegend=True,
+                ))
+
+        if show_transition_thresholds:
+            thresholds = (
+                (regen_physics.ReDh_laminar, "Laminar limit"),
+                (regen_physics.ReDh_turbulent, "Turbulent limit"),
+            )
+            for threshold, label in thresholds:
+                crossed = any(
+                    np.isfinite(values).any()
+                    and np.nanmin(values) <= threshold <= np.nanmax(values)
+                    for values in profiles
+                )
+                if crossed:
+                    self.fig.add_hline(
+                        y=threshold,
+                        line=dict(color="#666", dash="dash", width=1),
+                        annotation_text=f"{label} (Re = {threshold:g})",
+                        annotation_position="top left",
+                    )
+
+        self.fig.update_layout(
+            title="Reynolds Number",
+            xaxis=dict(title="Axial Position (m)"),
+            yaxis=dict(title="Reynolds Number, Re"),
             legend=dict(title=None),
             margin=dict(l=60, r=20, t=60, b=60),
         )
@@ -447,7 +761,7 @@ class PlotCoolantQuality(PlotBase):
         all_supercritical = True
 
         for result in regen_results:
-            x = np.asarray(result.x, dtype=float)
+            x = _result_grid(result, "x_coolant")
             quality = getattr(result, "coolant_quality", None)
             phase = _phase_array(result)
             if quality is None or phase is None:
@@ -551,7 +865,7 @@ class PlotCoolantQuality(PlotBase):
         # engine, so pin it to the circuit whatever happened above.
         xaxis = dict(title="Axial Position (m)")
         if not self.fig.data and regen_results:
-            spans = [np.asarray(r.x, dtype=float) for r in regen_results]
+            spans = [_result_grid(r, "x_coolant") for r in regen_results]
             xaxis["range"] = [min(s.min() for s in spans),
                               max(s.max() for s in spans)]
 
@@ -560,7 +874,7 @@ class PlotCoolantQuality(PlotBase):
             # Deliberately not "x": that is the axial coordinate on this figure.
             xaxis=xaxis,
             yaxis=dict(title="Vapour quality (-)", range=[-0.05, 1.05]),
-            legend=dict(title=None, tracegroupgap=10),
+            legend=dict(title=None, tracegroupgap=10, groupclick="toggleitem"),
             margin=dict(l=60, r=20, t=60, b=60),
         )
 
@@ -607,7 +921,7 @@ class PlotCoolantPhase(PlotBase):
         ]
 
         for row, (result, phase) in enumerate(rows):
-            x = np.asarray(result.x, dtype=float)
+            x = _result_grid(result, "x_coolant")
             quality = np.asarray(
                 getattr(result, "coolant_quality", np.full(x.size, np.nan)),
                 dtype=float,
@@ -725,7 +1039,7 @@ class PlotSaturationMargin(PlotBase):
         plotted = False
 
         for result in regen_results:
-            x = np.asarray(result.x, dtype=float)
+            x = _result_grid(result, "x_coolant")
             T_bulk = np.asarray(result.T_static, dtype=float)
             T_sat = getattr(result, "coolant_T_sat", None)
             phase = _phase_array(result)
@@ -814,7 +1128,7 @@ class PlotSaturationMargin(PlotBase):
             title="Coolant Subcooling Margin",
             xaxis=dict(title="Axial Position (m)"),
             yaxis=dict(title="Temperature (K)"),
-            legend=dict(title=None, tracegroupgap=10),
+            legend=dict(title=None, tracegroupgap=10, groupclick="toggleitem"),
             margin=dict(l=60, r=20, t=60, b=60),
         )
 
@@ -901,6 +1215,391 @@ class PlotCoolantArea(PlotBase):
             margin=dict(l=60, r=20, t=60, b=60),
         )
 
+
+class PlotChannelHeight(PlotBase):
+    """Plot the raw cooling-channel height profile for selected circuits."""
+
+    def __init__(self, thrust_chamber, circuit_index: IndexLike = None):
+        super().__init__(go.Figure())
+        self.template("plotly_white")
+
+        circuits = thrust_chamber.cooling_circuits
+        indices = _normalize_indices(thrust_chamber, circuit_index)
+
+        for idx in indices:
+            circuit = circuits[idx]
+            x = np.asarray(circuit.x_domain, dtype=float)
+            height = np.asarray(circuit.channel_heights, dtype=float)
+            name = getattr(circuit, "name", f"Circuit {idx}")
+            self.fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=height,
+                    mode="lines",
+                    name=name,
+                    showlegend=True,
+                    hovertemplate=(
+                        "x = %{x:.4g} m<br>h = %{y:.4g} m<extra></extra>"
+                    ),
+                )
+            )
+
+        self.fig.update_layout(
+            title="Cooling Channel Height",
+            xaxis=dict(title="Axial Position, x (m)"),
+            yaxis=dict(title="Channel Height, h (m)"),
+            legend=dict(title=None),
+            margin=dict(l=60, r=20, t=60, b=60),
+        )
+
+
+class PlotChannelWidth(PlotBase):
+    """Compare calculated tube OD width with optional reference profiles.
+
+    The rounded-section geometry occupies an angular sector ``theta`` at the
+    hot-side tube radius ``r``.  Its measurable tube width there is therefore
+    the chord ``2 r sin(theta/2)``.  Reference profiles are expected to expose
+    ``x`` and ``tube_width_od`` arrays and may optionally provide ``name``.
+    """
+
+    def __init__(
+        self,
+        thrust_chamber,
+        circuit_index: IndexLike = None,
+        reference_profiles: Optional[Sequence[Any]] = None,
+    ):
+        super().__init__(go.Figure())
+        self.template("plotly_white")
+
+        circuits = thrust_chamber.cooling_circuits
+        indices = _normalize_indices(thrust_chamber, circuit_index)
+
+        for idx in indices:
+            circuit = circuits[idx]
+            x = np.asarray(circuit.x_domain, dtype=float)
+            radius = np.asarray(circuit.centerlines[0][:, 1], dtype=float)
+            theta = np.asarray(circuit.channel_local_sector, dtype=float)
+            width = 2.0 * radius * np.sin(0.5 * theta)
+            name = getattr(circuit, "name", f"Circuit {idx}")
+            self.fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=width,
+                    mode="lines",
+                    name=f"{name} (calculated)",
+                    showlegend=True,
+                    hovertemplate=(
+                        "x = %{x:.4g} m<br>tube width OD = %{y:.4g} m"
+                        "<extra></extra>"
+                    ),
+                )
+            )
+
+        for index, reference in enumerate(reference_profiles or ()):
+            x = np.asarray(reference.x, dtype=float)
+            width = np.asarray(reference.tube_width_od, dtype=float)
+            if x.shape != width.shape:
+                raise ValueError("reference tube-width x and y arrays must match")
+            name = getattr(reference, "name", f"Reference {index + 1}")
+            self.fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=width,
+                    mode="markers",
+                    name=name,
+                    marker=dict(
+                        symbol="circle-open",
+                        size=7,
+                        color="black",
+                    ),
+                    showlegend=True,
+                    hovertemplate=(
+                        "x = %{x:.4g} m<br>tube width OD = %{y:.4g} m"
+                        "<extra></extra>"
+                    ),
+                )
+            )
+
+        self.fig.update_layout(
+            title="Cooling Tube Width",
+            xaxis=dict(title="Axial Position, x (m)"),
+            yaxis=dict(title="Tube Width OD (m)"),
+            legend=dict(title=None),
+            margin=dict(l=60, r=20, t=60, b=60),
+        )
+
+
+# Categorical slots taken in fixed order, coolant first. Adjacent bands in the
+# radial stack are the pairs that have to separate, and every sequence this
+# assignment can produce clears the CVD and normal-vision floors.
+_COOLANT_LAYER_COLOR = "#2a78d6"
+_SOLID_LAYER_COLORS = (
+    "#eb6834",  # orange
+    "#1baf7a",  # aqua
+    "#eda100",  # yellow
+    "#e87ba4",  # magenta
+    "#008300",  # green
+    "#4a3aa7",  # violet
+    "#e34948",  # red
+)
+
+
+def _layer_label(wall, index: int) -> str:
+    """Name a wall layer from its own label, else its material, else its index."""
+    name = getattr(wall, "name", None)
+    if name:
+        return str(name)
+    material = getattr(wall, "material", None)
+    material_name = getattr(material, "name", None)
+    if material_name:
+        return str(material_name)
+    return f"Layer {index + 1}"
+
+
+class PlotWallLayers(PlotBase):
+    """Draw the wall stack of each cooling circuit to scale in the meridional plane.
+
+    Where :class:`PlotContour` draws the hot-gas surface as a line, this fills
+    the physical radial extent of every layer between the hot wall and the
+    closeout, so zooming in reveals the real thicknesses. Bands are stacked from
+    the hot surface outward exactly as the solver stacks them: the circuit's
+    walls in order, then the channel height, then the closeout.
+
+    Two things drawn here are not modelled by pyskyfire and are shown as such:
+
+    * **The closeout wall.** The wall on the atmosphere side of the channel has
+      no definition anywhere in the library, so it is drawn as a copy of the
+      coolant-facing layer and hatched to mark it as an assumption. Replace it
+      once a real definition exists (e.g. for strength calculations).
+    * **Ribs.** The channel band is the full circumferential sector, so the
+      land between channels is not resolved; the band shows where coolant
+      lives radially, not the channel-to-rib split.
+
+    Helical circuits are drawn as if the helix angle were zero -- the
+    meridional path rotationally projected onto the plane. A true rendering
+    would need a section through the 3-D engine. A warning is emitted when a
+    helical circuit is plotted.
+
+    Parameters
+    ----------
+    thrust_chamber : ThrustChamber
+        Chamber whose cooling circuits supply the wall stacks.
+    circuit_index : int or iterable of int, optional
+        Circuits to draw. Defaults to all of them. Circuits that overlap
+        axially are drawn on top of each other, so pick one when the chamber
+        interlaces several passes.
+    interpolation_points : int, optional
+        Axial resolution of the filled bands. The default is generous because
+        the point of the figure is that it survives being zoomed into.
+    show_contour : bool, optional
+        Overlay the full hot-gas contour, including where no circuit runs.
+    mirror : bool, optional
+        Draw the stack on both sides of the axis.
+    """
+
+    def __init__(
+        self,
+        thrust_chamber,
+        circuit_index: IndexLike = None,
+        *,
+        interpolation_points: int = 1500,
+        show_contour: bool = True,
+        mirror: bool = True,
+        title: str = "Wall Layers (to scale)",
+        template: str = "plotly_white",
+    ):
+        super().__init__(go.Figure())
+        self.template(template)
+        if interpolation_points < 2:
+            raise ValueError("interpolation_points must be at least 2")
+
+        circuits = thrust_chamber.cooling_circuits
+        indices = _normalize_indices(thrust_chamber, circuit_index)
+
+        for idx in indices:
+            circuit = circuits[idx]
+            circuit_name = getattr(circuit, "name", f"Circuit {idx}")
+
+            if getattr(circuit, "is_helical", False):
+                warnings.warn(
+                    f"Cooling circuit {circuit_name!r} is helical. Its wall "
+                    "layers are drawn as the meridional path rotationally "
+                    "projected onto the plane, i.e. as if the helix angle were "
+                    "zero, so azimuthal extent and true section shape are not "
+                    "represented.",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+
+            x = self._sample_grid(circuit, interpolation_points)
+
+            # Radial stack, hot surface outward, starting from the same
+            # placement radius ``build_channel_centerlines`` builds on, so the
+            # drawing agrees with the geometry the solver ran.
+            r = np.array(
+                [
+                    float(
+                        circuit.placement.compute_centerline_radius(
+                            float(x_i), circuit.contour
+                        )
+                    )
+                    for x_i in x
+                ],
+                dtype=float,
+            )
+
+            walls = list(circuit.walls)
+            for layer_index, wall in enumerate(walls):
+                thickness = np.asarray(wall.thickness(x), dtype=float)
+                r_next = r + thickness
+                self._add_band(
+                    x,
+                    r,
+                    r_next,
+                    name=_layer_label(wall, layer_index),
+                    color=_SOLID_LAYER_COLORS[
+                        layer_index % len(_SOLID_LAYER_COLORS)
+                    ],
+                    group=circuit_name,
+                    mirror=mirror,
+                )
+                r = r_next
+
+            height = np.array(
+                [float(circuit.channel_height(float(x_i))) for x_i in x],
+                dtype=float,
+            )
+            r_next = r + height
+            self._add_band(
+                x,
+                r,
+                r_next,
+                name="Coolant channel",
+                color=_COOLANT_LAYER_COLOR,
+                group=circuit_name,
+                mirror=mirror,
+            )
+            r = r_next
+
+            if walls:
+                closeout = walls[-1]
+                closeout_index = len(walls) - 1
+                thickness = np.asarray(closeout.thickness(x), dtype=float)
+                self._add_band(
+                    x,
+                    r,
+                    r + thickness,
+                    name=f"{_layer_label(closeout, closeout_index)} (closeout, assumed)",
+                    color=_SOLID_LAYER_COLORS[
+                        closeout_index % len(_SOLID_LAYER_COLORS)
+                    ],
+                    group=circuit_name,
+                    mirror=mirror,
+                    pattern=True,
+                )
+
+        if show_contour:
+            contour = thrust_chamber.contour
+            knots = np.asarray(contour.xs, dtype=float)
+            x_contour = np.linspace(
+                float(knots[0]), float(knots[-1]), interpolation_points
+            )
+            r_contour = np.asarray(contour.r(x_contour), dtype=float)
+            self.fig.add_trace(
+                go.Scatter(
+                    x=x_contour,
+                    y=r_contour,
+                    mode="lines",
+                    name="Hot-gas contour",
+                    legendgroup="contour",
+                    line=dict(color="#52514e", width=1.5),
+                    hovertemplate=(
+                        "x = %{x:.4g} m<br>r = %{y:.4g} m<extra></extra>"
+                    ),
+                )
+            )
+            if mirror:
+                self.fig.add_trace(
+                    go.Scatter(
+                        x=x_contour,
+                        y=-r_contour,
+                        mode="lines",
+                        name="Hot-gas contour (mirror)",
+                        legendgroup="contour",
+                        showlegend=False,
+                        line=dict(color="#52514e", width=1.5),
+                        hoverinfo="skip",
+                    )
+                )
+
+        self.fig.update_layout(
+            title=title or None,
+            xaxis=dict(title="Axial Position, x (m)"),
+            yaxis=dict(title="Radius, r (m)"),
+            legend=dict(title=None, tracegroupgap=10, groupclick="toggleitem"),
+            margin=dict(l=60, r=20, t=60, b=60),
+        )
+        # To scale in both directions, so the layers keep their real proportions
+        # as the reader zooms.
+        self.fig.update_yaxes(scaleanchor="x", scaleratio=1)
+
+    @staticmethod
+    def _sample_grid(circuit, interpolation_points: int) -> np.ndarray:
+        """Refine the circuit's own domain so thin layers stay smooth."""
+        x_domain = np.asarray(circuit.x_domain, dtype=float)
+        x_start = float(np.min(x_domain))
+        x_end = float(np.max(x_domain))
+        return np.unique(
+            np.concatenate(
+                [np.linspace(x_start, x_end, interpolation_points), x_domain]
+            )
+        )
+
+    def _add_band(
+        self,
+        x: np.ndarray,
+        r_inner: np.ndarray,
+        r_outer: np.ndarray,
+        *,
+        name: str,
+        color: str,
+        group: str,
+        mirror: bool,
+        pattern: bool = False,
+    ) -> None:
+        """Fill one layer as a closed polygon, mirrored about the axis."""
+        # ``None`` splits a single toself trace into two polygons, which keeps
+        # both sides of the axis on one legend entry.
+        polygon_x = np.concatenate([x, x[::-1]])
+        polygon_y = np.concatenate([r_inner, r_outer[::-1]])
+        if mirror:
+            polygon_x = np.concatenate([polygon_x, [np.nan], polygon_x])
+            polygon_y = np.concatenate([polygon_y, [np.nan], -polygon_y])
+
+        trace = go.Scatter(
+            x=polygon_x,
+            y=polygon_y,
+            mode="lines",
+            fill="toself",
+            fillcolor=color,
+            # No stroke and no inter-band spacer: this is a to-scale drawing,
+            # and a line of fixed pixel width would swallow the thin layers it
+            # is meant to separate. Hue carries the split instead.
+            line=dict(width=0),
+            name=name,
+            legendgroup=group,
+            legendgrouptitle=dict(text=group),
+            hoveron="fills",
+            hoverinfo="text",
+            text=f"{group} — {name}",
+        )
+        if pattern:
+            trace.fillpattern = dict(
+                shape="/", fgcolor="#fcfcfb", bgcolor=color, size=7, solidity=0.25
+            )
+        self.fig.add_trace(trace)
+
+
 class PlotdAdxCoolantArea(PlotBase):
     def __init__(self, thrust_chamber, circuit_index: IndexLike = None):
         super().__init__(go.Figure())
@@ -982,7 +1681,7 @@ class PlotTemperatureProfile(PlotBase):
 
     Inputs:
       - result: ``RegenResult`` containing ``x``, ``T`` (N×n_layers), ``T_static``,
-        ``dQ_dA``, and ``p_static``
+        ``T_aw_hot``, ``h_hot``, ``h_cold``, and ``p_static``
       - thrust_chamber: provides combustion_transport and cooling circuits
       - circuit_index: which cooling circuit to use for coolant props
       - x_query: axial location (m) to sample
@@ -998,22 +1697,57 @@ class PlotTemperatureProfile(PlotBase):
         x0 = float(x_arr[i])
 
         # ---- 2) extract temps & heat flux ----
-        T_inf = float(thrust_chamber.combustion_transport.get_T(x0))
+        combustion = thrust_chamber.combustion_transport
+        gas = combustion.get_state(x0)
+        x_heat = _result_grid(result, "x_heat_flux")
+        T_gas_edge = float(
+            np.interp(
+                x0,
+                np.sort(x_heat),
+                np.asarray(result.T_aw_hot)[np.argsort(x_heat)],
+            )
+        )
         T_hw  = float(result.T[i, -1])    # hot-wall
         T_cw  = float(result.T[i,  1])    # coolant-side wall
-        T_c   = float(result.T_static[i]) # bulk coolant
-        qpp   = float(result.dQ_dA[i])
-
-        # ---- 3) gas-side BL (1/7th power law) ----
-        k_g   = float(thrust_chamber.combustion_transport.get_k(x0))
-        h_g   = qpp / max(T_inf - T_hw, 1e-12)
-        delta_g = 7.0 * k_g / max(h_g, 1e-30)
-        y_g = np.linspace(-delta_g, 0.0, n_bl)
-        T_g = np.where(
-            np.abs(y_g) <= delta_g,
-            T_inf + (T_hw - T_inf) * (1.0 - (np.abs(y_g) / max(delta_g, 1e-30)) ** (1.0 / 7.0)),
-            T_inf,
+        x_cool = _result_grid(result, "x_coolant")
+        T_c = float(
+            np.interp(
+                x0,
+                np.sort(x_cool),
+                np.asarray(result.T_static)[np.argsort(x_cool)],
+            )
         )
+        h_g = float(
+            np.interp(
+                x0,
+                np.sort(x_heat),
+                np.asarray(result.h_hot)[np.argsort(x_heat)],
+            )
+        )
+
+        # ---- 3) gas-side turbulent thermal boundary layer (Kader) ----
+        velocity_g = float(gas.M * gas.a)
+        diameter_g = float(2.0 * thrust_chamber.contour.r(x0))
+        reynolds_g = regen_physics.reynolds(
+            float(gas.rho), velocity_g, diameter_g, float(gas.mu)
+        )
+        darcy_g = regen_physics.f_darcy_turbulent(
+            reynolds_g, diameter_g, x0, roughness=None
+        )
+        u_tau_g = regen_physics.friction_velocity(velocity_g, darcy_g)
+        distance_g, temperature_g, delta_g = regen_physics.kader_temperature_profile(
+            T_wall=T_hw,
+            T_edge=T_gas_edge,
+            h=h_g,
+            rho=float(gas.rho),
+            cp=float(gas.cp),
+            mu=float(gas.mu),
+            prandtl=float(gas.Pr),
+            u_tau=u_tau_g,
+            n_points=n_bl,
+        )
+        y_g = -distance_g[::-1]
+        T_g = temperature_g[::-1]
 
         # ---- 4) wall layers (hot→coolant) ----
         Ts_rev   = result.T[i, 1:]       # coolant-side → hot-side
@@ -1023,19 +1757,56 @@ class PlotTemperatureProfile(PlotBase):
         y_w = np.insert(np.cumsum(thicknesses), 0, 0.0) if thicknesses else np.array([0.0])
         wall_thickness = float(y_w[-1])
 
-        # ---- 5) coolant BL (1/7th power law) ----
-        p_static = float(result.p_static[i])
-        T_film   = 0.5 * (T_c + T_cw)
-        coolant  = thrust_chamber.cooling_circuits[circuit_index].coolant_transport
-        k_c      = float(coolant.get_k(T_film, p_static))
-        h_c      = qpp / max(T_cw - T_c, 1e-12)
-        delta_c  = 7.0 * k_c / max(h_c, 1e-30)
-        y_c = np.linspace(0.0, delta_c, n_bl)
-        T_cBL = np.where(
-            y_c <= delta_c,
-            T_c + (T_cw - T_c) * (1.0 - (y_c / max(delta_c, 1e-30)) ** (1.0 / 7.0)),
-            T_c,
+        # ---- 5) coolant-side turbulent thermal boundary layer (Kader) ----
+        p_static = float(
+            np.interp(
+                x0,
+                np.sort(x_cool),
+                np.asarray(result.p_static)[np.argsort(x_cool)],
+            )
         )
+        T_film   = 0.5 * (T_c + T_cw)
+        circuit = thrust_chamber.cooling_circuits[circuit_index]
+        coolant = circuit.coolant_transport
+        h_c = float(
+            np.interp(
+                x0,
+                np.sort(x_cool),
+                np.asarray(result.h_cold)[np.argsort(x_cool)],
+            )
+        )
+        velocity_c = float(
+            np.interp(
+                x0,
+                np.sort(x_cool),
+                np.asarray(result.velocity)[np.argsort(x_cool)],
+            )
+        )
+        rho_bulk_c = float(coolant.get_rho(T_c, p_static))
+        mu_bulk_c = float(coolant.get_mu(T_c, p_static))
+        diameter_c = float(circuit.Dh_coolant(x0))
+        reynolds_c = regen_physics.reynolds(
+            rho_bulk_c, velocity_c, diameter_c, mu_bulk_c
+        )
+        darcy_c = regen_physics.f_darcy(
+            reynolds_c, diameter_c, x0, circuit.roughness
+        )
+        darcy_c *= regen_physics.phi_curv_friction(
+            reynolds_c, diameter_c, circuit.radius_of_curvature(x0)
+        )
+        u_tau_c = regen_physics.friction_velocity(velocity_c, darcy_c)
+        distance_c, T_cBL, delta_c = regen_physics.kader_temperature_profile(
+            T_wall=T_cw,
+            T_edge=T_c,
+            h=h_c,
+            rho=float(coolant.get_rho(T_film, p_static)),
+            cp=float(coolant.get_cp(T_film, p_static)),
+            mu=float(coolant.get_mu(T_film, p_static)),
+            prandtl=float(coolant.get_Pr(T_film, p_static)),
+            u_tau=u_tau_c,
+            n_points=n_bl,
+        )
+        y_c = distance_c
 
         # ---- combine domains ----
         y_all = np.concatenate([y_g, y_w, y_c + wall_thickness])
@@ -1051,11 +1822,42 @@ class PlotTemperatureProfile(PlotBase):
             x0=-delta_g, x1=0.0, y0=0.0, y1=1.0,
             fillcolor="lightgray", opacity=0.7, line_width=0, layer="below"
         )
-        self.fig.add_shape(
-            type="rect", xref="x", yref="paper",
-            x0=0.0, x1=wall_thickness, y0=0.0, y1=1.0,
-            fillcolor="gray", opacity=0.8, line_width=0, layer="below"
-        )
+        material_keys = [
+            getattr(wall.material, "name", None)
+            or f"{type(wall.material).__name__}-{id(wall.material)}"
+            for wall in walls
+        ]
+        material_labels = [
+            getattr(wall, "name", None)
+            or getattr(wall.material, "name", None)
+            or f"Wall material {index + 1}"
+            for index, wall in enumerate(walls)
+        ]
+        unique_materials = list(dict.fromkeys(material_keys))
+        wall_palette = [
+            "#7f8c8d", "#d4a72c", "#b87333", "#6c8ebf", "#9b59b6",
+            "#5d8a66", "#c96b6b", "#607d8b",
+        ]
+        material_colors = {
+            material: (
+                "gray" if len(unique_materials) == 1
+                else wall_palette[index % len(wall_palette)]
+            )
+            for index, material in enumerate(unique_materials)
+        }
+        for index, material in enumerate(material_keys):
+            self.fig.add_shape(
+                type="rect", xref="x", yref="paper",
+                x0=float(y_w[index]), x1=float(y_w[index + 1]),
+                y0=0.0, y1=1.0,
+                fillcolor=material_colors[material], opacity=0.8,
+                line_width=0, layer="below",
+                name=material_labels[index],
+                showlegend=(
+                    len(unique_materials) > 1
+                    and material_keys.index(material) == index
+                ),
+            )
         self.fig.add_shape(
             type="rect", xref="x", yref="paper",
             x0=wall_thickness, x1=wall_thickness + delta_c, y0=0.0, y1=1.0,
@@ -1064,10 +1866,10 @@ class PlotTemperatureProfile(PlotBase):
 
         # ---- freestream lines ----
         self.fig.add_trace(go.Scatter(
-            x=[x_min, -delta_g], y=[T_inf, T_inf],
+            x=[x_min, -delta_g], y=[T_gas_edge, T_gas_edge],
             mode="lines",
             line=dict(color="crimson", width=2, dash="dash"),
-            name="Gas freestream", showlegend=False
+            name="Gas recovery temperature", showlegend=False
         ))
         self.fig.add_trace(go.Scatter(
             x=[wall_thickness + delta_c, x_max], y=[T_c, T_c],
@@ -1085,12 +1887,12 @@ class PlotTemperatureProfile(PlotBase):
         ))
 
         # ---- region labels ----
-        y_min = float(np.nanmin([np.nanmin(T_all), T_inf, T_c]))
-        y_max = float(np.nanmax([np.nanmax(T_all), T_inf, T_c]))
+        y_min = float(np.nanmin([np.nanmin(T_all), T_gas_edge, T_c]))
+        y_max = float(np.nanmax([np.nanmax(T_all), T_gas_edge, T_c]))
         y_mid = 0.5 * (y_min + y_max)
 
         self.fig.add_annotation(x=x_min, y=y_mid, xref="x", yref="y",
-                                text="Freestream gas", showarrow=False,
+                                text="Gas recovery edge", showarrow=False,
                                 xanchor="left", textangle=45)
         self.fig.add_annotation(x=-0.5 * delta_g, y=y_mid, xref="x", yref="y",
                                 text="Gas BL", showarrow=False,
@@ -1129,10 +1931,10 @@ class PlotHeatTransferCoefficient(PlotBase):
         self.template("plotly_white")
 
         for result in regen_results:
-            x = np.asarray(result.x)
             name = result.circuit_name
 
             if hot:
+                x = _result_grid(result, "x_heat_flux")
                 y_hot = np.asarray(result.h_hot)
                 self.fig.add_trace(go.Scatter(
                     x=x, y=y_hot, mode="lines",
@@ -1141,6 +1943,7 @@ class PlotHeatTransferCoefficient(PlotBase):
                 ))
 
             if cold:
+                x = _result_grid(result, "x_coolant")
                 y_cold = np.asarray(result.h_cold)
                 self.fig.add_trace(go.Scatter(
                     x=x, y=y_cold, mode="lines",
@@ -1154,5 +1957,159 @@ class PlotHeatTransferCoefficient(PlotBase):
             xaxis=dict(title="Axial Position (m)"),
             yaxis=dict(title="h (W/m²/K)"),
             legend=dict(title=None),
+            margin=dict(l=60, r=20, t=60, b=60),
+        )
+
+
+#: Fixed categorical colour per resistance layer, assigned in stack order and
+#: never cycled. Slots 2/7/1 of the same reference palette as PHASE_COLORS;
+#: validated all-pairs on a light surface (worst adjacent deutan ΔE 13.0,
+#: worst normal-vision ΔE 16.3, all three above 3:1 against the surface).
+#: The hues are semantic -- warm for the gas film, metal for the wall, cool
+#: for the coolant -- so the stack reads without consulting the legend.
+RESISTANCE_COLORS = {
+    "hot": "#eb6834",    # orange
+    "wall": "#4a3aa7",   # violet
+    "cold": "#2a78d6",   # blue
+}
+
+RESISTANCE_LABELS = {
+    "hot": "Hot-gas film",
+    "wall": "Wall conduction",
+    "cold": "Coolant film",
+}
+
+
+def _interp_sorted(x_target, x_source, y_source) -> np.ndarray:
+    """Interpolate onto ``x_target``, tolerating a descending source grid.
+
+    Counter-flow circuits march from the nozzle end, so their native grids run
+    the other way and ``np.interp`` would silently return garbage.
+    """
+    x_source = np.asarray(x_source, dtype=float)
+    y_source = np.asarray(y_source, dtype=float)
+    order = np.argsort(x_source)
+    return np.interp(
+        np.asarray(x_target, dtype=float), x_source[order], y_source[order]
+    )
+
+
+class PlotThermalResistance(PlotBase):
+    """Stack the hot-side, wall, and coolant-side thermal resistances.
+
+    Every resistance is a temperature drop over the *same* hot-gas-area heat
+    flux, so the three sum exactly to the total gas-to-coolant resistance and
+    can be compared directly:
+
+    ``R_hot = (T_aw - T_hw) / q''``,
+    ``R_wall = (T_hw - T_cw) / q''``,
+    ``R_cold = (T_cw - T_coolant) / q''``.
+
+    That referral matters on the coolant side: ``h_cold`` is a bare convective
+    coefficient on the wetted channel perimeter, so it is not comparable with
+    ``h_hot`` until the channel-to-chamber area ratio is folded in, which this
+    form does implicitly.
+
+    Reading the shares tells you what limits the design -- a gas-film-dominated
+    stack means a better coolant-side correlation buys nothing.
+
+    Parameters
+    ----------
+    *regen_results : RegenResult
+        Solved circuits. One at a time reads best: stacks from several circuits
+        are drawn in separate stack groups and will overlay each other.
+    mode : {'share', 'absolute'}, optional
+        Percentage of the total resistance, or absolute m²·K/W.
+    """
+
+    def __init__(
+        self,
+        *regen_results,
+        mode: str = "share",
+        template: str = "plotly_white",
+    ):
+        if mode not in ("share", "absolute"):
+            raise ValueError("mode must be 'share' or 'absolute'")
+
+        super().__init__(go.Figure())
+        self.template(template)
+
+        for result in regen_results:
+            x = _result_grid(result, "x_wall")
+            T = np.asarray(result.T, dtype=float)
+            if T.shape[1] < 3:
+                raise ValueError(
+                    "result.T needs at least a coolant, cold-wall and hot-wall "
+                    "column to split the resistance stack"
+                )
+
+            # Column layout matches PlotWallTemperature: bulk coolant, cold
+            # wall, optional interfaces, hot wall.
+            T_cool, T_cw, T_hw = T[:, 0], T[:, 1], T[:, -1]
+
+            x_flux = _result_grid(result, "x_heat_flux")
+            q = _interp_sorted(x, x_flux, result.dQ_dA)
+            T_aw = _interp_sorted(x, x_flux, result.T_aw_hot)
+
+            # A vanishing flux makes every resistance blow up; the split is
+            # meaningless there rather than merely large.
+            q_ref = np.nanmax(np.abs(q)) if np.isfinite(q).any() else 0.0
+            with np.errstate(divide="ignore", invalid="ignore"):
+                usable = np.abs(q) > 1.0e-6 * q_ref
+                q_safe = np.where(usable, q, np.nan)
+                layers = {
+                    "hot": (T_aw - T_hw) / q_safe,
+                    "wall": (T_hw - T_cw) / q_safe,
+                    "cold": (T_cw - T_cool) / q_safe,
+                }
+
+                if mode == "share":
+                    total = sum(layers.values())
+                    layers = {
+                        key: 100.0 * value / total
+                        for key, value in layers.items()
+                    }
+
+            for key, values in layers.items():
+                self.fig.add_trace(go.Scatter(
+                    x=x,
+                    y=values,
+                    mode="lines",
+                    name=RESISTANCE_LABELS[key],
+                    legendgroup=result.circuit_name,
+                    legendgrouptitle=dict(text=result.circuit_name),
+                    showlegend=True,
+                    stackgroup=result.circuit_name,
+                    fillcolor=RESISTANCE_COLORS[key],
+                    # 2 px surface-coloured separator between stacked fills.
+                    line=dict(color="#ffffff", width=2),
+                    hovertemplate=(
+                        f"{RESISTANCE_LABELS[key]}<br>"
+                        "x = %{x:.4g} m<br>"
+                        + (
+                            "%{y:.1f}%% of total"
+                            if mode == "share"
+                            else "%{y:.3e} m²·K/W"
+                        )
+                        + "<extra></extra>"
+                    ),
+                ))
+
+        if mode == "share":
+            title = "Thermal Resistance Share"
+            y_axis = dict(title="Share of total resistance (%)", range=[0, 100])
+        else:
+            title = "Thermal Resistance"
+            y_axis = dict(title="Resistance (m²·K/W)")
+
+        self.fig.update_layout(
+            title=title,
+            xaxis=dict(title="Axial Position (m)"),
+            yaxis=y_axis,
+            # Reversed so the legend reads in the same order as the stack.
+            legend=dict(
+                title=None, traceorder="reversed", groupclick="toggleitem"
+            ),
+            hovermode="x unified",
             margin=dict(l=60, r=20, t=60, b=60),
         )

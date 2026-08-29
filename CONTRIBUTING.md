@@ -133,3 +133,8 @@ In the pull request description, explain:
 
 By submitting a contribution, you agree that it will be distributed under the
 project's [MIT License](LICENSE).
+
+## Other useful commands
+```bash
+.venv/bin/python validation/RL10_2/optimize_channel_heights.py --target heat_flux
+``` 

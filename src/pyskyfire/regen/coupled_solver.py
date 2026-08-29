@@ -76,7 +76,7 @@ Coolant properties are evaluated at the coolant pressure
 
 :meth:`CoupledHeatExchangerPhysics.cold_side_coefficients` evaluates the
 coolant film properties at the coolant pressure. The coolant pressure is what
-the march already tracks and what ``coolant_pressure_rate`` and
+the march already tracks and what ``coolant_friction_rate`` and
 ``coolant_enthalpy_rate`` already use, so it is threaded through here too.
 
 The coolant march: enthalpy where possible, temperature otherwise
@@ -115,8 +115,10 @@ from __future__ import annotations
 
 import math
 import warnings
+from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import wraps
+from numbers import Integral
 from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
@@ -218,6 +220,16 @@ class RegenResult:
     coolant_phase: Optional[np.ndarray] = None
     #: True when the coolant advanced on enthalpy rather than temperature.
     enthalpy_march: bool = False
+    #: Axial stations used for the nonlinear wall-temperature balances [m].
+    x_wall: Optional[np.ndarray] = None
+    #: Axial stations where heat flux and hot-side diagnostics are reported [m].
+    x_heat_flux: Optional[np.ndarray] = None
+    #: Axial stations used for the lumped coolant-state march [m].
+    x_coolant: Optional[np.ndarray] = None
+    #: Final scaled energy-balance residual at every wall node [-].
+    wall_residual_scaled: Optional[np.ndarray] = None
+    #: True where ``wall_residual_scaled <= RESIDUAL_TOL``.
+    wall_converged: Optional[np.ndarray] = None
 
 __all__ = [
     "BoundaryConditions",
@@ -244,6 +256,15 @@ SATURATION_NUDGE = _SATURATION_NUDGE
 #: The residual is normalised by the node's reference heat load, so this is a
 #: relative energy imbalance of 0.01%.
 RESIDUAL_TOL = 1.0e-4
+
+#: Maximum fixed-point sweeps used to settle one coolant pressure segment.
+#: Friction, acceleration and the equation of state are mutually coupled across
+#: a segment: the downstream density sets the velocity change, which sets the
+#: pressure, which sets the density.
+PRESSURE_SWEEPS = 8
+
+#: Pressure change below which a segment's fixed-point sweep is converged [Pa].
+PRESSURE_SWEEP_TOL = 1.0
 
 # Regime labels reported per station.
 REGIME_GAS = "gas"
@@ -435,6 +456,10 @@ class CoupledHeatExchangerPhysics:
         As for the base class.
     film_model : FilmHeatFluxModel or None, optional
         Film boundary condition. ``None`` reproduces the base class exactly.
+    heat_curvature_correction : bool, optional
+        Apply the RL10 curvature multiplier to coolant-side heat transfer.
+    pressure_curvature_correction : bool, optional
+        Apply the RTE/Ito curvature multiplier to Darcy pressure loss.
     """
 
     def __init__(
@@ -444,11 +469,17 @@ class CoupledHeatExchangerPhysics:
         circuit_index,
         film_model=None,
         coolant_state: Optional[CoolantState] = None,
+        heat_curvature_correction: bool = True,
+        pressure_curvature_correction: bool = True,
     ):
         self.thrust_chamber = thrust_chamber
         self.boundary_conditions = boundary_conditions
         self.circuit_index = circuit_index
         self.film_model = film_model
+        self.heat_curvature_correction = bool(heat_curvature_correction)
+        self.pressure_curvature_correction = bool(
+            pressure_curvature_correction
+        )
 
         circuit = thrust_chamber.cooling_circuits[circuit_index]
         self.coolant_state = coolant_state or CoolantState(
@@ -498,12 +529,23 @@ class CoupledHeatExchangerPhysics:
 
         recovery_factor = ref.Pr ** (1.0 / 3.0)
         H_aw = H_g + recovery_factor * dynamic_enthalpy
-        T_aw = physics.T_aw(
-            gamma=gas.gamma,
-            M_inf=M_g,
-            T_inf=T_g,
-            Pr=ref.Pr,
-        )
+
+        # Recover T_aw by inverting the equilibrium equation of state at H_aw
+        # rather than from the frozen-gamma isentropic relation. The two agree
+        # in the chamber but diverge hard in the nozzle: with equilibrium
+        # chemistry, gamma is a local property and the isentropic formula is no
+        # longer a statement about conserved total enthalpy, so it reports a
+        # recovery temperature above the chamber stagnation value. That inflates
+        # the T_aw - T_hw span and therefore deflates the reported h_hot.
+        try:
+            T_aw = ct.get_state(x, h=H_aw).T
+        except Exception:  # noqa: BLE001
+            T_aw = physics.T_aw(
+                gamma=gas.gamma,
+                M_inf=M_g,
+                T_inf=T_g,
+                Pr=ref.Pr,
+            )
         qpp_hot = h_g * (H_aw - H_hw)
 
         delta_T = T_aw - T_hw
@@ -593,13 +635,9 @@ class CoupledHeatExchangerPhysics:
         :mod:`pyskyfire.regen.coolant_state`.
         """
         circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
-        n_chan = (
-            circuit.placement.n_channel_positions
-            * circuit.placement.n_channels_per_leaf
-        )
 
         p = self._coolant_pressure(p_cool)
-        mdot_c_single_channel = self.boundary_conditions.mdot_coolant / n_chan
+        mdot_c_single_channel = self.mdot_per_channel()
         T_coolant_film = 0.5 * (T_cool + T_cw)
 
         ct = circuit.coolant_transport
@@ -621,11 +659,20 @@ class CoupledHeatExchangerPhysics:
         u_c = physics.u_coolant(rho_bulk, mdot_c_single_channel, A_channel)
         Re_c = physics.reynolds(rho_bulk, u_c, D_c, mu_bulk)
 
-        R_curv = circuit.radius_of_curvature(x)
-        phi_curv = physics.phi_curv(Re_c, D_c, R_curv)
+        if self.heat_curvature_correction:
+            R_curv = circuit.radius_of_curvature(x)
+            phi_curv = physics.phi_curv(Re_c, D_c, R_curv)
+        else:
+            phi_curv = 1.0
 
         h_c = physics.h_coolant_colburn(
-            k_cf, D_c, Cp_cr, mu_cf, mdot_c_single_channel, A_channel, phi_curv=1
+            k_cf,
+            D_c,
+            Cp_cr,
+            mu_cf,
+            mdot_c_single_channel,
+            A_channel,
+            phi_curv=phi_curv,
         ) * self.thrust_chamber.h_cold_corr
 
         return {
@@ -753,11 +800,7 @@ class CoupledHeatExchangerPhysics:
     def mdot_per_channel(self):
         """Coolant mass flow through a single channel [kg s⁻¹]."""
         circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
-        n_channels = (
-            circuit.placement.n_channel_positions
-            * circuit.placement.n_channels_per_leaf
-        )
-        return self.boundary_conditions.mdot_coolant / n_channels
+        return self.boundary_conditions.mdot_coolant / circuit.n_channels
 
     def coolant_enthalpy_rate(self, Q_cold):
         """Return the coolant specific-enthalpy change from ``Q_cold`` [J kg⁻¹].
@@ -779,8 +822,28 @@ class CoupledHeatExchangerPhysics:
         cp = circuit.coolant_transport.get_cp(T_cool, p_cool)
         return Q_cold / (self.mdot_per_channel() * cp)
 
-    def coolant_pressure_rate(self, x, T_cool, p_cool, quality=None):
-        """Return static and stagnation coolant-pressure rates [Pa m⁻¹].
+    def bulk_velocity(self, x, T_cool, p_cool, quality=None):
+        """Return the bulk coolant density and single-channel velocity at ``x``.
+
+        Returns
+        -------
+        tuple of float
+            ``(rho, u)`` in [kg m⁻³] and [m s⁻¹].
+        """
+        circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
+        rho = self.bulk_density(T_cool, p_cool, quality)
+        velocity = physics.u_coolant(
+            rho, self.mdot_per_channel(), circuit.A_coolant(x)
+        )
+        return rho, velocity
+
+    def coolant_friction_rate(self, x, T_cool, p_cool, quality=None):
+        """Return the friction-driven coolant-pressure gradient [Pa m⁻¹].
+
+        This is the irreversible term of the 1-D momentum equation only. The
+        reversible acceleration term :math:`-\\rho u\\,du/dx` is applied by the
+        march station to station, because it depends on the state at both ends
+        of a segment rather than on a local gradient.
 
         Parameters
         ----------
@@ -814,8 +877,14 @@ class CoupledHeatExchangerPhysics:
             x,
             circuit.roughness,
         )
+        if self.pressure_curvature_correction:
+            friction *= physics.phi_curv_friction(
+                reynolds,
+                hydraulic_diameter,
+                circuit.radius_of_curvature(x),
+            )
 
-        dp_stagnation_dx = (
+        return (
             -friction
             / hydraulic_diameter
             * rho_cool
@@ -823,11 +892,6 @@ class CoupledHeatExchangerPhysics:
             / 2
             * circuit.ds_dx(x)
         )
-        dp_static_dx = (
-            dp_stagnation_dx
-            - rho_cool * velocity**2 / area * circuit.dA_dx_coolant(x)
-        )
-        return dp_static_dx, dp_stagnation_dx
 
     def interface_temperatures(self, x, T_hw, T_cw):
         """Return wall-interface temperatures from the hot to the cold face."""
@@ -887,86 +951,191 @@ def solve_film_cooling(
     return model.solve(x_array)
 
 
+_NODE_GRID_KEYS = ("wall", "heat_flux", "coolant")
+
+
+def _prepare_node_grids(nodes, circuit) -> list[np.ndarray]:
+    """Return wall, heat-flux, and coolant grids in coolant-march order.
+
+    An integer expands to three identical uniform grids. Explicit grids may be
+    supplied as a ragged three-item sequence or as a mapping whose keys are
+    ``wall``, ``heat_flux``, and ``coolant``.
+    """
+    if isinstance(nodes, Integral) and not isinstance(nodes, (bool, np.bool_)):
+        count = int(nodes)
+        if count < 2:
+            raise ValueError("nodes must be at least 2")
+        start, end = (
+            (circuit.x_domain[0], circuit.x_domain[-1])
+            if circuit.direction == 1
+            else (circuit.x_domain[-1], circuit.x_domain[0])
+        )
+        uniform = np.linspace(float(start), float(end), count)
+        return [uniform.copy() for _ in _NODE_GRID_KEYS]
+
+    if isinstance(nodes, Mapping):
+        missing = [key for key in _NODE_GRID_KEYS if key not in nodes]
+        extra = [key for key in nodes if key not in _NODE_GRID_KEYS]
+        if missing or extra:
+            raise ValueError(
+                "nodes mapping must contain exactly 'wall', 'heat_flux', and "
+                f"'coolant'; missing={missing}, extra={extra}"
+            )
+        raw_grids = [nodes[key] for key in _NODE_GRID_KEYS]
+    else:
+        try:
+            raw_grids = list(nodes)
+        except TypeError as exc:
+            raise TypeError(
+                "nodes must be an integer, a three-item ragged sequence, or "
+                "a mapping with wall/heat_flux/coolant keys"
+            ) from exc
+        if len(raw_grids) != 3:
+            raise ValueError(
+                "explicit nodes must contain three grids in the order "
+                "[wall, heat_flux, coolant]"
+            )
+
+    grids = []
+    for key, values in zip(_NODE_GRID_KEYS, raw_grids):
+        grid = np.asarray(values, dtype=float)
+        if grid.ndim != 1:
+            raise ValueError(f"nodes[{key!r}] must be one-dimensional")
+        if grid.size < 2:
+            raise ValueError(f"nodes[{key!r}] must contain at least two stations")
+        if not np.all(np.isfinite(grid)):
+            raise ValueError(f"nodes[{key!r}] contains a non-finite station")
+        if np.unique(grid).size != grid.size:
+            raise ValueError(f"nodes[{key!r}] contains duplicate stations")
+        grid = np.sort(grid)
+        if circuit.direction == -1:
+            grid = grid[::-1]
+        grids.append(grid)
+
+    wall, heat_flux, coolant = grids
+    direction = float(circuit.direction)
+    s_wall = direction * wall
+    s_heat = direction * heat_flux
+    s_cool = direction * coolant
+    span = float(s_cool[-1] - s_cool[0])
+    if span <= 0.0:
+        raise ValueError("coolant nodes do not advance in the circuit direction")
+
+    # Digitised reference curves commonly differ by a fraction of one plot
+    # pixel at nominally shared end stations. Accommodate that without allowing
+    # a thermal grid that genuinely extends beyond the coolant model.
+    endpoint_tol = max(1.0e-9, 1.0e-3 * span)
+    for key, s_grid in (("wall", s_wall), ("heat_flux", s_heat)):
+        if s_grid[0] < s_cool[0] - endpoint_tol or s_grid[-1] > s_cool[-1] + endpoint_tol:
+            raise ValueError(
+                f"nodes[{key!r}] must lie within the coolant-node span "
+                f"({coolant[0]:.6g} to {coolant[-1]:.6g} m)"
+            )
+
+    # Each lumped coolant segment must own at least one metal node. This is the
+    # hybrid arrangement used by the RL10 system model and avoids silently
+    # creating extra nonlinear wall solves at hidden stations.
+    owners = np.searchsorted(s_cool, s_wall, side="right") - 1
+    owners = np.clip(owners, 0, coolant.size - 2)
+    missing_segments = [
+        i for i in range(coolant.size - 1) if not np.any(owners == i)
+    ]
+    if missing_segments:
+        raise ValueError(
+            "every coolant segment must contain at least one wall node; "
+            f"segments without wall nodes: {missing_segments}"
+        )
+
+    return grids
+
+
+def _interp_axial(x_query, x, values):
+    """One-dimensional interpolation independent of march direction."""
+    x = np.asarray(x, dtype=float)
+    values = np.asarray(values, dtype=float)
+    order = np.argsort(x)
+    return np.interp(x_query, x[order], values[order])
+
+
+def _acceleration_pressure_drop(rho_up, velocity_up, rho_down, velocity_down):
+    """Static-pressure drop across one segment from :math:`\\int\\rho u\\,du` [Pa].
+
+    Trapezoidal in the mass flux :math:`G=\\rho u`, which makes the discrete
+    form exact in both limits the term has to span in a heated, tapering
+    channel: Bernoulli :math:`\\tfrac{1}{2}\\rho(u_2^2-u_1^2)` at constant
+    density, and :math:`G^2(1/\\rho_2-1/\\rho_1)` at constant area.
+
+    Note that at constant area this is twice the change in dynamic head, so
+    reconstructing static pressure as :math:`p_0-\\tfrac{1}{2}\\rho u^2` from a
+    friction-only stagnation march counts the heating-driven acceleration at
+    half strength.
+    """
+    return (
+        0.5
+        * (rho_up * velocity_up + rho_down * velocity_down)
+        * (velocity_down - velocity_up)
+    )
+
+
 @_clear_gas_cache_after
 def solve_coupled_heat_exchanger(
     thrust_chamber,
     boundary_conditions,
-    n_nodes,
+    nodes,
     circuit_index,
     output,
     film_model: Optional[FilmHeatFluxModel] = None,
     log_residuals: bool = True,
+    heat_curvature_correction: bool = True,
+    pressure_curvature_correction: bool = True,
 ) -> RegenResult:
-    """March the 1-D wall energy balance with an optional film boundary condition.
+    """Solve wall heating on detailed nodes coupled to lumped coolant nodes.
 
-    Parameters
-    ----------
-    thrust_chamber : Any
-        Chamber model exposing geometry and property methods.
-    boundary_conditions : BoundaryConditions
-        Coolant inlet conditions.
-    n_nodes : int
-        Number of axial nodes.
-    circuit_index : int
-        Which cooling circuit to simulate.
-    output : bool
-        If True, print progress to stdout.
-    film_model : FilmHeatFluxModel or None, optional
-        Film-derived hot-side boundary condition. ``None`` gives a pure
-        regeneratively cooled solve.
-    log_residuals : bool, optional
-        If True, record local residuals for every Newton iteration per cell.
+    ``nodes`` is normalized immediately to three axial grids in the order
+    ``wall``, ``heat_flux``, and ``coolant``. An integer creates three equal
+    uniform grids. A ragged three-item sequence permits different counts, and
+    a mapping with those three names provides the same capability without
+    relying on positional order.
 
-    Returns
-    -------
-    RegenResult
-
-    Notes
-    -----
-    The wall-temperature bracket is derived from the local driving temperature
-    rather than the free-stream gas temperature, and reversed heat flow
-    (``T_hw < T_cw``) is admitted wherever the drive falls below the bulk
-    coolant temperature -- which does happen behind a liquid film once the
-    coolant has heated past :math:`T_\\text{sat}`.
+    Each coolant interval owns one or more wall nodes. The wall balances use
+    the interval's lumped coolant state; their coolant-side heat rates are
+    integrated over metal-node control volumes to advance the next coolant
+    state. This mirrors the Binder et al. RL10 hybrid model, where multiple
+    metal nodes were connected to each of five coolant segments.
     """
-
-    # 1) Build the axial grid in [x_min, x_max].
-    residual_log = [] if log_residuals else None
-    iter_counter = np.zeros(n_nodes, dtype=int)
-
     circuit = thrust_chamber.cooling_circuits[circuit_index]
-    orig_x_domain = circuit.x_domain
-    # Re-interpolate the x_domain to have exactly n_nodes points.
-    if circuit.direction == 1:
-        x_domain = np.linspace(orig_x_domain[0], orig_x_domain[-1], n_nodes)
-    else:
-        x_domain = np.linspace(orig_x_domain[-1], orig_x_domain[0], n_nodes)
-    dx = abs((x_domain[-1] - x_domain[0]) / (n_nodes - 1))
+    x_wall, x_heat, x_cool = _prepare_node_grids(nodes, circuit)
+    n_wall, n_heat, n_cool = len(x_wall), len(x_heat), len(x_cool)
+    direction = float(circuit.direction)
+    s_wall = direction * x_wall
+    s_cool = direction * x_cool
+    owners = np.searchsorted(s_cool, s_wall, side="right") - 1
+    owners = np.clip(owners, 0, n_cool - 2)
 
-    # 2) Prepare arrays to hold results
-    T_hw_arr = np.zeros(n_nodes)
-    T_cw_arr = np.zeros(n_nodes)
-    T_cool_arr = np.zeros(n_nodes)
-    p_static_arr = np.zeros(n_nodes)
-    p_stagnation_arr = np.zeros(n_nodes)
-    dQ_dA_arr = np.zeros(n_nodes)
-    regime_arr = np.empty(n_nodes, dtype=object)
-    h_cool_arr = np.full(n_nodes, np.nan)
-    quality_arr = np.full(n_nodes, np.nan)
-    T_sat_arr = np.full(n_nodes, np.nan)
-    phase_arr = np.empty(n_nodes, dtype=object)
+    residual_log = [] if log_residuals else None
+    iter_counter = np.zeros(n_wall, dtype=int)
+
+    T_hw_arr = np.zeros(n_wall)
+    T_cw_arr = np.zeros(n_wall)
+    cold_qdx_arr = np.zeros(n_wall)
+    wall_residual_scaled = np.full(n_wall, np.nan)
+
+    T_cool_arr = np.zeros(n_cool)
+    p_stagnation_arr = np.zeros(n_cool)
+    p_static_arr = np.zeros(n_cool)
+    velocity_arr = np.zeros(n_cool)
+    coolant_enthalpy_arr = np.full(n_cool, np.nan)
+    quality_arr = np.full(n_cool, np.nan)
+    T_sat_arr = np.full(n_cool, np.nan)
+    phase_arr = np.empty(n_cool, dtype=object)
 
     T_cool_in = boundary_conditions.T_coolant_in
     p_cool_in = boundary_conditions.p_coolant_in
-    p_static_arr[0] = p_cool_in
-    p_stagnation_arr[0] = p_cool_in  # assuming no velocity at inlet
+    p_stagnation_arr[0] = p_cool_in
 
-    # 3) Decide how the coolant state is advanced. Enthalpy where CoolProp can
-    #    support it, temperature otherwise -- see coolant_state.probe_coolant.
     coolant_state = CoolantState(circuit.coolant_transport, p_cool_in)
     capability = coolant_state.capability
     use_enthalpy = capability.enthalpy_march
-
     if not use_enthalpy:
         warnings.warn(
             f"coolant march fell back to temperature for circuit "
@@ -977,11 +1146,10 @@ def solve_coupled_heat_exchanger(
         )
 
     if use_enthalpy:
-        h_cool_arr[0] = coolant_state.enthalpy(T_cool_in, p_cool_in)
-        bulk = coolant_state.from_hp(h_cool_arr[0], p_cool_in)
+        coolant_enthalpy_arr[0] = coolant_state.enthalpy(T_cool_in, p_cool_in)
+        bulk = coolant_state.from_hp(coolant_enthalpy_arr[0], p_cool_in)
     else:
         bulk = coolant_state.from_tp(T_cool_in, p_cool_in)
-
     T_cool_arr[0] = bulk.T
     quality_arr[0] = bulk.quality
     T_sat_arr[0] = bulk.T_sat
@@ -993,19 +1161,40 @@ def solve_coupled_heat_exchanger(
         circuit_index,
         film_model=film_model,
         coolant_state=coolant_state,
+        heat_curvature_correction=heat_curvature_correction,
+        pressure_curvature_correction=pressure_curvature_correction,
     )
 
-    # Initial guesses for the wall temperatures
-    T_hw_guess = 0.5 * (thrust_chamber.combustion_transport.get_T(x_domain[0]) + T_cool_in)
-    T_cw_guess = 0.5 * (thrust_chamber.combustion_transport.get_T(x_domain[0]) + T_cool_in)
+    # ``p_coolant_in`` is the inlet *stagnation* pressure; the static value the
+    # march carries is that minus the inlet dynamic head.
+    rho_in, velocity_arr[0] = physics_helper.bulk_velocity(
+        x_cool[0], T_cool_arr[0], p_cool_in, quality_arr[0]
+    )
+    p_static_arr[0] = p_cool_in - 0.5 * rho_in * velocity_arr[0] ** 2
+
+    T_gas_first = thrust_chamber.combustion_transport.get_T(x_wall[0])
+    T_hw_guess = 0.5 * (T_gas_first + T_cool_in)
+    T_cw_guess = T_hw_guess
+    solved_wall_count = 0
 
     if output is True:
+        if heat_curvature_correction and getattr(circuit, "is_helical", False):
+            warnings.warn(
+                "The RL10 curvature correction applied to the coolant-side "
+                "Colburn equation is being used on a helical channel. Its "
+                "local-radius approximation may be inaccurate for large "
+                "helix angles or curvature-heavy configurations.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
         covered = (
-            sum(1 for x_i in x_domain if film_model.covers(x_i)) if film_model else 0
+            sum(1 for x_i in x_heat if film_model.covers(x_i))
+            if film_model else 0
         )
         print(
-            f"Started coupled heat exchanger simulation with {n_nodes} nodes "
-            f"({covered} film-cooled)"
+            "Started coupled heat exchanger simulation with "
+            f"{n_wall} wall, {n_heat} heat-flux, and {n_cool} coolant nodes "
+            f"({covered} film-cooled heat-flux nodes)"
         )
         if use_enthalpy:
             note = (
@@ -1017,90 +1206,64 @@ def solve_coupled_heat_exchanger(
         else:
             print(f"Coolant march: temperature -- {capability.reason}")
 
-    # ==============
-    # --- SOLVER ---
-    # ==============
-    for i in range(n_nodes):
-        if output is True:
-            print(f'\rSimulating: {math.ceil(i/n_nodes*100)}%', end='', flush=True)
+    def solve_wall_node(wall_index, coolant_index):
+        nonlocal T_hw_guess, T_cw_guess, solved_wall_count
+        x_i = x_wall[wall_index]
+        T_cool_i = T_cool_arr[coolant_index]
+        p_cool_i = p_stagnation_arr[coolant_index]
+        quality_i = quality_arr[coolant_index]
 
-        x_i = x_domain[i]
-
-        # Driving temperature at this station, evaluated at the running wall
-        # guess. It sets both the regime label and the solver bracket.
         probe = physics_helper.hot_side_coefficients(x_i, T_hw_guess)
-        regime_arr[i] = probe["regime"]
         T_drive_i = probe["T_aw"]
         if not np.isfinite(T_drive_i):
             T_drive_i = thrust_chamber.combustion_transport.get_T(x_i)
-        T_cool_i = T_cool_arr[i]
-
-        # Radiation enters as an additive flux, not through the drive
-        # temperature, so behind a gaseous film the wall can settle *above*
-        # T_aw and still be heated. Bracket on the wall temperature at which
-        # the net hot-side flux vanishes, which is the real ceiling. Without
-        # this the bracket excludes the root just downstream of dryout, where
-        # the film's radiative load switches on.
         q_rad_i = probe.get("q_rad", 0.0)
         h_probe = probe["h_hot"]
         if q_rad_i and np.isfinite(h_probe) and h_probe != 0.0:
-            T_drive_i = T_drive_i + q_rad_i / h_probe
+            T_drive_i += q_rad_i / h_probe
 
-        # Fixed residual scale for this node: roughly the heat the wall would
-        # take if it sat at the bulk coolant temperature. Holding it constant
-        # through the local solve matters -- scaling by max(|Q_hot|, |Q_cond|,
-        # |Q_cold|) instead puts a kink in the residual exactly where the
-        # balance closes, which stalls the trust-region solve whenever the
-        # hot-side conductance is large (e.g. a stiff liquid-film contact).
         dA_dx_i = circuit.dA_dx_thermal_exhaust(x_i)
         if np.isfinite(probe["h_hot"]):
             q_ref = abs(probe["h_hot"]) * max(abs(T_drive_i - T_cool_i), 1.0)
         else:
             q_ref = abs(probe["qpp_hot"])
-        Q_ref = max(q_ref * dA_dx_i * dx, 1.0)
+        Q_ref_per_len = max(q_ref * dA_dx_i, 1.0)
 
-        def residuals_scaled(vars_, cell=i):
+        def residuals_scaled(vars_):
             T_cw_trial, dT_trial = vars_
             T_hw_trial = T_cw_trial + dT_trial
-
-            # Use per-cell energy flows
-            Q_hot_val = physics_helper.dQ_hot_dx(x_i, T_hw_trial) * dx
-            Q_cond_val = physics_helper.dQ_cond_dx(x_i, T_hw_trial, T_cw_trial) * dx
-            Q_cold_val = physics_helper.dQ_cold_dx(
+            Q_hot_per_len = physics_helper.dQ_hot_dx(x_i, T_hw_trial)
+            Q_cond_per_len = physics_helper.dQ_cond_dx(
+                x_i, T_hw_trial, T_cw_trial
+            )
+            Q_cold_per_len = physics_helper.dQ_cold_dx(
                 x_i,
                 T_cw_trial,
-                T_cool_arr[i],
-                p_cool=p_stagnation_arr[i],
-                quality=quality_arr[i],
-            ) * dx
-
-            R1 = Q_hot_val - Q_cond_val
-            R2 = Q_cond_val - Q_cold_val
-
+                T_cool_i,
+                p_cool=p_cool_i,
+                quality=quality_i,
+            )
+            R1 = Q_hot_per_len - Q_cond_per_len
+            R2 = Q_cond_per_len - Q_cold_per_len
             if residual_log is not None:
-                k = iter_counter[cell]
-                residual_log.append((cell, k, R1, R2))
-                iter_counter[cell] += 1
+                iteration = iter_counter[wall_index]
+                residual_log.append((wall_index, iteration, R1, R2))
+                iter_counter[wall_index] += 1
+            return np.array([R1 / Q_ref_per_len, R2 / Q_ref_per_len])
 
-            return np.array([R1 / Q_ref, R2 / Q_ref], dtype=float)
-
-        # Bracket both wall temperatures between the coolant and the drive.
         T_lo = min(T_cool_i, T_drive_i) - 1.0
         T_hi = max(T_cool_i, T_drive_i) + 1.0
         span = max(1.0, T_hi - T_lo)
-
-        # Heat normally flows inward (T_hw >= T_cw). Behind a film whose drive
-        # has fallen below the bulk coolant it flows the other way, so only
-        # then is a negative wall gradient allowed.
         dT_lo = 0.0 if T_drive_i >= T_cool_i else -span
         dT_hi = span
-
-        # Initial guess in (T_cw, dT) space, clipped into the bracket.
-        T_cw_0 = float(np.clip(T_cw_guess, T_lo, T_hi))
-        dT_0 = float(np.clip(T_hw_guess - T_cw_guess, dT_lo, dT_hi))
-        x0 = np.array([T_cw_0, dT_0], dtype=float)
-
-        res = least_squares(
+        x0 = np.array(
+            [
+                np.clip(T_cw_guess, T_lo, T_hi),
+                np.clip(T_hw_guess - T_cw_guess, dT_lo, dT_hi),
+            ],
+            dtype=float,
+        )
+        solution = least_squares(
             residuals_scaled,
             x0=x0,
             bounds=([T_lo, dT_lo], [T_hi, dT_hi]),
@@ -1111,190 +1274,262 @@ def solve_coupled_heat_exchanger(
             ftol=1e-10,
             gtol=1e-10,
             max_nfev=200,
+            diff_step=1e-4,
         )
-
-        if not res.success:
+        if not solution.success:
             raise RuntimeError(
-                f"least_squares failed at node {i} (x={x_i:.6g}): {res.message}; "
-                f"x={res.x}"
+                f"least_squares failed at wall node {wall_index} "
+                f"(x={x_i:.6g}): {solution.message}; x={solution.x}"
             )
-
-        # `success` only reports that a termination criterion fired, not that
-        # the energy balance actually closed.
-        R_final = float(np.max(np.abs(res.fun)))
-        if R_final > RESIDUAL_TOL:
+        final_residual = float(np.max(np.abs(solution.fun)))
+        wall_residual_scaled[wall_index] = final_residual
+        if final_residual > RESIDUAL_TOL:
             warnings.warn(
-                f"node {i} (x={x_i:.6g}) converged to a scaled energy-balance "
-                f"residual of {R_final:.3e}; the local wall temperatures may "
-                f"not be trustworthy. A coolant film temperature sitting on "
-                f"the saturation line is the usual cause -- see the module "
-                f"docstring.",
+                f"wall node {wall_index} (x={x_i:.6g}) converged to a scaled "
+                f"energy-balance residual of {final_residual:.3e}; the local "
+                "wall temperatures may not be trustworthy.",
                 RuntimeWarning,
                 stacklevel=2,
             )
 
-        T_cw_sol, dT_sol = res.x
+        T_cw_sol, dT_sol = solution.x
         T_hw_sol = T_cw_sol + dT_sol
-
-        T_hw_arr[i] = T_hw_sol
-        T_cw_arr[i] = T_cw_sol
-
-        # Update guesses for the next node
+        T_hw_arr[wall_index] = T_hw_sol
+        T_cw_arr[wall_index] = T_cw_sol
+        cold_qdx_arr[wall_index] = physics_helper.dQ_cold_dx(
+            x_i,
+            T_cw_sol,
+            T_cool_i,
+            p_cool=p_cool_i,
+            quality=quality_i,
+        )
         T_hw_guess, T_cw_guess = T_hw_sol, T_cw_sol
-
-        # Update the coolant state and pressure for the next node
-        if i < n_nodes - 1:
-            Q_cold_val = physics_helper.dQ_cold_dx(
-                x_i,
-                T_cw_sol,
-                T_cool_arr[i],
-                p_cool=p_stagnation_arr[i],
-                quality=quality_arr[i],
-            ) * dx
-            dp_static, dp_stagnation = physics_helper.coolant_pressure_rate(
-                x_i, T_cool_arr[i], p_stagnation_arr[i], quality=quality_arr[i]
+        solved_wall_count += 1
+        if output is True:
+            print(
+                f"\rSimulating wall balances: "
+                f"{math.ceil(solved_wall_count / n_wall * 100)}%",
+                end="",
+                flush=True,
             )
-            p_static_arr[i + 1] = p_static_arr[i] + dp_static * dx
-            p_stagnation_arr[i + 1] = p_stagnation_arr[i] + dp_stagnation * dx
 
-            # A non-positive pressure is always a modelling error, not a
-            # solution: the circuit cannot pass this mass flow. Catch it here,
-            # because the property flash downstream would otherwise fail with a
-            # CoolProp message that says nothing about the cause.
-            if p_stagnation_arr[i + 1] <= 0.0:
+    # March the lumped coolant volumes. Every wall node is solved exactly once
+    # against the state of the coolant segment to which it is attached.
+    for coolant_index in range(n_cool - 1):
+        wall_indices = np.flatnonzero(owners == coolant_index)
+        for wall_index in wall_indices:
+            solve_wall_node(int(wall_index), coolant_index)
+
+        step = float(s_cool[coolant_index + 1] - s_cool[coolant_index])
+        local_s = np.clip(
+            s_wall[wall_indices],
+            s_cool[coolant_index],
+            s_cool[coolant_index + 1],
+        )
+        local_order = np.argsort(local_s)
+        local_s = local_s[local_order]
+        local_qdx = cold_qdx_arr[wall_indices][local_order]
+        if local_s.size == 1:
+            weights = np.array([step])
+        else:
+            edges = np.concatenate(
+                (
+                    [s_cool[coolant_index]],
+                    0.5 * (local_s[:-1] + local_s[1:]),
+                    [s_cool[coolant_index + 1]],
+                )
+            )
+            weights = np.diff(edges)
+        Q_cold = float(np.dot(local_qdx, weights))
+
+        x_pressure = 0.5 * (x_cool[coolant_index] + x_cool[coolant_index + 1])
+        dp_friction = step * physics_helper.coolant_friction_rate(
+            x_pressure,
+            T_cool_arr[coolant_index],
+            p_stagnation_arr[coolant_index],
+            quality=quality_arr[coolant_index],
+        )
+
+        # The downstream enthalpy is fixed by the heat load, and in the
+        # temperature fallback the rise is evaluated on the upstream state, so
+        # neither depends on the pressure being solved for below.
+        if use_enthalpy:
+            coolant_enthalpy_arr[coolant_index + 1] = (
+                coolant_enthalpy_arr[coolant_index]
+                + physics_helper.coolant_enthalpy_rate(Q_cold)
+            )
+        else:
+            T_next = T_cool_arr[coolant_index] + (
+                physics_helper.coolant_temperature_rate(
+                    T_cool_arr[coolant_index],
+                    p_stagnation_arr[coolant_index],
+                    Q_cold,
+                )
+            )
+
+        # Static pressure obeys dp/dx = -friction - rho u du/dx. The downstream
+        # density, velocity and pressure are mutually dependent, so sweep them
+        # to a fixed point starting from the friction-only guess.
+        rho_here = physics_helper.bulk_density(
+            T_cool_arr[coolant_index],
+            p_stagnation_arr[coolant_index],
+            quality_arr[coolant_index],
+        )
+        velocity_here = velocity_arr[coolant_index]
+        p_next = p_stagnation_arr[coolant_index] + dp_friction
+
+        for _ in range(PRESSURE_SWEEPS):
+            if p_next <= 0.0:
                 raise RuntimeError(
-                    f"coolant stagnation pressure fell to "
-                    f"{p_stagnation_arr[i + 1]/1e5:.3g} bar at node {i + 1} "
-                    f"(x = {x_domain[i + 1]:.4g} m) on circuit {circuit.name!r}, "
-                    f"starting from {p_cool_in/1e5:.3g} bar. The channel cannot "
-                    f"pass {boundary_conditions.mdot_coolant:.4g} kg/s: raise the "
-                    f"inlet pressure, enlarge the channel, or lower the flow."
+                    f"coolant pressure fell to {p_next / 1e5:.3g} bar at "
+                    f"coolant node {coolant_index + 1} "
+                    f"(x={x_cool[coolant_index + 1]:.4g} m) on circuit "
+                    f"{circuit.name!r}"
                 )
-
-            # Advance the state variable, then resolve (T, quality) from it at
-            # the *new* pressure -- the dome moves with pressure, so resolving
-            # against the upstream pressure would misplace the crossing.
             if use_enthalpy:
-                h_cool_arr[i + 1] = h_cool_arr[i] + physics_helper.coolant_enthalpy_rate(
-                    Q_cold_val
+                bulk = coolant_state.from_hp(
+                    coolant_enthalpy_arr[coolant_index + 1], p_next
                 )
-                bulk = coolant_state.from_hp(h_cool_arr[i + 1], p_stagnation_arr[i + 1])
             else:
-                dT = physics_helper.coolant_temperature_rate(
-                    T_cool_arr[i], p_stagnation_arr[i], Q_cold_val
-                )
-                bulk = coolant_state.from_tp(
-                    T_cool_arr[i] + dT, p_stagnation_arr[i + 1]
-                )
+                bulk = coolant_state.from_tp(T_next, p_next)
+            rho_there, velocity_there = physics_helper.bulk_velocity(
+                x_cool[coolant_index + 1], bulk.T, p_next, bulk.quality
+            )
+            dp_momentum = _acceleration_pressure_drop(
+                rho_here, velocity_here, rho_there, velocity_there
+            )
+            p_static_next = (
+                p_static_arr[coolant_index] + dp_friction - dp_momentum
+            )
+            p_previous, p_next = (
+                p_next,
+                p_static_next + 0.5 * rho_there * velocity_there**2,
+            )
+            if abs(p_next - p_previous) < PRESSURE_SWEEP_TOL:
+                break
+        else:
+            warnings.warn(
+                f"coolant pressure did not settle within {PRESSURE_SWEEPS} "
+                f"sweeps at coolant node {coolant_index + 1} "
+                f"(x={x_cool[coolant_index + 1]:.4g} m) on circuit "
+                f"{circuit.name!r}; last change was "
+                f"{abs(p_next - p_previous):.3g} Pa.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
 
-            T_cool_arr[i + 1] = bulk.T
-            quality_arr[i + 1] = bulk.quality
-            T_sat_arr[i + 1] = bulk.T_sat
-            phase_arr[i + 1] = bulk.phase
+        if p_static_next <= 0.0:
+            raise RuntimeError(
+                f"coolant static pressure fell to "
+                f"{p_static_next / 1e5:.3g} bar at "
+                f"coolant node {coolant_index + 1} "
+                f"(x={x_cool[coolant_index + 1]:.4g} m) on circuit "
+                f"{circuit.name!r}"
+            )
+
+        p_static_arr[coolant_index + 1] = p_static_next
+        p_stagnation_arr[coolant_index + 1] = p_next
+        velocity_arr[coolant_index + 1] = velocity_there
+        T_cool_arr[coolant_index + 1] = bulk.T
+        quality_arr[coolant_index + 1] = bulk.quality
+        T_sat_arr[coolant_index + 1] = bulk.T_sat
+        phase_arr[coolant_index + 1] = bulk.phase
 
     if output is True:
-        print(f'\rSimulating: {100}%\n', end='', flush=True)
+        print("\rSimulating wall balances: 100%\n", end="", flush=True)
 
-    # ===============
-    # --- RESULTS ---
-    # ===============
+    # Hot-side quantities are sampled only on their requested output grid.
+    T_hw_heat = _interp_axial(x_heat, x_wall, T_hw_arr)
+    h_hot_arr = np.zeros(n_heat)
+    h_hot_enthalpy_arr = np.zeros(n_heat)
+    T_aw_hot_arr = np.zeros(n_heat)
+    dQ_dA_arr = np.zeros(n_heat)
+    regime_arr = np.empty(n_heat, dtype=object)
+    for i, x_i in enumerate(x_heat):
+        hot = physics_helper.hot_side_coefficients(x_i, T_hw_heat[i])
+        h_hot_arr[i] = hot["h_hot"]
+        h_hot_enthalpy_arr[i] = hot["h_g"]
+        T_aw_hot_arr[i] = hot["T_aw"]
+        dQ_dA_arr[i] = hot["qpp_hot"]
+        regime_arr[i] = hot["regime"]
 
-    # 1. Hot-side coefficients and heat flux at the converged wall temperatures.
-    h_hot_arr = np.zeros(n_nodes)           # effective hot-side h [W/m²/K]
-    h_hot_enthalpy_arr = np.zeros(n_nodes)  # enthalpy-based hot-side coeff [kg/m²/s]
-    h_cold_arr = np.zeros(n_nodes)          # coolant-side h [W/m²/K]
-    T_aw_hot_arr = np.zeros(n_nodes)        # driving temperature [K]
-    for i, x_i in enumerate(x_domain):
-        hot = physics_helper.hot_side_coefficients(x_i, T_hw_arr[i])
+    # Coolant-side diagnostics stay on the small coolant grid. Pressures and
+    # velocities already come from the march and are not recomputed here.
+    T_cw_cool = _interp_axial(x_cool, x_wall, T_cw_arr)
+    h_cold_arr = np.zeros(n_cool)
+    for i, x_i in enumerate(x_cool):
         cold = physics_helper.cold_side_coefficients(
             x_i,
-            T_cw_arr[i],
+            T_cw_cool[i],
             T_cool_arr[i],
             p_cool=p_stagnation_arr[i],
             quality=quality_arr[i],
         )
-
-        h_hot_arr[i] = hot["h_hot"]
-        h_hot_enthalpy_arr[i] = hot["h_g"]
         h_cold_arr[i] = cold["h_cold"]
-        T_aw_hot_arr[i] = hot["T_aw"]
-        regime_arr[i] = hot["regime"]
-        dQ_dA_arr[i] = hot["qpp_hot"]
 
-    # 2. Coolant velocity at each node
-    velocity_arr = np.zeros(n_nodes)
-    n_chan = (
-        thrust_chamber.cooling_circuits[circuit_index].placement.n_channel_positions
-        * thrust_chamber.cooling_circuits[circuit_index].placement.n_channels_per_leaf
-    )
-    for i, x_i in enumerate(x_domain):
-        A_channel = thrust_chamber.cooling_circuits[circuit_index].A_coolant(x_i)
-        mdot_c_single = boundary_conditions.mdot_coolant / n_chan
-        rho_cool = physics_helper.bulk_density(
-            T_cool_arr[i], p_static_arr[i], quality_arr[i]
-        )
-        velocity_arr[i] = physics.u_coolant(rho_cool, mdot_c_single, A_channel)
-
-    T_stagnation_arr = np.zeros_like(T_cool_arr)
-    for i, x_i in enumerate(x_domain):
-        # Inside the dome there is no stagnation *temperature* rise to speak
-        # of: bringing a saturated mixture to rest condenses vapour at fixed
-        # T_sat rather than heating it, and cp is not even finite there.
+    T_stagnation_arr = np.zeros(n_cool)
+    for i in range(n_cool):
         if phase_arr[i] == PHASE_TWO_PHASE:
             T_stagnation_arr[i] = T_cool_arr[i]
-            continue
-        cp_cool = thrust_chamber.cooling_circuits[circuit_index].coolant_transport.get_cp(
-            T_cool_arr[i], p_static_arr[i]
+        else:
+            cp = circuit.coolant_transport.get_cp(
+                T_cool_arr[i], p_static_arr[i]
+            )
+            T_stagnation_arr[i] = (
+                T_cool_arr[i] + velocity_arr[i] ** 2 / (2.0 * cp)
+            )
+
+    # Wall interfaces live on wall nodes; bulk coolant is interpolated solely
+    # for the first plotting column and is not used to advance the solution.
+    n_walls = len(circuit.walls)
+    T_full = np.zeros((n_wall, 1 + n_walls + 1))
+    T_full[:, 0] = _interp_axial(x_wall, x_cool, T_cool_arr)
+    for i, x_i in enumerate(x_wall):
+        interfaces = physics_helper.interface_temperatures(
+            x_i, T_hw_arr[i], T_cw_arr[i]
         )
-        T_stagnation_arr[i] = T_cool_arr[i] + (velocity_arr[i] ** 2) / (2.0 * cp_cool)
+        T_full[i, 1:] = interfaces[::-1]
 
-    n_walls = len(thrust_chamber.cooling_circuits[circuit_index].walls)
-    T_full = np.zeros((n_nodes, 1 + n_walls + 1))  # coolant + (n_walls+1) interfaces
-
-    for i, x_i in enumerate(x_domain):
-        # Ts = [T_hot, ..., T_cold], length = n_walls+1
-        Ts = physics_helper.interface_temperatures(x_i, T_hw_arr[i], T_cw_arr[i])
-        Ts_rev = Ts[::-1]  # reverse so Ts[0]=T_cold, Ts[-1]=T_hot
-        T_full[i, 0] = T_cool_arr[i]
-        T_full[i, 1:] = Ts_rev
-
-    p_static_corrected = np.zeros_like(p_stagnation_arr)
-    for i in range(n_nodes):
-        rho_i = physics_helper.bulk_density(
-            T_cool_arr[i], p_stagnation_arr[i], quality_arr[i]
-        )
-        q_dyn = 0.5 * rho_i * velocity_arr[i] ** 2
-        p_static_corrected[i] = p_stagnation_arr[i] - q_dyn
-
-    p_static_arr = p_static_corrected
-
-    # The quality profile says where the coolant boils; it does not say how hot
-    # the wall gets there, because h_cold is still a single-phase correlation.
     boiling = np.flatnonzero(phase_arr == PHASE_TWO_PHASE)
     if boiling.size:
-        i0 = int(boiling[0])
+        first = int(boiling[0])
         warnings.warn(
-            f"coolant enters the boiling dome at x = {x_domain[i0]:.4g} m "
-            f"(node {i0}) and reaches a quality of "
+            f"coolant enters the boiling dome at x={x_cool[first]:.4g} m "
+            f"(coolant node {first}) and reaches a quality of "
             f"{np.nanmax(quality_arr):.3f} on circuit {circuit.name!r}. "
-            f"Two-phase heat transfer is not modelled -- h_cold remains the "
-            f"single-phase correlation on saturated-liquid properties, so wall "
-            f"temperatures downstream of that station are not trustworthy.",
+            "Two-phase heat transfer is not modelled.",
             RuntimeWarning,
             stacklevel=2,
         )
-        if output is True:
-            print(
-                f"Coolant boils from x = {x_domain[i0]:.4g} m; exit quality "
-                f"{quality_arr[-1]:.3f} (two-phase h_cold not modelled)"
+
+    global_R, final_R = analyse_residuals(residual_log, n_wall)
+    minimum_cea_temperature = getattr(
+        thrust_chamber.combustion_transport,
+        "minimum_cea_temperature",
+        None,
+    )
+    if minimum_cea_temperature is not None:
+        extrapolated = np.flatnonzero(T_hw_arr < minimum_cea_temperature)
+        if extrapolated.size:
+            locations = ", ".join(
+                f"{x_wall[index]:.6g}"
+                for index in extrapolated[:5]
             )
-
-    global_R, final_R = analyse_residuals(residual_log, n_nodes)
-
+            if extrapolated.size > 5:
+                locations += ", ..."
+            warnings.warn(
+                f"{extrapolated.size} final hot-wall temperature(s) on "
+                f"circuit {circuit.name!r} are below the configured CEA "
+                f"temperature boundary of {minimum_cea_temperature:g} K "
+                f"(x={locations} m). Gas properties at those wall states "
+                "were C1 tangent-extrapolated below the boundary.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
     return RegenResult(
-        circuit_name=thrust_chamber.cooling_circuits[circuit_index].name,
+        circuit_name=circuit.name,
         circuit_index=circuit_index,
-        x=x_domain,
+        x=x_wall,
         T=T_full,
         T_static=T_cool_arr,
         T_stagnation=T_stagnation_arr,
@@ -1312,18 +1547,23 @@ def solve_coupled_heat_exchanger(
         film_regime=regime_arr.astype(str),
         liquid_film=film_model.liquid_results if film_model else None,
         gaseous_film=film_model.gaseous_results if film_model else None,
-        coolant_enthalpy=h_cool_arr,
+        coolant_enthalpy=coolant_enthalpy_arr,
         coolant_quality=quality_arr,
         coolant_T_sat=T_sat_arr,
         coolant_phase=phase_arr.astype(str),
         enthalpy_march=use_enthalpy,
+        x_wall=x_wall,
+        x_heat_flux=x_heat,
+        x_coolant=x_cool,
+        wall_residual_scaled=wall_residual_scaled,
+        wall_converged=wall_residual_scaled <= RESIDUAL_TOL,
     )
 
 
 def coupled_steady_heating_analysis(
     thrust_chamber,
     boundary_conditions,
-    n_nodes: int = 100,
+    nodes=100,
     circuit_index: int = 0,
     film: Union[bool, str] = "auto",
     film_model: Optional[FilmHeatFluxModel] = None,
@@ -1331,6 +1571,8 @@ def coupled_steady_heating_analysis(
     film_x_array: Optional[Sequence[float]] = None,
     solver: str = "newton",
     output: bool = True,
+    heat_curvature_correction: bool = True,
+    pressure_curvature_correction: bool = True,
 ) -> RegenResult:
     """Run a steady heating analysis with film cooling, regen cooling, or both.
 
@@ -1341,8 +1583,12 @@ def coupled_steady_heating_analysis(
     boundary_conditions : BoundaryConditions
         Coolant inlet boundary conditions. Also supplies the film injection
         temperature and pressure.
-    n_nodes : int, optional
-        Number of axial nodes for the regenerative march. Default 100.
+    nodes : int, sequence of sequences, or mapping, optional
+        Axial discretization. An integer creates equal uniform wall,
+        heat-flux, and coolant grids. An explicit ragged sequence uses the
+        order ``[wall, heat_flux, coolant]``; a mapping may instead use those
+        names as keys. Different grid lengths implement lumped coolant
+        segments connected to multiple wall nodes. Default 100.
     circuit_index : int, optional
         Cooling-circuit index. Default 0.
     film : bool or 'auto', optional
@@ -1360,6 +1606,11 @@ def coupled_steady_heating_analysis(
         Solver selector. Only ``'newton'`` is implemented.
     output : bool, optional
         If True, print progress. Default True.
+    heat_curvature_correction : bool, optional
+        Apply the RL10 coolant heat-transfer curvature correction. Default
+        True.
+    pressure_curvature_correction : bool, optional
+        Apply the RTE/Ito Darcy-friction curvature correction. Default True.
 
     Returns
     -------
@@ -1396,10 +1647,12 @@ def coupled_steady_heating_analysis(
     return solve_coupled_heat_exchanger(
         thrust_chamber,
         boundary_conditions,
-        n_nodes,
+        nodes,
         circuit_index,
         output,
         film_model=film_model,
+        heat_curvature_correction=heat_curvature_correction,
+        pressure_curvature_correction=pressure_curvature_correction,
     )
 
 

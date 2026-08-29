@@ -345,7 +345,7 @@ body {{
 }}
 .container {{
   display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
   min-height: calc(100vh - 58px);
 }}
 .sidebar {{
@@ -376,19 +376,21 @@ body {{
 }}
 .content {{
   padding: 18px 22px 40px;
+  min-width: 0;
 }}
 .tab-panel {{ display: none; }}
 .tab-panel.active {{ display: block; }}
 /* Blocks */
 .psf-block {{ margin: 16px 0; }}
 .psf-text {{ line-height: 1.5; color: var(--fg); }}
-.psf-figure {{ margin: 12px 0; }}
+.psf-figure {{ margin: 12px 0; min-width: 0; }}
 .psf-caption {{ font-size: 12px; color: var(--muted); margin-top: 4px; }}
 /* Make Plotly plots use available width */
 .psf-figure .plotly-graph-div {{ width: 100% !important; }}
 /* --- Key/Value tables --- */
 .psf-table {{
-  width: 100%;
+  width: max-content;
+  max-width: 100%;
   border-collapse: collapse;
   margin: 12px 0;
   font-size: 14px;
@@ -397,11 +399,11 @@ body {{
   border: 1px solid var(--border);
   padding: 8px 10px;
   vertical-align: top;
+  overflow-wrap: anywhere;
 }}
 .psf-table th {{
   background: #f7f9fb;
   text-align: left;
-  width: 34%;
 }}
 .psf-table caption {{
   text-align: left;
@@ -414,6 +416,78 @@ body {{
 </style>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script>
+const PSF_PLOT_ASPECT_RATIO = 16 / 9;
+const PSF_SIDE_LEGEND_MIN_WIDTH = 900;
+
+async function psfPlaceLegend(plot, width) {{
+  if (!plot._fullLayout || !plot._fullLayout.showlegend) return;
+
+  if (!plot._psfBaseLegendMargins) {{
+    const margin = plot.layout.margin || {{}};
+    plot._psfBaseLegendMargins = {{
+      right: Number(margin.r) || 20,
+      bottom: Number(margin.b) || 60,
+    }};
+  }}
+
+  const base = plot._psfBaseLegendMargins;
+  const placeBeside = width >= PSF_SIDE_LEGEND_MIN_WIDTH;
+  await Plotly.relayout(plot, placeBeside ? {{
+    'legend.orientation': 'v',
+    'legend.x': 1.02,
+    'legend.xanchor': 'left',
+    'legend.y': 1,
+    'legend.yanchor': 'top',
+    'margin.r': base.right,
+    'margin.b': base.bottom,
+  }} : {{
+    'legend.orientation': 'h',
+    'legend.x': 0.5,
+    'legend.xanchor': 'center',
+    'legend.y': -0.18,
+    'legend.yanchor': 'top',
+    'margin.r': base.right,
+    'margin.b': base.bottom,
+  }});
+
+  const legend = plot.querySelector('.legend');
+  if (!legend) return;
+  const bounds = legend.getBoundingClientRect();
+  if (placeBeside) {{
+    const right = Math.min(
+      Math.round(width * 0.45),
+      base.right + Math.ceil(bounds.width) + 24,
+    );
+    await Plotly.relayout(plot, {{'margin.r': right}});
+  }} else {{
+    const bottom = base.bottom + Math.ceil(bounds.height) + 24;
+    await Plotly.relayout(plot, {{'margin.b': bottom}});
+  }}
+}}
+
+function psfResizePlots(panel) {{
+  if (!panel || !window.Plotly || !Plotly.Plots) return;
+
+  // Plotly figures are created while their tab panels are hidden, so their
+  // initial dimensions cannot reflect the report's content column. Wait for
+  // the newly active panel to participate in layout before resizing it.
+  requestAnimationFrame(() => {{
+    requestAnimationFrame(() => {{
+      panel.querySelectorAll('.plotly-graph-div').forEach(async (plot) => {{
+        const width = plot.getBoundingClientRect().width;
+        if (width > 0) {{
+          plot.style.height = `${{width / PSF_PLOT_ASPECT_RATIO}}px`;
+        }}
+        if (plot.data) {{
+          Plotly.Plots.resize(plot);
+          await psfPlaceLegend(plot, width);
+          Plotly.Plots.resize(plot);
+        }}
+      }});
+    }});
+  }});
+}}
+
 function psfActivateTab(idx) {{
   const btns = document.querySelectorAll('.tab-btn');
   const panels = document.querySelectorAll('.tab-panel');
@@ -425,6 +499,7 @@ function psfActivateTab(idx) {{
   }});
   // Persist selection
   try {{ localStorage.setItem('psf_active_tab', String(idx)); }} catch(e) {{}}
+  psfResizePlots(panels[idx]);
 }}
 window.addEventListener('DOMContentLoaded', () => {{
   // Restore last active tab
@@ -434,6 +509,9 @@ window.addEventListener('DOMContentLoaded', () => {{
     if (s !== null) idx = Math.max(0, parseInt(s, 10) || 0);
   }} catch(e) {{}}
   psfActivateTab(idx);
+}});
+window.addEventListener('resize', () => {{
+  psfResizePlots(document.querySelector('.tab-panel.active'));
 }});
 </script>
 <script>

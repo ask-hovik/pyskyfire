@@ -39,8 +39,28 @@ class ChannelPlacement(ABC):
     def compute_centerline_radius(self,
                                   x: float,
                                   contour) -> float:
-        """Return the centerline radius r(x) for this placement."""
+        """Return the section-reference radius ``r(x)`` for this placement.
+
+        For surface channels this is the hot-wall radius used by the
+        cross-section models.  The coolant-flow centre is obtained separately
+        with :meth:`compute_flow_centerline_radius`.
+        """
         raise NotImplementedError
+
+    def compute_flow_centerline_radius(
+        self,
+        x: float,
+        contour,
+        wall_thickness: float,
+        channel_height: float,
+    ) -> float:
+        """Return the radius of the modeled coolant-flow centre [m].
+
+        Placements that already describe a flow centre need no offset.  A
+        surface placement overrides this because its section reference is the
+        hot wall.
+        """
+        return self.compute_centerline_radius(x, contour)
 
     def channel_count(self) -> int:
         return self.n_channel_positions
@@ -50,6 +70,16 @@ class ChannelPlacement(ABC):
         Default: 0 (axial/vertical channels).
         """
         return 0.0
+
+    def centerline_dtheta_dx(
+        self,
+        x: float,
+        contour,
+        flow_radius: float,
+        flow_dr_dx: float,
+    ) -> float:
+        """Return ``dtheta/dx`` for the actual coolant-flow centreline."""
+        return self.dtheta_dx(x, contour)
 
 class SurfacePlacement(ChannelPlacement):
     """Placement model for surface-mounted cooling channels.
@@ -87,14 +117,61 @@ class SurfacePlacement(ChannelPlacement):
         #t_total = wall_group.total_thickness(x)
         #TODO: This is approximately correct. Will want to reimplement the effect of the channel wall thickness in the future. 
         return r_hot #+ t_total/np.cos(alpha)
+
+    def compute_flow_centerline_radius(
+        self,
+        x,
+        contour,
+        wall_thickness,
+        channel_height,
+    ):
+        """Return the coolant centroid used by the 1-D passage model.
+
+        The section analytics construct a radial wall/channel stack, so its
+        consistent flow centre is the hot-wall radius plus the complete wall
+        stack and half the channel height.
+        """
+        return (
+            self.compute_centerline_radius(x, contour)
+            + float(wall_thickness)
+            + 0.5 * float(channel_height)
+        )
     
     def dtheta_dx(self, x, contour):
-        gamma = self.helix_angle(x) if callable(self.helix_angle) else float(self.helix_angle)
+        gamma = (
+            self.helix_angle(x)
+            if callable(self.helix_angle)
+            else float(self.helix_angle)
+        )
         r = self.compute_centerline_radius(x, contour)
         drdx = contour.dr_dx(x)
         # guard r≈0 near axis (should not happen for chamber wall, but robust)
         r = max(1e-12, r)
         return np.tan(gamma) * np.sqrt(1.0 + drdx**2) / r
+
+    def centerline_dtheta_dx(
+        self,
+        x,
+        contour,
+        flow_radius,
+        flow_dr_dx,
+    ):
+        """Honor the requested helix angle on the coolant-flow centreline.
+
+        ``gamma`` is measured from the local meridional direction.  Therefore
+        ``tan(gamma) = r dtheta / ds_meridional``.
+        """
+        gamma = (
+            self.helix_angle(x)
+            if callable(self.helix_angle)
+            else float(self.helix_angle)
+        )
+        radius = max(abs(float(flow_radius)), 1e-12)
+        return (
+            np.tan(gamma)
+            * np.sqrt(1.0 + float(flow_dr_dx) ** 2)
+            / radius
+        )
 
 class InternalPlacement(ChannelPlacement):
     """Placement model for in-wall or in-chamber heat-exchanger channels.

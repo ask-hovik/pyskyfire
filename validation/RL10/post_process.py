@@ -1,0 +1,1367 @@
+"""Build the RL10A-3-3A validation report.
+
+This is the single post-processor for the whole RL10 case. It assembles one
+report from whichever result files are present:
+
+* ``regen_results.pkl`` (from ``regen_sim.py``) drives the regenerative-cooling
+  validation tabs. That run is driven with the measured jacket inlet state from
+  Binder et al., so its wall temperatures, heat fluxes, and pressures can be
+  compared directly against the published curves.
+* ``sizer_results.pkl`` (from ``sizer_sim.py``) drives the engine-cycle tabs.
+  The cycle closes on its own jacket inlet state and therefore produces
+  regen results that differ slightly from the validation run. Those results are
+  deliberately *not* plotted here; see the note in ``add_cycle_tabs``.
+
+At least one of the two files must exist.
+"""
+
+import os
+import json
+from types import SimpleNamespace
+
+import pyskyfire as psf
+import numpy as np
+
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+reference_dir = os.path.join(script_dir, "reference_data")
+
+REGEN_RESULTS_FILENAME = "regen_results.pkl"
+SIZER_RESULTS_FILENAME = "sizer_results.pkl"
+REPORT_FILENAME = "RL10A-3-3A_Report.html"
+NETWORK_LAYOUT_FILENAME = "rl10a-3-3a-engine-cycle.layout.json"
+
+PYSKYFIRE_RED = "#d62728"
+PYSKYFIRE_BLUE = "#1f77b4"
+
+REF_BINDER = "[R1]"
+REF_DESIGN_REPORT = "[R2]"
+REF_RECOP = "[R3]"
+
+REPORT_INTRODUCTION = (
+    "This report reconstructs the RL10A-3-3A thrust chamber, regenerative "
+    "cooling jacket, and engine cycle in Pyskyfire, then compares the results "
+    "with published RL10 data. The geometry and most validation curves were "
+    "digitized from Binder et al.'s NASA modeling report; older design curves "
+    "come from Pratt & Whitney's 1966 RL10A-3-3 design report; and the cooling-"
+    "tube dimensions come from the RECOP passage-design study. The source, "
+    "page, and way each dataset is used are listed on the References tab as "
+    f"{REF_BINDER}, {REF_DESIGN_REPORT}, and {REF_RECOP}."
+)
+
+COOLING_DATA_NOTE = (
+    "These plots compare the Pyskyfire solution with digitized reference "
+    f"curves from {REF_BINDER} and, where shown in the legend, the earlier "
+    f"RL10 Design Report {REF_DESIGN_REPORT}. Exact agreement is not expected. "
+    "The sources represent different model generations and operating balances; "
+    "Pyskyfire uses its own gas-property and heat-transfer correlations; and "
+    "reading curves from scanned figures introduces finite digitization error. "
+    "The two Pyskyfire traces also resolve the physical short- and long-tube "
+    "circuits separately, whereas some published curves represent a reduced "
+    "cooling-jacket model."
+)
+
+
+# ================
+# Shared helpers
+# ================
+
+def configure_contour_legend(figure):
+    """Create source groups whose point and spline traces toggle separately."""
+    source_groups = {
+        "contour-1": "Area Ratio Stations",
+        "contour-2": "Graph Readout",
+    }
+    configured_traces = []
+    grouped_trace_ids = set()
+
+    for original_group, group_title in source_groups.items():
+        source_traces = [
+            trace
+            for trace in figure.fig.data
+            if trace.legendgroup == original_group
+        ]
+        grouped_trace_ids.update(id(trace) for trace in source_traces)
+
+        for mode, trace_name in (
+            ("markers", "Input Points"),
+            ("lines", "Spline"),
+        ):
+            parts = [trace for trace in source_traces if trace.mode == mode]
+            if not parts:
+                continue
+            primary = next(
+                (trace for trace in parts if trace.showlegend),
+                parts[0],
+            )
+            combined_x = []
+            combined_y = []
+            for part in parts:
+                if combined_x:
+                    combined_x.append(None)
+                    combined_y.append(None)
+                combined_x.extend(part.x)
+                combined_y.extend(part.y)
+
+            primary.x = combined_x
+            primary.y = combined_y
+            primary.name = trace_name
+            primary.legendgroup = group_title
+            primary.legendgrouptitle = dict(text=group_title)
+            primary.showlegend = True
+            configured_traces.append(primary)
+
+    configured_traces.extend(
+        trace
+        for trace in figure.fig.data
+        if id(trace) not in grouped_trace_ids
+    )
+    figure.fig.data = tuple(configured_traces)
+    figure.update_layout(
+        legend=dict(
+            title=None,
+            groupclick="toggleitem",
+            tracegroupgap=10,
+        )
+    )
+
+
+def load_reference(path: str, prop_key: str, excluded_models=()):
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    out = []
+    for model, ds in data.items():
+        if model == "units" or model in excluded_models:
+            continue
+        x = np.asarray(ds["x"], dtype=float)
+        y = np.asarray(ds[prop_key], dtype=float)
+
+        fields = {"x": x, "circuit_name": ds.get("name", model)}
+        if prop_key == "T_hot_wall":
+            fields["T"] = y.reshape(-1, 1)
+        else:
+            fields[prop_key] = y
+        out.append(SimpleNamespace(**fields))
+
+    return out
+
+
+def load_channel_width_reference(path: str):
+    """Load every RECOP tube-width branch without joining the transition."""
+    with open(path, "r", encoding="utf-8") as reference_file:
+        data = json.load(reference_file)
+
+    return [
+        SimpleNamespace(
+            x=np.asarray(series["x"], dtype=float),
+            tube_width_od=np.asarray(series["tube_width_od"], dtype=float),
+            name=series.get("name", series_name),
+        )
+        for series_name, series in data["series"].items()
+    ]
+
+
+def add_references_tab(report):
+    """Add the source inventory used by the RL10 validation report."""
+    tab = report.add_tab("References")
+    tab.add_text(
+        "Reference labels used throughout the report are collected here. "
+        "Values described as digitized were read from the cited published "
+        "figure and converted to SI units in validation/RL10/reference_data."
+    )
+    tab.add_raw_html(
+        """
+<table class='psf-table'>
+  <caption>RL10 report reference data and provenance</caption>
+  <thead>
+    <tr><th>Reference</th><th>Source</th><th>Data used in this report</th></tr>
+  </thead>
+  <tbody>
+    <tr id='ref-r1'>
+      <th>[R1]</th>
+      <td>Binder, M., Tomsik, T., and Veres, J. P., <em>RL10A-3-3A Rocket
+      Engine Modeling Project</em>, NASA TM-107318, 1997,
+      <a href='https://ntrs.nasa.gov/citations/19970010379'>NTRS 19970010379</a>.</td>
+      <td>Operating point (Tables 2.4.1 and 2.5.1); cooling-jacket layout and
+      silver insert (p. 55); cooling comparisons (pp. 56–59); engine profile
+      (Figure E1, p. 141); area-ratio stations (Table E1, p. 139); and engine
+      station data.</td>
+    </tr>
+    <tr id='ref-r2'>
+      <th>[R2]</th>
+      <td>Pratt &amp; Whitney Aircraft, <em>Design Report for RL10A-3-3 Rocket
+      Engine</em>, PWA FR-1769, 28 February 1966,
+      <a href='https://ntrs.nasa.gov/citations/19670005471'>NTRS 19670005471</a>.</td>
+      <td>Digitized wall-temperature, coolant-temperature, and coolant-pressure
+      curves from Appendix D, Figure D-3, p. D-4.</td>
+    </tr>
+    <tr id='ref-r3'>
+      <th>[R3]</th>
+      <td>Tomsik, T. M., <em>A Hydrogen-Oxygen Rocket Engine Coolant Passage
+      Design Program (RECOP) for Fluid-Cooled Thrust Chambers and Nozzles</em>,
+      1994, <a href='https://ntrs.nasa.gov/citations/19950002773'>NTRS
+      19950002773</a>.</td>
+      <td>Digitized RL10A-3-3A tube outside-height and outside-width design
+      points from Figure 10, document p. 172 (PDF p. 5).</td>
+    </tr>
+  </tbody>
+</table>
+        """
+    )
+
+
+def group_comparison_legend(
+    figure,
+    *,
+    reference_trace_names,
+    pyskyfire_trace_names,
+):
+    """Group comparison traces visually while keeping each one toggleable."""
+    groups = {
+        "Reference Data": set(reference_trace_names),
+        "Pyskyfire": set(pyskyfire_trace_names),
+    }
+    for trace in figure.fig.data:
+        for group_name, trace_names in groups.items():
+            if trace.name in trace_names:
+                trace.legendgroup = group_name
+                trace.legendgrouptitle = dict(text=group_name)
+                break
+
+    figure.update_layout(
+        legend=dict(
+            title=None,
+            groupclick="toggleitem",
+            tracegroupgap=10,
+        )
+    )
+
+
+# ==========================
+# Regenerative cooling tabs
+# ==========================
+
+def add_regen_tabs(report, results):
+    """Add the regenerative-cooling validation tabs."""
+    params = results.params
+    thrust_chamber = results.thrust_chamber
+    cooling_data_a = results.cooling_data[0]
+    cooling_data_b = results.cooling_data[1]
+
+    cooling_data_a.name = "Pyskyfire"
+    cooling_data_b.name = "Pyskyfire"  # TODO: maybe bake this into the simulation process itself?
+
+    # fetching interesting values from aerothermo TODO: It seems a bit
+    # unpractical that these values are only stored in aerothermodynamics self
+    combustion = thrust_chamber.combustion_transport
+    optimal_values = dict(
+        MR              = combustion.MR,
+        p_c             = combustion.p_c,
+        T_c             = combustion.T_c,
+        F               = combustion.F,
+        eps             = combustion.eps,
+        L_star          = combustion.L_star,
+        c_star          = combustion.c_star,
+        p_amb           = combustion.p_amb,
+        Isp_optimum     = combustion.Isp_optimum,
+        Isp_vac         = combustion.Isp_vac,
+        Isp_amb         = combustion.Isp_amb,
+        Isp_SL          = combustion.Isp_SL,
+        CF_vac          = combustion.CF_vac,
+        CF_amb          = combustion.CF_amb,
+        CF_SL           = combustion.CF_SL,
+        mdot            = combustion.mdot,
+        mdot_fu         = combustion.mdot_fu,
+        mdot_ox         = combustion.mdot_ox,
+        t_stay          = combustion.t_stay,
+        A_t             = combustion.A_t,
+        A_e             = combustion.A_e,
+        r_t             = combustion.r_t,
+        r_e             = combustion.r_e,
+        V_c             = combustion.V_c,
+    )
+
+    # --- RL10 contour from JSON ---
+    json_path = os.path.join(reference_dir, "reference_RL10_contour.json")
+    with open(json_path) as f:
+        d = json.load(f)
+    xs = np.asarray(d["xs"], dtype=float)
+    rs = np.asarray(d["rs"], dtype=float)
+    actual_RL10_contour = psf.regen.Contour(xs, rs, name="Graph readout")
+    fig_engine_contour = psf.viz.PlotContour(
+        thrust_chamber.contour,
+        actual_RL10_contour,
+        show_input_points=True,
+    )
+    configure_contour_legend(fig_engine_contour)
+
+    # ---------------- Overview ------------------
+    tab_overview = report.add_tab("Overview")
+    tab_overview.add_text(REPORT_INTRODUCTION)
+
+    engine_viewer = psf.viz.make_engine_3d(thrust_chamber, show=False)
+    save_path = os.path.join(script_dir, "engine-3d.html")
+    engine_viewer.save_html(save_path)
+    tab_overview.add_iframe(
+        engine_viewer.data_url,
+        caption=(
+            "Interactive reconstruction of the RL10 thrust chamber and cooling "
+            "tubes. Rotate, pan, and zoom to inspect the arrangement: 180 long "
+            "tubes continue through the chamber and throat, while 180 short "
+            "tubes begin at the nozzle interlacing manifold. Downstream of that "
+            "transition the two sets alternate around the circumference, giving "
+            "360 passages in the nozzle; upstream, only the long tubes remain."
+        ),
+    )
+    engine_viewer.close()
+
+    # -------------- Operating point -----------------
+    tab_params = report.add_tab("Operating Point")
+    tab_params.add_text(
+        "The prescribed values define the regenerative-cooling validation run. "
+        f"They follow the typical operating point in Tables 2.4.1 and 2.5.1 of "
+        f"{REF_BINDER}; the calculated table is Pyskyfire's resulting chamber "
+        "and nozzle state, not a second set of source data."
+    )
+    tab_params.add_table(
+        params,
+        caption="Prescribed Model Inputs",
+        key_title="Parameter",
+        value_title="Value",
+        precision=3,
+    )
+    tab_params.add_table(
+        optimal_values,
+        caption="Calculated Thrust-Chamber Values",
+        key_title="Quantity",
+        value_title="Value",
+        precision=3,
+    )
+
+    # ---------------- Engine contours ------------------
+    tab_contours = report.add_tab("Engine Contours")
+    tab_contours.add_text(
+        "The two contours are independent reconstructions of the published "
+        "RL10 profile. Their agreement provides a useful geometry check before "
+        "the cooling calculation is interpreted."
+    )
+    tab_contours.add_figure(
+        fig_engine_contour,
+        caption=(
+            f"Engine contours reconstructed from {REF_BINDER}. “Area Ratio "
+            "Stations” uses the numerical A/A_t values in Table E1 (p. 139): "
+            "each ratio is converted to radius with r = r_t sqrt(A/A_t), then "
+            "Pyskyfire draws the spline through the input markers. “Graph "
+            "Readout” is digitized directly from the plotted chamber and nozzle "
+            "profile in Figure E1 (p. 141), with its markers and spline shown "
+            "separately. Small offsets are expected because one contour comes "
+            "from rounded table values and the other from a scanned graph. The "
+            "table omits the throat and exit, so those boundary points are "
+            "supplied from the silver-insert profile and the stated 61:1 exit "
+            "area ratio."
+        ),
+    )
+
+    # The two passes interlace circumferentially, so drawing both stacks in the
+    # meridional plane would just overlay them. The full pass covers the whole
+    # chamber and carries the silver insert, so it is the informative one.
+    fig_wall_layers = psf.viz.PlotWallLayers(thrust_chamber, circuit_index=1)
+    tab_contours.add_figure(
+        fig_wall_layers,
+        caption=(
+            "Wall stack of the long-tube circuit drawn to scale in the meridional "
+            "plane: silver throat insert, stainless tube wall, coolant passage, "
+            "and the closeout. Zoom in around x = 0 to see the thin silver insert "
+            f"described on p. 55 of {REF_BINDER} and to read the real layer "
+            "thicknesses. The "
+            "closeout wall is not modelled by pyskyfire and is drawn hatched as a "
+            "copy of the tube wall; the coolant band spans the full "
+            "circumferential sector, so the tube-to-tube land is not resolved."
+        ),
+    )
+
+    # ======== tab 2 - cooling data =========
+    tab2 = report.add_tab("Cooling Data")
+    tab2.add_text(COOLING_DATA_NOTE)
+
+    # -------- Wall temperature comparison ----------
+    reference_wall_temp_path = os.path.join(reference_dir, "reference_wall_temperature.json")
+    reference_wall_temperature_data = load_reference(path=reference_wall_temp_path, prop_key="T_hot_wall")
+
+    fig_wall_temp_comparison = psf.viz.PlotWallTemperature(*reference_wall_temperature_data,
+                                                cooling_data_a,
+                                                cooling_data_b,
+                                                mark_nonconverged=False,
+                                                template="plotly_white"
+                                                )
+
+    # Update traces and legends
+    fig_wall_temp_comparison.update_traces(
+        name="New System Model", # Name on legend
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="diamond", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(legendgroup="New System Model", name="Hot Wall"), # which one are you editing
+        )
+
+    fig_wall_temp_comparison.update_traces(
+        name="P&W Simulation",
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="triangle-up", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(legendgroup="P&W Simulation", name="Hot Wall"),
+        )
+
+    fig_wall_temp_comparison.update_traces(
+        name="RTE Model",
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="square", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(legendgroup="RTE Model", name="Hot Wall"),
+        )
+
+    fig_wall_temp_comparison.update_traces(
+        name="RL10 Design Report",
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="hexagon", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(legendgroup="RL10 Design Report", name="Hot Wall"),
+        )
+
+    fig_wall_temp_comparison.update_traces(
+        name="Short Tubes",
+        line=dict(color=PYSKYFIRE_RED, dash="dash"),
+        mode="lines",
+        selector=dict(legendgroup="Half Pass", name="Hot Wall"),
+        )
+
+    fig_wall_temp_comparison.update_traces(
+        name="Long Tubes",
+        line=dict(color=PYSKYFIRE_RED, dash="solid"),
+        mode="lines",
+        selector=dict(legendgroup="Full Pass", name="Hot Wall"),
+        )
+
+    group_comparison_legend(
+        fig_wall_temp_comparison,
+        reference_trace_names={
+            "New System Model",
+            "P&W Simulation",
+            "RTE Model",
+            "RL10 Design Report",
+        },
+        pyskyfire_trace_names={
+            "Short Tubes",
+            "Long Tubes",
+        },
+    )
+
+    # add figure into report
+    tab2.add_figure(
+        fig_wall_temp_comparison,
+        caption=(
+            "Hot-wall temperature from the models reproduced in Binder "
+            f"{REF_BINDER}, the RL10 Design Report curve from Appendix D, "
+            f"Figure D-3, p. D-4 {REF_DESIGN_REPORT}, and the Pyskyfire short- "
+            "and long-tube circuits. The older design report concerns the "
+            "RL10A-3-3 rather than the later A-3-3A model, and the peak is "
+            "especially sensitive to the hot-gas correlation and digitized "
+            "throat location; both effects can produce visible discrepancies."
+        ),
+    )
+
+    fig_wall_temp_complete = psf.viz.PlotWallTemperature(
+        cooling_data_a,
+        cooling_data_b,
+        plot_coolant_wall=True,
+        mark_nonconverged=True,
+    )
+    fig_wall_temp_complete.update_traces(
+        line=dict(color=PYSKYFIRE_BLUE, dash="dash"),
+        selector=dict(legendgroup="Half Pass", name="Cold Wall"),
+    )
+    fig_wall_temp_complete.update_traces(
+        line=dict(color=PYSKYFIRE_RED, dash="dash"),
+        selector=dict(legendgroup="Half Pass", name="Hot Wall"),
+    )
+    fig_wall_temp_complete.update_traces(
+        line=dict(color=PYSKYFIRE_BLUE, dash="solid"),
+        selector=dict(legendgroup="Full Pass", name="Cold Wall"),
+    )
+    fig_wall_temp_complete.update_traces(
+        line=dict(color=PYSKYFIRE_RED, dash="solid"),
+        selector=dict(legendgroup="Full Pass", name="Hot Wall"),
+    )
+    fig_wall_temp_complete.update_traces(
+        marker=dict(
+            symbol="x-thin",
+            size=10,
+            color="black",
+            line=dict(color="black", width=1),
+        ),
+        selector=dict(name="Non-converged wall nodes"),
+    )
+    fig_wall_temp_complete.update_layout(
+        legend=dict(groupclick="toggleitem"),
+    )
+    tab2.add_figure(
+        fig_wall_temp_complete,
+        caption=(
+            "Hot wall and cold wall temperature predicted by Pyskyfire for the "
+            "short- and long-tube cooling circuits. Black crosses mark wall "
+            "nodes where the coupled nonlinear wall-temperature solve did not "
+            "meet its convergence tolerance. At these conditions, condensed "
+            "water species in the equilibrium CEA data—particularly H2O(cr) "
+            "and H2O(L)—appear, disappear, or change phase discontinuously as "
+            "the trial wall temperature changes. The resulting jumps in gas "
+            "thermodynamic and transport properties kink the heat-balance "
+            "residual, so an otherwise bounded solution can stall before the "
+            "numerical tolerance is reached. The marked temperatures should "
+            "therefore be interpreted as approximate local values rather than "
+            "fully converged wall solutions."
+        ),
+    )
+
+    # ------------ coolant temperature comparison ------------
+    reference_coolant_temp_path = os.path.join(reference_dir, "reference_coolant_static_temperature.json")
+    reference_coolant_temperature_data = load_reference(
+        path=reference_coolant_temp_path,
+        prop_key="T_static",
+        excluded_models={"Binder_et_al"},
+    )
+
+    fig_coolant_temperature = psf.viz.PlotCoolantTemperature(*reference_coolant_temperature_data, cooling_data_a, cooling_data_b, )
+
+    # Update traces and legends
+    fig_coolant_temperature.update_traces(
+        name="New System Model", # Name on legend
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="diamond", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(name="New System Model"), # which one are you editing
+        )
+
+    fig_coolant_temperature.update_traces(
+        name="P&W Simulation",
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="triangle-up", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(name="P&W Simulation"),
+        )
+
+    fig_coolant_temperature.update_traces(
+        name="RTE Model",
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="square", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(name="RTE Model"),
+        )
+
+    fig_coolant_temperature.update_traces(
+        name="RL10 Design Report",
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="hexagon", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(name="RL10 Design Report"),
+        )
+
+    fig_coolant_temperature.update_traces(
+        name="Short Tubes",
+        line=dict(color=PYSKYFIRE_RED, dash="dash"),
+        mode="lines",
+        selector=dict(name="Half Pass"),
+        )
+
+    fig_coolant_temperature.update_traces(
+        name="Long Tubes",
+        line=dict(color=PYSKYFIRE_RED, dash="solid"),
+        mode="lines",
+        selector=dict(name="Full Pass"),
+        )
+
+    fig_coolant_temperature.update_traces(
+        name="Test Data",
+        mode="markers",
+        marker=dict(symbol="circle", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(name="Test Data"),
+        )
+
+    group_comparison_legend(
+        fig_coolant_temperature,
+        reference_trace_names={
+            "New System Model",
+            "P&W Simulation",
+            "RTE Model",
+            "RL10 Design Report",
+            "Test Data",
+        },
+        pyskyfire_trace_names={
+            "Short Tubes",
+            "Long Tubes",
+        },
+    )
+
+    tab2.add_figure(
+        fig_coolant_temperature,
+        caption=(
+            f"Static coolant temperature compared with {REF_BINDER} and with "
+            "the RL10 Design Report Appendix D, Figure D-3, p. D-4 "
+            f"{REF_DESIGN_REPORT}. Differences accumulate with absorbed heat "
+            "along the flow path and therefore reflect both the local heat-flux "
+            "prediction and differences in mass flow, inlet state, passage "
+            "geometry, and the source model's treatment of the two tube passes."
+        ),
+    )
+
+    # ----------- coolant pressure ------------
+    reference_coolant_pressure_path = os.path.join(reference_dir, "reference_coolant_static_pressure.json")
+    reference_coolant_pressure_data = load_reference(
+        path=reference_coolant_pressure_path,
+        prop_key="p_static",
+        excluded_models={"Binder_et_al"},
+    )
+    fig_coolant_pressure = psf.viz.PlotCoolantPressure(*reference_coolant_pressure_data, cooling_data_b, static = True, stagnation=False)
+
+    # Update traces and legends
+    fig_coolant_pressure.update_traces(
+        name="New System Model", # Name on legend
+        legendgrouptitle=dict(text=None),
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="diamond", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(legendgroup="New System Model", name="Static Pressure"), # which one are you editing
+        )
+
+    fig_coolant_pressure.update_traces(
+        name="P&W Simulation",
+        legendgrouptitle=dict(text=None),
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="triangle-up", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(legendgroup="P&W Simulation", name="Static Pressure"),
+        )
+
+    fig_coolant_pressure.update_traces(
+        name="RTE Model",
+        legendgrouptitle=dict(text=None),
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="square", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(legendgroup="RTE Model", name="Static Pressure"),
+        )
+
+    fig_coolant_pressure.update_traces(
+        name="RL10 Design Report",
+        legendgrouptitle=dict(text=None),
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="hexagon", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(legendgroup="RL10 Design Report", name="Static Pressure"),
+        )
+
+    fig_coolant_pressure.update_traces(
+        name="Long Tubes",
+        legendgrouptitle=dict(text=None),
+        line=dict(color=PYSKYFIRE_RED, dash="solid"),
+        mode="lines",
+        selector=dict(legendgroup="Full Pass", name="Static Pressure"),
+        )
+
+    fig_coolant_pressure.update_traces(
+        name="Test Data",
+        legendgrouptitle=dict(text=None),
+        mode="markers",
+        marker=dict(symbol="circle", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(legendgroup="Test Data", name="Static Pressure"),
+        )
+    group_comparison_legend(
+        fig_coolant_pressure,
+        reference_trace_names={
+            "New System Model",
+            "P&W Simulation",
+            "RTE Model",
+            "RL10 Design Report",
+            "Test Data",
+        },
+        pyskyfire_trace_names={"Long Tubes"},
+    )
+    tab2.add_figure(
+        fig_coolant_pressure,
+        caption=(
+            f"Static coolant pressure compared with {REF_BINDER} and with the "
+            "RL10 Design Report Appendix D, Figure D-3, p. D-4 "
+            f"{REF_DESIGN_REPORT}. Pressure discrepancies are driven chiefly by "
+            "the reconstructed passage area and hydraulic diameter, friction "
+            "and acceleration-loss correlations, and losses at the tube-"
+            "interlacing transition that a one-dimensional model can only "
+            "approximate."
+        ),
+    )
+
+    fig_coolant_pressure_complete = psf.viz.PlotCoolantPressure(cooling_data_b, static = True, stagnation=True)
+    fig_coolant_pressure_complete.update_traces(
+        line=dict(color=PYSKYFIRE_RED, dash="solid"),
+        selector=dict(name="Static Pressure"),
+    )
+    fig_coolant_pressure_complete.update_traces(
+        line=dict(color=PYSKYFIRE_BLUE, dash="solid"),
+        selector=dict(name="Stagnation Pressure"),
+    )
+    fig_coolant_pressure_complete.update_layout(
+        legend=dict(groupclick="toggleitem"),
+    )
+    tab2.add_figure(fig_coolant_pressure_complete)
+
+    # --------- heat flux ----------
+    reference_heat_flux_path = os.path.join(reference_dir, "reference_heat_flux.json")
+    reference_heat_flux_data = load_reference(
+        path=reference_heat_flux_path,
+        prop_key="dQ_dA",
+        excluded_models={"Binder_et_al"},
+    )
+    fig_heat_flux = psf.viz.PlotHeatFlux(*reference_heat_flux_data, cooling_data_b)
+
+    # Update traces and legends
+    fig_heat_flux.update_traces(
+        name="New System Model", # Name on legend
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="diamond", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(name="New System Model"), # which one are you editing
+        )
+
+    fig_heat_flux.update_traces(
+        name="P&W Simulation",
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="triangle-up", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(name="P&W Simulation"),
+        )
+
+    fig_heat_flux.update_traces(
+        name="RTE Model",
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(symbol="square", size=7, color="white", line=dict(color="black", width=1)),
+        selector=dict(name="RTE Model"),
+        )
+
+    fig_heat_flux.update_traces(
+        name="Long Tubes",
+        line=dict(color=PYSKYFIRE_RED, dash="solid"),
+        mode="lines",
+        selector=dict(name="Full Pass"),
+        )
+
+    group_comparison_legend(
+        fig_heat_flux,
+        reference_trace_names={
+            "New System Model",
+            "P&W Simulation",
+            "RTE Model",
+        },
+        pyskyfire_trace_names={"Long Tubes"},
+    )
+
+    tab2.add_figure(
+        fig_heat_flux,
+        caption=(
+            f"Long-tube heat flux compared with the models in {REF_BINDER}, "
+            "including Binder Figure 4.2.4 on p. 57. The throat peak depends "
+            "strongly on the chosen hot-gas heat-transfer correlation, local "
+            "contour curvature, gas properties, and wall temperature, so small "
+            "geometry or operating-point differences are amplified there."
+        ),
+    )
+
+    # ----------- Velocity ----------
+    fig_velocity = psf.viz.PlotVelocity(cooling_data_b)
+
+    fig_velocity.update_traces(
+        name="Pyskyfire",
+        line=dict(color=PYSKYFIRE_RED, dash="solid"),
+        mode="lines",
+        selector=dict(name="Full Pass"),
+        )
+    tab2.add_figure(fig_velocity)
+
+    # ----------- Reynolds number ----------
+    fig_reynolds = psf.viz.PlotReynoldsNumber(
+        thrust_chamber,
+        cooling_data_a,
+        cooling_data_b,
+    )
+    tab2.add_figure(
+        fig_reynolds,
+        caption=(
+            "Combustion-gas and coolant Reynolds numbers along the thrust chamber."
+        ),
+    )
+
+    # ----------- Heat transfer coefficients ----------
+    fig_htc = psf.viz.PlotHeatTransferCoefficient(
+        cooling_data_a,
+        cooling_data_b,
+    )
+    tab2.add_figure(
+        fig_htc,
+        caption=(
+            "Hot-gas-side and coolant-side convective heat transfer coefficients "
+            "along the thrust chamber for both cooling circuits. Both are referred "
+            "to their own wetted area."
+        ),
+    )
+
+    # ----------- Hot-side driving potential ----------
+    # Kept separate from the wall-temperature charts on purpose: T_aw sits at
+    # 2500-3300 K and would flatten the 100-1000 K wall detail there.
+    fig_driving_potential = psf.viz.PlotWallTemperature(
+        cooling_data_b,
+        plot_coolant_bulk=True,
+        plot_coolant_wall=True,
+        plot_interfaces=True,
+        plot_hot=True,
+        plot_recovery=True,
+        plot_combustion=True,
+        thrust_chamber=thrust_chamber,
+        mark_nonconverged=False,
+    )
+    fig_driving_potential.update_layout(title="Temperature Overview — Long Tubes")
+    # Solid rather than the class default dash: with the full stack on one axis the
+    # interface sits right next to the hot wall and reads cleaner unbroken.
+    fig_driving_potential.update_traces(
+        line=dict(dash="solid"),
+        selector=dict(name="Interface 1"),
+    )
+    tab2.add_figure(
+        fig_driving_potential,
+        caption=(
+            "Every temperature in the heat path for the long tubes, cold to hot: "
+            "bulk coolant, coolant-side wall, the silver-insert interface, "
+            "hot-side wall, the recovery temperature, and the combustion gas "
+            "static and total temperatures. The hot-wall-to-recovery gap is the "
+            "driving potential behind the reported h_hot = q''/(T_aw - T_hw). "
+            "T_aw and T_total are both obtained by inverting the equilibrium "
+            "equation of state at the relevant enthalpy and the local static "
+            "pressure. Neither exceeds its chamber value: T_total falls through "
+            "the nozzle because total enthalpy is conserved while the falling "
+            "pressure shifts the equilibrium towards dissociation, so the same "
+            "enthalpy sits at a lower temperature."
+        ),
+    )
+
+    # ----------- Thermal resistance split ----------
+    fig_resistance = psf.viz.PlotThermalResistance(cooling_data_b, mode="share")
+    tab2.add_figure(
+        fig_resistance,
+        caption=(
+            "Share of the total gas-to-coolant thermal resistance carried by the "
+            "hot-gas film, the wall stack, and the coolant film, all referred to "
+            "the hot-gas area so the three sum to the total. The hot-gas film "
+            "dominates, which is why the wall runs far closer to the coolant than "
+            "to the recovery temperature."
+        ),
+    )
+
+    fig_resistance_abs = psf.viz.PlotThermalResistance(
+        cooling_data_b, mode="absolute"
+    )
+    tab2.add_figure(
+        fig_resistance_abs,
+        caption=(
+            "The same split in absolute terms (m²·K/W). The total is at its "
+            "minimum at the throat, which is what puts the peak heat flux there; "
+            "the layer detail is easier to read in the share plot above."
+        ),
+    )
+
+    # Precomputed properties
+    tab3 = report.add_tab("Thrust Chamber Properties")
+    p1 = psf.viz.PlotCoolantArea(thrust_chamber, 1)
+    p2 = psf.viz.PlotHydraulicDiameter(thrust_chamber, 1)
+    p3 = psf.viz.PlotRadiusOfCurvature(thrust_chamber, 1)
+    p4 = psf.viz.PlotdAdxThermalHotGas(thrust_chamber, 1)
+    p5 = psf.viz.PlotdAdxThermalCoolant(thrust_chamber, 1)
+    p6 = psf.viz.PlotdAdxCoolantArea(thrust_chamber, 1)
+    p7 = psf.viz.PlotChannelHeight(thrust_chamber, 1)
+    reference_channel_width = load_channel_width_reference(
+        os.path.join(reference_dir, "reference_channel_width.json")
+    )
+    p8 = psf.viz.PlotChannelWidth(
+        thrust_chamber,
+        circuit_index=1,
+        reference_profiles=reference_channel_width,
+    )
+
+    tab3.add_figure(p1)
+    tab3.add_figure(p2)
+    tab3.add_figure(p3)
+    tab3.add_figure(p4)
+    tab3.add_figure(p5)
+    tab3.add_figure(p6)
+    tab3.add_figure(
+        p7,
+        caption=(
+            "Internal cooling-channel height used by the simulation. It is "
+            f"derived from the digitized RL10 tube outside-height points in "
+            f"RECOP Figure 10, document p. 172 (PDF p. 5) {REF_RECOP}: twice "
+            "the stainless tube-wall thickness is subtracted from the outside "
+            "height, the nozzle-side coordinate is aligned to the modeled "
+            "interlacing manifold and exit, and a shape-preserving spline is "
+            "evaluated on the cooling grid. Differences from the plotted source "
+            "points therefore reflect the OD-to-internal conversion and axial "
+            "alignment as well as scan digitization."
+        ),
+    )
+    tab3.add_figure(
+        p8,
+        caption=(
+            "Calculated full-pass tube OD width compared with the digitized "
+            f"RECOP Figure 10 design points, document p. 172 (PDF p. 5) "
+            f"{REF_RECOP}. Width is calculated as the hot-side chord of the "
+            "modeled angular tube sector; deviations therefore show the effect "
+            "of reconstructing the circumferential passage arrangement rather "
+            "than directly prescribing the published width curve."
+        ),
+    )
+
+    # -------------- Thermal Gradient Charts ---------------
+    tab5 = report.add_tab("Thermal Gradient")
+    contour_start = float(thrust_chamber.contour.xs[0])
+    contour_throat = float(thrust_chamber.contour.x_t)
+    contour_exit = float(thrust_chamber.contour.xs[-1])
+    chamber_gradient = psf.viz.PlotTemperatureProfile(
+        cooling_data_b,
+        thrust_chamber,
+        1,
+        0.5 * (contour_start + contour_throat),
+    )
+    throat_gradient = psf.viz.PlotTemperatureProfile(
+        cooling_data_b, thrust_chamber, 1, contour_throat
+    )
+    nozzle_gradient = psf.viz.PlotTemperatureProfile(
+        cooling_data_b,
+        thrust_chamber,
+        1,
+        0.5 * (contour_throat + contour_exit),
+    )
+    tab5.add_figure(chamber_gradient)
+    tab5.add_figure(throat_gradient)
+    tab5.add_figure(nozzle_gradient)
+
+    # -------------- Combustion Transport ----------------
+    tab6 = report.add_tab("Combustion")
+    combustion_results = (cooling_data_a, cooling_data_b)
+    for prop in ("M", "gamma", "T", "p", "h", "cp", "k", "mu", "Pr", "rho", "a", "v"):
+        tab6.add_figure(
+            psf.viz.PlotTransportProperty(
+                thrust_chamber.combustion_transport,
+                prop=prop,
+                results=combustion_results,
+            )
+        )
+
+
+# =====================
+# Engine cycle tabs
+# =====================
+
+# Ordered map from Binder et al. engine-station names to the pyskyfire cycle
+# stations they correspond to. The cycle network carries stations the reference
+# table has no entry for (the regen interstage, the ducts, the injector exits);
+# those are dropped from the comparison rather than plotted against nothing.
+#
+# The table takes each seal/gearbox bleed *at* the station it names, so its
+# interstage and discharge mass flows are post-bleed. The matching pyskyfire
+# stations are therefore the ones downstream of the splitter, not the pump
+# outlets themselves. Pressure and temperature are the same either way; a
+# splitter is isobaric and isothermal.
+FUEL_STATION_MAP = {
+    "Fuel Tank": "fu_engine_in",
+    "Fuel Pump Inlet": "stage1_pump_in",
+    "Fuel Pump Interstage": "pump_interstage2",
+    "Fuel Pump Discharge": "regen_duct_in",
+    "Cooling Jacket Inlet": "regen_in",
+    "Cooling Jacket Exit": "regen_out",
+    "Turbine Inlet": "turbine_in",
+    "Turbine Housing Exit": "turbine_out",
+    "Fuel Injector Plenum": "fu_injector_plenum",
+}
+
+OX_STATION_MAP = {
+    "Oxygen Tank": "ox_engine_in",
+    "Ox Pump Inlet": "ox_pump_in",
+    "Ox Pump Discharge": "ox_duct_in",
+    "Ox Injector Plenum": "ox_injector_plenum",
+}
+
+# Reference-table key for each station name above.
+FUEL_REFERENCE_KEYS = {
+    "Fuel Tank": "fuel_tank",
+    "Fuel Pump Inlet": "fuel_pump_inlet",
+    "Fuel Pump Interstage": "fuel_pump_interstage",
+    "Fuel Pump Discharge": "fuel_pump_discharge",
+    "Cooling Jacket Inlet": "cooling_jacket_inlet",
+    "Cooling Jacket Exit": "cooling_jacket_exit",
+    "Turbine Inlet": "turbine_inlet",
+    "Turbine Housing Exit": "turbine_housing_exit",
+    "Fuel Injector Plenum": "fuel_injector_plenum",
+}
+
+OX_REFERENCE_KEYS = {
+    "Oxygen Tank": "oxygen_tank",
+    "Ox Pump Inlet": "ox_pump_inlet",
+    "Ox Pump Discharge": "ox_pump_discharge",
+    "Ox Injector Plenum": "ox_injector_plenum",
+}
+
+STATION_REFERENCE_NAME = "New System Model"
+STATION_PYSKYFIRE_NAME = "Pyskyfire"
+
+# Pyskyfire station states are stagnation states, so they are compared against
+# the reference total pressure and total temperature, not the static values.
+STATION_PROPERTIES = (
+    ("p_bar", "Total pressure [bar]"),
+    ("T", "Total temperature [K]"),
+    ("mdot", "Mass flow [kg/s]"),
+)
+
+STATION_DATA_NOTE = (
+    "Cycle stations compared against the RL10A-3-3A engine station data in "
+    "Binder et al. Pyskyfire station states are stagnation states, so they are "
+    "plotted against the reference total pressure and total temperature. Only "
+    "the stations the reference table lists are shown; the cycle also solves "
+    "the regen interstage, the duct inlets, and the injector exits, which have "
+    "no reference counterpart.\n\n"
+    "The cycle is fed the station table's own injector-face mass flows, so the "
+    "mass-flow traces are a check on the leakage and bypass split fractions "
+    "rather than an independent prediction. The thrust chamber, however, was "
+    "sized at a different balance: Tables 2.4.1 and 2.5.1 (2.7093 kg/s fuel, "
+    "MR 5.255) against the station table's 2.7587 kg/s and MR 5.056. The gas- "
+    "side heat load therefore belongs to a slightly leaner, higher-MR chamber "
+    "than the flow being pumped through it, which is the main reason the "
+    "jacket-exit temperature runs hot against the reference."
+)
+
+CYCLE_SCOPE_NOTE = (
+    "These tabs cover the engine cycle balance only. The cycle is closed "
+    "around the same thrust chamber as the regenerative-cooling validation, "
+    "but it solves for its own cooling-jacket inlet state instead of being "
+    "given the measured one from Binder et al. Its jacket results therefore "
+    "differ slightly from the Cooling Data tab and are not plotted here, to "
+    "keep a single set of validation curves in the report. They are still "
+    "saved: sizer_results.pkl carries a full RegenResult under "
+    "block_results['regen_half_pass'] and block_results['regen_full_pass'], "
+    "which can be passed to the same psf.viz plots used in the regen tabs."
+)
+
+
+def _jacket_comparison(sizer_results, regen_results):
+    """Tabulate the jacket boundary states of the two runs side by side."""
+    stations = sizer_results.stations
+    rows = {
+        "Cycle: jacket inlet pressure [bar]": stations["regen_in"].p * 1e-5,
+        "Cycle: jacket inlet temperature [K]": stations["regen_in"].T,
+        "Cycle: jacket outlet pressure [bar]": stations["regen_out"].p * 1e-5,
+        "Cycle: jacket outlet temperature [K]": stations["regen_out"].T,
+        "Cycle: jacket mass flow [kg/s]": stations["regen_in"].mdot,
+    }
+
+    if regen_results is None:
+        return rows
+
+    regen_params = regen_results.params
+    full_pass = regen_results.cooling_data[-1]
+    rows.update({
+        "Validation: jacket inlet pressure [bar]": regen_params["p_coolant_in"] * 1e-5,
+        "Validation: jacket inlet temperature [K]": regen_params["T_coolant_in"],
+        "Validation: jacket outlet pressure [bar]": float(full_pass.p_stagnation[-1]) * 1e-5,
+        "Validation: jacket outlet temperature [K]": float(full_pass.T_stagnation[-1]),
+        "Validation: jacket mass flow [kg/s]": regen_params["mdot_fu"],
+    })
+    return rows
+
+
+def _cycle_summary(sizer_results):
+    """Key converged scalars of the cycle balance."""
+    signals = sizer_results.signals
+    stations = sizer_results.stations
+    return {
+        "Stage-1 fuel pump power [kW]": signals["P_stage1_fuel_pump"] * 1e-3,
+        "Stage-2 fuel pump power [kW]": signals["P_stage2_fuel_pump"] * 1e-3,
+        "Oxidizer pump power [kW]": signals["P_ox_pump"] * 1e-3,
+        "Turbine shaft power [kW]": signals["P_required"] * 1e-3,
+        "Fuel pump discharge pressure [bar]": stations["stage2_pump_out"].p * 1e-5,
+        "Turbine inlet pressure [bar]": stations["turbine_in"].p * 1e-5,
+        "Turbine inlet temperature [K]": stations["turbine_in"].T,
+        "Turbine outlet pressure [bar]": stations["turbine_out"].p * 1e-5,
+        "Turbine outlet temperature [K]": stations["turbine_out"].T,
+        "Fuel injector inlet pressure [bar]": stations["fu_injector_plenum"].p * 1e-5,
+        "Oxidizer pump discharge pressure [bar]": stations["ox_pump_out"].p * 1e-5,
+        "Chamber pressure [bar]": stations["fu_chamber_in"].p * 1e-5,
+        "Fuel flow to chamber [kg/s]": stations["fu_chamber_in"].mdot,
+        "Oxidizer flow to chamber [kg/s]": stations["ox_chamber_in"].mdot,
+        "Mixture ratio at injector [-]": (
+            stations["ox_chamber_in"].mdot / stations["fu_chamber_in"].mdot
+        ),
+    }
+
+
+def load_station_reference(path, reference_keys, group):
+    """Read one propellant side of the Binder et al. engine station table.
+
+    Returns a dict keyed by the display names of ``reference_keys``, holding
+    the total pressure (in bar and Pa), total temperature, and mass flow. A
+    ``null`` mass flow, which the table uses for the tank stations, becomes NaN
+    so the trace breaks there rather than dropping to zero.
+    """
+    with open(path, "r", encoding="utf-8") as reference_file:
+        data = json.load(reference_file)[group]
+
+    stations = {}
+    for display_name, reference_key in reference_keys.items():
+        entry = data[reference_key]
+        mdot = entry["mass_flow"]
+        stations[display_name] = {
+            "p": float(entry["total_pressure"]),
+            "p_bar": float(entry["total_pressure"]) * 1e-5,
+            "T": float(entry["total_temperature"]),
+            "mdot": float("nan") if mdot is None else float(mdot),
+        }
+    return stations
+
+
+def station_dict_from_cycle(stations, station_map):
+    """Re-key the converged cycle stations by their reference station names."""
+    return {
+        display_name: {
+            "p": float(stations[cycle_name].p),
+            "p_bar": float(stations[cycle_name].p) * 1e-5,
+            "T": float(stations[cycle_name].T),
+            "mdot": float(stations[cycle_name].mdot),
+        }
+        for display_name, cycle_name in station_map.items()
+    }
+
+
+def style_station_comparison(figure):
+    """Match the comparison styling used by the regen validation figures."""
+    figure.update_traces(
+        line=dict(color="black"),
+        mode="lines+markers",
+        marker=dict(
+            symbol="diamond",
+            size=7,
+            color="white",
+            line=dict(color="black", width=1),
+        ),
+        selector=dict(name=STATION_REFERENCE_NAME),
+    )
+    figure.update_traces(
+        line=dict(color=PYSKYFIRE_RED),
+        mode="lines+markers",
+        marker=dict(symbol="circle", size=7, color=PYSKYFIRE_RED),
+        selector=dict(name=STATION_PYSKYFIRE_NAME),
+    )
+    return figure
+
+
+def add_station_comparison_figures(tab, cycle_stations, reference_stations, side):
+    """Add the pressure, temperature, and mass-flow comparisons for one side."""
+    station_list = list(reference_stations)
+    station_dicts = [cycle_stations, reference_stations]
+    labels = [STATION_PYSKYFIRE_NAME, STATION_REFERENCE_NAME]
+
+    for property_name, ylabel in STATION_PROPERTIES:
+        figure = psf.viz.PlotStationProperty(
+            station_dicts=station_dicts,
+            station_list=station_list,
+            property_name=property_name,
+            labels=labels,
+            title=f"{side} — {ylabel.split(' [')[0]}",
+            ylabel=ylabel,
+        )
+        style_station_comparison(figure)
+        caption = None
+        if side == "Oxidizer side" and property_name == "T":
+            caption = (
+                "The oxidizer-injector-plenum temperature discrepancy is likely "
+                "a model-scope difference. The reference model appears to account "
+                "for heat transfer from the warmer hydrogen to the oxygen within "
+                "the injector, whereas Pyskyfire currently treats the propellant "
+                "paths independently and does not model this injector heat "
+                "exchange."
+            )
+        tab.add_figure(figure, caption=caption)
+
+
+def add_cycle_tabs(report, sizer_results, regen_results=None):
+    """Add the engine-cycle tabs. No regen curves are drawn here."""
+    params = sizer_results.params
+    stations = sizer_results.stations
+
+    # ---------------- Engine Cycle ------------------
+    tab_cycle = report.add_tab("Engine Cycle")
+    tab_cycle.add_text(CYCLE_SCOPE_NOTE)
+    tab_cycle.add_table(
+        params,
+        caption="Cycle Input Parameters",
+        key_title="Parameter",
+        value_title="Value",
+        precision=4,
+    )
+    tab_cycle.add_table(
+        _cycle_summary(sizer_results),
+        caption="Converged Cycle Balance",
+        key_title="Quantity",
+        value_title="Value",
+        precision=4,
+    )
+    tab_cycle.add_table(
+        _jacket_comparison(sizer_results, regen_results),
+        caption=(
+            "Cooling-jacket boundary states: the cycle solution against the "
+            "prescribed validation case"
+        ),
+        key_title="Quantity",
+        value_title="Value",
+        precision=4,
+    )
+
+    # ---------------- Station Data ------------------
+    tab_stations = report.add_tab("Station Data")
+    tab_stations.add_text(STATION_DATA_NOTE)
+
+    station_reference_path = os.path.join(
+        reference_dir, "reference_station_data.json"
+    )
+    fuel_reference = load_station_reference(
+        station_reference_path,
+        FUEL_REFERENCE_KEYS,
+        "engine_condition_fuel",
+    )
+    ox_reference = load_station_reference(
+        station_reference_path,
+        OX_REFERENCE_KEYS,
+        "engine_condition_oxidizer",
+    )
+    fuel_cycle = station_dict_from_cycle(stations, FUEL_STATION_MAP)
+    ox_cycle = station_dict_from_cycle(stations, OX_STATION_MAP)
+
+    add_station_comparison_figures(
+        tab_stations, fuel_cycle, fuel_reference, "Fuel side"
+    )
+    add_station_comparison_figures(
+        tab_stations, ox_cycle, ox_reference, "Oxidizer side"
+    )
+
+    tab_stations.add_figure(
+        psf.viz.PlotPTDiagram(
+            station_dicts=[fuel_cycle, fuel_reference],
+            station_list=list(fuel_reference),
+            fluid_name=params["coolprop_fu"],
+            title="Fuel-side P-T path",
+            labels=[STATION_PYSKYFIRE_NAME, STATION_REFERENCE_NAME],
+            scale="linear",
+        ),
+        caption=(
+            "Fuel-side path relative to the hydrogen saturation line. The "
+            "expander cycle takes the hydrogen supercritical in the pump and "
+            "keeps it there through the jacket and turbine."
+        ),
+    )
+    tab_stations.add_figure(
+        psf.viz.PlotPTDiagram(
+            station_dicts=[ox_cycle, ox_reference],
+            station_list=list(ox_reference),
+            fluid_name=params["coolprop_ox"],
+            title="Oxidizer-side P-T path",
+            labels=[STATION_PYSKYFIRE_NAME, STATION_REFERENCE_NAME],
+            scale="linear",
+        ),
+        caption="Oxidizer-side path relative to the oxygen saturation line.",
+    )
+
+    tab_stations.add_figure(
+        psf.viz.PlotMassFlowSankey(
+            engine_network=sizer_results.net,
+            title="RL10A-3-3A Mass Flow",
+        ),
+        caption=(
+            "Converged mass flow through the cycle. The gearbox dump is the "
+            "only stream that leaves the engine; the shaft recirculation "
+            "streams return to the fuel and oxidizer pump inlets."
+        ),
+    )
+
+    tab_stations.add_figure(
+        psf.viz.PlotResidualHistory(sizer_results.residuals),
+        caption="Maximum relative residual per fixed-point iteration.",
+    )
+
+    # ---------------- Engine Network ------------------
+    tab_network = report.add_tab("Engine Network")
+    layout_path = os.path.join(script_dir, NETWORK_LAYOUT_FILENAME)
+    viewer = psf.viz.make_network_viz(
+        sizer_results.net,
+        title="RL10A-3-3A engine cycle",
+        layout=layout_path if os.path.exists(layout_path) else None,
+    )
+    viewer.save_html(path=os.path.join(script_dir, "network.html"))
+    tab_network.add_iframe(
+        viewer.data_url,
+        caption="Editable engine-cycle schematic",
+        height="900px",
+    )
+
+
+# =====
+# Main
+# =====
+
+def main():
+    regen_path = os.path.join(script_dir, REGEN_RESULTS_FILENAME)
+    sizer_path = os.path.join(script_dir, SIZER_RESULTS_FILENAME)
+
+    regen_results = (
+        psf.common.Results.load(regen_path)
+        if os.path.exists(regen_path)
+        else None
+    )
+    sizer_results = (
+        psf.common.Results.load(sizer_path)
+        if os.path.exists(sizer_path)
+        else None
+    )
+
+    if regen_results is None and sizer_results is None:
+        raise FileNotFoundError(
+            f"Neither {REGEN_RESULTS_FILENAME} nor {SIZER_RESULTS_FILENAME} "
+            f"was found in {script_dir}. Run regen_sim.py and/or sizer_sim.py "
+            "first."
+        )
+
+    report = psf.viz.Report("RL10A-3-3A")
+
+    if regen_results is not None:
+        print(f"Adding regen tabs from {regen_path}")
+        add_regen_tabs(report, regen_results)
+    else:
+        print(f"{REGEN_RESULTS_FILENAME} not found; skipping the regen tabs.")
+
+    if sizer_results is not None:
+        print(f"Adding cycle tabs from {sizer_path}")
+        add_cycle_tabs(report, sizer_results, regen_results)
+    else:
+        print(f"{SIZER_RESULTS_FILENAME} not found; skipping the cycle tabs.")
+
+    add_references_tab(report)
+
+    out_path = os.path.join(script_dir, REPORT_FILENAME)
+    report.save_html(out_path)
+    print(f"Report saved to {out_path}")
+
+
+if __name__ == "__main__":
+    main()

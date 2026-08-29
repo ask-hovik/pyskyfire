@@ -30,7 +30,9 @@ The complete source code is available in `examples/minimal/minimal_sim.py`. Use 
 
 ## Documentation structure
 
-The documentation follows the [Diátaxis](https://diataxis.fr/) framework. Each section serves a different purpose.
+The documentation is organised around the [Diátaxis](https://diataxis.fr/)
+framework, with Validation added as a first-class section. Each section serves
+a different purpose.
 
 ### Tutorials
 
@@ -42,6 +44,14 @@ Tutorials are guided, runnable introductions to a complete workflow.
 ### Howto
 
 Howtos guide you through achieving a specific goal. For example hoe to use pyskyfire to find an optimum mixture ratio: {doc}`Mixture ratio optimisation <howto/mixture-ratio-optimisation>`  
+
+### Validation
+
+Validation reports compare Pyskyfire analyses with published engine data.
+
+* {doc}`RL10A-3-3A <validation/rl10a-3-3a>`
+  Reconstruction and validation of the RL10A-3-3A thrust chamber,
+  regenerative cooling system, and expander cycle.
 
 ### Explanations
 
@@ -55,6 +65,9 @@ Explanations describe the engineering models, code structure, and analysis metho
 
 * {doc}`Regenerative Cooling <explanations/regenerative-cooling-explanation>`
   Explanation of the regenerative-cooling model, solver structure, heat-transfer paths, and governing quantities.
+
+* {doc}`Specific Impulse and Thrust Coefficient <explanations/specific-impulse>`
+  Explanation of the vacuum, optimum-expansion, ambient, and sea-level performance figures, and the conditions under which each applies.
 
 * {doc}`The Moody Diagram <explanations/moody-diagram>`
   Explanation of the friction-factor model used for cooling-channel pressure loss.
@@ -112,6 +125,15 @@ howto/mixture-ratio-optimisation
 ```
 
 ```{toctree}
+:caption: Validation
+:maxdepth: 1
+:titlesonly:
+:hidden:
+
+validation/rl10a-3-3a
+```
+
+```{toctree}
 :caption: Explanations
 :maxdepth: 1
 :titlesonly:
@@ -120,6 +142,7 @@ howto/mixture-ratio-optimisation
 explanations/capabilities
 explanations/package-structure
 explanations/regenerative-cooling-explanation
+explanations/specific-impulse
 explanations/moody-diagram
 explanations/rao-nozzle
 ```

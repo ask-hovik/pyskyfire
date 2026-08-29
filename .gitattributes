@@ -2,3 +2,7 @@
 examples/**/*.html linguist-generated=true
 validation/**/*.html  linguist-generated=true
 docs/_static/explanation-artifacts/*.html linguist-generated=true
+
+# Third-party JavaScript distributed with pyskyfire (excluded from language stats)
+docs/_static/demos/plotly.min.js linguist-vendored=true
+src/pyskyfire/viz/assets/*.js linguist-vendored=true

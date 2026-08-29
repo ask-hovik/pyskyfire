@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "name": "RL10A-3-3A tube OD width design points",
+  "source": {
+    "citation": "Tomsik, T. M., 'A Hydrogen-Oxygen Rocket Engine Coolant Passage Design Program (RECOP) for Fluid-Cooled Thrust Chambers and Nozzles', 1994, Figure 10, p. 172 (NTRS 19950002773).",
+    "url": "https://ntrs.nasa.gov/api/citations/19950002773/downloads/19950002773.pdf",
+    "figure": "Figure 10: RL10A-3-3A Tube Width and Height Profile",
+    "document_page": 172,
+    "pdf_page": 5
+  },
+  "units": {
+    "x": "m",
+    "tube_width_od": "m",
+    "x_source": "in",
+    "tube_width_od_source": "in"
+  },
+  "coordinate_system": {
+    "x": "Axial position relative to the throat; positive downstream.",
+    "tube_width_od": "Outside dimension labelled TUBE WIDTH (OD) in Figure 10."
+  },
+  "conversion": "Digitized inch coordinates are retained and multiplied by exactly 0.0254 m/in for the SI arrays.",
+  "notes": [
+    "The points are the square engine-design symbols, not the RECOP analysis line.",
+    "The digitized width has two overlapping branches at the tube-interleaving transition. They are retained separately instead of being sorted into one nonphysical curve.",
+    "The pre-interleaving branch describes the 180-tube region; the post-interleaving branch describes the 360-tube region shared by the interspersed long and short tubes.",
+    "The source is a low-resolution scan. Values near the throat and the interleaving transition carry visibly greater digitization uncertainty."
+  ],
+  "series": {
+    "pre_interleaving_180_tube_region": {
+      "name": "RECOP design points: 180-tube region",
+      "x_in": [
+        -13.071739748446031,
+        -6.689921706325727,
+        -5.8699126399336095,
+        -4.960968413611877,
+        -4.2348887061951075,
+        -3.418721331376627,
+        -2.878195326966363,
+        -1.879547602400283,
+        -0.8785948628900222,
+        0.03342271669061603,
+        0.6763298015382198,
+        1.8755138262479747,
+        6.379705111754813,
+        11.246167912655299
+      ],
+      "tube_width_od_in": [
+        0.18300666149318873,
+        0.1691880969028282,
+        0.16601293881721996,
+        0.1565201189387711,
+        0.14597851726072025,
+        0.13227712426335558,
+        0.11331837634747327,
+        0.09961314165853502,
+        0.09222364791665061,
+        0.0911518159676068,
+        0.10271722845003112,
+        0.13848145615477397,
+        0.22996557844350018,
+        0.31407365291084965
+      ],
+      "x": [
+        -0.3320221896105292,
+        -0.16992401134067345,
+        -0.14909578105431368,
+        -0.12600859770574166,
+        -0.10756617313735573,
+        -0.08683552181696633,
+        -0.07310616130494563,
+        -0.047740509100967186,
+        -0.02231630951740656,
+        0.000848937003941647,
+        0.01717877695907078,
+        0.04763805118669855,
+        0.1620445098385722,
+        0.2856526649814446
+      ],
+      "tube_width_od": [
+        0.004648369201926994,
+        0.004297377661331836,
+        0.004216728645957387,
+        0.003975611021044786,
+        0.003707854338422294,
+        0.003359838956289232,
+        0.002878286759225821,
+        0.0025301737981267896,
+        0.0023424806570829255,
+        0.0023152561255772126,
+        0.0026090176026307903,
+        0.003517428986331259,
+        0.005841125692464905,
+        0.00797747078393558
+      ]
+    },
+    "post_interleaving_360_tube_region": {
+      "name": "RECOP design points: 360-tube region",
+      "x_in": [
+        12.195257815921511,
+        18.325252975390125,
+        25.731073906462502,
+        31.581586003949266,
+        37.613041774554176,
+        44.83100398767586,
+        47.38841806824381
+      ],
+      "tube_width_od_in": [
+        0.16457998786025457,
+        0.21076672480426584,
+        0.25271607594255896,
+        0.28311922305629605,
+        0.309308034513757,
+        0.336524498467165,
+        0.34383907922336354
+      ],
+      "x": [
+        0.3097595485244064,
+        0.4654614255749092,
+        0.6535692772241475,
+        0.8021722845003113,
+        0.9553712610736761,
+        1.138707501286967,
+        1.203665818933393
+      ],
+      "tube_width_od": [
+        0.004180331691650466,
+        0.005353474810028352,
+        0.006418988328940997,
+        0.007191228265629919,
+        0.007856424076649427,
+        0.008547722261065991,
+        0.008733512612273434
+      ]
+    }
+  }
+}

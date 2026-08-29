@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "nodes": {
+    "block:MassFlowMergerBlock:29fdbbcfa48a": {
+      "x": 410,
+      "y": 990
+    },
+    "block:MassFlowMergerBlock:b981cda1ad79": {
+      "x": 1100,
+      "y": 200
+    },
+    "block:MassFlowMergerBlock:e8123b8a0f1b": {
+      "x": 100,
+      "y": 110
+    },
+    "block:MassFlowSplitterBlock:51e7d853e28d": {
+      "x": -90,
+      "y": 310
+    },
+    "block:MassFlowSplitterBlock:ae5ded519744": {
+      "x": 410,
+      "y": 160
+    },
+    "block:MassFlowSplitterBlock:af64d657a98d": {
+      "x": 1030,
+      "y": 380
+    },
+    "block:MassFlowSplitterBlock:c99911eb1549": {
+      "x": 410,
+      "y": 870
+    },
+    "block:PumpBlock:75ca9584c5fb": {
+      "x": 790,
+      "y": 220
+    },
+    "block:PumpBlock:936d6e6d0c9c": {
+      "x": 220,
+      "y": 300
+    },
+    "block:PumpBlock:f4588e80f6d3": {
+      "x": 220,
+      "y": 470
+    },
+    "block:RegenBlock:4d86ee7ea27b": {
+      "x": 110,
+      "y": 580
+    },
+    "block:RegenBlock:5485826bc71b": {
+      "x": 110,
+      "y": 730
+    },
+    "block:SimpleDuctBlock:2ef1ccd58c76": {
+      "x": 410,
+      "y": 730
+    },
+    "block:SimpleDuctBlock:8692b341aae4": {
+      "x": 1020,
+      "y": 1120
+    },
+    "block:SimpleDuctBlock:aabdab0f352f": {
+      "x": 410,
+      "y": 1120
+    },
+    "block:SimpleDuctBlock:c6db433cec98": {
+      "x": 410,
+      "y": 580
+    },
+    "block:SimpleDuctBlock:d97fb962edfc": {
+      "x": 1020,
+      "y": 570
+    },
+    "block:SimpleDuctBlock:f2e1490f4aea": {
+      "x": 1020,
+      "y": 1040
+    },
+    "block:TransmissionBlock:b2bc78082500": {
+      "x": 790,
+      "y": 370
+    },
+    "block:TurbineBlock:e0b3d25e4d60": {
+      "x": 780,
+      "y": 930
+    },
+    "source:station:5a8d3fa73f0b": {
+      "x": 1110,
+      "y": 20
+    },
+    "source:station:fddc455c5427": {
+      "x": 116,
+      "y": 20
+    }
+  },
+  "edges": {}
+}

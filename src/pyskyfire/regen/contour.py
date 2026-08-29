@@ -17,6 +17,7 @@ References:
 
 import numpy as np
 import warnings
+from scipy.interpolate import CubicSpline
 from scipy.optimize import minimize_scalar, root_scalar
 
 import os
@@ -37,15 +38,29 @@ class Contour:
         Corresponding wall radii [m].
     name : str, optional
         Identifier for this contour.
+    chamber_angle : float, optional
+        Positive wall angle on the chamber side of the throat [rad]. The
+        corresponding converging-wall slope is ``-tan(chamber_angle)``. When
+        omitted, the chamber-side spline endpoint is unconstrained.
+    nozzle_angle : float, optional
+        Positive wall angle on the nozzle side of the throat [rad]. The
+        corresponding diverging-wall slope is ``tan(nozzle_angle)``. When
+        omitted, the nozzle-side spline endpoint is unconstrained.
 
     Attributes
     ----------
     xs : ndarray
-        Axial coordinates defining the wall line [m].
+        Spline knots defining the wall line [m]. This includes an interpolated
+        throat at ``x=0`` when the input did not provide one.
     rs : ndarray
-        Radial coordinates corresponding to `xs` [m].
-    _dr_dx : ndarray
-        Precomputed derivative `dr/dx` for fast interpolation.
+        Wall radii corresponding to ``xs`` [m].
+    input_xs, input_rs : ndarray
+        Original input points, unchanged by throat insertion.
+    _converging_spline, _diverging_spline : CubicSpline
+        Independently clamped cubic splines meeting at the throat with the
+        optional prescribed chamber- and nozzle-side slopes.
+    chamber_angle, nozzle_angle : float or None
+        Optional wall angles at the throat [rad].
     name : str or None
         Optional descriptive name.
     x_t, r_t, A_t : float
@@ -68,30 +83,185 @@ class Contour:
     ContourToroidalAerospike : Dual-wall variant for toroidal aerospikes.
     """
 
-    def __init__(self, xs, rs, name = None):
+    def __init__(
+        self,
+        xs,
+        rs,
+        name=None,
+        chamber_angle=None,
+        nozzle_angle=None,
+    ):
+        input_xs = np.asarray(xs, dtype=float)
+        input_rs = np.asarray(rs, dtype=float)
+        if input_xs.ndim != 1 or input_rs.ndim != 1:
+            raise ValueError("contour coordinates must be one-dimensional")
+        if input_xs.size != input_rs.size or input_xs.size < 3:
+            raise ValueError("contour xs and rs must have equal length >= 3")
+        if not np.all(np.isfinite(input_xs)) or not np.all(np.isfinite(input_rs)):
+            raise ValueError("contour coordinates must be finite")
+        if not np.all(np.diff(input_xs) > 0.0):
+            raise ValueError("contour xs must increase strictly")
+        if not input_xs[0] < 0.0 < input_xs[-1]:
+            raise ValueError("contour must span the throat location x=0")
 
-        self.xs = xs
-        self.rs = rs
-        self._dr_dx = np.gradient(rs, xs)
+        chamber_angle = (
+            None if chamber_angle is None else float(chamber_angle)
+        )
+        nozzle_angle = None if nozzle_angle is None else float(nozzle_angle)
+        for parameter, angle in (
+            ("chamber_angle", chamber_angle),
+            ("nozzle_angle", nozzle_angle),
+        ):
+            if angle is None:
+                continue
+            if not np.isfinite(angle):
+                raise ValueError(f"{parameter} must be finite")
+            if not 0.0 <= angle < np.pi / 2.0:
+                raise ValueError(
+                    f"{parameter} must be in the range [0, pi/2) radians"
+                )
+
+        self.input_xs = input_xs.copy()
+        self.input_rs = input_rs.copy()
         self.name = name
+        self.chamber_angle = chamber_angle
+        self.nozzle_angle = nozzle_angle
 
-    def __setattr__(self, name, value):
-        # If the user tries to set 'xs' or 'rs', we need to recalculate self.dr_dx
-        if name == "xs" and hasattr(self, "rs"):
-            self._dr_dx = np.gradient(self.rs, value)
+        throat_indices = np.flatnonzero(input_xs == 0.0)
+        if throat_indices.size:
+            throat_index = int(throat_indices[0])
+            spline_xs = input_xs.copy()
+            spline_rs = input_rs.copy()
+        else:
+            warnings.warn(
+                "the throat radius is not defined by the contour at x=0; "
+                "interpolating a throat point from the three closest input "
+                "points",
+                UserWarning,
+                stacklevel=2,
+            )
+            closest = np.argsort(np.abs(input_xs), kind="stable")[:3]
+            closest = closest[np.argsort(input_xs[closest])]
+            throat_fit = np.polynomial.Polynomial.fit(
+                input_xs[closest],
+                input_rs[closest],
+                deg=2,
+            )
+            throat_radius = float(throat_fit(0.0))
+            if not np.isfinite(throat_radius) or throat_radius <= 0.0:
+                raise ValueError("interpolated throat radius must be positive")
 
-        elif name == "rs" and hasattr(self, "xs"):
-            self._dr_dx = np.gradient(value, self.xs)
+            throat_index = int(np.searchsorted(input_xs, 0.0))
+            spline_xs = np.insert(input_xs, throat_index, 0.0)
+            spline_rs = np.insert(input_rs, throat_index, throat_radius)
 
-        super(Contour, self).__setattr__(name, value)
+        self.xs = spline_xs
+        self.rs = spline_rs
+        self._throat_index = throat_index
+        self._build_splines()
+
+    @staticmethod
+    def _endpoint_slope(xs, rs, *, at_start):
+        """Estimate an outer-boundary slope from up to three nearby points."""
+        count = min(3, len(xs))
+        sample = slice(0, count) if at_start else slice(len(xs) - count, None)
+        fit = np.polynomial.Polynomial.fit(
+            xs[sample],
+            rs[sample],
+            deg=count - 1,
+        )
+        endpoint = xs[0] if at_start else xs[-1]
+        return float(fit.deriv()(endpoint))
+
+    def _build_splines(self):
+        """Build splines sharing the throat value with independent slopes."""
+        # Preserve an explicitly cylindrical leading section exactly. A single
+        # C2 spline across its transition into the contraction otherwise rings
+        # above the supplied chamber radius before turning toward the throat.
+        radius_tolerance = max(
+            np.finfo(float).eps * max(1.0, abs(self.rs[0])) * 16.0,
+            1.0e-14,
+        )
+        equal_to_inlet = np.isclose(
+            self.rs[: self._throat_index],
+            self.rs[0],
+            rtol=0.0,
+            atol=radius_tolerance,
+        )
+        unequal = np.flatnonzero(~equal_to_inlet)
+        self._converging_start_index = (
+            max(0, int(unequal[0]) - 1) if unequal.size else 0
+        )
+
+        left_x = self.xs[
+            self._converging_start_index : self._throat_index + 1
+        ]
+        left_r = self.rs[
+            self._converging_start_index : self._throat_index + 1
+        ]
+        right_x = self.xs[self._throat_index :]
+        right_r = self.rs[self._throat_index :]
+        if left_x.size < 2 or right_x.size < 2:
+            raise ValueError("contour needs at least one point on each side of x=0")
+
+        inlet_slope = (
+            0.0
+            if self._converging_start_index > 0
+            else self._endpoint_slope(left_x, left_r, at_start=True)
+        )
+        exit_slope = self._endpoint_slope(right_x, right_r, at_start=False)
+        chamber_throat_bc = (
+            "not-a-knot"
+            if self.chamber_angle is None
+            else (1, -np.tan(self.chamber_angle))
+        )
+        nozzle_throat_bc = (
+            "not-a-knot"
+            if self.nozzle_angle is None
+            else (1, np.tan(self.nozzle_angle))
+        )
+        self._converging_spline = CubicSpline(
+            left_x,
+            left_r,
+            bc_type=((1, inlet_slope), chamber_throat_bc),
+            extrapolate=False,
+        )
+        self._diverging_spline = CubicSpline(
+            right_x,
+            right_r,
+            bc_type=(nozzle_throat_bc, (1, exit_slope)),
+            extrapolate=False,
+        )
+        # Retain the old private array for code that inspects it directly.
+        self._dr_dx = np.asarray(self.dr_dx(self.xs), dtype=float)
+
+    def _evaluate_spline(self, x, derivative=0):
+        """Evaluate the appropriate throat-side spline without extrapolation."""
+        values = np.asarray(x, dtype=float)
+        clipped = np.clip(values, self.xs[0], self.xs[-1])
+        result = np.empty_like(clipped, dtype=float)
+        cylindrical = clipped < self.xs[self._converging_start_index]
+        if derivative == 0:
+            result[cylindrical] = self.rs[0]
+        else:
+            result[cylindrical] = 0.0
+        converging = (~cylindrical) & (clipped <= 0.0)
+        result[converging] = self._converging_spline(
+            clipped[converging], derivative
+        )
+        diverging = clipped > 0.0
+        result[diverging] = self._diverging_spline(
+            clipped[diverging], derivative
+        )
+        return float(result) if result.ndim == 0 else result
     
     @property
     def x_t(self):
-        return self.xs[np.argmin(self.rs)]
+        return 0.0
 
     @property
     def r_t(self):
-        return min(self.rs)
+        return float(self.r(0.0))
 
     @property
     def A_t(self):
@@ -99,11 +269,11 @@ class Contour:
 
     @property
     def r_e(self):
-        return self.rs[-1]
+        return float(self.r(self.xs[-1]))
     
     @property
     def r_c(self):
-        return self.rs[0]
+        return float(self.r(self.xs[0]))
     
     @property
     def A_e(self):
@@ -138,9 +308,7 @@ class Contour:
         float
             Distance from engine centerline to wall [m].
         """
-        r1 = np.interp(x, self.xs, self.rs)
-        #print(f"r at that point: {r1}, input x: {x} ")
-        return r1
+        return self._evaluate_spline(x)
     
     def dr_dx(self, x):
         """
@@ -155,8 +323,18 @@ class Contour:
         -------
         float
             Radial slope at position `x`.
+
+        Notes
+        -----
+        At the sharp throat itself, this returns the chamber-side derivative.
+        The nozzle-side derivative is the right-hand limit as ``x`` approaches
+        zero.
         """
-        return np.interp(x, self.xs, self._dr_dx)
+        return self._evaluate_spline(x, derivative=1)
+
+    def d2r_dx2(self, x):
+        """Return the local second derivative of wall radius with respect to x."""
+        return self._evaluate_spline(x, derivative=2)
 
     def A(self, x):
         """

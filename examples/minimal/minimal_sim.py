@@ -119,7 +119,7 @@ def main(output_dir: Path | None = None) -> None:
 
     cooling_data = psf.regen.coupled_steady_heating_analysis(
         thrust_chamber,
-        n_nodes=100,
+        nodes=100,
         circuit_index=0,
         boundary_conditions=boundary_conditions,
         output=True,
@@ -207,6 +207,7 @@ def main(output_dir: Path | None = None) -> None:
             psf.viz.PlotTransportProperty(
                 thrust_chamber.combustion_transport,
                 prop=prop,
+                results=cooling_data,
             )
         )
 
