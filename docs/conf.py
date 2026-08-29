@@ -187,8 +187,10 @@ def publish_validation_reports(app, exception) -> None:
         return
 
     repository_root = Path(__file__).resolve().parent.parent
-    source = repository_root / "validation" / "RL10" / "RL10A-3-3A_Report.html"
-    destination = Path(app.outdir) / "validation" / "rl10a-3-3a.html"
+    rl10_dir = repository_root / "validation" / "RL10"
+    source = rl10_dir / "RL10A-3-3A_Report.html"
+    output_validation = Path(app.outdir) / "validation"
+    destination = output_validation / "rl10a-3-3a.html"
 
     if not source.is_file():
         raise SphinxError(
@@ -196,8 +198,24 @@ def publish_validation_reports(app, exception) -> None:
             "Run validation/RL10/post_process.py before building docs."
         )
 
-    destination.parent.mkdir(parents=True, exist_ok=True)
+    output_validation.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source, destination)
+
+    # The report links to these as siblings, and the 3D viewer is also linked
+    # directly from the README and the capabilities page. Publishing them next
+    # to the report keeps both the in-report links and those references working.
+    companions = {"engine-3d.html", "network.html"}
+    missing = sorted(name for name in companions if not (rl10_dir / name).is_file())
+    if missing:
+        raise SphinxError(
+            "Missing generated RL10 validation artifacts in "
+            f"{rl10_dir}:\n"
+            + "\n".join(f"  - {name}" for name in missing)
+            + "\n\nRun validation/RL10/post_process.py before building docs."
+        )
+
+    for name in sorted(companions):
+        shutil.copy2(rl10_dir / name, output_validation / name)
 
 
 def setup(app):

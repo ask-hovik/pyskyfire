@@ -7,6 +7,8 @@ Model thrust-chamber thermodynamics, cooling channels, engine cycles, and get in
 ------------------
 [![PyPI version](https://img.shields.io/pypi/v/pyskyfire.svg)](https://pypi.org/project/pyskyfire/)
 [![Python versions](https://img.shields.io/pypi/pyversions/pyskyfire.svg)](https://pypi.org/project/pyskyfire/)
+[![Tests](https://img.shields.io/github/actions/workflow/status/ask-hovik/pyskyfire/tests.yml?branch=main&label=tests)](https://github.com/ask-hovik/pyskyfire/actions/workflows/tests.yml)
+[![Docs](https://img.shields.io/github/actions/workflow/status/ask-hovik/pyskyfire/docs.yml?branch=main&label=docs)](https://github.com/ask-hovik/pyskyfire/actions/workflows/docs.yml)
 [![License](https://img.shields.io/github/license/ask-hovik/pyskyfire.svg)](https://github.com/ask-hovik/pyskyfire/blob/main/LICENSE)
 
 ------------------
@@ -16,6 +18,19 @@ Model thrust-chamber thermodynamics, cooling channels, engine cycles, and get in
   <a href="https://ask-hovik.github.io/pyskyfire/tutorials/minimal-simulation.html"><strong>Quick Start</strong></a>
   ·
   <a href="https://pypi.org/project/pyskyfire/"><strong>PyPI</strong></a>
+</p>
+
+<p align="center">
+  <a href="https://ask-hovik.github.io/pyskyfire/validation/engine-3d.html">
+    <img src="https://raw.githubusercontent.com/ask-hovik/pyskyfire/main/images/RL10_turntable.webp" width="820" alt="Rotating 3D view of the RL10A-3-3A thrust chamber and its regenerative cooling tubes">
+  </a>
+</p>
+<p align="center">
+  <em>RL10A-3-3A thrust chamber reconstructed in Pyskyfire. 180 long tubes (red) run the
+  full chamber and throat; 180 short tubes (dark) start at the nozzle interlacing manifold.
+  Downstream of it the two sets alternate to give 360 passages, while only the long tubes
+  remain upstream.<br>
+  <a href="https://ask-hovik.github.io/pyskyfire/validation/engine-3d.html">Open the interactive model</a> to rotate, pan, and zoom it yourself.</em>
 </p>
 
 # Description

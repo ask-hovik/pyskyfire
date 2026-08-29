@@ -1,4 +1,5 @@
 import time
+from collections.abc import Sequence
 from math import gcd
 from functools import reduce
 from pathlib import Path
@@ -23,6 +24,18 @@ from pyskyfire.regen.cross_section import (
 
 _EPS = 1e-12
 TWO_PI = 2.0 * np.pi
+_DEFAULT_CIRCUIT_COLORS = (
+    "#1f77b4",
+    "#ff7f0e",
+    "#2ca02c",
+    "#d62728",
+    "#9467bd",
+    "#8c564b",
+    "#e377c2",
+    "#7f7f7f",
+    "#bcbd22",
+    "#17becf",
+)
 
 # ---------------------------------------------------------------------------
 # Returned dataclass
@@ -860,6 +873,7 @@ def make_engine_3d(
     stride: int = 2,
     n_arc_pts: int = 8,
     show: bool = True,
+    circuit_colors: Sequence[str] | None = None,
 ):
     """
     Build a PyVista visualization of cooling channels using real cross-sections.
@@ -881,6 +895,9 @@ def make_engine_3d(
         Number of angular samples used for inner/outer arcs.
     show : bool
         If True, open the interactive PyVista window.
+    circuit_colors : sequence of str, optional
+        Colors indexed by cooling-circuit order. When omitted, the default
+        categorical palette is used.
 
     Returns
     -------
@@ -894,7 +911,14 @@ def make_engine_3d(
         Lofted meshes for each channel.
     """
 
-    print(f"\nStarting cooling channel visualisation")
+    if circuit_colors is not None and len(circuit_colors) < len(
+        thrust_chamber.cooling_circuits
+    ):
+        raise ValueError(
+            "circuit_colors must provide a color for every cooling circuit"
+        )
+
+    print("Starting cooling channel visualisation")
     cl_sub, w_sub, cid_sub, meta = collect_channels(thrust_chamber, jitter_divisor=100.0)    
 
     g = meta["g"]
@@ -965,18 +989,9 @@ def make_engine_3d(
     meshes = []
     cid_full = np.asarray(cid_full, int)
 
-    palette = [
-        "#1f77b4",
-        "#ff7f0e",
-        "#2ca02c",
-        "#d62728",
-        "#9467bd",
-        "#8c564b",
-        "#e377c2",
-        "#7f7f7f",
-        "#bcbd22",
-        "#17becf",
-    ]
+    palette = list(_DEFAULT_CIRCUIT_COLORS)
+    if circuit_colors is not None:
+        palette = list(circuit_colors)
 
     for i_cl, sections in enumerate(sections_per_channel):
         if len(sections) < 2:

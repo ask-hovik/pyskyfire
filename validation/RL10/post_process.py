@@ -33,6 +33,7 @@ NETWORK_LAYOUT_FILENAME = "rl10a-3-3a-engine-cycle.layout.json"
 
 PYSKYFIRE_RED = "#d62728"
 PYSKYFIRE_BLUE = "#1f77b4"
+PYSKYFIRE_GRAY = "#7F7F7F"
 
 REF_BINDER = "[R1]"
 REF_DESIGN_REPORT = "[R2]"
@@ -342,7 +343,13 @@ def add_regen_tabs(report, results):
     tab_overview.add_markdown("## Introduction")
     tab_overview.add_markdown(REPORT_INTRODUCTION)
 
-    engine_viewer = psf.viz.make_engine_3d(thrust_chamber, show=False, stride=1)
+    engine_viewer = psf.viz.make_engine_3d(
+        thrust_chamber,
+        show=False,
+        stride=2,
+        # Circuits are ordered short (half pass), then long (full pass).
+        circuit_colors=("#2b2d31", PYSKYFIRE_RED),
+    )
     save_path = os.path.join(script_dir, "engine-3d.html")
     engine_viewer.save_html(save_path)
     tab_overview.add_iframe(
