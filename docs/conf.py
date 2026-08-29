@@ -104,6 +104,7 @@ def copy_example_html_files(
     source: Path,
     destination: Path,
     required_files: set[str],
+    exclude: set[str] = frozenset(),
 ) -> None:
     """Copy flat, pre-generated example HTML files into the docs build."""
 
@@ -124,6 +125,8 @@ def copy_example_html_files(
     destination.mkdir(parents=True)
 
     for html_file in source.glob("*.html"):
+        if html_file.name in exclude:
+            continue
         shutil.copy2(html_file, destination / html_file.name)
 
 
@@ -166,6 +169,38 @@ def copy_docs_artifacts(app) -> None:
         },
     )
 
+    # Single-figure exports embedded by the capabilities page. Each one is
+    # written by the case's own post-processor, so the page always shows the
+    # current result rather than a checked-in snapshot of an older run.
+    copy_example_html_files(
+        source=repository_root / "examples" / "film_cooling" / "standalone",
+        destination=output_static / "standalone" / "film-cooling",
+        required_files={
+            "film-regen-wall-temperature.html",
+            "film-regen-heat-flux.html",
+        },
+    )
+
+    copy_example_html_files(
+        source=repository_root / "validation" / "RL10" / "standalone",
+        destination=output_static / "standalone" / "rl10",
+        # engine-3d.html is deliberately not listed: it is 30 MB and is
+        # published once under /validation/ by publish_validation_reports.
+        required_files={
+            "network.html",
+            "wall-temperature.html",
+            "coolant-temperature.html",
+            "coolant-pressure.html",
+            "heat-flux.html",
+            "temperature-profile-throat.html",
+            "combustion-viscosity.html",
+            "station-fuel-pressure.html",
+            "station-fuel-temperature.html",
+            "station-fuel-mass-flow.html",
+        },
+        exclude={"engine-3d.html"},
+    )
+
     copy_example_html_files(
         source=repository_root / "examples" / "MR_optimisation",
         destination=(
@@ -204,18 +239,21 @@ def publish_validation_reports(app, exception) -> None:
     # The report links to these as siblings, and the 3D viewer is also linked
     # directly from the README and the capabilities page. Publishing them next
     # to the report keeps both the in-report links and those references working.
+    standalone_dir = rl10_dir / "standalone"
     companions = {"engine-3d.html", "network.html"}
-    missing = sorted(name for name in companions if not (rl10_dir / name).is_file())
+    missing = sorted(
+        name for name in companions if not (standalone_dir / name).is_file()
+    )
     if missing:
         raise SphinxError(
             "Missing generated RL10 validation artifacts in "
-            f"{rl10_dir}:\n"
+            f"{standalone_dir}:\n"
             + "\n".join(f"  - {name}" for name in missing)
             + "\n\nRun validation/RL10/post_process.py before building docs."
         )
 
     for name in sorted(companions):
-        shutil.copy2(rl10_dir / name, output_validation / name)
+        shutil.copy2(standalone_dir / name, output_validation / name)
 
 
 def setup(app):

@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Build the Sphinx documentation, as described in CONTRIBUTING.md.
+#
+# Usage:
+#   build-docs           Build the HTML docs into docs/_build/html
+#   build-docs --clean   Remove all of docs/_build first
+#   build-docs --open    Open the built site in a browser afterwards
+#
+# Any other arguments are passed straight through to sphinx-build.
+
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+cd "$repo_root"
+
+clean=0
+open_after=0
+sphinx_args=()
+
+for arg in "$@"; do
+    case "$arg" in
+        --clean) clean=1 ;;
+        --open)  open_after=1 ;;
+        *)       sphinx_args+=("$arg") ;;
+    esac
+done
+
+if [[ $clean -eq 1 ]]; then
+    rm -rf docs/_build
+else
+    rm -rf docs/_build/html
+fi
+
+uv sync --group docs
+uv run --group docs sphinx-build -b html docs docs/_build/html ${sphinx_args[@]+"${sphinx_args[@]}"}
+
+echo "Documentation written to $repo_root/docs/_build/html/index.html"
+
+if [[ $open_after -eq 1 ]]; then
+    xdg-open "$repo_root/docs/_build/html/index.html" >/dev/null 2>&1 &
+fi

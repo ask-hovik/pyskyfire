@@ -110,6 +110,15 @@ uv run --group docs sphinx-build -b html docs docs/_build/html
 The generated site is written to `docs/_build/html`. To force a completely
 clean build, remove `docs/_build` before running Sphinx again.
 
+The `tools/build-docs` script wraps these commands and can be run from any
+directory inside the repository. It accepts `--clean` to remove all of
+`docs/_build` first, `--open` to open the built site in a browser, and passes
+any other arguments through to `sphinx-build`. You can run that script simply with
+
+``` 
+build-docs
+``` 
+
 Documentation changes should be clear, concise, and accompanied by runnable
 examples where useful. Update relevant tutorials and examples when changing
 user-facing behaviour.

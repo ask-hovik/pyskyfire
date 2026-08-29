@@ -31,6 +31,11 @@ args = parser.parse_args()
 output_dir = args.output_dir or Path(__file__).resolve().parent
 output_dir.mkdir(parents=True, exist_ok=True)
 
+# Single-figure HTML files, written next to the report so the documentation can
+# embed one plot without carrying a second copy of the case definition.
+standalone_dir = output_dir / "standalone"
+standalone_dir.mkdir(parents=True, exist_ok=True)
+
 params = dict(
     # Chamber parameters
     p_c    = 50e5,
@@ -174,6 +179,7 @@ regen_only = psf.regen.coupled_steady_heating_analysis(
     nodes=100,
     circuit_index=0,
     film=False,
+    heat_curvature_correction=False,
 )
 
 # ------------------------------------------------------------------
@@ -186,6 +192,7 @@ coupled = psf.regen.coupled_steady_heating_analysis(
     circuit_index=0,
     film=True,
     h_liquid_wall=psf.regen.DEFAULT_H_LIQUID_WALL,
+    heat_curvature_correction=False,
 )
 
 # The regen plotters label each trace with ``result.circuit_name``, so naming
@@ -316,20 +323,22 @@ tab_cooling.add_markdown(
 )
 
 fig_wall = psf.viz.PlotWallTemperature(regen_only, coupled,
-                                       plot_hot=True, plot_coolant_wall=True)
+                                       plot_hot=True, plot_coolant_wall=False)
 fig_wall.add.vline(x=x_injection, line_dash="dot", line_color="firebrick",
                    annotation_text="film injection", annotation_position="top left")
 if liquid.x_dryout is not None:
     fig_wall.add.vline(x=liquid.x_dryout, line_dash="dot", line_color="darkorange",
                        annotation_text="dryout", annotation_position="top right")
+fig_wall.save_html(standalone_dir / "film-regen-wall-temperature.html")
 tab_cooling.add_figure(
     fig_wall,
-    caption="Hot- and coolant-side wall temperature with and without film cooling.",
+    caption="Hot-side wall temperature with and without film cooling.",
 )
 
 fig_flux = psf.viz.PlotHeatFlux(regen_only, coupled)
 fig_flux.add.vline(x=x_injection, line_dash="dot", line_color="firebrick",
                    annotation_text="film injection", annotation_position="top left")
+fig_flux.save_html(standalone_dir / "film-regen-heat-flux.html")
 tab_cooling.add_figure(fig_flux, caption="Wall heat flux with and without film cooling.")
 
 for fig, caption in [

@@ -122,7 +122,11 @@ def test_coupled_film_regen_example(tmp_path: Path) -> None:
     run_example(
         "examples/film_cooling/coupled_film_regen.py",
         tmp_path / "coupled-film-regen",
-        ("coupled_film_report.html",),
+        (
+            "coupled_film_report.html",
+            "standalone/film-regen-wall-temperature.html",
+            "standalone/film-regen-heat-flux.html",
+        ),
     )
 
 

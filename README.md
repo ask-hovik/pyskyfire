@@ -35,7 +35,7 @@ Model thrust-chamber thermodynamics, cooling channels, engine cycles, and get in
 
 
 # Description
-Pyskyfire is an open-source python package, meant as an alternative to RPA, NPSS, ESPSS and other regenerative cooling and engine cycle analysis software. The solver produces regenerative cooling and engine cycle results. Compare NASA and Pratt & Whitney with Pyskyfire in this RL10 case: 
+Pyskyfire is an open-source Python package, meant as an alternative to RPA, NPSS, ESPSS and other regenerative cooling and engine cycle analysis software. The solver produces regenerative cooling and engine cycle results. Compare NASA and Pratt & Whitney with Pyskyfire in this RL10 case: 
 
 <p align="center">
   <a href="https://ask-hovik.github.io/pyskyfire/_static/readme-artifacts/rl10-wall-temperature.html">
@@ -47,7 +47,7 @@ Pyskyfire is an open-source python package, meant as an alternative to RPA, NPSS
   · <a href="https://ask-hovik.github.io/pyskyfire/validation/rl10a-3-3a.html">Read the full RL10A-3-3A validation report</a></em>
 </p>
 
-The first iteration of pyskyfire was written as part of the master thesis of Ask Haugerud Hovik. [Read my thesis](papers/thesis-Ask-Haugerud_Hovik.pdf). The motivation to start writing the software came purely from a curiosity standpoint and from an innate wish to spread the understanding of rocket engines and propel us further into the space age. Please use this software responsibly and make sure you, your team memebers and everyone else stay safe in your rocket engine endeavours.
+The first iteration of pyskyfire was written as part of the master's thesis of Ask Haugerud Hovik. [Read my thesis](papers/thesis-Ask-Haugerud_Hovik.pdf). The motivation to start writing the software came purely from a curiosity standpoint and from an innate wish to spread the understanding of rocket engines and propel us further into the space age. Please use this software responsibly and make sure you, your team members and everyone else stay safe in your rocket engine endeavours.
 
 # Program Capabilities
 - Full engine cycle solution, with pumps, turbines and regenerative cooling.
@@ -59,7 +59,7 @@ The first iteration of pyskyfire was written as part of the master thesis of Ask
 - Validation cases based on published engine data 
 - View the full overview of the [capabilities of pyskyfire](https://ask-hovik.github.io/pyskyfire/explanations/capabilities.html).
 
-# Documentaion
+# Documentation
 [Documentation](https://ask-hovik.github.io/pyskyfire) for the project is available, and written in a pedagogic style using the Diátaxis framework. 
 
 # Installation
@@ -82,21 +82,8 @@ uv sync
 ```
 
 
-# Contributing
-
-Pyskyfire began as my master's thesis and is now developed in the open. I would like it to
-become something students and professionals build together, and I am happy to help
-contributors who are new to propulsion, to open source, or to both.
-
-
-[CONTRIBUTING.md](https://github.com/ask-hovik/pyskyfire/blob/main/CONTRIBUTING.md) covers
-development setup, testing, and the pull-request process. For anything substantial, please
-open an [issue](https://github.com/ask-hovik/pyskyfire/issues) first so the approach can be
-discussed — and if you would rather talk it through before writing any code, that is welcome
-too.
-
 # Using the package
-What is it like to use the package? Pyskyfire is an object oriented library, so using it means creating a lot of objects and putting them together, for example: 
+What is it like to use the package? Pyskyfire is an object-oriented library, so using it means creating a lot of objects and putting them together, for example: 
 
 ```python
 import numpy as np
@@ -161,3 +148,18 @@ tab.add_figure(psf.viz.PlotHeatFlux(cooling_data))
 tab.add_figure(psf.viz.PlotCoolantTemperature(cooling_data))
 report.save_html("engine-report.html")
 ```
+
+Look in the [documentation](https://ask-hovik.github.io/pyskyfire) to get started with pyskyfire. 
+
+# Contributing
+
+Pyskyfire began as my master's thesis and is now developed in the open. I would like it to
+become something students and professionals build together, and I am happy to help
+contributors who are new to propulsion, to open source, or to both.
+
+
+[CONTRIBUTING.md](https://github.com/ask-hovik/pyskyfire/blob/main/CONTRIBUTING.md) covers
+development setup, testing, and the pull-request process. For anything substantial, please
+open an [issue](https://github.com/ask-hovik/pyskyfire/issues) first so the approach can be
+discussed — and if you would rather talk it through before writing any code, that is welcome
+too.
