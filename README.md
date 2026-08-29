@@ -34,7 +34,9 @@ Model thrust-chamber thermodynamics, cooling channels, engine cycles, and get in
 </p>
 
 # Description
-Pyskyfire is an open-source python package, meant as an alternative to RPA, NPSS, ESPSS and other regenerative cooling and engine cycle analysis software. It is however a work in progress, and no responsibility for the results of this program can be provided.  
+Pyskyfire is an open-source python package, meant as an alternative to RPA, NPSS, ESPSS and other regenerative cooling and engine cycle analysis software. The solver produces regenerative cooling and engine cycle results: 
+
+
 
 The first iteration of pyskyfire was written as part of the master thesis of Ask Haugerud Hovik, which can be read [here](https://drive.google.com/file/d/1sZJmt-8UWtUChprji67LmnazS3Ei_K3a/view). The motivation to start writing the software came purely from a curiosity standpoint and from an innate wish to spread the understanding of rocket engines and propel us further into the space age. Please use this software responsibly and make sure you, your team memebers and everyone else stay safe in your rocket engine endeavours. Okay. 
 

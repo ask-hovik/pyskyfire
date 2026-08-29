@@ -53,7 +53,7 @@ def build_plotter(stride: int) -> pv.Plotter:
     return viewer.plotter
 
 
-def frame_paths(plotter, frame_dir, n_frames, size, elevation, zoom):
+def frame_paths(plotter, frame_dir, n_frames, size, elevation, zoom, transparent):
     """Render one full revolution, one frame per step.
 
     The engine lies on its side in the horizontal test-stand pose: its axis (x)
@@ -83,7 +83,7 @@ def frame_paths(plotter, frame_dir, n_frames, size, elevation, zoom):
     paths = []
     for i in range(n_frames):
         path = frame_dir / f"frame_{i:04d}.png"
-        plotter.screenshot(str(path))
+        plotter.screenshot(str(path), transparent_background=transparent)
         paths.append(path)
         # pyvista's azimuth setter is absolute, not incremental: it undoes the
         # previous rotation before applying the new angle. Assigning a constant
@@ -94,7 +94,8 @@ def frame_paths(plotter, frame_dir, n_frames, size, elevation, zoom):
 
 
 def assemble_animation(
-    frame_dir: Path, output: Path, fps: int, max_colors: int, quality: int
+    frame_dir: Path, output: Path, fps: int, max_colors: int, quality: int,
+    size: tuple[int, int] | None = None,
 ) -> None:
     """Mux the frames into an animated WebP or GIF, chosen by file extension.
 
@@ -110,12 +111,15 @@ def assemble_animation(
     pattern = str(frame_dir / "frame_%04d.png")
     common = ["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(fps),
               "-i", pattern]
+    # Frames are rendered above the output size and resolved down here, which
+    # supersamples the fine tube detail on top of the renderer's own SSAA.
+    scale = [] if size is None else ["-vf", f"scale={size[0]}:{size[1]}:flags=lanczos"]
 
     if output.suffix == ".webp":
         subprocess.run(
-            common + ["-c:v", "libwebp_anim", "-lossless", "0",
-                      "-q:v", str(quality), "-compression_level", "4",
-                      "-loop", "0", "-an", str(output)],
+            common + scale + ["-c:v", "libwebp_anim", "-lossless", "0",
+                              "-q:v", str(quality), "-compression_level", "4",
+                              "-loop", "0", "-an", str(output)],
             check=True,
         )
         return
@@ -125,13 +129,17 @@ def assemble_animation(
     # inter-frame compression and roughly quadruples the file size here.
     palette = frame_dir / "palette.png"
     subprocess.run(
-        common + ["-vf", f"palettegen=max_colors={max_colors}:stats_mode=diff",
-                  str(palette)],
+        common + ["-vf", ",".join(
+            ([] if size is None else [f"scale={size[0]}:{size[1]}:flags=lanczos"])
+            + [f"palettegen=max_colors={max_colors}:stats_mode=diff"])
+            , str(palette)],
         check=True,
     )
     subprocess.run(
-        common + ["-i", str(palette), "-lavfi", "paletteuse=dither=none",
-                  "-loop", "0", str(output)],
+        common + ["-i", str(palette), "-lavfi", ";".join(
+            ([] if size is None else [f"[0:v]scale={size[0]}:{size[1]}:flags=lanczos[s]"])
+            + [("[s]" if size else "") + "[1:v]paletteuse=dither=none"])
+            , "-loop", "0", str(output)],
         check=True,
     )
 
@@ -145,8 +153,9 @@ def main() -> None:
                         help="Frames per revolution.")
     parser.add_argument("--fps", type=int, default=24,
                         help="Playback rate; frames/fps sets the loop period.")
-    parser.add_argument("--width", type=int, default=880)
-    parser.add_argument("--height", type=int, default=690)
+    parser.add_argument("--width", type=int, default=1120,
+                        help="Output width; frames render at supersample times this.")
+    parser.add_argument("--height", type=int, default=878)
     parser.add_argument("--stride", type=int, default=1,
                         help="Mesh subsampling passed to make_engine_3d.")
     parser.add_argument("--elevation", type=float, default=18.0,
@@ -154,8 +163,15 @@ def main() -> None:
     parser.add_argument("--zoom", type=float, default=1.18)
     parser.add_argument("--max-colors", type=int, default=64,
                         help="Palette size for GIF output only.")
-    parser.add_argument("--quality", type=int, default=60,
+    parser.add_argument("--supersample", type=float, default=1.25,
+                        help="Render this many times the output size, then "
+                             "downscale for extra sharpness.")
+    parser.add_argument("--quality", type=int, default=70,
                         help="libwebp quality for WebP output only.")
+    parser.add_argument("--transparent", action="store_true", default=True,
+                        help="Render an alpha background instead of white.")
+    parser.add_argument("--opaque", dest="transparent", action="store_false",
+                        help="Render on a solid white background.")
     parser.add_argument("--keep-frames", type=Path, default=None,
                         help="Directory to retain the rendered PNG frames in.")
     args = parser.parse_args()
@@ -166,13 +182,17 @@ def main() -> None:
         frame_dir = Path(args.keep_frames) if args.keep_frames else Path(td)
         frame_dir.mkdir(parents=True, exist_ok=True)
 
-        print(f"Rendering {args.frames} frames at {args.width}x{args.height}")
-        frame_paths(plotter, frame_dir, args.frames,
-                    (args.width, args.height), args.elevation, args.zoom)
+        render_size = (round(args.width * args.supersample),
+                       round(args.height * args.supersample))
+        print(f"Rendering {args.frames} frames at {render_size[0]}x"
+              f"{render_size[1]} for a {args.width}x{args.height} output")
+        frame_paths(plotter, frame_dir, args.frames, render_size,
+                    args.elevation, args.zoom, args.transparent)
 
         args.output.parent.mkdir(parents=True, exist_ok=True)
         assemble_animation(frame_dir, args.output, args.fps,
-                           args.max_colors, args.quality)
+                           args.max_colors, args.quality,
+                           size=(args.width, args.height))
 
     plotter.close()
     size_mb = args.output.stat().st_size / 1e6
