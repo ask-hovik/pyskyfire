@@ -1,7 +1,7 @@
 pyskyfire.viz.plot_regen.PlotContour
 ====================================
 
-.. py:class:: pyskyfire.viz.plot_regen.PlotContour(*contours: Any, show_labels: bool = True, title: str = 'Contour Profiles', template: str = 'plotly_white')
+.. py:class:: pyskyfire.viz.plot_regen.PlotContour(*contours: Any, show_labels: bool = True, show_input_points: bool = False, interpolation_points: int = 500, title: str = 'Contour Profiles', template: str = 'plotly_white')
 
    Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
 
@@ -17,6 +17,9 @@ pyskyfire.viz.plot_regen.PlotContour
      • classic: has .xs and .rs
      • aerospike: has .xs_outer, .rs_outer, .xs_inner, .rs_inner
 
+   Classic contours are sampled through their ``r(x)`` method when present.
+   Set ``show_input_points=True`` to overlay the original input stations as
+   ``x`` markers; ``interpolation_points`` controls the line resolution.
    If a contour has a .name attribute, it's used for the legend label.
 
 

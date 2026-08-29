@@ -3,7 +3,7 @@ pyskyfire.regen.cross_section.CrossSectionRounded
 
 .. py:class:: pyskyfire.regen.cross_section.CrossSectionRounded(n_points: int = 16)
 
-   Bases: :py:obj:`ChannelSection`
+   Bases: :py:obj:`_RoundedGeometryMixin`, :py:obj:`ChannelSection`
 
    .. autoapi-inheritance-diagram:: pyskyfire.regen.cross_section.CrossSectionRounded
       :parts: 1
@@ -11,7 +11,7 @@ pyskyfire.regen.cross_section.CrossSectionRounded
 
 
    
-   Rounded cooling-channel geometry with curved sidewalls.
+   Rounded cooling channel whose input height is its full radial extent.
 
 
 
@@ -136,30 +136,6 @@ pyskyfire.regen.cross_section.CrossSectionRounded
       Unsure if this is completely appropriate. But it had only a minor effect
       on the RL10 validation case, which use low conductivity stainless. For 
       thin copper walls adding the rib has a large effect. 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: _beta_alpha(theta: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray]
-
-      
-      Return the inner (β) and outer (α) complementary angles.
 
 
 

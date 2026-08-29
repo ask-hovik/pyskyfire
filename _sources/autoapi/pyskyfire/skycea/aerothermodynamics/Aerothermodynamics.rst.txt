@@ -1,12 +1,12 @@
 pyskyfire.skycea.aerothermodynamics.Aerothermodynamics
 ======================================================
 
-.. py:class:: pyskyfire.skycea.aerothermodynamics.Aerothermodynamics(optimum, transport='equilibrium', cache=True)
+.. py:class:: pyskyfire.skycea.aerothermodynamics.Aerothermodynamics(optimum, transport='equilibrium', cache=True, minimum_cea_temperature=MIN_CEA_TEMPERATURE)
 
    .. py:method:: __getstate__()
 
       
-      Return state without the Cython objects that wrap native pointers.
+      Return persistent state without native handles or runtime cache.
 
 
 
@@ -51,7 +51,81 @@ pyskyfire.skycea.aerothermodynamics.Aerothermodynamics
           !! processed by numpydoc !!
 
 
-   .. py:method:: _from_design(fu, ox, MR, p_c, *, eps=None, p_e=None, F=None, mdot=None, A_t=None, L_star=None, V_c=None, t_stay=None, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, npts=15, **kw)
+   .. py:method:: _extrapolate_enthalpy_state(x, enthalpy, pressure)
+
+      
+      Invert the same tangent when an HP query falls below its boundary.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _extrapolate_temperature_state(x, temperature, pressure)
+
+      
+      Continue a temperature-conditioned CEA state below its boundary.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _forward_derivative(values, step)
+      :staticmethod:
+
+
+      
+      Second-order right-hand derivative at the first sample.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _from_design(fu, ox, MR, p_c, *, eps=None, p_e=None, F=None, mdot=None, A_t=None, L_star=None, V_c=None, t_stay=None, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, **kw)
       :classmethod:
 
 
@@ -125,10 +199,55 @@ pyskyfire.skycea.aerothermodynamics.Aerothermodynamics
           !! processed by numpydoc !!
 
 
+   .. py:method:: _temperature_tangent(x, pressure)
+
+      
+      Build or retrieve the C1 continuation at the configured boundary.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: clear_cache()
 
 
-   .. py:method:: compute_aerothermodynamics(contour, Nt=64)
+   .. py:method:: compute_aerothermodynamics(contour)
+
+      
+      Attach chamber geometry for live, coordinate-driven CEA queries.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
 
 
    .. py:method:: equilibrium_state(problem, value, pressure)
@@ -155,27 +274,27 @@ pyskyfire.skycea.aerothermodynamics.Aerothermodynamics
           !! processed by numpydoc !!
 
 
-   .. py:method:: from_At_eps_Lstar(fu, ox, MR, p_c, A_t, eps, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, npts=15, **kw)
+   .. py:method:: from_At_eps_Lstar(fu, ox, MR, p_c, A_t, eps, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, **kw)
       :classmethod:
 
 
 
-   .. py:method:: from_F_eps_Lstar(fu, ox, MR, p_c, F, eps, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, npts=15, **kw)
+   .. py:method:: from_F_eps_Lstar(fu, ox, MR, p_c, F, eps, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, **kw)
       :classmethod:
 
 
 
-   .. py:method:: from_F_eps_Vc(fu, ox, MR, p_c, F, eps, V_c, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, npts=15, **kw)
+   .. py:method:: from_F_eps_Vc(fu, ox, MR, p_c, F, eps, V_c, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, **kw)
       :classmethod:
 
 
 
-   .. py:method:: from_F_eps_tstay(fu, ox, MR, p_c, F, eps, t_stay, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, npts=15, **kw)
+   .. py:method:: from_F_eps_tstay(fu, ox, MR, p_c, F, eps, t_stay, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, **kw)
       :classmethod:
 
 
 
-   .. py:method:: from_F_pe_Lstar(fu, ox, MR, p_c, F, p_e, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, npts=15, **kw)
+   .. py:method:: from_F_pe_Lstar(fu, ox, MR, p_c, F, p_e, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, **kw)
       :classmethod:
 
 
@@ -185,12 +304,12 @@ pyskyfire.skycea.aerothermodynamics.Aerothermodynamics
 
 
 
-   .. py:method:: from_mdot_eps_Lstar(fu, ox, MR, p_c, mdot, eps, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, npts=15, **kw)
+   .. py:method:: from_mdot_eps_Lstar(fu, ox, MR, p_c, mdot, eps, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, **kw)
       :classmethod:
 
 
 
-   .. py:method:: from_mdot_pe_Lstar(fu, ox, MR, p_c, mdot, p_e, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, npts=15, **kw)
+   .. py:method:: from_mdot_pe_Lstar(fu, ox, MR, p_c, mdot, p_e, L_star, T_fu_in=298.15, T_ox_in=298.15, p_amb=101300.0, **kw)
       :classmethod:
 
 
@@ -215,6 +334,41 @@ pyskyfire.skycea.aerothermodynamics.Aerothermodynamics
 
 
    .. py:method:: get_T(x, T=None, h=None)
+
+
+   .. py:method:: get_T0(x, T=None, h=None)
+
+      
+      Total temperature [K], from conserved total enthalpy.
+
+      Inverted through the equilibrium equation of state rather than taken
+      from the frozen-gamma isentropic relation: gamma is a local property
+      here, so that relation drifts above the chamber value down the nozzle.
+
+      The inversion is done at the *local static* pressure, the same
+      convention the boundary-layer reference and recovery states use, which
+      keeps this comparable with ``T_aw``. It is therefore not the classical
+      isentropic stagnation temperature, and it is not constant along an
+      equilibrium nozzle: total enthalpy is conserved, but as the pressure
+      falls the equilibrium shifts towards dissociation, so the same enthalpy
+      corresponds to a lower temperature. It never exceeds its chamber value.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
 
 
    .. py:method:: get_X(x, T=None, h=None)
@@ -271,5 +425,62 @@ pyskyfire.skycea.aerothermodynamics.Aerothermodynamics
           !! processed by numpydoc !!
 
 
+   .. py:method:: get_v(x, T=None, h=None)
+
+
+   .. py:method:: reset_solver_state()
+
+      
+      Recreate native CEA handles and clear all cached station states.
+
+      NASA CEA's nonlinear solution handles retain their previous solution
+      as an initial state. That is useful during a single axial march, but
+      separate simulations of the same inputs must not depend on which
+      simulation ran immediately before them. Resetting the native handles
+      provides a deterministic boundary between such simulations without
+      rebuilding this object's design configuration.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:property:: cache_size
+
+
+   .. py:property:: minimum_cea_temperature
+
+      
+      Lowest temperature sent directly to CEA [K].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
 

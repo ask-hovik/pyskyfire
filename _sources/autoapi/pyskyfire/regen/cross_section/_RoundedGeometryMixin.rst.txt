@@ -1,0 +1,110 @@
+pyskyfire.regen.cross_section._RoundedGeometryMixin
+===================================================
+
+.. py:class:: pyskyfire.regen.cross_section._RoundedGeometryMixin
+
+   
+   Shared conversion from measurable to base height for rounded sections.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _beta_alpha(theta: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray]
+
+      
+      Return the inner (β) and outer (α) complementary angles.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: base_height(prof: SectionProfiles) -> numpy.ndarray
+
+      
+      Convert measurable full height to the rounded model's base height.
+
+      If ``h_b`` is the old/base height and ``H`` is the measurable height,
+      the arc radii and straight-side length are::
+
+          q_inner = r sin(theta/2) - t_wall
+          q_outer = q_inner + h_b sin(theta/2)
+          L_side  = h_b cos(theta/2)
+
+      Hence ``H = q_inner + L_side + q_outer`` and this method evaluates
+      the exact inverse. A base height of zero is retained as the valid,
+      completely round limiting case.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: minimum_channel_height(prof: SectionProfiles) -> numpy.ndarray
+
+      
+      Return the smallest measurable height accepted at each station [m].
+
+      At zero base height the inner and outer lobes form a circle whose
+      radius is ``r*sin(theta/2) - t_wall``. The measurable height is then
+      that circle's diameter.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

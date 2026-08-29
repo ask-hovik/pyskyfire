@@ -12,7 +12,8 @@ pyskyfire.regen.cross_section.SectionProfiles
    :Attributes:
 
        **h** : :obj:`np.ndarray <numpy.ndarray>`
-           Channel height array [m, shape (N,)].
+           Measurable channel height array [m, shape (N,)]. For rounded channels,
+           this spans from the bottom of the inner arc to the top of the outer arc.
 
        **theta** : :obj:`np.ndarray <numpy.ndarray>`
            Included wedge angle at each station [rad, shape (N,)].

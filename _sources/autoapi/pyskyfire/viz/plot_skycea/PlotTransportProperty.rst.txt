@@ -1,7 +1,7 @@
 pyskyfire.viz.plot_skycea.PlotTransportProperty
 ===============================================
 
-.. py:class:: pyskyfire.viz.plot_skycea.PlotTransportProperty(*ats, prop: str, template: str = 'plotly_white')
+.. py:class:: pyskyfire.viz.plot_skycea.PlotTransportProperty(*ats, prop: str, results=None, nodes: int | None = None, x=None, template: str = 'plotly_white')
 
    Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
 
@@ -13,8 +13,11 @@ pyskyfire.viz.plot_skycea.PlotTransportProperty
    
    Plot one equilibrium transport property against axial position.
 
-   The current live-solve interface is sampled through ``get_<prop>``.  Old
-   precomputed-map objects remain supported for compatibility.
+   The current live-solve interface is sampled through ``get_<prop>``. Pass
+   ``results`` to reuse the gas-side coordinates of an actual regenerative
+   run, ``nodes`` for a uniform visualization grid, or ``x`` for explicit
+   coordinates. Repeated property plots reuse the transport object's live
+   state cache. Old precomputed-map objects remain supported for compatibility.
 
 
 

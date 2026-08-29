@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html"><link rel="next" title="pyskyfire.viz.plot_regen.PlotContour" href="PlotContour.html"><link rel="prev" title="pyskyfire.viz.plot_film_cooling.PlotGaseousFilmTemperatureGap" href="../plot_film_cooling/PlotGaseousFilmTemperatureGap.html">
+<link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html"><link rel="next" title="pyskyfire.viz.plot_regen.PlotChannelHeight" href="PlotChannelHeight.html"><link rel="prev" title="pyskyfire.viz.plot_film_cooling.PlotGaseousFilmTemperatureGap" href="../plot_film_cooling/PlotGaseousFilmTemperatureGap.html">
         <link rel="prefetch" href="../../../../_static/pyskyfire_header.png" as="image">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
@@ -207,11 +207,18 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../howto/mixture-ratio-optimisation.html">Optimise mixture ratio</a></li>
 </ul>
+<p class="caption" role="heading"><span class="caption-text">Validation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../validation/rl10a-3-3a.html">RL10A-3-3A</a></li>
+</ul>
 <p class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../explanations/capabilities.html">Capabilities</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../explanations/package-structure.html">Package Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../explanations/regenerative-cooling-explanation.html">Regenerative Cooling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanations/specific-impulse.html">Specific Impulse and Thrust Coefficient</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanations/moody-diagram.html">The Moody Diagram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanations/rao-nozzle.html">Rao Nozzle Contour Angles</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -288,6 +295,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../regen/cross_section/CrossSectionRoundedInternal.html">pyskyfire.regen.cross_section.CrossSectionRoundedInternal</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../regen/cross_section/CrossSectionSquared.html">pyskyfire.regen.cross_section.CrossSectionSquared</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../regen/cross_section/SectionProfiles.html">pyskyfire.regen.cross_section.SectionProfiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../regen/cross_section/_RoundedGeometryMixin.html">pyskyfire.regen.cross_section._RoundedGeometryMixin</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../regen/film_solver/index.html">pyskyfire.regen.film_solver</a><input aria-label="Toggle navigation of pyskyfire.regen.film_solver" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -342,37 +350,43 @@
 <li class="toctree-l3"><a class="reference internal" href="../../skycea/coolant_transport/TransportProperties.html">pyskyfire.skycea.coolant_transport.TransportProperties</a></li>
 </ul>
 </li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../skycea/nozzle_loss/index.html">pyskyfire.skycea.nozzle_loss</a><input aria-label="Toggle navigation of pyskyfire.skycea.nozzle_loss" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../skycea/nozzle_loss/DeliveredPerformance.html">pyskyfire.skycea.nozzle_loss.DeliveredPerformance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../skycea/nozzle_loss/EfficiencyTable.html">pyskyfire.skycea.nozzle_loss.EfficiencyTable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../skycea/nozzle_loss/NozzleLoss.html">pyskyfire.skycea.nozzle_loss.NozzleLoss</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">pyskyfire.viz</a><input aria-label="Toggle navigation of pyskyfire.viz" checked="" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
-<li class="toctree-l2 has-children"><a class="reference internal" href="../core/index.html">pyskyfire.viz.core</a><input aria-label="Toggle navigation of pyskyfire.viz.core" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">pyskyfire.viz</a><input aria-label="Toggle navigation of pyskyfire.viz" checked="" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../core/index.html">pyskyfire.viz.core</a><input aria-label="Toggle navigation of pyskyfire.viz.core" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../core/PlotBase.html">pyskyfire.viz.core.PlotBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../core/_Adder.html">pyskyfire.viz.core._Adder</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../core/_Node.html">pyskyfire.viz.core._Node</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../engine_viz/index.html">pyskyfire.viz.engine_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.engine_viz" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../engine_viz/index.html">pyskyfire.viz.engine_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.engine_viz" class="toctree-checkbox" id="toctree-checkbox-25" name="toctree-checkbox-25" role="switch" type="checkbox"/><label for="toctree-checkbox-25"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../engine_viz/Engine3DViewer.html">pyskyfire.viz.engine_viz.Engine3DViewer</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../impeller_viz/index.html">pyskyfire.viz.impeller_viz</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../lookup_tables/index.html">pyskyfire.viz.lookup_tables</a><input aria-label="Toggle navigation of pyskyfire.viz.lookup_tables" class="toctree-checkbox" id="toctree-checkbox-25" name="toctree-checkbox-25" role="switch" type="checkbox"/><label for="toctree-checkbox-25"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../lookup_tables/index.html">pyskyfire.viz.lookup_tables</a><input aria-label="Toggle navigation of pyskyfire.viz.lookup_tables" class="toctree-checkbox" id="toctree-checkbox-26" name="toctree-checkbox-26" role="switch" type="checkbox"/><label for="toctree-checkbox-26"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../lookup_tables/PlotMoodyDiagram.html">pyskyfire.viz.lookup_tables.PlotMoodyDiagram</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../lookup_tables/PlotThetaVsEpsilon.html">pyskyfire.viz.lookup_tables.PlotThetaVsEpsilon</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../network_viz/index.html">pyskyfire.viz.network_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.network_viz" class="toctree-checkbox" id="toctree-checkbox-26" name="toctree-checkbox-26" role="switch" type="checkbox"/><label for="toctree-checkbox-26"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../network_viz/index.html">pyskyfire.viz.network_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.network_viz" class="toctree-checkbox" id="toctree-checkbox-27" name="toctree-checkbox-27" role="switch" type="checkbox"/><label for="toctree-checkbox-27"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../network_viz/NetworkVisualizer.html">pyskyfire.viz.network_viz.NetworkVisualizer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../network_viz/_BlockSpec.html">pyskyfire.viz.network_viz._BlockSpec</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_common/index.html">pyskyfire.viz.plot_common</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_common" class="toctree-checkbox" id="toctree-checkbox-27" name="toctree-checkbox-27" role="switch" type="checkbox"/><label for="toctree-checkbox-27"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_common/index.html">pyskyfire.viz.plot_common</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_common" class="toctree-checkbox" id="toctree-checkbox-28" name="toctree-checkbox-28" role="switch" type="checkbox"/><label for="toctree-checkbox-28"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../plot_common/PlotPTDiagram.html">pyskyfire.viz.plot_common.PlotPTDiagram</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_common/PlotResidualHistory.html">pyskyfire.viz.plot_common.PlotResidualHistory</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_common/PlotStationProperty.html">pyskyfire.viz.plot_common.PlotStationProperty</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_film_cooling/index.html">pyskyfire.viz.plot_film_cooling</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_film_cooling" class="toctree-checkbox" id="toctree-checkbox-28" name="toctree-checkbox-28" role="switch" type="checkbox"/><label for="toctree-checkbox-28"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_film_cooling/index.html">pyskyfire.viz.plot_film_cooling</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_film_cooling" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../plot_film_cooling/PlotFilmBoundaryLayer.html">pyskyfire.viz.plot_film_cooling.PlotFilmBoundaryLayer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_film_cooling/PlotFilmDryout.html">pyskyfire.viz.plot_film_cooling.PlotFilmDryout</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_film_cooling/PlotFilmEffectiveWallHTC.html">pyskyfire.viz.plot_film_cooling.PlotFilmEffectiveWallHTC</a></li>
@@ -385,7 +399,9 @@
 <li class="toctree-l3"><a class="reference internal" href="../plot_film_cooling/PlotGaseousFilmTemperatureGap.html">pyskyfire.viz.plot_film_cooling.PlotGaseousFilmTemperatureGap</a></li>
 </ul>
 </li>
-<li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">pyskyfire.viz.plot_regen</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_regen" checked="" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">pyskyfire.viz.plot_regen</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_regen" checked="" class="toctree-checkbox" id="toctree-checkbox-30" name="toctree-checkbox-30" role="switch" type="checkbox"/><label for="toctree-checkbox-30"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="PlotChannelHeight.html">pyskyfire.viz.plot_regen.PlotChannelHeight</a></li>
+<li class="toctree-l3"><a class="reference internal" href="PlotChannelWidth.html">pyskyfire.viz.plot_regen.PlotChannelWidth</a></li>
 <li class="toctree-l3"><a class="reference internal" href="PlotContour.html">pyskyfire.viz.plot_regen.PlotContour</a></li>
 <li class="toctree-l3"><a class="reference internal" href="PlotCoolantArea.html">pyskyfire.viz.plot_regen.PlotCoolantArea</a></li>
 <li class="toctree-l3"><a class="reference internal" href="PlotCoolantPhase.html">pyskyfire.viz.plot_regen.PlotCoolantPhase</a></li>
@@ -396,28 +412,31 @@
 <li class="toctree-l3"><a class="reference internal" href="PlotHeatTransferCoefficient.html">pyskyfire.viz.plot_regen.PlotHeatTransferCoefficient</a></li>
 <li class="toctree-l3"><a class="reference internal" href="PlotHydraulicDiameter.html">pyskyfire.viz.plot_regen.PlotHydraulicDiameter</a></li>
 <li class="toctree-l3"><a class="reference internal" href="PlotRadiusOfCurvature.html">pyskyfire.viz.plot_regen.PlotRadiusOfCurvature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="PlotReynoldsNumber.html">pyskyfire.viz.plot_regen.PlotReynoldsNumber</a></li>
 <li class="toctree-l3"><a class="reference internal" href="PlotSaturationMargin.html">pyskyfire.viz.plot_regen.PlotSaturationMargin</a></li>
 <li class="toctree-l3"><a class="reference internal" href="PlotTemperatureProfile.html">pyskyfire.viz.plot_regen.PlotTemperatureProfile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="PlotThermalResistance.html">pyskyfire.viz.plot_regen.PlotThermalResistance</a></li>
 <li class="toctree-l3"><a class="reference internal" href="PlotVelocity.html">pyskyfire.viz.plot_regen.PlotVelocity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="PlotWallLayers.html">pyskyfire.viz.plot_regen.PlotWallLayers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="PlotWallTemperature.html">pyskyfire.viz.plot_regen.PlotWallTemperature</a></li>
 <li class="toctree-l3"><a class="reference internal" href="PlotdAdxCoolantArea.html">pyskyfire.viz.plot_regen.PlotdAdxCoolantArea</a></li>
 <li class="toctree-l3"><a class="reference internal" href="PlotdAdxThermalCoolant.html">pyskyfire.viz.plot_regen.PlotdAdxThermalCoolant</a></li>
 <li class="toctree-l3"><a class="reference internal" href="PlotdAdxThermalHotGas.html">pyskyfire.viz.plot_regen.PlotdAdxThermalHotGas</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_skycea/index.html">pyskyfire.viz.plot_skycea</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_skycea" class="toctree-checkbox" id="toctree-checkbox-30" name="toctree-checkbox-30" role="switch" type="checkbox"/><label for="toctree-checkbox-30"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_skycea/index.html">pyskyfire.viz.plot_skycea</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_skycea" class="toctree-checkbox" id="toctree-checkbox-31" name="toctree-checkbox-31" role="switch" type="checkbox"/><label for="toctree-checkbox-31"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../plot_skycea/PlotTransportProperty.html">pyskyfire.viz.plot_skycea.PlotTransportProperty</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_skycea/PlotTransportPropertyField.html">pyskyfire.viz.plot_skycea.PlotTransportPropertyField</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../report/index.html">pyskyfire.viz.report</a><input aria-label="Toggle navigation of pyskyfire.viz.report" class="toctree-checkbox" id="toctree-checkbox-31" name="toctree-checkbox-31" role="switch" type="checkbox"/><label for="toctree-checkbox-31"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../report/index.html">pyskyfire.viz.report</a><input aria-label="Toggle navigation of pyskyfire.viz.report" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../report/Report.html">pyskyfire.viz.report.Report</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../report/Tab.html">pyskyfire.viz.report.Tab</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../report/_Block.html">pyskyfire.viz.report._Block</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../report/_Block.html">pyskyfire.viz.report._Block</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-33" name="toctree-checkbox-33" role="switch" type="checkbox"/><label for="toctree-checkbox-33"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../sankey/PlotMassFlowSankey.html">pyskyfire.viz.sankey.PlotMassFlowSankey</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../sankey/_FlowLink.html">pyskyfire.viz.sankey._FlowLink</a></li>
 </ul>
@@ -481,7 +500,19 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen.PHASE_ORDER" title="pyskyfire.viz.plot_regen.PHASE_ORDER"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PHASE_ORDER</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen._INK_SECONDARY" title="pyskyfire.viz.plot_regen._INK_SECONDARY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_INK_SECONDARY</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen.RESISTANCE_COLORS" title="pyskyfire.viz.plot_regen.RESISTANCE_COLORS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RESISTANCE_COLORS</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen.RESISTANCE_LABELS" title="pyskyfire.viz.plot_regen.RESISTANCE_LABELS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RESISTANCE_LABELS</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen._COOLANT_LAYER_COLOR" title="pyskyfire.viz.plot_regen._COOLANT_LAYER_COLOR"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_COOLANT_LAYER_COLOR</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen._INK_SECONDARY" title="pyskyfire.viz.plot_regen._INK_SECONDARY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_INK_SECONDARY</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen._SOLID_LAYER_COLORS" title="pyskyfire.viz.plot_regen._SOLID_LAYER_COLORS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_SOLID_LAYER_COLORS</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -495,6 +526,12 @@
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="PlotChannelHeight.html#pyskyfire.viz.plot_regen.PlotChannelHeight" title="pyskyfire.viz.plot_regen.PlotChannelHeight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotChannelHeight</span></code></a></p></td>
+<td><p>Plot the raw cooling-channel height profile for selected circuits.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="PlotChannelWidth.html#pyskyfire.viz.plot_regen.PlotChannelWidth" title="pyskyfire.viz.plot_regen.PlotChannelWidth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotChannelWidth</span></code></a></p></td>
+<td><p>Compare calculated tube OD width with optional reference profiles.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="PlotContour.html#pyskyfire.viz.plot_regen.PlotContour" title="pyskyfire.viz.plot_regen.PlotContour"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotContour</span></code></a></p></td>
 <td><p>Plot bell-nozzle or toroidal-aerospike contours, mirrored about the x-axis.</p></td>
 </tr>
@@ -525,25 +562,34 @@
 <tr class="row-even"><td><p><a class="reference internal" href="PlotRadiusOfCurvature.html#pyskyfire.viz.plot_regen.PlotRadiusOfCurvature" title="pyskyfire.viz.plot_regen.PlotRadiusOfCurvature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotRadiusOfCurvature</span></code></a></p></td>
 <td><p>Common helpers + Plotly passthrough.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="PlotSaturationMargin.html#pyskyfire.viz.plot_regen.PlotSaturationMargin" title="pyskyfire.viz.plot_regen.PlotSaturationMargin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotSaturationMargin</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="PlotReynoldsNumber.html#pyskyfire.viz.plot_regen.PlotReynoldsNumber" title="pyskyfire.viz.plot_regen.PlotReynoldsNumber"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotReynoldsNumber</span></code></a></p></td>
+<td><p>Plot combustion-gas and coolant Reynolds numbers along the chamber.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="PlotSaturationMargin.html#pyskyfire.viz.plot_regen.PlotSaturationMargin" title="pyskyfire.viz.plot_regen.PlotSaturationMargin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotSaturationMargin</span></code></a></p></td>
 <td><p>Plot bulk coolant temperature against its saturation temperature.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="PlotTemperatureProfile.html#pyskyfire.viz.plot_regen.PlotTemperatureProfile" title="pyskyfire.viz.plot_regen.PlotTemperatureProfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotTemperatureProfile</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="PlotTemperatureProfile.html#pyskyfire.viz.plot_regen.PlotTemperatureProfile" title="pyskyfire.viz.plot_regen.PlotTemperatureProfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotTemperatureProfile</span></code></a></p></td>
 <td><p>Temperature profile T(y) across gas boundary layer, wall, and coolant</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="PlotThermalResistance.html#pyskyfire.viz.plot_regen.PlotThermalResistance" title="pyskyfire.viz.plot_regen.PlotThermalResistance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotThermalResistance</span></code></a></p></td>
+<td><p>Stack the hot-side, wall, and coolant-side thermal resistances.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="PlotVelocity.html#pyskyfire.viz.plot_regen.PlotVelocity" title="pyskyfire.viz.plot_regen.PlotVelocity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotVelocity</span></code></a></p></td>
 <td><p>Plot coolant velocity from one or more <code class="docutils literal notranslate"><span class="pre">RegenResult</span></code> objects.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="PlotWallTemperature.html#pyskyfire.viz.plot_regen.PlotWallTemperature" title="pyskyfire.viz.plot_regen.PlotWallTemperature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotWallTemperature</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="PlotWallLayers.html#pyskyfire.viz.plot_regen.PlotWallLayers" title="pyskyfire.viz.plot_regen.PlotWallLayers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotWallLayers</span></code></a></p></td>
+<td><p>Draw the wall stack of each cooling circuit to scale in the meridional plane.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="PlotWallTemperature.html#pyskyfire.viz.plot_regen.PlotWallTemperature" title="pyskyfire.viz.plot_regen.PlotWallTemperature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotWallTemperature</span></code></a></p></td>
 <td><p>Build a wall-temperature plot from one or more <code class="docutils literal notranslate"><span class="pre">RegenResult</span></code> objects.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="PlotdAdxCoolantArea.html#pyskyfire.viz.plot_regen.PlotdAdxCoolantArea" title="pyskyfire.viz.plot_regen.PlotdAdxCoolantArea"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotdAdxCoolantArea</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="PlotdAdxCoolantArea.html#pyskyfire.viz.plot_regen.PlotdAdxCoolantArea" title="pyskyfire.viz.plot_regen.PlotdAdxCoolantArea"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotdAdxCoolantArea</span></code></a></p></td>
 <td><p>Common helpers + Plotly passthrough.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="PlotdAdxThermalCoolant.html#pyskyfire.viz.plot_regen.PlotdAdxThermalCoolant" title="pyskyfire.viz.plot_regen.PlotdAdxThermalCoolant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotdAdxThermalCoolant</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="PlotdAdxThermalCoolant.html#pyskyfire.viz.plot_regen.PlotdAdxThermalCoolant" title="pyskyfire.viz.plot_regen.PlotdAdxThermalCoolant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotdAdxThermalCoolant</span></code></a></p></td>
 <td><p>Common helpers + Plotly passthrough.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="PlotdAdxThermalHotGas.html#pyskyfire.viz.plot_regen.PlotdAdxThermalHotGas" title="pyskyfire.viz.plot_regen.PlotdAdxThermalHotGas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotdAdxThermalHotGas</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="PlotdAdxThermalHotGas.html#pyskyfire.viz.plot_regen.PlotdAdxThermalHotGas" title="pyskyfire.viz.plot_regen.PlotdAdxThermalHotGas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlotdAdxThermalHotGas</span></code></a></p></td>
 <td><p>Common helpers + Plotly passthrough.</p></td>
 </tr>
 </tbody>
@@ -555,6 +601,12 @@
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen._interp_sorted" title="pyskyfire.viz.plot_regen._interp_sorted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_interp_sorted</span></code></a>(→ numpy.ndarray)</p></td>
+<td><p>Interpolate onto <code class="docutils literal notranslate"><span class="pre">x_target</span></code>, tolerating a descending source grid.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen._layer_label" title="pyskyfire.viz.plot_regen._layer_label"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_layer_label</span></code></a>(→ str)</p></td>
+<td><p>Name a wall layer from its own label, else its material, else its index.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen._normalize_indices" title="pyskyfire.viz.plot_regen._normalize_indices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_normalize_indices</span></code></a>(thrust_chamber, circuit_index)</p></td>
 <td><p></p></td>
 </tr>
@@ -564,7 +616,10 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen._phase_segments" title="pyskyfire.viz.plot_regen._phase_segments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_phase_segments</span></code></a>(phase)</p></td>
 <td><p>Split a phase label array into contiguous runs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen._segment_bounds" title="pyskyfire.viz.plot_regen._segment_bounds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_segment_bounds</span></code></a>(x, i0, i1)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen._result_grid" title="pyskyfire.viz.plot_regen._result_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_result_grid</span></code></a>(→ numpy.ndarray)</p></td>
+<td><p>Return a result's native grid, falling back to legacy <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.plot_regen._segment_bounds" title="pyskyfire.viz.plot_regen._segment_bounds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_segment_bounds</span></code></a>(x, i0, i1)</p></td>
 <td><p>Axial extent of a segment, ordered low→high.</p></td>
 </tr>
 </tbody>
@@ -573,6 +628,20 @@
 </section>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyskyfire.viz.plot_regen._interp_sorted">
+<span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.plot_regen.</span></span><span class="sig-name descname"><span class="pre">_interp_sorted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_source</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span></span><a class="headerlink" href="#pyskyfire.viz.plot_regen._interp_sorted" title="Link to this definition">¶</a></dt>
+<dd><p>Interpolate onto <code class="docutils literal notranslate"><span class="pre">x_target</span></code>, tolerating a descending source grid.</p>
+<p>Counter-flow circuits march from the nozzle end, so their native grids run
+the other way and <code class="docutils literal notranslate"><span class="pre">np.interp</span></code> would silently return garbage.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyskyfire.viz.plot_regen._layer_label">
+<span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.plot_regen.</span></span><span class="sig-name descname"><span class="pre">_layer_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="headerlink" href="#pyskyfire.viz.plot_regen._layer_label" title="Link to this definition">¶</a></dt>
+<dd><p>Name a wall layer from its own label, else its material, else its index.</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="pyskyfire.viz.plot_regen._normalize_indices">
 <span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.plot_regen.</span></span><span class="sig-name descname"><span class="pre">_normalize_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thrust_chamber</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circuit_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyskyfire.viz.plot_regen.IndexLike" title="pyskyfire.viz.plot_regen.IndexLike"><span class="pre">IndexLike</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyskyfire.viz.plot_regen._normalize_indices" title="Link to this definition">¶</a></dt>
@@ -598,6 +667,12 @@ every plot here degrades to an explanatory annotation rather than raising.</p>
 </dl>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyskyfire.viz.plot_regen._result_grid">
+<span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.plot_regen.</span></span><span class="sig-name descname"><span class="pre">_result_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span></span><a class="headerlink" href="#pyskyfire.viz.plot_regen._result_grid" title="Link to this definition">¶</a></dt>
+<dd><p>Return a result’s native grid, falling back to legacy <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -633,8 +708,28 @@ to increase and the raw endpoints cannot be used as <code class="docutils litera
 <dd></dd></dl>
 
 <dl class="py data">
+<dt class="sig sig-object py" id="pyskyfire.viz.plot_regen.RESISTANCE_COLORS">
+<span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.plot_regen.</span></span><span class="sig-name descname"><span class="pre">RESISTANCE_COLORS</span></span><a class="headerlink" href="#pyskyfire.viz.plot_regen.RESISTANCE_COLORS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="pyskyfire.viz.plot_regen.RESISTANCE_LABELS">
+<span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.plot_regen.</span></span><span class="sig-name descname"><span class="pre">RESISTANCE_LABELS</span></span><a class="headerlink" href="#pyskyfire.viz.plot_regen.RESISTANCE_LABELS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="pyskyfire.viz.plot_regen._COOLANT_LAYER_COLOR">
+<span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.plot_regen.</span></span><span class="sig-name descname"><span class="pre">_COOLANT_LAYER_COLOR</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'#2a78d6'</span></span><a class="headerlink" href="#pyskyfire.viz.plot_regen._COOLANT_LAYER_COLOR" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
 <dt class="sig sig-object py" id="pyskyfire.viz.plot_regen._INK_SECONDARY">
 <span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.plot_regen.</span></span><span class="sig-name descname"><span class="pre">_INK_SECONDARY</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'#52514e'</span></span><a class="headerlink" href="#pyskyfire.viz.plot_regen._INK_SECONDARY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="pyskyfire.viz.plot_regen._SOLID_LAYER_COLORS">
+<span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.plot_regen.</span></span><span class="sig-name descname"><span class="pre">_SOLID_LAYER_COLORS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('#eb6834',</span> <span class="pre">'#1baf7a',</span> <span class="pre">'#eda100',</span> <span class="pre">'#e87ba4',</span> <span class="pre">'#008300',</span> <span class="pre">'#4a3aa7',</span> <span class="pre">'#e34948')</span></span><a class="headerlink" href="#pyskyfire.viz.plot_regen._SOLID_LAYER_COLORS" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </section>
@@ -645,12 +740,12 @@ to increase and the raw endpoints cannot be used as <code class="docutils litera
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="PlotContour.html">
+          <a class="next-page" href="PlotChannelHeight.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">pyskyfire.viz.plot_regen.PlotContour</div>
+                <div class="title">pyskyfire.viz.plot_regen.PlotChannelHeight</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -700,15 +795,22 @@ to increase and the raw endpoints cannot be used as <code class="docutils litera
 <li><a class="reference internal" href="#classes">Classes</a></li>
 <li><a class="reference internal" href="#functions">Functions</a></li>
 <li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li><a class="reference internal" href="#pyskyfire.viz.plot_regen._interp_sorted"><code class="docutils literal notranslate"><span class="pre">_interp_sorted()</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.viz.plot_regen._layer_label"><code class="docutils literal notranslate"><span class="pre">_layer_label()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.plot_regen._normalize_indices"><code class="docutils literal notranslate"><span class="pre">_normalize_indices()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.plot_regen._phase_array"><code class="docutils literal notranslate"><span class="pre">_phase_array()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.plot_regen._phase_segments"><code class="docutils literal notranslate"><span class="pre">_phase_segments()</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.viz.plot_regen._result_grid"><code class="docutils literal notranslate"><span class="pre">_result_grid()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.plot_regen._segment_bounds"><code class="docutils literal notranslate"><span class="pre">_segment_bounds()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.plot_regen.IndexLike"><code class="docutils literal notranslate"><span class="pre">IndexLike</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.plot_regen.PHASE_COLORS"><code class="docutils literal notranslate"><span class="pre">PHASE_COLORS</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.plot_regen.PHASE_LABELS"><code class="docutils literal notranslate"><span class="pre">PHASE_LABELS</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.plot_regen.PHASE_ORDER"><code class="docutils literal notranslate"><span class="pre">PHASE_ORDER</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.viz.plot_regen.RESISTANCE_COLORS"><code class="docutils literal notranslate"><span class="pre">RESISTANCE_COLORS</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.viz.plot_regen.RESISTANCE_LABELS"><code class="docutils literal notranslate"><span class="pre">RESISTANCE_LABELS</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.viz.plot_regen._COOLANT_LAYER_COLOR"><code class="docutils literal notranslate"><span class="pre">_COOLANT_LAYER_COLOR</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.plot_regen._INK_SECONDARY"><code class="docutils literal notranslate"><span class="pre">_INK_SECONDARY</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.viz.plot_regen._SOLID_LAYER_COLORS"><code class="docutils literal notranslate"><span class="pre">_SOLID_LAYER_COLORS</span></code></a></li>
 </ul>
 </li>
 </ul>

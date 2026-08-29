@@ -1,7 +1,7 @@
 pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics
 ==========================================================
 
-.. py:class:: pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics(thrust_chamber, boundary_conditions, circuit_index, film_model=None, coolant_state: Optional[pyskyfire.regen.coolant_state.CoolantState] = None)
+.. py:class:: pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics(thrust_chamber, boundary_conditions, circuit_index, film_model=None, coolant_state: Optional[pyskyfire.regen.coolant_state.CoolantState] = None, heat_curvature_correction: bool = True, pressure_curvature_correction: bool = True)
 
    
    Heat-exchanger physics whose hot side may be gas- or film-driven.
@@ -18,6 +18,12 @@ pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics
 
        **film_model** : :obj:`FilmHeatFluxModel` or :data:`python:None`, :obj:`optional`
            Film boundary condition. ``None`` reproduces the base class exactly.
+
+       **heat_curvature_correction** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           Apply the RL10 curvature multiplier to coolant-side heat transfer.
+
+       **pressure_curvature_correction** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           Apply the RTE/Ito curvature multiplier to Darcy pressure loss.
 
 
 
@@ -123,6 +129,34 @@ pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics
           !! processed by numpydoc !!
 
 
+   .. py:method:: bulk_velocity(x, T_cool, p_cool, quality=None)
+
+      
+      Return the bulk coolant density and single-channel velocity at ``x``.
+
+
+
+
+
+      :Returns:
+
+          :class:`python:tuple` :obj:`of` :class:`python:float`
+              ``(rho, u)`` in [kg m⁻³] and [m s⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: cold_side_coefficients(x, T_cw, T_cool, p_cool=None, quality=None)
 
       
@@ -203,11 +237,15 @@ pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics
           !! processed by numpydoc !!
 
 
-   .. py:method:: coolant_pressure_rate(x, T_cool, p_cool, quality=None)
+   .. py:method:: coolant_friction_rate(x, T_cool, p_cool, quality=None)
 
       
-      Return static and stagnation coolant-pressure rates [Pa m⁻¹].
+      Return the friction-driven coolant-pressure gradient [Pa m⁻¹].
 
+      This is the irreversible term of the 1-D momentum equation only. The
+      reversible acceleration term :math:`-\rho u\,du/dx` is applied by the
+      march station to station, because it depends on the state at both ends
+      of a segment rather than on a local gradient.
 
       :Parameters:
 

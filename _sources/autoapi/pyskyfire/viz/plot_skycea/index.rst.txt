@@ -27,8 +27,45 @@ Classes
    pyskyfire.viz.plot_skycea.PlotTransportPropertyField
 
 
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.viz.plot_skycea._iter_results
+   pyskyfire.viz.plot_skycea._visualization_x
+   pyskyfire.viz.plot_skycea.result_gas_x
+
+
 Module Contents
 ---------------
+
+.. py:function:: _iter_results(results)
+
+.. py:function:: _visualization_x(at, *, x, results, nodes)
+
+.. py:function:: result_gas_x(results) -> numpy.ndarray
+
+   
+   Return the unique gas-side coordinates used by solved results.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
 
 .. py:data:: _PROP_INFO
 

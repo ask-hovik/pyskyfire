@@ -1,7 +1,7 @@
 pyskyfire.regen.contour.Contour
 ===============================
 
-.. py:class:: pyskyfire.regen.contour.Contour(xs, rs, name=None)
+.. py:class:: pyskyfire.regen.contour.Contour(xs, rs, name=None, chamber_angle=None, nozzle_angle=None)
 
    
    Inner hot-gas contour of a bell-type rocket engine.
@@ -20,16 +20,34 @@ pyskyfire.regen.contour.Contour
        **name** : :class:`python:str`, :obj:`optional`
            Identifier for this contour.
 
+       **chamber_angle** : :class:`python:float`, :obj:`optional`
+           Positive wall angle on the chamber side of the throat [rad]. The
+           corresponding converging-wall slope is ``-tan(chamber_angle)``. When
+           omitted, the chamber-side spline endpoint is unconstrained.
+
+       **nozzle_angle** : :class:`python:float`, :obj:`optional`
+           Positive wall angle on the nozzle side of the throat [rad]. The
+           corresponding diverging-wall slope is ``tan(nozzle_angle)``. When
+           omitted, the nozzle-side spline endpoint is unconstrained.
+
    :Attributes:
 
        **xs** : :obj:`ndarray <numpy.ndarray>`
-           Axial coordinates defining the wall line [m].
+           Spline knots defining the wall line [m]. This includes an interpolated
+           throat at ``x=0`` when the input did not provide one.
 
        **rs** : :obj:`ndarray <numpy.ndarray>`
-           Radial coordinates corresponding to `xs` [m].
+           Wall radii corresponding to ``xs`` [m].
 
-       **_dr_dx** : :obj:`ndarray <numpy.ndarray>`
-           Precomputed derivative `dr/dx` for fast interpolation.
+       **input_xs, input_rs** : :obj:`ndarray <numpy.ndarray>`
+           Original input points, unchanged by throat insertion.
+
+       **_converging_spline, _diverging_spline** : :obj:`CubicSpline`
+           Independently clamped cubic splines meeting at the throat with the
+           optional prescribed chamber- and nozzle-side slopes.
+
+       **chamber_angle, nozzle_angle** : :class:`python:float` or :data:`python:None`
+           Optional wall angles at the throat [rad].
 
        **name** : :class:`python:str` or :data:`python:None`
            Optional descriptive name.
@@ -104,7 +122,102 @@ pyskyfire.regen.contour.Contour
           !! processed by numpydoc !!
 
 
-   .. py:method:: __setattr__(name, value)
+   .. py:method:: _build_splines()
+
+      
+      Build splines sharing the throat value with independent slopes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _endpoint_slope(xs, rs, *, at_start)
+      :staticmethod:
+
+
+      
+      Estimate an outer-boundary slope from up to three nearby points.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _evaluate_spline(x, derivative=0)
+
+      
+      Evaluate the appropriate throat-side spline without extrapolation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: d2r_dx2(x)
+
+      
+      Return the local second derivative of wall radius with respect to x.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
 
 
    .. py:method:: dr_dx(x)
@@ -132,6 +245,11 @@ pyskyfire.regen.contour.Contour
 
 
 
+      .. rubric:: Notes
+
+      At the sharp throat itself, this returns the chamber-side derivative.
+      The nozzle-side derivative is the right-hand limit as ``x`` approaches
+      zero.
 
 
 

@@ -19,13 +19,18 @@ Functions
 .. autoapisummary::
 
    pyskyfire.regen.physics.T_aw
+   pyskyfire.regen.physics._curvature_group
    pyskyfire.regen.physics.f_darcy
    pyskyfire.regen.physics.f_darcy_laminar
    pyskyfire.regen.physics.f_darcy_turbulent
+   pyskyfire.regen.physics.friction_velocity
    pyskyfire.regen.physics.h_coolant_colburn
    pyskyfire.regen.physics.h_gas_bartz
    pyskyfire.regen.physics.h_gas_bartz_enthalpy_driven
+   pyskyfire.regen.physics.kader_temperature_plus
+   pyskyfire.regen.physics.kader_temperature_profile
    pyskyfire.regen.physics.phi_curv
+   pyskyfire.regen.physics.phi_curv_friction
    pyskyfire.regen.physics.reynolds
    pyskyfire.regen.physics.sigma
    pyskyfire.regen.physics.u_coolant
@@ -76,6 +81,29 @@ Module Contents
 
    TODO: Implement a more robust version that could also handle laminar flow, in case this function is suddenly
    used in a function where this makes sense.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _curvature_group(Re_c, length_scale, R_curv)
+
+   
+   Return ``Re * (length_scale / |R|)^2`` or zero if straight.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -185,6 +213,31 @@ Module Contents
 
        :class:`python:float`
            Darcy friction factor (dimensionless).
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: friction_velocity(velocity, darcy_factor)
+
+   
+   Return friction velocity from a bulk velocity and Darcy factor.
+
+   The Darcy-Weisbach convention gives
+   ``u_tau = abs(velocity) * sqrt(f_D / 8)``.
+
+
+
+
 
 
 
@@ -368,10 +421,92 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
+.. py:function:: kader_temperature_plus(y_plus, prandtl, eta)
+
+   
+   Return Kader's dimensionless turbulent temperature profile.
+
+
+   :Parameters:
+
+       **y_plus** : :class:`python:float` or :term:`numpy:array_like`
+           Wall-normal distance in viscous units.
+
+       **prandtl** : :class:`python:float`
+           Molecular Prandtl number at the representative fluid state.
+
+       **eta** : :class:`python:float` or :term:`numpy:array_like`
+           Outer coordinate ``y / delta``. Values must lie between zero at the
+           wall and one at the thermal-boundary-layer edge.
+
+
+
+   :Returns:
+
+       :class:`python:float` or :obj:`numpy.ndarray`
+           Dimensionless temperature difference
+           ``abs(T - T_wall) / T_tau``.
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   This is the smooth-wall, fully turbulent interpolation of Kader (1981),
+   including its outer-layer correction. It blends the conductive sublayer
+   and logarithmic layer without assuming a molecular Prandtl number near
+   unity. Fluid properties are nevertheless treated as locally constant.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: kader_temperature_profile(T_wall, T_edge, h, rho, cp, mu, prandtl, u_tau, n_points=200)
+
+   
+   Reconstruct one local turbulent thermal boundary layer with Kader.
+
+   The supplied heat-transfer coefficient fixes the convective wall flux as
+   ``h * (T_edge - T_wall)``. The Kader edge condition is inverted for the
+   friction Reynolds number, so this is a local profile reconstruction, not
+   an axial boundary-layer-growth calculation.
+
+
+
+
+   :Returns:
+
+       **distance** : :obj:`numpy.ndarray`
+           Distance from the wall, from zero to ``delta`` [m].
+
+       **temperature** : :obj:`numpy.ndarray`
+           Temperature at each returned distance [K].
+
+       **delta** : :class:`python:float`
+           Reconstructed thermal-boundary-layer thickness [m].
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
 .. py:function:: phi_curv(Re_c, D_c, R_curv)
 
    
-   Curvature correction factor for the coolant-side heat-transfer coefficient.
+   RL10 curvature factor for coolant-side Colburn heat transfer.
 
 
    :Parameters:
@@ -391,7 +526,40 @@ Module Contents
    :Returns:
 
        :class:`python:float`
-           Curvature factor ``φ`` (dimensionless).
+           Curvature factor ``φ`` (dimensionless). Positive radii are concave
+           and enhance heat transfer; negative radii are convex and reduce it.
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   The RL10 model uses
+   ``[Re * (0.5 D_h / R)^2]**(+/- 0.05)``.  Its expression has no sensible
+   zero-curvature limit if extrapolated below a group of one, so this
+   implementation returns one there.  That makes the straight-channel limit
+   finite and joins the correlation continuously at its neutral value.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: phi_curv_friction(Re_c, D_c, R_curv)
+
+   
+   RTE/Ito curvature multiplier for the Darcy friction factor.
+
+   The correlation uses hydraulic radius ``r_h = D_h/4`` and applies only
+   for ``Re * (r_h/R)^2 > 6``.  It is independent of bend direction.
+
+
+
+
 
 
 

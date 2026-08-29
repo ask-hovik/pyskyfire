@@ -20,7 +20,7 @@ The public entry point is:
 coupled_steady_heating_analysis(
     thrust_chamber,
     boundary_conditions,
-    n_nodes=100,
+    nodes=100,
     circuit_index=0,
     film="auto",
     solver="newton",
@@ -34,13 +34,31 @@ For the current implementation, the only accepted solver name is `"newton"`. Thi
 solve_coupled_heat_exchanger(
     thrust_chamber,
     boundary_conditions,
-    n_nodes,
+    nodes,
     circuit_index,
     output,
 )
 ```
 
 The coolant temperature and pressure are marched explicitly, but the two wall temperatures are obtained from a local nonlinear heat-balance solve using `scipy.optimize.least_squares`.
+
+`nodes` may be an integer or three explicit, potentially ragged grids. An
+integer constructs identical uniform grids. Explicit grids use
+`[wall_nodes, heat_flux_nodes, coolant_nodes]`; the equivalent named form is:
+
+```python
+nodes = {
+    "wall": [...],
+    "heat_flux": [...],
+    "coolant": [...],
+}
+```
+
+Every coolant interval must contain at least one wall node. Multiple wall
+nodes are attached to the same lumped coolant state, and their heat rates are
+integrated before the next coolant state is evaluated. This is useful when a
+detailed wall/heat-flux distribution is needed but coolant property flashes
+dominate runtime.
 
 The helper class:
 
@@ -56,7 +74,8 @@ collects the local physics calculations used by the marching solver:
 - `dQ_cond_dx(x, T_hw, T_cw)`
 - `dQ_cold_dx(x, T_cw, T_cool)`
 - `coolant_temperature_rate(T_cool, p_cool, dQ_cold_dx)`
-- `coolant_pressure_rate(x, T_cool, p_cool)`
+- `coolant_friction_rate(x, T_cool, p_cool)`
+- `bulk_velocity(x, T_cool, p_cool)`
 - `interface_temperatures(x, T_hw, T_cw)`
 
 These methods call lower-level correlations from `physics.py`, mainly Bartz-type hot-gas heat transfer, Colburn coolant-side heat transfer, Reynolds number, Darcy friction factor, coolant velocity, curvature factor, and adiabatic-wall temperature.
@@ -161,7 +180,6 @@ Aerothermodynamics.from_F_eps_Lstar(
     T_fu_in=298.15,
     T_ox_in=298.15,
     p_amb=1.013e5,
-    npts=15,
 )
 ```
 
@@ -291,7 +309,6 @@ Aerothermodynamics.from_F_pe_Lstar(
     T_fu_in=298.15,
     T_ox_in=298.15,
     p_amb=1.013e5,
-    npts=15,
 )
 ```
 
@@ -309,113 +326,67 @@ $$
 
 After that, the same mass-flow, area, radius, residence-time, and thrust-coefficient equations are used.
 
-### 4.3 Precomputing the property maps
+### 4.3 Attaching the contour
 
 After construction, the method:
 
 ```python
-compute_aerothermodynamics(contour, Nt=64)
+compute_aerothermodynamics(contour)
 ```
 
-builds a two-dimensional property table along the contour.
+stores the contour on the object and clears the station cache. No property
+table is built here: every gas state is solved live by CEA when a getter asks
+for it, so there is no resolution to choose at this point. `attach_contour` is
+an alias for the same method.
 
-First, the axial grid is created:
+### 4.4 Station states along the contour
 
-$$
-x_i = \mathrm{linspace}(x_{min}, x_{max}, n_{pts})
-$$
-
-where:
-
-$$
-x_{min} = \texttt{contour.xs[0]}
-$$
+With no temperature or enthalpy argument, a getter such as `get_T(x)` solves
+the rocket problem at the local area ratio:
 
 $$
-x_{max} = \texttt{contour.xs[-1]}
+\varepsilon(x) = \frac{A(x)}{A_t}
 $$
 
-The local area ratio is:
+The station is passed to CEA as a subsonic or supersonic area ratio depending
+on the sign of `x`:
 
 $$
-\varepsilon_i = \frac{A(x_i)}{A_t}
-$$
-
-At each station, CEA is called in subsonic or supersonic mode depending on the sign of `x`:
-
-$$
-x_i < 0 \Rightarrow \text{subsonic CEA solve at } \varepsilon_i
+x < 0 \Rightarrow \text{subsonic solve at } \varepsilon(x)
 $$
 
 $$
-x_i \ge 0 \Rightarrow \text{supersonic CEA solve at } \varepsilon_i
+x \ge 0 \Rightarrow \text{supersonic solve at } \varepsilon(x)
 $$
 
-The resulting equilibrium state is stored in column zero of every property map:
+Stations inside the tolerance band $\varepsilon(x) \le 1 + 10^{-10}$ are solved
+as the chamber state. CEA returns the state in its own units, which the code
+converts to base SI: bar to pascal, kJ to J, millipoise to Pa·s, and
+mW/(cm·K) to W/(m·K).
 
-$$
-M_i,\ T_i,\ p_i,\ \rho_i,\ c_{p,i},\ \gamma_i,\ h_i,\ a_i,\ \mu_i,\ k_i,\ Pr_i,\ MW_i
-$$
+Because a station state depends only on `x`, it is cached on the object and
+reused by every later getter at the same coordinate. Temperature- and
+enthalpy-conditioned states are not cached: they are Newton trial points that
+almost never recur, and caching them made the cache grow without bound during
+a coupled solve. The coupled solver clears the cache when a simulation
+finishes.
 
-CEA pressure is stored in bar in `p_map`; the getter later converts it to pascal:
-
-$$
-p[\mathrm{Pa}] = 10^5 p[\mathrm{bar}]
-$$
-
-For each axial row, a local temperature grid is built from the equilibrium temperature down to 200 K:
-
-$$
-T_{i,j} = \mathrm{linspace}(T_{eq,i},\ 200~\mathrm{K},\ N_T)
-$$
-
-For each nonzero temperature-grid column, a CEA temperature-pressure problem is solved at fixed local pressure:
-
-$$
-\text{TP solve at } \left(T_{i,j},\ p_i\right)
-$$
-
-The same property maps are filled with the TP result. The maps therefore contain:
-
-- column 0: equilibrium nozzle/chamber solution at local area ratio,
-- columns 1 through `Nt - 1`: TP solutions at the same local static pressure but different temperatures.
-
-Implementation note: in the current code, the `Nt` argument is overwritten internally by:
+The cache is what makes post-processing cheap. A report tab that plots eleven
+properties over the same axial grid pays for one CEA solve per station in the
+first plot; the remaining ten read cached states. Visualization therefore
+chooses its own resolution, and `PlotTransportProperty` accepts exactly one of:
 
 ```python
-Nt = len(self.x_nodes)
+PlotTransportProperty(transport, prop="T", results=cooling_data)  # run grid
+PlotTransportProperty(transport, prop="T", nodes=200)             # uniform
+PlotTransportProperty(transport, prop="T", x=my_x)                # explicit
 ```
 
-so the number of temperature columns becomes equal to the number of axial stations, not necessarily the value passed as `Nt`.
+Passing `results` reuses the axial stations of the solved run, which keeps the
+plots on the same grid as the simulation and hits the cache the run already
+populated.
 
-### 4.4 Getter behavior
-
-The getter methods all call the same internal logic. With no temperature or enthalpy argument, the getter interpolates the equilibrium column along `x`:
-
-$$
-Z(x) = (1-w_x) Z_i + w_x Z_{i+1}
-$$
-
-where:
-
-$$
-w_x = \frac{x - x_i}{x_{i+1} - x_i}
-$$
-
-This is used for calls such as:
-
-```python
-get_T(x)
-get_p(x)
-get_h(x)
-get_cp(x)
-get_gamma(x)
-get_M(x)
-get_a(x)
-get_mu(x)
-get_k(x)
-get_Pr(x)
-```
+### 4.5 Imposed temperature and imposed enthalpy
 
 When a temperature is supplied, for example:
 
@@ -423,121 +394,47 @@ When a temperature is supplied, for example:
 get_h(x, T=T_wall)
 ```
 
-bilinear interpolation is first tried over the precomputed `(x, T)` map. For each of the two bracketing axial rows, it interpolates in temperature:
+the local static pressure is taken from the station state at `x`, and CEA is
+solved as a TP problem at $(T,\ p(x))$. An imposed enthalpy is solved the same
+way as an HP problem at $(h,\ p(x))$.
+
+Pressure is special: `get_p(x, T=..., h=...)` ignores `T` and `h` and always
+returns the station pressure $p(x)$.
+
+Composition is returned directly from the solve as a species mole-fraction
+dictionary; no interpolation between stations is involved.
+
+### 4.6 Continuation below the CEA temperature boundary
+
+CEA becomes unreliable at low temperature, so states below
+`minimum_cea_temperature` (200 K by default, configurable on the constructor)
+are not solved directly. Instead, the properties are continued along their
+right-hand tangent at the boundary $T_b$. Three TP solves are taken at
+$T_b,\ T_b + \Delta T,\ T_b + 2\Delta T$, and a second-order one-sided
+derivative is formed:
 
 $$
-Z_i(T) = \mathrm{interp}\left(T;\ T_{i,:},\ Z_{i,:}\right)
+\left.\frac{dZ}{dT}\right|_{T_b} = \frac{-3Z_0 + 4Z_1 - Z_2}{2\Delta T}
 $$
 
-$$
-Z_{i+1}(T) = \mathrm{interp}\left(T;\ T_{i+1,:},\ Z_{i+1,:}\right)
-$$
-
-Then it interpolates in `x`:
+Strictly positive properties ($\rho$, $c_p$, $\gamma$, $a$, $\mu$, $k$, $Pr$,
+$MW$) are continued in log space, which keeps them positive:
 
 $$
-Z(x,T) = (1-w_x)Z_i(T) + w_x Z_{i+1}(T)
+Z(T) = Z(T_b)\exp\left[\left.\frac{d\ln Z}{dT}\right|_{T_b}(T - T_b)\right]
 $$
 
-If the requested temperature lies outside the local table range, a live CEA TP solve is performed at:
+Enthalpy is continued linearly:
 
 $$
-(T,\ p(x))
+h(T) = h(T_b) + \left.\frac{dh}{dT}\right|_{T_b}(T - T_b)
 $$
 
-where `p(x)` is taken from the equilibrium pressure column.
-
-Pressure is special: `get_p(x, T=..., h=...)` ignores `T` and `h` and always returns the interpolated equilibrium pressure:
-
-$$
-p(x) = 10^5\,p_{map,0}(x)
-$$
-
-### 4.5 Composition interpolation
-
-Equilibrium product mole fractions are stored as species dictionaries. When composition is requested at a point between two CEA stations, the code forms the union of species in the two bracketing dictionaries and linearly blends each species:
-
-$$
-X_s(x) = (1-w_x)X_{s,i} + w_x X_{s,i+1}
-$$
-
-Missing species are treated as zero. Negative values are clipped to zero, and the final dictionary is renormalized:
-
-$$
-X_s^{norm}(x) = \frac{\max(X_s(x),0)}{\sum_r \max(X_r(x),0)}
-$$
-
-### 4.6 Enthalpy-pressure lookup path
-
-The HP lookup path is marked as under construction in the source code. It is used when a getter is called with `h=...`, for example:
-
-```python
-get_T(x, h=h_target)
-```
-
-The intended target is a CEA HP solve at:
-
-$$
-(h_{target},\ p(x))
-$$
-
-To do this, the implementation assigns the mixture enthalpy to one selected “adjuster” fuel species. First, fuel and oxidizer component weights are normalized within their streams:
-
-$$
-\hat{w}_{fu,m} = \frac{w_{fu,m}}{\sum_r w_{fu,r}}
-$$
-
-$$
-\hat{w}_{ox,m} = \frac{w_{ox,m}}{\sum_r w_{ox,r}}
-$$
-
-The stream mass fractions implied by mixture ratio are:
-
-$$
-w_{fu,stream} = \frac{1}{1+MR}
-$$
-
-$$
-w_{ox,stream} = \frac{MR}{1+MR}
-$$
-
-The overall mass fraction of each fuel component is:
-
-$$
-w_m = w_{fu,stream}\hat{w}_{fu,m}
-$$
-
-and the overall mass fraction of each oxidizer component is:
-
-$$
-w_m = w_{ox,stream}\hat{w}_{ox,m}
-$$
-
-The first fuel species is chosen as the adjuster. If its molecular mass is `MW_adj` and its overall mass fraction is `w_adj`, the assigned molar enthalpy is chosen such that:
-
-$$
-h_{target} = w_{adj}\frac{H_{adj}}{MW_{adj}}
-$$
-
-so:
-
-$$
-H_{adj} = \frac{h_{target} MW_{adj}}{w_{adj}}
-$$
-
-All other species receive zero assigned formation enthalpy in this artificial HP setup. CEA is then run at:
-
-$$
-(p(x),\ H_{adj})
-$$
-
-The molecular mass used for the adjuster is computed from an exploded chemical formula such as `"C 2 H 6 O 1"`:
-
-$$
-MW = \sum_e n_e MW_e
-$$
-
-where `n_e` is the integer count of element `e` in the formula.
+This is $C^1$ at the boundary, so a Newton solve that crosses $T_b$ sees no
+kink in the properties or their first derivatives. An HP query that fails, or
+that lands below $T_b$, inverts the enthalpy tangent to recover the
+temperature and then evaluates the same continuation. The tangents are cached
+per (station, pressure) pair and cleared together with the station cache.
 
 ---
 
@@ -1152,10 +1049,15 @@ In the source, the function name and argument name still refer to `dQ_cold_dx`, 
 
 ## 11. Coolant pressure marching
 
-The pressure update is calculated by:
+The solver marches **static** pressure, because static pressure is what the
+momentum equation governs and what test data and the reference RL10 models
+report. Stagnation pressure is carried alongside as
+$p_0 = p + \tfrac{1}{2}\rho_c u_c^2$.
+
+The irreversible part of the update is calculated by:
 
 ```python
-coolant_pressure_rate(x, T_cool, p_cool)
+coolant_friction_rate(x, T_cool, p_cool)
 ```
 
 At the current station, the coolant density is:
@@ -1225,69 +1127,72 @@ $$
 f = \mathrm{interp}\left(Re_{D_h};\ [2300,3500],\ [f_{lam},f_{turb}]\right)
 $$
 
-### 11.2 Stagnation pressure gradient
+### 11.2 Friction gradient
 
-A geometric path-length factor from is computed:
+A geometric path-length factor is computed:
 
 ```python
 circuit.ds_dx(x)
 ```
 
-The stagnation pressure gradient is:
+The friction gradient, evaluated at the segment midpoint on the upstream
+state, is:
 
 $$
-\frac{dp_0}{dx} = -\frac{f}{D_h}\frac{\rho_c u_c^2}{2}\frac{ds}{dx}
+\left(\frac{dp}{dx}\right)_{fric} = -\frac{f}{D_h}\frac{\rho_c u_c^2}{2}\frac{ds}{dx}
 $$
 
-An equivalent-length curvature term is also computed:
+where $f$ already carries the Ito curvature multiplier when
+`pressure_curvature_correction` is enabled.
+
+### 11.3 Acceleration term
+
+The full one-dimensional momentum equation is:
 
 $$
-\frac{dL_{eq}}{dx} = \frac{2KD_h}{\pi R_{curv} f}
+\frac{dp}{dx} = \left(\frac{dp}{dx}\right)_{fric} - \rho_c u_c\frac{du_c}{dx}
 $$
 
-and:
+The second term is not a purely local quantity: the coolant accelerates both
+because the channel tapers and because heating lowers its density. It is
+therefore applied segment to segment, trapezoidally in the mass flux
+$G = \rho_c u_c$:
 
 $$
-\text{curvature factor} = 1 + \frac{dL_{eq}}{dx}
+\Delta p_{acc,i} = \tfrac{1}{2}\left(G_i + G_{i+1}\right)\left(u_{c,i+1} - u_{c,i}\right)
 $$
 
-but this factor is not applied in the returned pressure gradient in the current implementation.
+This form is exact in both limits it has to span. At constant density it
+reduces to Bernoulli, $\tfrac{1}{2}\rho_c(u_{c,i+1}^2 - u_{c,i}^2)$; at
+constant area it reduces to $G^2\left(1/\rho_{i+1} - 1/\rho_i\right)$, which
+for a heated duct is **twice** the change in dynamic head. Reconstructing
+static pressure as $p_0 - \tfrac{1}{2}\rho_c u_c^2$ from a friction-only
+stagnation march therefore counts the heating-driven acceleration at half
+strength. Equivalently, a friction-only $dp_0/dx$ omits the heat-addition
+(Rayleigh) stagnation loss $+\tfrac{1}{2}u_c^2\,d\rho_c/dx$.
 
-### 11.3 Static pressure gradient with area change
+### 11.4 Segment update
 
-The coolant channel area derivative is:
-
-$$
-\frac{dA_c}{dx}
-$$
-
-The static pressure gradient is computed as:
-
-$$
-\frac{dp}{dx} = \frac{dp_0}{dx} - \frac{\rho_c u_c^2}{A_c}\frac{dA_c}{dx}
-$$
-
-The explicit pressure updates are:
+The static update is:
 
 $$
-p_{i+1} = p_i + \left(\frac{dp}{dx}\right)_i\Delta x
-$$
-
-$$
-p_{0,i+1} = p_{0,i} + \left(\frac{dp_0}{dx}\right)_i\Delta x
-$$
-
-After the full march, the solver recomputes static pressure from stagnation pressure and dynamic pressure:
-
-$$
-q_i = \frac{1}{2}\rho_i u_i^2
+p_{i+1} = p_i + \left(\frac{dp}{dx}\right)_{fric,i}\Delta x - \Delta p_{acc,i}
 $$
 
 $$
-p_i = p_{0,i} - q_i
+p_{0,i+1} = p_{i+1} + \tfrac{1}{2}\rho_{i+1}u_{c,i+1}^2
 $$
 
-This corrected static pressure overwrites the previously marched static-pressure array in the returned results.
+The downstream density, velocity and pressure are mutually dependent through
+the equation of state, so each segment is swept to a fixed point starting from
+the friction-only guess. `PRESSURE_SWEEPS` caps the sweeps and
+`PRESSURE_SWEEP_TOL` sets the convergence tolerance in pascals; a segment that
+fails to settle raises a `RuntimeWarning`. The downstream enthalpy is fixed by
+the segment's heat load and so does not participate in the sweep.
+
+The inlet boundary condition `p_coolant_in` is interpreted as a **stagnation**
+pressure, so node 0 starts at $p_0 = p_{coolant,in}$ and
+$p = p_{coolant,in} - \tfrac{1}{2}\rho_c u_c^2$.
 
 ---
 
@@ -1427,14 +1332,14 @@ The current regenerative cooling solver is an engineering heat-exchanger model. 
 - Hot-gas heat transfer is modeled by an enthalpy-driven Bartz-style correlation.
 - Coolant-side heat transfer is modeled by a Colburn-style turbulent internal-flow correlation.
 - Coolant pressure drop is modeled with Darcy friction and a separate area-change correction.
-- Hot-gas properties are supplied by equilibrium and TP CEA tables, then interpolated.
+- Hot-gas properties are solved live by CEA at the requested station and cached per axial coordinate.
 
 There are also a few important implementation details to keep in mind:
 
 - The Bartz gas properties are evaluated at the computed reference enthalpy `H_gr`.
 - `phi_curv` is computed in the coolant-side model, but the current Colburn call passes `phi_curv=1`, so curvature does not currently modify `h_cold`.
-- `compute_aerothermodynamics(contour, Nt=...)` currently overwrites `Nt` with `len(self.x_nodes)`.
-- `get_p(x, T=..., h=...)` always returns the equilibrium-column pressure and ignores the supplied temperature or enthalpy.
+- Gas states below `minimum_cea_temperature` are continued along a $C^1$ tangent instead of being solved by CEA.
+- `get_p(x, T=..., h=...)` always returns the station pressure and ignores the supplied temperature or enthalpy.
 - In `cold_side_coefficients`, coolant properties are evaluated using the marched coolant pressure.
 
 These are limitations in the current implementation that is being worked on for future versions. Nevertheless, the exact behavior is reported here so results using the program are interpreted correctly. 
@@ -1447,7 +1352,10 @@ These are limitations in the current implementation that is being worked on for 
 
 ```python
 {
-    "x": x_domain,
+    "x": x_wall,
+    "x_wall": x_wall,
+    "x_heat_flux": x_heat_flux,
+    "x_coolant": x_coolant,
     "T": T_full,
     "T_static": T_cool_arr,
     "T_stagnation": T_stagnation_arr,
@@ -1460,11 +1368,23 @@ These are limitations in the current implementation that is being worked on for 
     "h_cold": h_cold_arr,
     "T_aw_hot": T_aw_hot_arr,
     "residuals": (global_R, final_R),
+    "wall_residual_scaled": wall_residual_scaled,
+    "wall_converged": wall_residual_scaled <= RESIDUAL_TOL,
     "film_regime": film_regime,
     "liquid_film": liquid_film_or_none,
     "gaseous_film": gaseous_film_or_none,
 }
 ```
+
+`x` remains an alias for `x_wall`. `T` is defined on `x_wall`; `dQ_dA`,
+`qpp_hot`, `h_hot`, `h_hot_enthalpy`, `T_aw_hot`, and `T_drive` are defined on
+`x_heat_flux`; coolant temperature, pressure, velocity, phase, quality, and
+`h_cold` are defined on `x_coolant`.
+
+`PlotWallTemperature` displays a red `x` at every wall node where
+`wall_converged` is false. Pass `mark_nonconverged=False` to suppress these
+markers. Their hover labels report the final scaled residual.
+
 ---
 
 ## 16. Summary

@@ -32,11 +32,9 @@ Functions
 
 .. autoapisummary::
 
-   pyskyfire.viz.engine_viz._arc_points_tangent_to_rays_yz
    pyskyfire.viz.engine_viz._blockage_at_x
    pyskyfire.viz.engine_viz._read_text
    pyskyfire.viz.engine_viz._threejs_gltf_viewer_data_url
-   pyskyfire.viz.engine_viz._wrap_to_pi
    pyskyfire.viz.engine_viz.build_rounded_section_points
    pyskyfire.viz.engine_viz.build_sections_for_centerlines
    pyskyfire.viz.engine_viz.build_squared_section_points
@@ -51,8 +49,9 @@ Functions
    pyskyfire.viz.engine_viz.make_engine_3d
    pyskyfire.viz.engine_viz.plane_uv_to_xyz
    pyskyfire.viz.engine_viz.redistribute_channels
+   pyskyfire.viz.engine_viz.rounded_base_height
+   pyskyfire.viz.engine_viz.rounded_lobe_arcs_yz
    pyskyfire.viz.engine_viz.rounded_slice_arcs_uv
-   pyskyfire.viz.engine_viz.rounded_slice_arcs_yz
    pyskyfire.viz.engine_viz.tile_centerlines
    pyskyfire.viz.engine_viz.wedge_info
    pyskyfire.viz.engine_viz.wrap_pi
@@ -61,30 +60,6 @@ Functions
 
 Module Contents
 ---------------
-
-.. py:function:: _arc_points_tangent_to_rays_yz(r: float, theta_center: float, theta_eff: float, n: int, *, use_major_arc: bool) -> List[Tuple[float, float]]
-
-   
-   Same construction as _arc_points_tangent_to_rays, but returns (y,z) points
-   in the global y–z plane (no x).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
 
 .. py:function:: _blockage_at_x(circuit, x: float) -> float
 
@@ -135,30 +110,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: _wrap_to_pi(a: float) -> float
-
-   
-   Wrap angle to (-pi, pi].
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: build_rounded_section_points(P0: numpy.ndarray, t_hat: numpy.ndarray, cl_cyl_point: numpy.ndarray, geom: dict, n_arc_pts: int)
+.. py:function:: build_rounded_section_points(P0: numpy.ndarray, t_hat: numpy.ndarray, cl_cyl_point: numpy.ndarray, geom: dict, n_arc_pts: int, cross_section)
 
    
    Build rounded wedge-like ring segment by rigidly embedding the original
@@ -398,7 +350,17 @@ Module Contents
    - r_inner   : inner coolant radius (centerline + wall thickness)
    - r_outer   : outer coolant radius (r_inner + h(x))
    - theta_eff : effective wedge angle (blockage applied)
-   plus the raw h, t_wall, and theta_raw.
+   plus the raw h, t_wall, t_channel_wall, and theta_raw.
+
+   ``r_inner``/``r_outer`` follow the squared-section convention, where h(x) is
+   the radial extent of the passage. Rounded sections measure h(x) from the
+   bottom of the inner arc to the top of the outer arc, so they build their
+   lobes from h, t_channel_wall and r_center instead, and only use ``r_inner``
+   to sit the passage on top of the wall stack.
+
+   ``t_wall`` is the full wall stack (used for placement) while
+   ``t_channel_wall`` is the coolant-adjacent layer that the cross-section
+   analytics inset their arcs by.
 
 
 
@@ -579,7 +541,77 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: rounded_slice_arcs_uv(r_inner: float, r_outer: float, r_center: float, theta_center: float, theta_eff: float, n: int = 8) -> tuple[numpy.ndarray, numpy.ndarray]
+.. py:function:: rounded_base_height(cs, r_center: float, theta_eff: float, t_wall: float, h_measured: float) -> float
+
+   
+   Convert a measurable rounded channel height into the model's base height.
+
+   ``channel_height`` for rounded sections is the full extent from the bottom of
+   the inner arc to the top of the outer arc, while the geometry is built from
+   the radial offset between the two lobe centres. The conversion is delegated to
+   the cross-section object so the picture cannot drift from the analytics.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: rounded_lobe_arcs_yz(r_center: float, theta_center: float, theta_eff: float, t_wall: float, h_base: float, n: int = 8, r_bottom: float | None = None) -> Tuple[numpy.ndarray, numpy.ndarray]
+
+   
+   Build the inner/outer coolant lobes of a rounded section as (y, z) points.
+
+   Mirrors the analytics of :class:`CrossSectionRounded`: both lobes are circles
+   tangent to the two sector rays, inset by the channel wall thickness, with
+   centres on the sector bisector at radius ``r_center`` and
+   ``r_center + h_base``. The two straight side walls are the edges joining the
+   arc endpoints.
+
+   :Parameters:
+
+       **r_bottom** : :class:`python:float`, :obj:`optional`
+           If given, the finished section is translated radially so the bottom of
+           the inner lobe sits at this radius. The analytics centre the inner lobe
+           on the hot contour and ignore any hot-side liner, which would draw the
+           passage sunk into the wall; this shifts it out onto the wall stack the
+           way squared sections are drawn, without changing its shape.
+
+
+
+   :Returns:
+
+       **inner_yz** : (n,2) :obj:`array <numpy.ndarray>`
+           Minor arc, running from the +side tangent point inward to the -side one.
+
+       **outer_yz** : (n,2) :obj:`array <numpy.ndarray>`
+           Major arc, running from the -side tangent point outward to the +side one.
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: rounded_slice_arcs_uv(r_center: float, theta_center: float, theta_eff: float, t_wall: float, h_base: float, n: int = 8, r_bottom: float | None = None) -> tuple[numpy.ndarray, numpy.ndarray]
 
    
    Build inner/outer rounded arcs as (u,v) offsets in a local 2D cross-section frame,
@@ -609,8 +641,6 @@ Module Contents
 
    ..
        !! processed by numpydoc !!
-
-.. py:function:: rounded_slice_arcs_yz(r_inner: float, r_outer: float, theta_center: float, theta_eff: float, n: int = 8) -> Tuple[List[Tuple[float, float]], List[Tuple[float, float]]]
 
 .. py:function:: tile_centerlines(centerlines_subset, widths_subset, circuit_ids_subset, g: int, wedge_angle: float)
 

@@ -1,0 +1,54 @@
+pyskyfire.viz.plot_regen.PlotReynoldsNumber
+===========================================
+
+.. py:class:: pyskyfire.viz.plot_regen.PlotReynoldsNumber(thrust_chamber, *regen_results, combustion: bool = True, coolant: bool = True, combustion_nodes: int | None = None, combustion_x=None, show_transition_thresholds: bool = True, template: str = 'plotly_white')
+
+   Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.viz.plot_regen.PlotReynoldsNumber
+      :parts: 1
+      :private-bases:
+
+
+   
+   Plot combustion-gas and coolant Reynolds numbers along the chamber.
+
+   Coolant profiles are evaluated on each result's coolant grid using the
+   same bulk-state convention as the regenerative solver.  The laminar and
+   turbulent limits from :mod:`pyskyfire.regen.physics` are drawn only when
+   an individual profile spans the corresponding limit.
+
+   :Parameters:
+
+       **thrust_chamber** : :obj:`ThrustChamber`
+           Chamber carrying the combustion transport model, contour, and cooling
+           circuits.
+
+       **\*regen_results** : :obj:`RegenResult`
+           Solved cooling circuits to include.
+
+       **combustion, coolant** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           Select which sides to display.
+
+       **combustion_nodes, combustion_x** : :obj:`optional`
+           Override the default combustion grid derived from ``regen_results``
+           with a uniform node count or explicit axial coordinates.
+
+       **show_transition_thresholds** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           Label crossed laminar/turbulent limits with horizontal lines.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

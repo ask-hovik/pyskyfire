@@ -16,7 +16,7 @@ pyskyfire.viz.plot_regen.PlotTemperatureProfile
 
    Inputs:
      - result: ``RegenResult`` containing ``x``, ``T`` (N×n_layers), ``T_static``,
-       ``dQ_dA``, and ``p_static``
+       ``T_aw_hot``, ``h_hot``, ``h_cold``, and ``p_static``
      - thrust_chamber: provides combustion_transport and cooling circuits
      - circuit_index: which cooling circuit to use for coolant props
      - x_query: axial location (m) to sample

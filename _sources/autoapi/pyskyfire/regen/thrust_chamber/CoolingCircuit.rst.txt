@@ -80,11 +80,48 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
           !! processed by numpydoc !!
 
 
+   .. py:method:: channel_wall_thickness(x)
+
+      
+      Return the coolant-adjacent layer used for channel geometry.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: compute_volume()
 
       
-      Total circuit volume (all physical lanes) via ∫ A ds, scaled by lane count.
+      Set ``self.volume``: the wetted coolant volume of the circuit [m³].
 
+      One channel encloses :math:`\int A\,ds` along its own centreline, so
+      the circuit holds :math:`n_{chan}\int A\,(ds/dx)\,dx`.
+
+      ``A_coolant`` is the flow area in the plane normal to the channel, not
+      an axial slice: :meth:`ThrustChamber.build_channel_widths` narrows the
+      sector by :math:`\cos\gamma` for a helix angle :math:`\gamma`, while
+      ``ds/dx`` lengthens the path by the reciprocal on a cylinder. A helical
+      circuit therefore encloses the same volume as an axial one of the same
+      azimuthal pitch, which is the physically correct answer -- only the
+      path is longer and the section correspondingly narrower.
+
+      Trapezoidal on the circuit's own ``x_domain``, so the result converges
+      with axial resolution rather than being exact at any given ``n_nodes``.
 
 
 
@@ -119,14 +156,41 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
    .. py:method:: finalize()
 
 
+   .. py:method:: hot_side_layer_thickness(x)
+
+      
+      Return liner/coating thickness between hot contour and tube wall.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: local_sector_angle(x)
 
 
    .. py:method:: precompute_thermal_properties()
 
       
-      Precompute A, Dh, and thermal perimeters along a representative centerline.
+      Precompute passage geometry along a representative coolant path.
 
+      ``centerlines`` remains the section-reference curve expected by the
+      cross-section models.  ``coolant_centerlines`` is the actual modeled
+      flow-centre curve and controls passage length and curvature.
 
 
 
@@ -211,6 +275,30 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
    .. py:method:: set_channel_width(widths_rad)
 
 
+   .. py:method:: set_coolant_centerline(centerline_list)
+
+      
+      Set modeled coolant-flow-centre curves ``[x, r, theta]``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: set_x_domain(x_domain)
 
 
@@ -218,4 +306,34 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
 
 
    .. py:method:: wedge_angle(x)
+
+
+   .. py:property:: n_channels
+      :type: int
+
+
+      
+      Total number of physical channels carrying this circuit's flow.
+
+      Leaves times channels per leaf. ``placement.channel_count()`` counts
+      leaves only, because it feeds the circumferential packing; a radial
+      stack shares a leaf but not a passage, so anything that divides mass
+      flow or accumulates volume needs this instead.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
 

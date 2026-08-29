@@ -95,11 +95,19 @@ pyskyfire.common.blocks.TurbineBlock
       :Raises:
 
           :obj:`ValueError`
-              If inlet mass flow is non-positive.
+              If inlet mass flow is non-positive, or if no physical expansion
+              can supply the requested power.
 
 
 
 
+      .. rubric:: Notes
+
+      Total-to-total expansion evaluated on enthalpy and entropy rather
+      than on temperature and pressure, so no ideal-gas or constant-``c_p``
+      assumption is made. The isentropic enthalpy drop ``w_req / η`` sets
+      the exit pressure at constant inlet entropy; the actual drop
+      ``w_req`` then sets the exit temperature at that pressure.
 
 
 

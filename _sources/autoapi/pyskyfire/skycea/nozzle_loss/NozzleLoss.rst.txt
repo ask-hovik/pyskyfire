@@ -1,0 +1,271 @@
+pyskyfire.skycea.nozzle_loss.NozzleLoss
+=======================================
+
+.. py:class:: pyskyfire.skycea.nozzle_loss.NozzleLoss
+
+   
+   Multiplicative efficiency model taking ideal performance to delivered.
+
+
+   :Parameters:
+
+       **eta_cf** : :class:`python:float`, :func:`python:callable` or :obj:`EfficiencyTable`
+           Thrust-coefficient efficiency [-]. A callable is invoked as
+           ``eta_cf(p_c, MR)`` with ``p_c`` in Pa.
+
+       **eta_cstar** : :class:`python:float`, :func:`python:callable` or :obj:`EfficiencyTable`, :obj:`optional`
+           Characteristic-velocity efficiency [-]. Default 1.0.
+
+       **Cd** : :class:`python:float`, :obj:`optional`
+           Nozzle discharge coefficient [-]. Used only by :meth:`mass_flow`; it is
+           not part of the specific-impulse chain. Default 1.0.
+
+       **name** : :class:`python:str`, :obj:`optional`
+           Free-text label, for reports.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Examples
+
+   >>> loss = NozzleLoss(eta_cf=0.9479, eta_cstar=0.9892)
+   >>> round(loss.specific_impulse(469.11, p_c=3.32e6, MR=5.25), 1)
+   439.9
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: apply(aero, p_amb: float | None = None) -> DeliveredPerformance
+
+      
+      Degrade an :class:`Aerothermodynamics` design point.
+
+
+      :Parameters:
+
+          **aero** : :obj:`object`
+              Anything exposing the ideal design point: ``p_c``, ``MR``,
+              ``c_star``, ``CF_vac``, ``eps``, ``mdot`` and ``p_amb``. Specific
+              impulses are rebuilt from ``CF`` and ``c_star`` rather than read
+              off ``aero``, so that the ambient pressure term stays unscaled.
+
+          **p_amb** : :class:`python:float`, :obj:`optional`
+              Ambient pressure [Pa] for the ``*_amb`` outputs. Defaults to the
+              value stored on ``aero``.
+
+
+
+      :Returns:
+
+          :obj:`DeliveredPerformance`
+              ..
+
+
+
+
+
+
+
+
+      .. rubric:: Notes
+
+      Mass flow is passed through unchanged -- the engine burns what it
+      burns, and these efficiencies say how much impulse that flow delivers.
+      Use :meth:`mass_flow` if you instead want the flow a throat area
+      passes.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: c_star_efficiency(p_c: float, MR: float) -> float
+
+      
+      Characteristic-velocity efficiency at ``p_c`` [Pa] and ``MR`` [-].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: characteristic_velocity(c_star_ideal: float, p_c: float, MR: float) -> float
+
+      
+      Delivered characteristic velocity [m s⁻¹] from the ideal value.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: mass_flow(p_c: float, A_t: float, c_star_ideal: float, MR: float) -> float
+
+      
+      Mass flow [kg s⁻¹] through a geometric throat area ``A_t`` [m²].
+
+      Applies both the discharge coefficient and the characteristic-velocity
+      efficiency:
+
+      .. math::
+
+          \dot{m} = \frac{C_d\, p_c\, A_t}{\eta_{c^*}\, c^*_{ideal}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: overall_efficiency(p_c: float, MR: float) -> float
+
+      
+      Combined specific-impulse efficiency ``eta_cf * eta_cstar`` [-].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: specific_impulse(Isp_ideal: float, p_c: float, MR: float) -> float
+
+      
+      Delivered specific impulse [s] from the ideal ODE value [s].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: thrust_coefficient(CF_ideal: float, p_c: float, MR: float) -> float
+
+      
+      Delivered *vacuum* thrust coefficient [-] from the ideal value.
+
+      Ambient operation is handled by :meth:`apply`, which subtracts the
+      pressure term after scaling. Do not apply ``eta_cf`` to an
+      ambient-corrected coefficient: the ``p_amb/p_c * eps`` term is exact
+      geometry and pressure, and carries no nozzle loss.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: thrust_coefficient_efficiency(p_c: float, MR: float) -> float
+
+      
+      Thrust-coefficient efficiency at ``p_c`` [Pa] and ``MR`` [-].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

@@ -205,11 +205,18 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="howto/mixture-ratio-optimisation.html">Optimise mixture ratio</a></li>
 </ul>
+<p class="caption" role="heading"><span class="caption-text">Validation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="validation/rl10a-3-3a.html">RL10A-3-3A</a></li>
+</ul>
 <p class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="explanations/capabilities.html">Capabilities</a></li>
 <li class="toctree-l1"><a class="reference internal" href="explanations/package-structure.html">Package Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="explanations/regenerative-cooling-explanation.html">Regenerative Cooling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="explanations/specific-impulse.html">Specific Impulse and Thrust Coefficient</a></li>
+<li class="toctree-l1"><a class="reference internal" href="explanations/moody-diagram.html">The Moody Diagram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="explanations/rao-nozzle.html">Rao Nozzle Contour Angles</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -286,6 +293,7 @@
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/regen/cross_section/CrossSectionRoundedInternal.html">pyskyfire.regen.cross_section.CrossSectionRoundedInternal</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/regen/cross_section/CrossSectionSquared.html">pyskyfire.regen.cross_section.CrossSectionSquared</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/regen/cross_section/SectionProfiles.html">pyskyfire.regen.cross_section.SectionProfiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/regen/cross_section/_RoundedGeometryMixin.html">pyskyfire.regen.cross_section._RoundedGeometryMixin</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/regen/film_solver/index.html">pyskyfire.regen.film_solver</a><input aria-label="Toggle navigation of pyskyfire.regen.film_solver" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -340,37 +348,43 @@
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/skycea/coolant_transport/TransportProperties.html">pyskyfire.skycea.coolant_transport.TransportProperties</a></li>
 </ul>
 </li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/skycea/nozzle_loss/index.html">pyskyfire.skycea.nozzle_loss</a><input aria-label="Toggle navigation of pyskyfire.skycea.nozzle_loss" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/skycea/nozzle_loss/DeliveredPerformance.html">pyskyfire.skycea.nozzle_loss.DeliveredPerformance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/skycea/nozzle_loss/EfficiencyTable.html">pyskyfire.skycea.nozzle_loss.EfficiencyTable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/skycea/nozzle_loss/NozzleLoss.html">pyskyfire.skycea.nozzle_loss.NozzleLoss</a></li>
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/index.html">pyskyfire.viz</a><input aria-label="Toggle navigation of pyskyfire.viz" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/core/index.html">pyskyfire.viz.core</a><input aria-label="Toggle navigation of pyskyfire.viz.core" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/index.html">pyskyfire.viz</a><input aria-label="Toggle navigation of pyskyfire.viz" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/core/index.html">pyskyfire.viz.core</a><input aria-label="Toggle navigation of pyskyfire.viz.core" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/core/PlotBase.html">pyskyfire.viz.core.PlotBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/core/_Adder.html">pyskyfire.viz.core._Adder</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/core/_Node.html">pyskyfire.viz.core._Node</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/engine_viz/index.html">pyskyfire.viz.engine_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.engine_viz" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/engine_viz/index.html">pyskyfire.viz.engine_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.engine_viz" class="toctree-checkbox" id="toctree-checkbox-25" name="toctree-checkbox-25" role="switch" type="checkbox"/><label for="toctree-checkbox-25"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/engine_viz/Engine3DViewer.html">pyskyfire.viz.engine_viz.Engine3DViewer</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="autoapi/pyskyfire/viz/impeller_viz/index.html">pyskyfire.viz.impeller_viz</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/lookup_tables/index.html">pyskyfire.viz.lookup_tables</a><input aria-label="Toggle navigation of pyskyfire.viz.lookup_tables" class="toctree-checkbox" id="toctree-checkbox-25" name="toctree-checkbox-25" role="switch" type="checkbox"/><label for="toctree-checkbox-25"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/lookup_tables/index.html">pyskyfire.viz.lookup_tables</a><input aria-label="Toggle navigation of pyskyfire.viz.lookup_tables" class="toctree-checkbox" id="toctree-checkbox-26" name="toctree-checkbox-26" role="switch" type="checkbox"/><label for="toctree-checkbox-26"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/lookup_tables/PlotMoodyDiagram.html">pyskyfire.viz.lookup_tables.PlotMoodyDiagram</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/lookup_tables/PlotThetaVsEpsilon.html">pyskyfire.viz.lookup_tables.PlotThetaVsEpsilon</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/network_viz/index.html">pyskyfire.viz.network_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.network_viz" class="toctree-checkbox" id="toctree-checkbox-26" name="toctree-checkbox-26" role="switch" type="checkbox"/><label for="toctree-checkbox-26"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/network_viz/index.html">pyskyfire.viz.network_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.network_viz" class="toctree-checkbox" id="toctree-checkbox-27" name="toctree-checkbox-27" role="switch" type="checkbox"/><label for="toctree-checkbox-27"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/network_viz/NetworkVisualizer.html">pyskyfire.viz.network_viz.NetworkVisualizer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/network_viz/_BlockSpec.html">pyskyfire.viz.network_viz._BlockSpec</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_common/index.html">pyskyfire.viz.plot_common</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_common" class="toctree-checkbox" id="toctree-checkbox-27" name="toctree-checkbox-27" role="switch" type="checkbox"/><label for="toctree-checkbox-27"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_common/index.html">pyskyfire.viz.plot_common</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_common" class="toctree-checkbox" id="toctree-checkbox-28" name="toctree-checkbox-28" role="switch" type="checkbox"/><label for="toctree-checkbox-28"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_common/PlotPTDiagram.html">pyskyfire.viz.plot_common.PlotPTDiagram</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_common/PlotResidualHistory.html">pyskyfire.viz.plot_common.PlotResidualHistory</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_common/PlotStationProperty.html">pyskyfire.viz.plot_common.PlotStationProperty</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_film_cooling/index.html">pyskyfire.viz.plot_film_cooling</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_film_cooling" class="toctree-checkbox" id="toctree-checkbox-28" name="toctree-checkbox-28" role="switch" type="checkbox"/><label for="toctree-checkbox-28"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_film_cooling/index.html">pyskyfire.viz.plot_film_cooling</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_film_cooling" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_film_cooling/PlotFilmBoundaryLayer.html">pyskyfire.viz.plot_film_cooling.PlotFilmBoundaryLayer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_film_cooling/PlotFilmDryout.html">pyskyfire.viz.plot_film_cooling.PlotFilmDryout</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_film_cooling/PlotFilmEffectiveWallHTC.html">pyskyfire.viz.plot_film_cooling.PlotFilmEffectiveWallHTC</a></li>
@@ -383,7 +397,9 @@
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_film_cooling/PlotGaseousFilmTemperatureGap.html">pyskyfire.viz.plot_film_cooling.PlotGaseousFilmTemperatureGap</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/index.html">pyskyfire.viz.plot_regen</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_regen" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/index.html">pyskyfire.viz.plot_regen</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_regen" class="toctree-checkbox" id="toctree-checkbox-30" name="toctree-checkbox-30" role="switch" type="checkbox"/><label for="toctree-checkbox-30"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotChannelHeight.html">pyskyfire.viz.plot_regen.PlotChannelHeight</a></li>
+<li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotChannelWidth.html">pyskyfire.viz.plot_regen.PlotChannelWidth</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotContour.html">pyskyfire.viz.plot_regen.PlotContour</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotCoolantArea.html">pyskyfire.viz.plot_regen.PlotCoolantArea</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotCoolantPhase.html">pyskyfire.viz.plot_regen.PlotCoolantPhase</a></li>
@@ -394,28 +410,31 @@
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotHeatTransferCoefficient.html">pyskyfire.viz.plot_regen.PlotHeatTransferCoefficient</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotHydraulicDiameter.html">pyskyfire.viz.plot_regen.PlotHydraulicDiameter</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotRadiusOfCurvature.html">pyskyfire.viz.plot_regen.PlotRadiusOfCurvature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotReynoldsNumber.html">pyskyfire.viz.plot_regen.PlotReynoldsNumber</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotSaturationMargin.html">pyskyfire.viz.plot_regen.PlotSaturationMargin</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotTemperatureProfile.html">pyskyfire.viz.plot_regen.PlotTemperatureProfile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotThermalResistance.html">pyskyfire.viz.plot_regen.PlotThermalResistance</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotVelocity.html">pyskyfire.viz.plot_regen.PlotVelocity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotWallLayers.html">pyskyfire.viz.plot_regen.PlotWallLayers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotWallTemperature.html">pyskyfire.viz.plot_regen.PlotWallTemperature</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotdAdxCoolantArea.html">pyskyfire.viz.plot_regen.PlotdAdxCoolantArea</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotdAdxThermalCoolant.html">pyskyfire.viz.plot_regen.PlotdAdxThermalCoolant</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_regen/PlotdAdxThermalHotGas.html">pyskyfire.viz.plot_regen.PlotdAdxThermalHotGas</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_skycea/index.html">pyskyfire.viz.plot_skycea</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_skycea" class="toctree-checkbox" id="toctree-checkbox-30" name="toctree-checkbox-30" role="switch" type="checkbox"/><label for="toctree-checkbox-30"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_skycea/index.html">pyskyfire.viz.plot_skycea</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_skycea" class="toctree-checkbox" id="toctree-checkbox-31" name="toctree-checkbox-31" role="switch" type="checkbox"/><label for="toctree-checkbox-31"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_skycea/PlotTransportProperty.html">pyskyfire.viz.plot_skycea.PlotTransportProperty</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/plot_skycea/PlotTransportPropertyField.html">pyskyfire.viz.plot_skycea.PlotTransportPropertyField</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/report/index.html">pyskyfire.viz.report</a><input aria-label="Toggle navigation of pyskyfire.viz.report" class="toctree-checkbox" id="toctree-checkbox-31" name="toctree-checkbox-31" role="switch" type="checkbox"/><label for="toctree-checkbox-31"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/report/index.html">pyskyfire.viz.report</a><input aria-label="Toggle navigation of pyskyfire.viz.report" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/report/Report.html">pyskyfire.viz.report.Report</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/report/Tab.html">pyskyfire.viz.report.Tab</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/report/_Block.html">pyskyfire.viz.report._Block</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/report/_Block.html">pyskyfire.viz.report._Block</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="autoapi/pyskyfire/viz/sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-33" name="toctree-checkbox-33" role="switch" type="checkbox"/><label for="toctree-checkbox-33"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/sankey/PlotMassFlowSankey.html">pyskyfire.viz.sankey.PlotMassFlowSankey</a></li>
 <li class="toctree-l3"><a class="reference internal" href="autoapi/pyskyfire/viz/sankey/_FlowLink.html">pyskyfire.viz.sankey._FlowLink</a></li>
 </ul>
@@ -478,6 +497,8 @@
 </li>
           <li><a href="autoapi/pyskyfire/common/solids/TabulatedModel.html#pyskyfire.common.solids.TabulatedModel.__call__">(pyskyfire.common.solids.TabulatedModel method)</a>
 </li>
+          <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/EfficiencyTable.html#pyskyfire.skycea.nozzle_loss.EfficiencyTable.__call__">(pyskyfire.skycea.nozzle_loss.EfficiencyTable method)</a>
+</li>
           <li><a href="autoapi/pyskyfire/viz/core/_Node.html#pyskyfire.viz.core._Node.__call__">(pyskyfire.viz.core._Node method)</a>
 </li>
         </ul></li>
@@ -506,6 +527,8 @@
 </li>
           <li><a href="autoapi/pyskyfire/regen/cross_section/SectionProfiles.html#pyskyfire.regen.cross_section.SectionProfiles.__post_init__">(pyskyfire.regen.cross_section.SectionProfiles method)</a>
 </li>
+          <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/NozzleLoss.html#pyskyfire.skycea.nozzle_loss.NozzleLoss.__post_init__">(pyskyfire.skycea.nozzle_loss.NozzleLoss method)</a>
+</li>
           <li><a href="autoapi/pyskyfire/viz/network_viz/NetworkVisualizer.html#pyskyfire.viz.network_viz.NetworkVisualizer.__post_init__">(pyskyfire.viz.network_viz.NetworkVisualizer method)</a>
 </li>
         </ul></li>
@@ -518,8 +541,6 @@
         <li><a href="autoapi/pyskyfire/common/results/Results.html#pyskyfire.common.results.Results.__setattr__">__setattr__() (pyskyfire.common.results.Results method)</a>
 
         <ul>
-          <li><a href="autoapi/pyskyfire/regen/contour/Contour.html#pyskyfire.regen.contour.Contour.__setattr__">(pyskyfire.regen.contour.Contour method)</a>
-</li>
           <li><a href="autoapi/pyskyfire/regen/contour/ContourToroidalAerospike.html#pyskyfire.regen.contour.ContourToroidalAerospike.__setattr__">(pyskyfire.regen.contour.ContourToroidalAerospike method)</a>
 </li>
         </ul></li>
@@ -533,14 +554,10 @@
           <li><a href="autoapi/pyskyfire/pump/impeller_new/Impeller.html#pyskyfire.pump.impeller_new.Impeller.__str__">(pyskyfire.pump.impeller_new.Impeller method)</a>
 </li>
         </ul></li>
-        <li><a href="autoapi/pyskyfire/viz/engine_viz/index.html#pyskyfire.viz.engine_viz._arc_points_tangent_to_rays_yz">_arc_points_tangent_to_rays_yz() (in module pyskyfire.viz.engine_viz)</a>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotWallLayers.html#pyskyfire.viz.plot_regen.PlotWallLayers._add_band">_add_band() (pyskyfire.viz.plot_regen.PlotWallLayers method)</a>
 </li>
-        <li><a href="autoapi/pyskyfire/regen/cross_section/CrossSectionRounded.html#pyskyfire.regen.cross_section.CrossSectionRounded._beta_alpha">_beta_alpha() (pyskyfire.regen.cross_section.CrossSectionRounded method)</a>
-
-        <ul>
-          <li><a href="autoapi/pyskyfire/regen/cross_section/CrossSectionRoundedInternal.html#pyskyfire.regen.cross_section.CrossSectionRoundedInternal._beta_alpha">(pyskyfire.regen.cross_section.CrossSectionRoundedInternal method)</a>
+        <li><a href="autoapi/pyskyfire/regen/cross_section/_RoundedGeometryMixin.html#pyskyfire.regen.cross_section._RoundedGeometryMixin._beta_alpha">_beta_alpha() (pyskyfire.regen.cross_section._RoundedGeometryMixin method)</a>
 </li>
-        </ul></li>
         <li><a href="autoapi/pyskyfire/viz/network_viz/index.html#pyskyfire.viz.network_viz._block_colors">_block_colors() (in module pyskyfire.viz.network_viz)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/network_viz/index.html#pyskyfire.viz.network_viz._block_name">_block_name() (in module pyskyfire.viz.network_viz)</a>
@@ -559,11 +576,15 @@
 </li>
         <li><a href="autoapi/pyskyfire/regen/coolant_state/CoolantState.html#pyskyfire.regen.coolant_state.CoolantState._build_saturation">_build_saturation() (pyskyfire.regen.coolant_state.CoolantState method)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/regen/contour/Contour.html#pyskyfire.regen.contour.Contour._build_splines">_build_splines() (pyskyfire.regen.contour.Contour method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/pump/impeller_new/Impeller.html#pyskyfire.pump.impeller_new.Impeller._compute_dimensions">_compute_dimensions() (pyskyfire.pump.impeller_new.Impeller method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/pump/impeller_new/Impeller.html#pyskyfire.pump.impeller_new.Impeller._compute_geometry">_compute_geometry() (pyskyfire.pump.impeller_new.Impeller method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/film_solver/GaseousFilmSolver.html#pyskyfire.regen.film_solver.GaseousFilmSolver._convective_h_gaseous">_convective_h_gaseous() (pyskyfire.regen.film_solver.GaseousFilmSolver method)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/index.html#pyskyfire.viz.plot_regen._COOLANT_LAYER_COLOR">_COOLANT_LAYER_COLOR (in module pyskyfire.viz.plot_regen)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/coupled_solver/CoupledHeatExchangerPhysics.html#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics._coolant_pressure">_coolant_pressure() (pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics method)</a>
 </li>
@@ -573,15 +594,25 @@
 </li>
         <li><a href="autoapi/pyskyfire/common/solids/PiecewiseModel.html#pyskyfire.common.solids.PiecewiseModel._covering_indices">_covering_indices() (pyskyfire.common.solids.PiecewiseModel method)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/regen/physics/index.html#pyskyfire.regen.physics._curvature_group">_curvature_group() (in module pyskyfire.regen.physics)</a>
+</li>
         <li><a href="autoapi/pyskyfire/viz/sankey/index.html#pyskyfire.viz.sankey._darken">_darken() (in module pyskyfire.viz.sankey)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/film_solver/GaseousFilmSolver.html#pyskyfire.regen.film_solver.GaseousFilmSolver._derivatives">_derivatives() (pyskyfire.regen.film_solver.GaseousFilmSolver method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/common/solids/PiecewiseModel.html#pyskyfire.common.solids.PiecewiseModel._edge_value">_edge_value() (pyskyfire.common.solids.PiecewiseModel method)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/regen/contour/Contour.html#pyskyfire.regen.contour.Contour._endpoint_slope">_endpoint_slope() (pyskyfire.regen.contour.Contour static method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/viz/engine_viz/index.html#pyskyfire.viz.engine_viz._EPS">_EPS (in module pyskyfire.viz.engine_viz)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/regen/contour/Contour.html#pyskyfire.regen.contour.Contour._evaluate_spline">_evaluate_spline() (pyskyfire.regen.contour.Contour method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/regen/film_solver/LiquidFilmSolver.html#pyskyfire.regen.film_solver.LiquidFilmSolver._evaporation_rate">_evaporation_rate() (pyskyfire.regen.film_solver.LiquidFilmSolver method)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics._extrapolate_enthalpy_state">_extrapolate_enthalpy_state() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics method)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics._extrapolate_temperature_state">_extrapolate_temperature_state() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/report/index.html#pyskyfire.viz.report._file_to_data_uri">_file_to_data_uri() (in module pyskyfire.viz.report)</a>
 </li>
@@ -601,11 +632,13 @@
 </li>
         <li><a href="autoapi/pyskyfire/viz/report/index.html#pyskyfire.viz.report._format_material">_format_material() (in module pyskyfire.viz.report)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="autoapi/pyskyfire/viz/report/index.html#pyskyfire.viz.report._format_number">_format_number() (in module pyskyfire.viz.report)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/sankey/index.html#pyskyfire.viz.sankey._format_station_hover">_format_station_hover() (in module pyskyfire.viz.sankey)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics._forward_derivative">_forward_derivative() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics static method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics._from_design">_from_design() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics class method)</a>
 </li>
@@ -627,17 +660,25 @@
 </li>
         <li><a href="autoapi/pyskyfire/regen/contour/ContourToroidalAerospike.html#pyskyfire.regen.contour.ContourToroidalAerospike._interp_outer">_interp_outer() (pyskyfire.regen.contour.ContourToroidalAerospike method)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/index.html#pyskyfire.viz.plot_regen._interp_sorted">_interp_sorted() (in module pyskyfire.viz.plot_regen)</a>
+</li>
         <li><a href="autoapi/pyskyfire/viz/report/index.html#pyskyfire.viz.report._is_fluid">_is_fluid() (in module pyskyfire.viz.report)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/report/index.html#pyskyfire.viz.report._is_material">_is_material() (in module pyskyfire.viz.report)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/viz/plot_skycea/index.html#pyskyfire.viz.plot_skycea._iter_results">_iter_results() (in module pyskyfire.viz.plot_skycea)</a>
+</li>
         <li><a href="autoapi/pyskyfire/viz/network_viz/index.html#pyskyfire.viz.network_viz._json_for_script">_json_for_script() (in module pyskyfire.viz.network_viz)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/index.html#pyskyfire.viz.plot_regen._layer_label">_layer_label() (in module pyskyfire.viz.plot_regen)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/sankey/PlotMassFlowSankey.html#pyskyfire.viz.sankey.PlotMassFlowSankey._layout_nodes">_layout_nodes() (pyskyfire.viz.sankey.PlotMassFlowSankey static method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/network_viz/index.html#pyskyfire.viz.network_viz._LAYOUT_VERSION">_LAYOUT_VERSION (in module pyskyfire.viz.network_viz)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/coolant_state/CoolantState.html#pyskyfire.regen.coolant_state.CoolantState._liquid_transport">_liquid_transport() (pyskyfire.regen.coolant_state.CoolantState method)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/index.html#pyskyfire.skycea.aerothermodynamics._LOG_TANGENT_FIELDS">_LOG_TANGENT_FIELDS (in module pyskyfire.skycea.aerothermodynamics)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/network_viz/NetworkVisualizer.html#pyskyfire.viz.network_viz.NetworkVisualizer._make_edges">_make_edges() (pyskyfire.viz.network_viz.NetworkVisualizer method)</a>
 </li>
@@ -681,6 +722,8 @@
           <li><a href="autoapi/pyskyfire/regen/film_solver/LiquidFilmSolver.html#pyskyfire.regen.film_solver.LiquidFilmSolver._radiative_heat_flux">(pyskyfire.regen.film_solver.LiquidFilmSolver method)</a>
 </li>
         </ul></li>
+        <li><a href="autoapi/pyskyfire/regen/thrust_chamber/index.html#pyskyfire.regen.thrust_chamber._radius_from_curvature">_radius_from_curvature() (in module pyskyfire.regen.thrust_chamber)</a>
+</li>
         <li><a href="autoapi/pyskyfire/viz/network_viz/index.html#pyskyfire.viz.network_viz._read_layout">_read_layout() (in module pyskyfire.viz.network_viz)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/network_viz/index.html#pyskyfire.viz.network_viz._read_packaged_asset">_read_packaged_asset() (in module pyskyfire.viz.network_viz)</a>
@@ -693,13 +736,19 @@
 </li>
         <li><a href="autoapi/pyskyfire/regen/thrust_chamber/ThrustChamber.html#pyskyfire.regen.thrust_chamber.ThrustChamber._resolve_signed_fraction_to_x">_resolve_signed_fraction_to_x() (pyskyfire.regen.thrust_chamber.ThrustChamber method)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/index.html#pyskyfire.viz.plot_regen._result_grid">_result_grid() (in module pyskyfire.viz.plot_regen)</a>
+</li>
         <li><a href="autoapi/pyskyfire/viz/sankey/index.html#pyskyfire.viz.sankey._rgba">_rgba() (in module pyskyfire.viz.sankey)</a>
 </li>
         <li><a href="autoapi/pyskyfire/pump/impeller_new/index.html#pyskyfire.pump.impeller_new._RI_STAR">_RI_STAR (in module pyskyfire.pump.impeller_new)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotWallLayers.html#pyskyfire.viz.plot_regen.PlotWallLayers._sample_grid">_sample_grid() (pyskyfire.viz.plot_regen.PlotWallLayers static method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/viz/plot_regen/index.html#pyskyfire.viz.plot_regen._segment_bounds">_segment_bounds() (in module pyskyfire.viz.plot_regen)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/network_viz/index.html#pyskyfire.viz.network_viz._slug">_slug() (in module pyskyfire.viz.network_viz)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/index.html#pyskyfire.viz.plot_regen._SOLID_LAYER_COLORS">_SOLID_LAYER_COLORS (in module pyskyfire.viz.plot_regen)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/film_solver/GasEmittanceCalculator.html#pyskyfire.regen.film_solver.GasEmittanceCalculator._species_emittance">_species_emittance() (pyskyfire.regen.film_solver.GasEmittanceCalculator method)</a>
 </li>
@@ -711,6 +760,8 @@
 </li>
         <li><a href="autoapi/pyskyfire/viz/impeller_viz/index.html#pyskyfire.viz.impeller_viz._structured_surface_from_xyz">_structured_surface_from_xyz() (in module pyskyfire.viz.impeller_viz)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics._temperature_tangent">_temperature_tangent() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/regen/cross_section/CrossSectionSquared.html#pyskyfire.regen.cross_section.CrossSectionSquared._theta_real">_theta_real() (pyskyfire.regen.cross_section.CrossSectionSquared method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/engine_viz/index.html#pyskyfire.viz.engine_viz._threejs_gltf_viewer_data_url">_threejs_gltf_viewer_data_url() (in module pyskyfire.viz.engine_viz)</a>
@@ -719,9 +770,11 @@
 </li>
         <li><a href="autoapi/pyskyfire/regen/film_solver/LiquidFilmSolver.html#pyskyfire.regen.film_solver.LiquidFilmSolver._transpiration_correction">_transpiration_correction() (pyskyfire.regen.film_solver.LiquidFilmSolver method)</a>
 </li>
-        <li><a href="autoapi/pyskyfire/viz/index.html#pyskyfire.viz._VIZ_DEPENDENCIES">_VIZ_DEPENDENCIES (in module pyskyfire.viz)</a>
+        <li><a href="autoapi/pyskyfire/regen/thrust_chamber/index.html#pyskyfire.regen.thrust_chamber._validate_cylindrical_curve">_validate_cylindrical_curve() (in module pyskyfire.regen.thrust_chamber)</a>
 </li>
-        <li><a href="autoapi/pyskyfire/viz/engine_viz/index.html#pyskyfire.viz.engine_viz._wrap_to_pi">_wrap_to_pi() (in module pyskyfire.viz.engine_viz)</a>
+        <li><a href="autoapi/pyskyfire/viz/plot_skycea/index.html#pyskyfire.viz.plot_skycea._visualization_x">_visualization_x() (in module pyskyfire.viz.plot_skycea)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/viz/index.html#pyskyfire.viz._VIZ_DEPENDENCIES">_VIZ_DEPENDENCIES (in module pyskyfire.viz)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/network_viz/index.html#pyskyfire.viz.network_viz._X6_ASSET_NAME">_X6_ASSET_NAME (in module pyskyfire.viz.network_viz)</a>
 </li>
@@ -775,10 +828,10 @@
         </ul></li>
         <li><a href="autoapi/pyskyfire/common/results/Results.html#pyskyfire.common.results.Results.add">add() (pyskyfire.common.results.Results method)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="autoapi/pyskyfire/pump/impeller_new/index.html#pyskyfire.pump.impeller_new.add_blade_theta">add_blade_theta() (in module pyskyfire.pump.impeller_new)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="autoapi/pyskyfire/viz/report/Tab.html#pyskyfire.viz.report.Tab.add_deferred_iframe">add_deferred_iframe() (pyskyfire.viz.report.Tab method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/report/Tab.html#pyskyfire.viz.report.Tab.add_figure">add_figure() (pyskyfire.viz.report.Tab method)</a>
@@ -803,6 +856,8 @@
 </li>
         <li><a href="autoapi/pyskyfire/viz/core/_Adder.html#pyskyfire.viz.core._Adder.annotation">annotation() (pyskyfire.viz.core._Adder method)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/NozzleLoss.html#pyskyfire.skycea.nozzle_loss.NozzleLoss.apply">apply() (pyskyfire.skycea.nozzle_loss.NozzleLoss method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.ArrayLike">ArrayLike (in module pyskyfire.common.solids)</a>
 </li>
         <li><a href="autoapi/pyskyfire/common/fluids/Fluid.html#pyskyfire.common.fluids.Fluid.as_mole_fractions">as_mole_fractions() (pyskyfire.common.fluids.Fluid method)</a>
@@ -816,6 +871,8 @@
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/index.html#pyskyfire.skycea.aerothermodynamics.BAR_TO_PA">BAR_TO_PA (in module pyskyfire.skycea.aerothermodynamics)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/regen/cross_section/_RoundedGeometryMixin.html#pyskyfire.regen.cross_section._RoundedGeometryMixin.base_height">base_height() (pyskyfire.regen.cross_section._RoundedGeometryMixin method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/pump/impeller_new_2/index.html#pyskyfire.pump.impeller_new_2.beta_1">beta_1 (in module pyskyfire.pump.impeller_new_2)</a>
 </li>
@@ -845,6 +902,8 @@
 </li>
         <li><a href="autoapi/pyskyfire/regen/coupled_solver/CoupledHeatExchangerPhysics.html#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.bulk_density">bulk_density() (pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics method)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/regen/coupled_solver/CoupledHeatExchangerPhysics.html#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.bulk_velocity">bulk_velocity() (pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics method)</a>
+</li>
     </ul></td>
   </tr></table>
 </section>
@@ -853,9 +912,21 @@
   <h2>C</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/NozzleLoss.html#pyskyfire.skycea.nozzle_loss.NozzleLoss.c_star_efficiency">c_star_efficiency() (pyskyfire.skycea.nozzle_loss.NozzleLoss method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.cache_size">cache_size (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics property)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/regen/channel_placement/ChannelPlacement.html#pyskyfire.regen.channel_placement.ChannelPlacement.centerline_dtheta_dx">centerline_dtheta_dx() (pyskyfire.regen.channel_placement.ChannelPlacement method)</a>
+
+        <ul>
+          <li><a href="autoapi/pyskyfire/regen/channel_placement/SurfacePlacement.html#pyskyfire.regen.channel_placement.SurfacePlacement.centerline_dtheta_dx">(pyskyfire.regen.channel_placement.SurfacePlacement method)</a>
+</li>
+        </ul></li>
         <li><a href="autoapi/pyskyfire/regen/channel_placement/ChannelPlacement.html#pyskyfire.regen.channel_placement.ChannelPlacement.channel_count">channel_count() (pyskyfire.regen.channel_placement.ChannelPlacement method)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/regen/thrust_chamber/CoolingCircuit.html#pyskyfire.regen.thrust_chamber.CoolingCircuit.channel_wall_thickness">channel_wall_thickness() (pyskyfire.regen.thrust_chamber.CoolingCircuit method)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/NozzleLoss.html#pyskyfire.skycea.nozzle_loss.NozzleLoss.characteristic_velocity">characteristic_velocity() (pyskyfire.skycea.nozzle_loss.NozzleLoss method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/engine_viz/index.html#pyskyfire.viz.engine_viz.circular_pattern">circular_pattern() (in module pyskyfire.viz.engine_viz)</a>
 </li>
@@ -903,6 +974,12 @@
 </li>
         <li><a href="autoapi/pyskyfire/regen/contour/index.html#pyskyfire.regen.contour.compute_cutoff_length">compute_cutoff_length() (in module pyskyfire.regen.contour)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/regen/channel_placement/ChannelPlacement.html#pyskyfire.regen.channel_placement.ChannelPlacement.compute_flow_centerline_radius">compute_flow_centerline_radius() (pyskyfire.regen.channel_placement.ChannelPlacement method)</a>
+
+        <ul>
+          <li><a href="autoapi/pyskyfire/regen/channel_placement/SurfacePlacement.html#pyskyfire.regen.channel_placement.SurfacePlacement.compute_flow_centerline_radius">(pyskyfire.regen.channel_placement.SurfacePlacement method)</a>
+</li>
+        </ul></li>
         <li><a href="autoapi/pyskyfire/pump/impeller/Impeller.html#pyskyfire.pump.impeller.Impeller.compute_geometry">compute_geometry() (pyskyfire.pump.impeller.Impeller method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/pump/impeller/Impeller.html#pyskyfire.pump.impeller.Impeller.compute_mass">compute_mass() (pyskyfire.pump.impeller.Impeller method)</a>
@@ -913,9 +990,11 @@
 </li>
         <li><a href="autoapi/pyskyfire/regen/coupled_solver/CoupledHeatExchangerPhysics.html#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_enthalpy_rate">coolant_enthalpy_rate() (pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics method)</a>
 </li>
-        <li><a href="autoapi/pyskyfire/regen/coupled_solver/CoupledHeatExchangerPhysics.html#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_pressure_rate">coolant_pressure_rate() (pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics method)</a>
+        <li><a href="autoapi/pyskyfire/regen/coupled_solver/CoupledHeatExchangerPhysics.html#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_friction_rate">coolant_friction_rate() (pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/coupled_solver/CoupledHeatExchangerPhysics.html#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_temperature_rate">coolant_temperature_rate() (pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics method)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/regen/thrust_chamber/ThrustChamber.html#pyskyfire.regen.thrust_chamber.ThrustChamber.coolant_volume">coolant_volume (pyskyfire.regen.thrust_chamber.ThrustChamber property)</a>
 </li>
         <li><a href="autoapi/pyskyfire/common/fluids/Fluid.html#pyskyfire.common.fluids.Fluid.coolprop_string">coolprop_string() (pyskyfire.common.fluids.Fluid method)</a>
 </li>
@@ -931,6 +1010,8 @@
 </li>
         <li><a href="autoapi/pyskyfire/viz/engine_viz/index.html#pyskyfire.viz.engine_viz.cyl_centerline_to_cartesian">cyl_centerline_to_cartesian() (in module pyskyfire.viz.engine_viz)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/regen/thrust_chamber/index.html#pyskyfire.regen.thrust_chamber.cylindrical_curve_arc_length_scale">cylindrical_curve_arc_length_scale() (in module pyskyfire.regen.thrust_chamber)</a>
+</li>
         <li><a href="autoapi/pyskyfire/pump/impeller_new/index.html#pyskyfire.pump.impeller_new.cylindrical_to_cartesian">cylindrical_to_cartesian() (in module pyskyfire.pump.impeller_new)</a>
 </li>
     </ul></td>
@@ -941,6 +1022,8 @@
   <h2>D</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="autoapi/pyskyfire/regen/contour/Contour.html#pyskyfire.regen.contour.Contour.d2r_dx2">d2r_dx2() (pyskyfire.regen.contour.Contour method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/regen/thrust_chamber/CoolingCircuit.html#pyskyfire.regen.thrust_chamber.CoolingCircuit.dA_dx_coolant">dA_dx_coolant() (pyskyfire.regen.thrust_chamber.CoolingCircuit method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/thrust_chamber/CoolingCircuit.html#pyskyfire.regen.thrust_chamber.CoolingCircuit.dA_dx_thermal_coolant">dA_dx_thermal_coolant() (pyskyfire.regen.thrust_chamber.CoolingCircuit method)</a>
@@ -1041,16 +1124,18 @@
 </li>
         <li><a href="autoapi/pyskyfire/viz/report/index.html#pyskyfire.viz.report.format_value">format_value() (in module pyskyfire.viz.report)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/regen/physics/index.html#pyskyfire.regen.physics.friction_velocity">friction_velocity() (in module pyskyfire.regen.physics)</a>
+</li>
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.from_At_eps_Lstar">from_At_eps_Lstar() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics class method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.from_F_eps_Lstar">from_F_eps_Lstar() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics class method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.from_F_eps_tstay">from_F_eps_tstay() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics class method)</a>
 </li>
-        <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.from_F_eps_Vc">from_F_eps_Vc() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics class method)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.from_F_eps_Vc">from_F_eps_Vc() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics class method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.from_F_pe_Lstar">from_F_pe_Lstar() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics class method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/coolant_state/CoolantState.html#pyskyfire.regen.coolant_state.CoolantState.from_hp">from_hp() (pyskyfire.regen.coolant_state.CoolantState method)</a>
@@ -1127,8 +1212,6 @@
 </li>
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.get_h">get_h() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics method)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="autoapi/pyskyfire/common/solids/Material.html#pyskyfire.common.solids.Material.get_k">get_k() (pyskyfire.common.solids.Material method)</a>
 
         <ul>
@@ -1137,6 +1220,8 @@
           <li><a href="autoapi/pyskyfire/skycea/coolant_transport/CoolantTransport.html#pyskyfire.skycea.coolant_transport.CoolantTransport.get_k">(pyskyfire.skycea.coolant_transport.CoolantTransport method)</a>
 </li>
         </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.get_M">get_M() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.get_molecular_weight">get_molecular_weight() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics method)</a>
@@ -1171,7 +1256,11 @@
 </li>
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.get_T">get_T() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics method)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.get_T0">get_T0() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/regen/contour/index.html#pyskyfire.regen.contour.get_theta_e_n">get_theta_e_n() (in module pyskyfire.regen.contour)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.get_v">get_v() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.get_X">get_X() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics method)</a>
 </li>
@@ -1202,6 +1291,8 @@
         <li><a href="autoapi/pyskyfire/regen/coolant_state/SaturationState.html#pyskyfire.regen.coolant_state.SaturationState.homogeneous_density">homogeneous_density() (pyskyfire.regen.coolant_state.SaturationState method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/coupled_solver/CoupledHeatExchangerPhysics.html#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.hot_side_coefficients">hot_side_coefficients() (pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics method)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/regen/thrust_chamber/CoolingCircuit.html#pyskyfire.regen.thrust_chamber.CoolingCircuit.hot_side_layer_thickness">hot_side_layer_thickness() (pyskyfire.regen.thrust_chamber.CoolingCircuit method)</a>
 </li>
     </ul></td>
   </tr></table>
@@ -1257,9 +1348,17 @@
 </li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k718_table">k718_table (in module pyskyfire.common.solids)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k_304_piecewise">k_304_piecewise (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k_347">k_347 (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k_347_NERVA">k_347_NERVA (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k_347_NERVA_BTU_HR_FT_F">k_347_NERVA_BTU_HR_FT_F (in module pyskyfire.common.solids)</a>
+</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k_304_piecewise">k_304_piecewise (in module pyskyfire.common.solids)</a>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k_347_table">k_347_table (in module pyskyfire.common.solids)</a>
 </li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k_BTUin">k_BTUin (in module pyskyfire.common.solids)</a>
 </li>
@@ -1267,11 +1366,19 @@
 </li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k_hi">k_hi (in module pyskyfire.common.solids)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k_pure_silver">k_pure_silver (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k_pure_silver_values">k_pure_silver_values (in module pyskyfire.common.solids)</a>
+</li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k_yb_cold">k_yb_cold (in module pyskyfire.common.solids)</a>
 </li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k_yb_hi">k_yb_hi (in module pyskyfire.common.solids)</a>
 </li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.k_YellowBrass_70_30">k_YellowBrass_70_30 (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/regen/physics/index.html#pyskyfire.regen.physics.kader_temperature_plus">kader_temperature_plus() (in module pyskyfire.regen.physics)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/regen/physics/index.html#pyskyfire.regen.physics.kader_temperature_profile">kader_temperature_profile() (in module pyskyfire.regen.physics)</a>
 </li>
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/index.html#pyskyfire.skycea.aerothermodynamics.KJ_TO_J">KJ_TO_J (in module pyskyfire.skycea.aerothermodynamics)</a>
 </li>
@@ -1323,6 +1430,8 @@
 </li>
         <li><a href="autoapi/pyskyfire/viz/impeller_viz/index.html#pyskyfire.viz.impeller_viz.make_shroud_meshes">make_shroud_meshes() (in module pyskyfire.viz.impeller_viz)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/NozzleLoss.html#pyskyfire.skycea.nozzle_loss.NozzleLoss.mass_flow">mass_flow() (pyskyfire.skycea.nozzle_loss.NozzleLoss method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/regen/coupled_solver/CoupledHeatExchangerPhysics.html#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.mdot_per_channel">mdot_per_channel() (pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/pump/impeller/index.html#pyskyfire.pump.impeller.meridional_streamlines">meridional_streamlines() (in module pyskyfire.pump.impeller)</a>
@@ -1334,6 +1443,12 @@
         <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/index.html#pyskyfire.skycea.aerothermodynamics.MILLIPOISE_TO_PA_S">MILLIPOISE_TO_PA_S (in module pyskyfire.skycea.aerothermodynamics)</a>
 </li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.mills_304_highT">mills_304_highT (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/index.html#pyskyfire.skycea.aerothermodynamics.MIN_CEA_TEMPERATURE">MIN_CEA_TEMPERATURE (in module pyskyfire.skycea.aerothermodynamics)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.minimum_cea_temperature">minimum_cea_temperature (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics property)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/regen/cross_section/_RoundedGeometryMixin.html#pyskyfire.regen.cross_section._RoundedGeometryMixin.minimum_channel_height">minimum_channel_height() (pyskyfire.regen.cross_section._RoundedGeometryMixin method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/index.html#pyskyfire.viz.missing">missing (in module pyskyfire.viz)</a>
 </li>
@@ -1397,6 +1512,8 @@
 </li>
           <li><a href="autoapi/pyskyfire/skycea/coolant_transport/index.html#module-pyskyfire.skycea.coolant_transport">pyskyfire.skycea.coolant_transport</a>
 </li>
+          <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/index.html#module-pyskyfire.skycea.nozzle_loss">pyskyfire.skycea.nozzle_loss</a>
+</li>
           <li><a href="autoapi/pyskyfire/turbine/index.html#module-pyskyfire.turbine">pyskyfire.turbine</a>
 </li>
           <li><a href="autoapi/pyskyfire/turbine/temporary_file/index.html#module-pyskyfire.turbine.temporary_file">pyskyfire.turbine.temporary_file</a>
@@ -1444,6 +1561,8 @@
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="autoapi/pyskyfire/pump/impeller_new_2/index.html#pyskyfire.pump.impeller_new_2.n">n (in module pyskyfire.pump.impeller_new_2)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/regen/thrust_chamber/CoolingCircuit.html#pyskyfire.regen.thrust_chamber.CoolingCircuit.n_channels">n_channels (pyskyfire.regen.thrust_chamber.CoolingCircuit property)</a>
+</li>
         <li><a href="autoapi/pyskyfire/pump/impeller_new_2/index.html#pyskyfire.pump.impeller_new_2.n_s">n_s (in module pyskyfire.pump.impeller_new_2)</a>
 </li>
     </ul></td>
@@ -1475,6 +1594,8 @@
         <li><a href="autoapi/pyskyfire/pump/impeller/index.html#pyskyfire.pump.impeller.outlet_width">outlet_width() (in module pyskyfire.pump.impeller)</a>
 </li>
         <li><a href="autoapi/pyskyfire/pump/impeller_new/index.html#pyskyfire.pump.impeller_new.outlet_width_ratio">outlet_width_ratio() (in module pyskyfire.pump.impeller_new)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/NozzleLoss.html#pyskyfire.skycea.nozzle_loss.NozzleLoss.overall_efficiency">overall_efficiency() (pyskyfire.skycea.nozzle_loss.NozzleLoss method)</a>
 </li>
     </ul></td>
   </tr></table>
@@ -1524,6 +1645,8 @@
 </li>
         <li><a href="autoapi/pyskyfire/regen/physics/index.html#pyskyfire.regen.physics.phi_curv">phi_curv() (in module pyskyfire.regen.physics)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/regen/physics/index.html#pyskyfire.regen.physics.phi_curv_friction">phi_curv_friction() (in module pyskyfire.regen.physics)</a>
+</li>
         <li><a href="autoapi/pyskyfire/viz/engine_viz/index.html#pyskyfire.viz.engine_viz.plane_uv_to_xyz">plane_uv_to_xyz() (in module pyskyfire.viz.engine_viz)</a>
 </li>
         <li><a href="autoapi/pyskyfire/pump/impeller/Impeller.html#pyskyfire.pump.impeller.Impeller.plot_3d">plot_3d() (pyskyfire.pump.impeller.Impeller method)</a>
@@ -1553,6 +1676,8 @@
         <li><a href="autoapi/pyskyfire/regen/coolant_state/index.html#pyskyfire.regen.coolant_state.probe_coolant">probe_coolant() (in module pyskyfire.regen.coolant_state)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/film_solver/index.html#pyskyfire.regen.film_solver.PropsSI">PropsSI (in module pyskyfire.regen.film_solver)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.PureSilver">PureSilver (in module pyskyfire.common.solids)</a>
 </li>
         <li>
     pyskyfire
@@ -1773,8 +1898,6 @@
         </ul></li>
         <li><a href="autoapi/pyskyfire/regen/coupled_solver/BoundaryConditions.html#pyskyfire.regen.coupled_solver.BoundaryConditions">pyskyfire.regen.coupled_solver.BoundaryConditions (built-in class)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="autoapi/pyskyfire/regen/coupled_solver/CoupledHeatExchangerPhysics.html#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics (built-in class)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/coupled_solver/FilmHeatFluxModel.html#pyskyfire.regen.coupled_solver.FilmHeatFluxModel">pyskyfire.regen.coupled_solver.FilmHeatFluxModel (built-in class)</a>
@@ -1788,6 +1911,10 @@
           <li><a href="autoapi/pyskyfire/regen/cross_section/index.html#module-pyskyfire.regen.cross_section">module</a>
 </li>
         </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="autoapi/pyskyfire/regen/cross_section/_RoundedGeometryMixin.html#pyskyfire.regen.cross_section._RoundedGeometryMixin">pyskyfire.regen.cross_section._RoundedGeometryMixin (built-in class)</a>
+</li>
         <li><a href="autoapi/pyskyfire/regen/cross_section/ChannelSection.html#pyskyfire.regen.cross_section.ChannelSection">pyskyfire.regen.cross_section.ChannelSection (built-in class)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/cross_section/CrossSectionRounded.html#pyskyfire.regen.cross_section.CrossSectionRounded">pyskyfire.regen.cross_section.CrossSectionRounded (built-in class)</a>
@@ -1867,6 +1994,19 @@
         <li><a href="autoapi/pyskyfire/skycea/coolant_transport/CoolantTransport.html#pyskyfire.skycea.coolant_transport.CoolantTransport">pyskyfire.skycea.coolant_transport.CoolantTransport (built-in class)</a>
 </li>
         <li><a href="autoapi/pyskyfire/skycea/coolant_transport/TransportProperties.html#pyskyfire.skycea.coolant_transport.TransportProperties">pyskyfire.skycea.coolant_transport.TransportProperties (built-in class)</a>
+</li>
+        <li>
+    pyskyfire.skycea.nozzle_loss
+
+        <ul>
+          <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/index.html#module-pyskyfire.skycea.nozzle_loss">module</a>
+</li>
+        </ul></li>
+        <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/DeliveredPerformance.html#pyskyfire.skycea.nozzle_loss.DeliveredPerformance">pyskyfire.skycea.nozzle_loss.DeliveredPerformance (built-in class)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/EfficiencyTable.html#pyskyfire.skycea.nozzle_loss.EfficiencyTable">pyskyfire.skycea.nozzle_loss.EfficiencyTable (built-in class)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/NozzleLoss.html#pyskyfire.skycea.nozzle_loss.NozzleLoss">pyskyfire.skycea.nozzle_loss.NozzleLoss (built-in class)</a>
 </li>
         <li>
     pyskyfire.turbine
@@ -1987,6 +2127,10 @@
           <li><a href="autoapi/pyskyfire/viz/plot_regen/index.html#module-pyskyfire.viz.plot_regen">module</a>
 </li>
         </ul></li>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotChannelHeight.html#pyskyfire.viz.plot_regen.PlotChannelHeight">pyskyfire.viz.plot_regen.PlotChannelHeight (built-in class)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotChannelWidth.html#pyskyfire.viz.plot_regen.PlotChannelWidth">pyskyfire.viz.plot_regen.PlotChannelWidth (built-in class)</a>
+</li>
         <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotContour.html#pyskyfire.viz.plot_regen.PlotContour">pyskyfire.viz.plot_regen.PlotContour (built-in class)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotCoolantArea.html#pyskyfire.viz.plot_regen.PlotCoolantArea">pyskyfire.viz.plot_regen.PlotCoolantArea (built-in class)</a>
@@ -2013,11 +2157,17 @@
 </li>
         <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotRadiusOfCurvature.html#pyskyfire.viz.plot_regen.PlotRadiusOfCurvature">pyskyfire.viz.plot_regen.PlotRadiusOfCurvature (built-in class)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotReynoldsNumber.html#pyskyfire.viz.plot_regen.PlotReynoldsNumber">pyskyfire.viz.plot_regen.PlotReynoldsNumber (built-in class)</a>
+</li>
         <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotSaturationMargin.html#pyskyfire.viz.plot_regen.PlotSaturationMargin">pyskyfire.viz.plot_regen.PlotSaturationMargin (built-in class)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotTemperatureProfile.html#pyskyfire.viz.plot_regen.PlotTemperatureProfile">pyskyfire.viz.plot_regen.PlotTemperatureProfile (built-in class)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotThermalResistance.html#pyskyfire.viz.plot_regen.PlotThermalResistance">pyskyfire.viz.plot_regen.PlotThermalResistance (built-in class)</a>
+</li>
         <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotVelocity.html#pyskyfire.viz.plot_regen.PlotVelocity">pyskyfire.viz.plot_regen.PlotVelocity (built-in class)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotWallLayers.html#pyskyfire.viz.plot_regen.PlotWallLayers">pyskyfire.viz.plot_regen.PlotWallLayers (built-in class)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/plot_regen/PlotWallTemperature.html#pyskyfire.viz.plot_regen.PlotWallTemperature">pyskyfire.viz.plot_regen.PlotWallTemperature (built-in class)</a>
 </li>
@@ -2114,8 +2264,6 @@
         </ul></li>
         <li><a href="autoapi/pyskyfire/regen/cross_section/ChannelSection.html#pyskyfire.regen.cross_section.ChannelSection.R_wall_per_len">R_wall_per_len() (pyskyfire.regen.cross_section.ChannelSection method)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="autoapi/pyskyfire/regen/thrust_chamber/index.html#pyskyfire.regen.thrust_chamber.radius_of_curvature">radius_of_curvature() (in module pyskyfire.regen.thrust_chamber)</a>
 
         <ul>
@@ -2130,9 +2278,19 @@
 </li>
         <li><a href="autoapi/pyskyfire/regen/coupled_solver/FilmHeatFluxModel.html#pyskyfire.regen.coupled_solver.FilmHeatFluxModel.regime">regime() (pyskyfire.regen.coupled_solver.FilmHeatFluxModel method)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="autoapi/pyskyfire/pump/impeller_new/index.html#pyskyfire.pump.impeller_new.replicate_blades">replicate_blades() (in module pyskyfire.pump.impeller_new)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics.html#pyskyfire.skycea.aerothermodynamics.Aerothermodynamics.reset_solver_state">reset_solver_state() (pyskyfire.skycea.aerothermodynamics.Aerothermodynamics method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/regen/coupled_solver/index.html#pyskyfire.regen.coupled_solver.RESIDUAL_TOL">RESIDUAL_TOL (in module pyskyfire.regen.coupled_solver)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/index.html#pyskyfire.viz.plot_regen.RESISTANCE_COLORS">RESISTANCE_COLORS (in module pyskyfire.viz.plot_regen)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/viz/plot_regen/index.html#pyskyfire.viz.plot_regen.RESISTANCE_LABELS">RESISTANCE_LABELS (in module pyskyfire.viz.plot_regen)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/viz/plot_skycea/index.html#pyskyfire.viz.plot_skycea.result_gas_x">result_gas_x() (in module pyskyfire.viz.plot_skycea)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/physics/index.html#pyskyfire.regen.physics.reynolds">reynolds() (in module pyskyfire.regen.physics)</a>
 </li>
@@ -2140,13 +2298,27 @@
 </li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.rho0">rho0 (in module pyskyfire.common.solids)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.rho_347">rho_347 (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.rho_347_NERVA">rho_347_NERVA (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.rho_347_NERVA_LB_IN3">rho_347_NERVA_LB_IN3 (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.rho_347_table">rho_347_table (in module pyskyfire.common.solids)</a>
+</li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.rho_T">rho_T (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/index.html#pyskyfire.skycea.nozzle_loss.RL10A_3_3A_ETA_CF">RL10A_3_3A_ETA_CF (in module pyskyfire.skycea.nozzle_loss)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/index.html#pyskyfire.skycea.nozzle_loss.RL10A_3_3A_LOSS">RL10A_3_3A_LOSS (in module pyskyfire.skycea.nozzle_loss)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/thrust_chamber/CoolingCircuit.html#pyskyfire.regen.thrust_chamber.CoolingCircuit.roughness">roughness() (pyskyfire.regen.thrust_chamber.CoolingCircuit method)</a>
 </li>
-        <li><a href="autoapi/pyskyfire/viz/engine_viz/index.html#pyskyfire.viz.engine_viz.rounded_slice_arcs_uv">rounded_slice_arcs_uv() (in module pyskyfire.viz.engine_viz)</a>
+        <li><a href="autoapi/pyskyfire/viz/engine_viz/index.html#pyskyfire.viz.engine_viz.rounded_base_height">rounded_base_height() (in module pyskyfire.viz.engine_viz)</a>
 </li>
-        <li><a href="autoapi/pyskyfire/viz/engine_viz/index.html#pyskyfire.viz.engine_viz.rounded_slice_arcs_yz">rounded_slice_arcs_yz() (in module pyskyfire.viz.engine_viz)</a>
+        <li><a href="autoapi/pyskyfire/viz/engine_viz/index.html#pyskyfire.viz.engine_viz.rounded_lobe_arcs_yz">rounded_lobe_arcs_yz() (in module pyskyfire.viz.engine_viz)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/viz/engine_viz/index.html#pyskyfire.viz.engine_viz.rounded_slice_arcs_uv">rounded_slice_arcs_uv() (in module pyskyfire.viz.engine_viz)</a>
 </li>
         <li><a href="autoapi/pyskyfire/common/engine_network/EngineNetwork.html#pyskyfire.common.engine_network.EngineNetwork.run_fixed_point">run_fixed_point() (pyskyfire.common.engine_network.EngineNetwork method)</a>
 </li>
@@ -2188,10 +2360,12 @@
 </li>
         <li><a href="autoapi/pyskyfire/regen/thrust_chamber/CoolingCircuit.html#pyskyfire.regen.thrust_chamber.CoolingCircuit.set_channel_width">set_channel_width() (pyskyfire.regen.thrust_chamber.CoolingCircuit method)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="autoapi/pyskyfire/regen/thrust_chamber/CoolingCircuit.html#pyskyfire.regen.thrust_chamber.CoolingCircuit.set_coolant_centerline">set_coolant_centerline() (pyskyfire.regen.thrust_chamber.CoolingCircuit method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/regen/thrust_chamber/CoolingCircuit.html#pyskyfire.regen.thrust_chamber.CoolingCircuit.set_x_domain">set_x_domain() (pyskyfire.regen.thrust_chamber.CoolingCircuit method)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="autoapi/pyskyfire/viz/core/_Adder.html#pyskyfire.viz.core._Adder.shape">shape() (pyskyfire.viz.core._Adder method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/core/PlotBase.html#pyskyfire.viz.core.PlotBase.show">show() (pyskyfire.viz.core.PlotBase method)</a>
@@ -2203,6 +2377,8 @@
 </li>
         </ul></li>
         <li><a href="autoapi/pyskyfire/regen/physics/index.html#pyskyfire.regen.physics.sigma">sigma() (in module pyskyfire.regen.physics)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/regen/thrust_chamber/index.html#pyskyfire.regen.thrust_chamber.signed_curvature">signed_curvature() (in module pyskyfire.regen.thrust_chamber)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/film_solver/GaseousFilmSolver.html#pyskyfire.regen.film_solver.GaseousFilmSolver.solve">solve() (pyskyfire.regen.film_solver.GaseousFilmSolver method)</a>
 
@@ -2216,6 +2392,8 @@
 </li>
         <li><a href="autoapi/pyskyfire/regen/coupled_solver/index.html#pyskyfire.regen.coupled_solver.solve_film_cooling">solve_film_cooling() (in module pyskyfire.regen.coupled_solver)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/NozzleLoss.html#pyskyfire.skycea.nozzle_loss.NozzleLoss.specific_impulse">specific_impulse() (pyskyfire.skycea.nozzle_loss.NozzleLoss method)</a>
+</li>
         <li><a href="autoapi/pyskyfire/pump/impeller/index.html#pyskyfire.pump.impeller.specific_speed">specific_speed() (in module pyskyfire.pump.impeller)</a>
 
         <ul>
@@ -2223,6 +2401,8 @@
 </li>
         </ul></li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.StainlessSteel304">StainlessSteel304 (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.StainlessSteel347">StainlessSteel347 (in module pyskyfire.common.solids)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/coupled_solver/FilmHeatFluxModel.html#pyskyfire.regen.coupled_solver.FilmHeatFluxModel.state">state() (pyskyfire.regen.coupled_solver.FilmHeatFluxModel method)</a>
 </li>
@@ -2240,6 +2420,14 @@
 </li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.T718_hi">T718_hi (in module pyskyfire.common.solids)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.T_347_NERVA">T_347_NERVA (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.T_347_NERVA_F">T_347_NERVA_F (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.T_347_RHO_NERVA">T_347_RHO_NERVA (in module pyskyfire.common.solids)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.T_347_RHO_NERVA_F">T_347_RHO_NERVA_F (in module pyskyfire.common.solids)</a>
+</li>
         <li><a href="autoapi/pyskyfire/regen/physics/index.html#pyskyfire.regen.physics.T_aw">T_aw() (in module pyskyfire.regen.physics)</a>
 </li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.T_cold">T_cold (in module pyskyfire.common.solids)</a>
@@ -2248,21 +2436,27 @@
 </li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.T_hi">T_hi (in module pyskyfire.common.solids)</a>
 </li>
+        <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.T_pure_silver">T_pure_silver (in module pyskyfire.common.solids)</a>
+</li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.T_ref">T_ref (in module pyskyfire.common.solids)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="autoapi/pyskyfire/pump/impeller_new/index.html#pyskyfire.pump.impeller_new.tangential_velocity">tangential_velocity() (in module pyskyfire.pump.impeller_new)</a>
 
         <ul>
           <li><a href="autoapi/pyskyfire/pump/utils/index.html#pyskyfire.pump.utils.tangential_velocity">(in module pyskyfire.pump.utils)</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="autoapi/pyskyfire/viz/core/PlotBase.html#pyskyfire.viz.core.PlotBase.template">template() (pyskyfire.viz.core.PlotBase method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/common/solids/index.html#pyskyfire.common.solids.TEOS">TEOS (in module pyskyfire.common.solids)</a>
 </li>
         <li><a href="autoapi/pyskyfire/regen/thrust_chamber/Wall.html#pyskyfire.regen.thrust_chamber.Wall.thickness">thickness() (pyskyfire.regen.thrust_chamber.Wall method)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/NozzleLoss.html#pyskyfire.skycea.nozzle_loss.NozzleLoss.thrust_coefficient">thrust_coefficient() (pyskyfire.skycea.nozzle_loss.NozzleLoss method)</a>
+</li>
+        <li><a href="autoapi/pyskyfire/skycea/nozzle_loss/NozzleLoss.html#pyskyfire.skycea.nozzle_loss.NozzleLoss.thrust_coefficient_efficiency">thrust_coefficient_efficiency() (pyskyfire.skycea.nozzle_loss.NozzleLoss method)</a>
 </li>
         <li><a href="autoapi/pyskyfire/viz/engine_viz/index.html#pyskyfire.viz.engine_viz.tile_centerlines">tile_centerlines() (in module pyskyfire.viz.engine_viz)</a>
 </li>

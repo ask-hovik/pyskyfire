@@ -1,0 +1,46 @@
+pyskyfire.skycea.nozzle_loss.DeliveredPerformance
+=================================================
+
+.. py:class:: pyskyfire.skycea.nozzle_loss.DeliveredPerformance
+
+   
+   Performance after efficiencies, at unchanged propellant flow.
+
+
+
+   :Attributes:
+
+       **eta_cf, eta_cstar, eta_Isp** : :class:`python:float`
+           The thrust-coefficient, characteristic-velocity and combined specific
+           impulse efficiencies actually applied [-].
+
+       **c_star** : :class:`python:float`
+           Delivered characteristic velocity [m s⁻¹].
+
+       **CF_vac, CF_amb, CF_SL** : :class:`python:float`
+           Delivered thrust coefficients in vacuum, at the design ambient
+           pressure, and at sea level [-].
+
+       **Isp_vac, Isp_amb, Isp_SL** : :class:`python:float`
+           Delivered specific impulses [s].
+
+       **F_vac, F_amb** : :class:`python:float`
+           Delivered thrust at the unchanged mass flow [N].
+
+       **mdot** : :class:`python:float`
+           Propellant mass flow, echoed unchanged [kg s⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

@@ -13,6 +13,9 @@ pyskyfire.viz.plot_skycea.PlotTransportPropertyField
    
    Plot a full precomputed transport-property field as z = property(x, T).
 
+   Only legacy precomputed-map objects carry these attributes; live CEA
+   objects solve states on demand and have no property field to plot.
+
    Uses:
      - at.x_nodes
      - at.T_grid

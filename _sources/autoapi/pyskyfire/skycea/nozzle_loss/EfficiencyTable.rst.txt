@@ -1,0 +1,74 @@
+pyskyfire.skycea.nozzle_loss.EfficiencyTable
+============================================
+
+.. py:class:: pyskyfire.skycea.nozzle_loss.EfficiencyTable(mixture_ratio, chamber_pressure, values, *, log_pressure: bool = True)
+
+   
+   Efficiency tabulated against mixture ratio and chamber pressure.
+
+
+   :Parameters:
+
+       **mixture_ratio** : :term:`numpy:array_like`
+           Mixture-ratio axis, strictly increasing [-].
+
+       **chamber_pressure** : :term:`numpy:array_like`
+           Chamber-pressure axis, strictly increasing [Pa].
+
+       **values** : :term:`numpy:array_like`
+           Efficiency values, shape ``(len(mixture_ratio), len(chamber_pressure))``.
+
+       **log_pressure** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           Interpolate against ``log(p_c)`` rather than ``p_c``. Default ``True``,
+           which is almost always what you want: published tables span decades of
+           chamber pressure on a handful of columns, and efficiency tracks the log
+           far more closely than the linear value.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   Queries outside the tabulated ranges are **clamped** to the edge values
+   rather than extrapolated. Efficiency tables of this kind are fits over a
+   stated envelope and go badly wrong outside it -- the reference report notes
+   that the vendor tables it compared against can return negative specific
+   impulse when pushed past their intended range.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(p_c, MR)
+
+      
+      Interpolate the table at ``p_c`` [Pa] and mixture ratio ``MR`` [-].
+
+      Scalars return a float; array inputs broadcast against each other and
+      return an array of the broadcast shape.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

@@ -3,7 +3,7 @@ pyskyfire.regen.cross_section.CrossSectionRoundedInternal
 
 .. py:class:: pyskyfire.regen.cross_section.CrossSectionRoundedInternal(n_points: int = 16)
 
-   Bases: :py:obj:`ChannelSection`
+   Bases: :py:obj:`_RoundedGeometryMixin`, :py:obj:`ChannelSection`
 
    .. autoapi-inheritance-diagram:: pyskyfire.regen.cross_section.CrossSectionRoundedInternal
       :parts: 1
@@ -11,7 +11,7 @@ pyskyfire.regen.cross_section.CrossSectionRoundedInternal
 
 
    
-   Rounded cooling-channel geometry with curved sidewalls.
+   Internal rounded channel whose input height is its full radial extent.
 
 
 
@@ -107,30 +107,6 @@ pyskyfire.regen.cross_section.CrossSectionRoundedInternal
 
       
       Compute thermal-contact perimeter [m].
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: _beta_alpha(theta: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray]
-
-      
-      Return the inner (β) and outer (α) complementary angles.
 
 
 

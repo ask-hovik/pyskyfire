@@ -1,0 +1,55 @@
+pyskyfire.viz.plot_regen.PlotThermalResistance
+==============================================
+
+.. py:class:: pyskyfire.viz.plot_regen.PlotThermalResistance(*regen_results, mode: str = 'share', template: str = 'plotly_white')
+
+   Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.viz.plot_regen.PlotThermalResistance
+      :parts: 1
+      :private-bases:
+
+
+   
+   Stack the hot-side, wall, and coolant-side thermal resistances.
+
+   Every resistance is a temperature drop over the *same* hot-gas-area heat
+   flux, so the three sum exactly to the total gas-to-coolant resistance and
+   can be compared directly:
+
+   ``R_hot = (T_aw - T_hw) / q''``,
+   ``R_wall = (T_hw - T_cw) / q''``,
+   ``R_cold = (T_cw - T_coolant) / q''``.
+
+   That referral matters on the coolant side: ``h_cold`` is a bare convective
+   coefficient on the wetted channel perimeter, so it is not comparable with
+   ``h_hot`` until the channel-to-chamber area ratio is folded in, which this
+   form does implicitly.
+
+   Reading the shares tells you what limits the design -- a gas-film-dominated
+   stack means a better coolant-side correlation buys nothing.
+
+   :Parameters:
+
+       **\*regen_results** : :obj:`RegenResult`
+           Solved circuits. One at a time reads best: stacks from several circuits
+           are drawn in separate stack groups and will overlay each other.
+
+       **mode** : {'share', 'absolute'}, :obj:`optional`
+           Percentage of the total resistance, or absolute m²·K/W.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

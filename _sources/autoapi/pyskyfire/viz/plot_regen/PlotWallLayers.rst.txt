@@ -1,0 +1,121 @@
+pyskyfire.viz.plot_regen.PlotWallLayers
+=======================================
+
+.. py:class:: pyskyfire.viz.plot_regen.PlotWallLayers(thrust_chamber, circuit_index: IndexLike = None, *, interpolation_points: int = 1500, show_contour: bool = True, mirror: bool = True, title: str = 'Wall Layers (to scale)', template: str = 'plotly_white')
+
+   Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.viz.plot_regen.PlotWallLayers
+      :parts: 1
+      :private-bases:
+
+
+   
+   Draw the wall stack of each cooling circuit to scale in the meridional plane.
+
+   Where :class:`PlotContour` draws the hot-gas surface as a line, this fills
+   the physical radial extent of every layer between the hot wall and the
+   closeout, so zooming in reveals the real thicknesses. Bands are stacked from
+   the hot surface outward exactly as the solver stacks them: the circuit's
+   walls in order, then the channel height, then the closeout.
+
+   Two things drawn here are not modelled by pyskyfire and are shown as such:
+
+   * **The closeout wall.** The wall on the atmosphere side of the channel has
+     no definition anywhere in the library, so it is drawn as a copy of the
+     coolant-facing layer and hatched to mark it as an assumption. Replace it
+     once a real definition exists (e.g. for strength calculations).
+   * **Ribs.** The channel band is the full circumferential sector, so the
+     land between channels is not resolved; the band shows where coolant
+     lives radially, not the channel-to-rib split.
+
+   Helical circuits are drawn as if the helix angle were zero -- the
+   meridional path rotationally projected onto the plane. A true rendering
+   would need a section through the 3-D engine. A warning is emitted when a
+   helical circuit is plotted.
+
+   :Parameters:
+
+       **thrust_chamber** : :obj:`ThrustChamber`
+           Chamber whose cooling circuits supply the wall stacks.
+
+       **circuit_index** : :class:`python:int` or :term:`python:iterable` :obj:`of` :class:`python:int`, :obj:`optional`
+           Circuits to draw. Defaults to all of them. Circuits that overlap
+           axially are drawn on top of each other, so pick one when the chamber
+           interlaces several passes.
+
+       **interpolation_points** : :class:`python:int`, :obj:`optional`
+           Axial resolution of the filled bands. The default is generous because
+           the point of the figure is that it survives being zoomed into.
+
+       **show_contour** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           Overlay the full hot-gas contour, including where no circuit runs.
+
+       **mirror** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           Draw the stack on both sides of the axis.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _add_band(x: numpy.ndarray, r_inner: numpy.ndarray, r_outer: numpy.ndarray, *, name: str, color: str, group: str, mirror: bool, pattern: bool = False) -> None
+
+      
+      Fill one layer as a closed polygon, mirrored about the axis.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _sample_grid(circuit, interpolation_points: int) -> numpy.ndarray
+      :staticmethod:
+
+
+      
+      Refine the circuit's own domain so thin layers stay smooth.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

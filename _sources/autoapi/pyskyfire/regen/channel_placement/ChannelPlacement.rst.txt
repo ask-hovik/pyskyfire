@@ -60,6 +60,30 @@ pyskyfire.regen.channel_placement.ChannelPlacement
    ..
        !! processed by numpydoc !!
 
+   .. py:method:: centerline_dtheta_dx(x: float, contour, flow_radius: float, flow_dr_dx: float) -> float
+
+      
+      Return ``dtheta/dx`` for the actual coolant-flow centreline.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: channel_count() -> int
 
 
@@ -68,8 +92,38 @@ pyskyfire.regen.channel_placement.ChannelPlacement
 
 
       
-      Return the centerline radius r(x) for this placement.
+      Return the section-reference radius ``r(x)`` for this placement.
 
+      For surface channels this is the hot-wall radius used by the
+      cross-section models.  The coolant-flow centre is obtained separately
+      with :meth:`compute_flow_centerline_radius`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: compute_flow_centerline_radius(x: float, contour, wall_thickness: float, channel_height: float) -> float
+
+      
+      Return the radius of the modeled coolant-flow centre [m].
+
+      Placements that already describe a flow centre need no offset.  A
+      surface placement overrides this because its section reference is the
+      hot wall.
 
 
 

@@ -1,0 +1,9 @@
+# RL10A-3-3A
+
+The HTML documentation build replaces this page with the standalone
+RL10A-3-3A validation report. This source page exists so that Sphinx can include
+the report in its navigation and so that non-HTML documentation builders have a
+useful fallback.
+
+The generated report is maintained at
+`validation/RL10/RL10A-3-3A_Report.html` in the repository.

@@ -207,11 +207,18 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../howto/mixture-ratio-optimisation.html">Optimise mixture ratio</a></li>
 </ul>
+<p class="caption" role="heading"><span class="caption-text">Validation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../validation/rl10a-3-3a.html">RL10A-3-3A</a></li>
+</ul>
 <p class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../explanations/capabilities.html">Capabilities</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../explanations/package-structure.html">Package Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../explanations/regenerative-cooling-explanation.html">Regenerative Cooling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanations/specific-impulse.html">Specific Impulse and Thrust Coefficient</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanations/moody-diagram.html">The Moody Diagram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanations/rao-nozzle.html">Rao Nozzle Contour Angles</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -288,6 +295,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../cross_section/CrossSectionRoundedInternal.html">pyskyfire.regen.cross_section.CrossSectionRoundedInternal</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../cross_section/CrossSectionSquared.html">pyskyfire.regen.cross_section.CrossSectionSquared</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../cross_section/SectionProfiles.html">pyskyfire.regen.cross_section.SectionProfiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cross_section/_RoundedGeometryMixin.html">pyskyfire.regen.cross_section._RoundedGeometryMixin</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../film_solver/index.html">pyskyfire.regen.film_solver</a><input aria-label="Toggle navigation of pyskyfire.regen.film_solver" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -342,37 +350,43 @@
 <li class="toctree-l3"><a class="reference internal" href="../../skycea/coolant_transport/TransportProperties.html">pyskyfire.skycea.coolant_transport.TransportProperties</a></li>
 </ul>
 </li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../skycea/nozzle_loss/index.html">pyskyfire.skycea.nozzle_loss</a><input aria-label="Toggle navigation of pyskyfire.skycea.nozzle_loss" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../skycea/nozzle_loss/DeliveredPerformance.html">pyskyfire.skycea.nozzle_loss.DeliveredPerformance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../skycea/nozzle_loss/EfficiencyTable.html">pyskyfire.skycea.nozzle_loss.EfficiencyTable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../skycea/nozzle_loss/NozzleLoss.html">pyskyfire.skycea.nozzle_loss.NozzleLoss</a></li>
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../viz/index.html">pyskyfire.viz</a><input aria-label="Toggle navigation of pyskyfire.viz" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/core/index.html">pyskyfire.viz.core</a><input aria-label="Toggle navigation of pyskyfire.viz.core" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../viz/index.html">pyskyfire.viz</a><input aria-label="Toggle navigation of pyskyfire.viz" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/core/index.html">pyskyfire.viz.core</a><input aria-label="Toggle navigation of pyskyfire.viz.core" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/core/PlotBase.html">pyskyfire.viz.core.PlotBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/core/_Adder.html">pyskyfire.viz.core._Adder</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/core/_Node.html">pyskyfire.viz.core._Node</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/engine_viz/index.html">pyskyfire.viz.engine_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.engine_viz" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/engine_viz/index.html">pyskyfire.viz.engine_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.engine_viz" class="toctree-checkbox" id="toctree-checkbox-25" name="toctree-checkbox-25" role="switch" type="checkbox"/><label for="toctree-checkbox-25"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/engine_viz/Engine3DViewer.html">pyskyfire.viz.engine_viz.Engine3DViewer</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../viz/impeller_viz/index.html">pyskyfire.viz.impeller_viz</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/lookup_tables/index.html">pyskyfire.viz.lookup_tables</a><input aria-label="Toggle navigation of pyskyfire.viz.lookup_tables" class="toctree-checkbox" id="toctree-checkbox-25" name="toctree-checkbox-25" role="switch" type="checkbox"/><label for="toctree-checkbox-25"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/lookup_tables/index.html">pyskyfire.viz.lookup_tables</a><input aria-label="Toggle navigation of pyskyfire.viz.lookup_tables" class="toctree-checkbox" id="toctree-checkbox-26" name="toctree-checkbox-26" role="switch" type="checkbox"/><label for="toctree-checkbox-26"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/lookup_tables/PlotMoodyDiagram.html">pyskyfire.viz.lookup_tables.PlotMoodyDiagram</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/lookup_tables/PlotThetaVsEpsilon.html">pyskyfire.viz.lookup_tables.PlotThetaVsEpsilon</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/network_viz/index.html">pyskyfire.viz.network_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.network_viz" class="toctree-checkbox" id="toctree-checkbox-26" name="toctree-checkbox-26" role="switch" type="checkbox"/><label for="toctree-checkbox-26"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/network_viz/index.html">pyskyfire.viz.network_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.network_viz" class="toctree-checkbox" id="toctree-checkbox-27" name="toctree-checkbox-27" role="switch" type="checkbox"/><label for="toctree-checkbox-27"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/network_viz/NetworkVisualizer.html">pyskyfire.viz.network_viz.NetworkVisualizer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/network_viz/_BlockSpec.html">pyskyfire.viz.network_viz._BlockSpec</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_common/index.html">pyskyfire.viz.plot_common</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_common" class="toctree-checkbox" id="toctree-checkbox-27" name="toctree-checkbox-27" role="switch" type="checkbox"/><label for="toctree-checkbox-27"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_common/index.html">pyskyfire.viz.plot_common</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_common" class="toctree-checkbox" id="toctree-checkbox-28" name="toctree-checkbox-28" role="switch" type="checkbox"/><label for="toctree-checkbox-28"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_common/PlotPTDiagram.html">pyskyfire.viz.plot_common.PlotPTDiagram</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_common/PlotResidualHistory.html">pyskyfire.viz.plot_common.PlotResidualHistory</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_common/PlotStationProperty.html">pyskyfire.viz.plot_common.PlotStationProperty</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_film_cooling/index.html">pyskyfire.viz.plot_film_cooling</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_film_cooling" class="toctree-checkbox" id="toctree-checkbox-28" name="toctree-checkbox-28" role="switch" type="checkbox"/><label for="toctree-checkbox-28"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_film_cooling/index.html">pyskyfire.viz.plot_film_cooling</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_film_cooling" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_film_cooling/PlotFilmBoundaryLayer.html">pyskyfire.viz.plot_film_cooling.PlotFilmBoundaryLayer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_film_cooling/PlotFilmDryout.html">pyskyfire.viz.plot_film_cooling.PlotFilmDryout</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_film_cooling/PlotFilmEffectiveWallHTC.html">pyskyfire.viz.plot_film_cooling.PlotFilmEffectiveWallHTC</a></li>
@@ -385,7 +399,9 @@
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_film_cooling/PlotGaseousFilmTemperatureGap.html">pyskyfire.viz.plot_film_cooling.PlotGaseousFilmTemperatureGap</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_regen/index.html">pyskyfire.viz.plot_regen</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_regen" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_regen/index.html">pyskyfire.viz.plot_regen</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_regen" class="toctree-checkbox" id="toctree-checkbox-30" name="toctree-checkbox-30" role="switch" type="checkbox"/><label for="toctree-checkbox-30"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotChannelHeight.html">pyskyfire.viz.plot_regen.PlotChannelHeight</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotChannelWidth.html">pyskyfire.viz.plot_regen.PlotChannelWidth</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotContour.html">pyskyfire.viz.plot_regen.PlotContour</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotCoolantArea.html">pyskyfire.viz.plot_regen.PlotCoolantArea</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotCoolantPhase.html">pyskyfire.viz.plot_regen.PlotCoolantPhase</a></li>
@@ -396,28 +412,31 @@
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotHeatTransferCoefficient.html">pyskyfire.viz.plot_regen.PlotHeatTransferCoefficient</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotHydraulicDiameter.html">pyskyfire.viz.plot_regen.PlotHydraulicDiameter</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotRadiusOfCurvature.html">pyskyfire.viz.plot_regen.PlotRadiusOfCurvature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotReynoldsNumber.html">pyskyfire.viz.plot_regen.PlotReynoldsNumber</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotSaturationMargin.html">pyskyfire.viz.plot_regen.PlotSaturationMargin</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotTemperatureProfile.html">pyskyfire.viz.plot_regen.PlotTemperatureProfile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotThermalResistance.html">pyskyfire.viz.plot_regen.PlotThermalResistance</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotVelocity.html">pyskyfire.viz.plot_regen.PlotVelocity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotWallLayers.html">pyskyfire.viz.plot_regen.PlotWallLayers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotWallTemperature.html">pyskyfire.viz.plot_regen.PlotWallTemperature</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotdAdxCoolantArea.html">pyskyfire.viz.plot_regen.PlotdAdxCoolantArea</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotdAdxThermalCoolant.html">pyskyfire.viz.plot_regen.PlotdAdxThermalCoolant</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_regen/PlotdAdxThermalHotGas.html">pyskyfire.viz.plot_regen.PlotdAdxThermalHotGas</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_skycea/index.html">pyskyfire.viz.plot_skycea</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_skycea" class="toctree-checkbox" id="toctree-checkbox-30" name="toctree-checkbox-30" role="switch" type="checkbox"/><label for="toctree-checkbox-30"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/plot_skycea/index.html">pyskyfire.viz.plot_skycea</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_skycea" class="toctree-checkbox" id="toctree-checkbox-31" name="toctree-checkbox-31" role="switch" type="checkbox"/><label for="toctree-checkbox-31"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_skycea/PlotTransportProperty.html">pyskyfire.viz.plot_skycea.PlotTransportProperty</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/plot_skycea/PlotTransportPropertyField.html">pyskyfire.viz.plot_skycea.PlotTransportPropertyField</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/report/index.html">pyskyfire.viz.report</a><input aria-label="Toggle navigation of pyskyfire.viz.report" class="toctree-checkbox" id="toctree-checkbox-31" name="toctree-checkbox-31" role="switch" type="checkbox"/><label for="toctree-checkbox-31"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/report/index.html">pyskyfire.viz.report</a><input aria-label="Toggle navigation of pyskyfire.viz.report" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/report/Report.html">pyskyfire.viz.report.Report</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/report/Tab.html">pyskyfire.viz.report.Tab</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/report/_Block.html">pyskyfire.viz.report._Block</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/report/_Block.html">pyskyfire.viz.report._Block</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../viz/sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-33" name="toctree-checkbox-33" role="switch" type="checkbox"/><label for="toctree-checkbox-33"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/sankey/PlotMassFlowSankey.html">pyskyfire.viz.sankey.PlotMassFlowSankey</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../viz/sankey/_FlowLink.html">pyskyfire.viz.sankey._FlowLink</a></li>
 </ul>
@@ -466,7 +485,7 @@
 <h1>pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics<a class="headerlink" href="#pyskyfire-regen-coupled-solver-coupledheatexchangerphysics" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pyskyfire.regen.coupled_solver.</span></span><span class="sig-name descname"><span class="pre">CoupledHeatExchangerPhysics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thrust_chamber</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary_conditions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circuit_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">film_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coolant_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../coolant_state/CoolantState.html#pyskyfire.regen.coolant_state.CoolantState" title="pyskyfire.regen.coolant_state.CoolantState"><span class="pre">CoolantState</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pyskyfire.regen.coupled_solver.</span></span><span class="sig-name descname"><span class="pre">CoupledHeatExchangerPhysics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thrust_chamber</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary_conditions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circuit_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">film_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coolant_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../coolant_state/CoolantState.html#pyskyfire.regen.coolant_state.CoolantState" title="pyskyfire.regen.coolant_state.CoolantState"><span class="pre">CoolantState</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heat_curvature_correction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pressure_curvature_correction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics" title="Link to this definition">¶</a></dt>
 <dd><p>Heat-exchanger physics whose hot side may be gas- or film-driven.</p>
 <p>The bare-wall hot side uses the enthalpy-driven Bartz model. Where a film
 covers the wall, <a class="reference internal" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.hot_side_coefficients" title="pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.hot_side_coefficients"><code class="xref py py-meth docutils literal notranslate"><span class="pre">hot_side_coefficients()</span></code></a> substitutes the appropriate
@@ -478,6 +497,10 @@ pressure models consume the resulting <code class="docutils literal notranslate"
 <dt><strong>thrust_chamber, boundary_conditions, circuit_index</strong></dt><dd><p>As for the base class.</p>
 </dd>
 <dt><strong>film_model</strong><span class="classifier"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FilmHeatFluxModel</span></code> or <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">optional</span></code></span></dt><dd><p>Film boundary condition. <code class="docutils literal notranslate"><span class="pre">None</span></code> reproduces the base class exactly.</p>
+</dd>
+<dt><strong>heat_curvature_correction</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bltin-boolean-values" title="(in Python v3.14)"><span class="xref std std-ref">bool</span></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">optional</span></code></span></dt><dd><p>Apply the RL10 curvature multiplier to coolant-side heat transfer.</p>
+</dd>
+<dt><strong>pressure_curvature_correction</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bltin-boolean-values" title="(in Python v3.14)"><span class="xref std std-ref">bool</span></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">optional</span></code></span></dt><dd><p>Apply the RTE/Ito curvature multiplier to Darcy pressure loss.</p>
 </dd>
 </dl>
 </dd>
@@ -515,6 +538,20 @@ which case density comes from an ordinary <code class="docutils literal notransl
 <p>The two-phase value is the homogeneous, no-slip mixture density. It
 captures the large acceleration effect through the dome but not slip,
 so it is an under-estimate of the true momentum flux.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.bulk_velocity">
+<span class="sig-name descname"><span class="pre">bulk_velocity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_cool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_cool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quality</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.bulk_velocity" title="Link to this definition">¶</a></dt>
+<dd><p>Return the bulk coolant density and single-channel velocity at <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a> <code class="xref py py-obj docutils literal notranslate"><span class="pre">of</span></code> <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></dt><dd><p><code class="docutils literal notranslate"><span class="pre">(rho,</span> <span class="pre">u)</span></code> in [kg m⁻³] and [m s⁻¹].</p>
+</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -563,9 +600,13 @@ dome, where added heat raises enthalpy at constant temperature.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_pressure_rate">
-<span class="sig-name descname"><span class="pre">coolant_pressure_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_cool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_cool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quality</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_pressure_rate" title="Link to this definition">¶</a></dt>
-<dd><p>Return static and stagnation coolant-pressure rates [Pa m⁻¹].</p>
+<dt class="sig sig-object py" id="pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_friction_rate">
+<span class="sig-name descname"><span class="pre">coolant_friction_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_cool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_cool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quality</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_friction_rate" title="Link to this definition">¶</a></dt>
+<dd><p>Return the friction-driven coolant-pressure gradient [Pa m⁻¹].</p>
+<p>This is the irreversible term of the 1-D momentum equation only. The
+reversible acceleration term <span class="math notranslate nohighlight">\(-\rho u\,du/dx\)</span> is applied by the
+march station to station, because it depends on the state at both ends
+of a segment rather than on a local gradient.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
@@ -727,9 +768,10 @@ Bartz diagnostics (<code class="docutils literal notranslate"><span class="pre">
 <li><a class="reference internal" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics._coolant_pressure"><code class="docutils literal notranslate"><span class="pre">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics._coolant_pressure()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics._gas_side_coefficients"><code class="docutils literal notranslate"><span class="pre">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics._gas_side_coefficients()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.bulk_density"><code class="docutils literal notranslate"><span class="pre">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.bulk_density()</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.bulk_velocity"><code class="docutils literal notranslate"><span class="pre">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.bulk_velocity()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.cold_side_coefficients"><code class="docutils literal notranslate"><span class="pre">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.cold_side_coefficients()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_enthalpy_rate"><code class="docutils literal notranslate"><span class="pre">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_enthalpy_rate()</span></code></a></li>
-<li><a class="reference internal" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_pressure_rate"><code class="docutils literal notranslate"><span class="pre">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_pressure_rate()</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_friction_rate"><code class="docutils literal notranslate"><span class="pre">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_friction_rate()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_temperature_rate"><code class="docutils literal notranslate"><span class="pre">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.coolant_temperature_rate()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.dQ_cold_dx"><code class="docutils literal notranslate"><span class="pre">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.dQ_cold_dx()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.dQ_cond_dx"><code class="docutils literal notranslate"><span class="pre">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics.dQ_cond_dx()</span></code></a></li>

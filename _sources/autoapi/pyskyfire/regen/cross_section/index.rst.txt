@@ -15,6 +15,7 @@ Classes
    /autoapi/pyskyfire/regen/cross_section/CrossSectionRoundedInternal
    /autoapi/pyskyfire/regen/cross_section/CrossSectionSquared
    /autoapi/pyskyfire/regen/cross_section/SectionProfiles
+   /autoapi/pyskyfire/regen/cross_section/_RoundedGeometryMixin
 
 .. autoapisummary::
 
@@ -23,5 +24,6 @@ Classes
    pyskyfire.regen.cross_section.CrossSectionRoundedInternal
    pyskyfire.regen.cross_section.CrossSectionSquared
    pyskyfire.regen.cross_section.SectionProfiles
+   pyskyfire.regen.cross_section._RoundedGeometryMixin
 
 

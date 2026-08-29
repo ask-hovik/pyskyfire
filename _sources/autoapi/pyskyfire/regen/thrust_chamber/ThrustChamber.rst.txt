@@ -21,7 +21,7 @@ pyskyfire.regen.thrust_chamber.ThrustChamber
    .. rubric:: Notes
 
    • Define x-domains for circuits from their fractional spans
-   • Build ONE representative centerline per circuit: [x, r(x), θ_azimuth=0]
+   • Build section-reference and coolant-flow centerlines per circuit
    • Compute per-circuit wedge angles (theta) and heights (h)
    • Trigger each circuit's precompute/finalize (A, Dh, perimeters, volume)
    • (Optionally) trigger combustion aerothermodynamics
@@ -136,6 +136,35 @@ pyskyfire.regen.thrust_chamber.ThrustChamber
 
           :class:`python:int`
               Total number of channels currently active at `x`.
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: coolant_volume
+      :type: float
+
+
+      
+      Wetted coolant volume of every cooling circuit combined [m³].
+
+      See :meth:`CoolingCircuit.compute_volume` for what one circuit's
+      ``volume`` covers. Circuits that overlap axially, such as an RL10-style
+      half pass and full pass, each contribute their own channels.
+
+
+
+
 
 
 

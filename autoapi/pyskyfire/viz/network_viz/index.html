@@ -207,11 +207,18 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../howto/mixture-ratio-optimisation.html">Optimise mixture ratio</a></li>
 </ul>
+<p class="caption" role="heading"><span class="caption-text">Validation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../validation/rl10a-3-3a.html">RL10A-3-3A</a></li>
+</ul>
 <p class="caption" role="heading"><span class="caption-text">Explanations</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../explanations/capabilities.html">Capabilities</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../explanations/package-structure.html">Package Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../explanations/regenerative-cooling-explanation.html">Regenerative Cooling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanations/specific-impulse.html">Specific Impulse and Thrust Coefficient</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanations/moody-diagram.html">The Moody Diagram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanations/rao-nozzle.html">Rao Nozzle Contour Angles</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -288,6 +295,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../regen/cross_section/CrossSectionRoundedInternal.html">pyskyfire.regen.cross_section.CrossSectionRoundedInternal</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../regen/cross_section/CrossSectionSquared.html">pyskyfire.regen.cross_section.CrossSectionSquared</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../regen/cross_section/SectionProfiles.html">pyskyfire.regen.cross_section.SectionProfiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../regen/cross_section/_RoundedGeometryMixin.html">pyskyfire.regen.cross_section._RoundedGeometryMixin</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../regen/film_solver/index.html">pyskyfire.regen.film_solver</a><input aria-label="Toggle navigation of pyskyfire.regen.film_solver" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -342,37 +350,43 @@
 <li class="toctree-l3"><a class="reference internal" href="../../skycea/coolant_transport/TransportProperties.html">pyskyfire.skycea.coolant_transport.TransportProperties</a></li>
 </ul>
 </li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../skycea/nozzle_loss/index.html">pyskyfire.skycea.nozzle_loss</a><input aria-label="Toggle navigation of pyskyfire.skycea.nozzle_loss" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../skycea/nozzle_loss/DeliveredPerformance.html">pyskyfire.skycea.nozzle_loss.DeliveredPerformance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../skycea/nozzle_loss/EfficiencyTable.html">pyskyfire.skycea.nozzle_loss.EfficiencyTable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../skycea/nozzle_loss/NozzleLoss.html">pyskyfire.skycea.nozzle_loss.NozzleLoss</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">pyskyfire.viz</a><input aria-label="Toggle navigation of pyskyfire.viz" checked="" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
-<li class="toctree-l2 has-children"><a class="reference internal" href="../core/index.html">pyskyfire.viz.core</a><input aria-label="Toggle navigation of pyskyfire.viz.core" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">pyskyfire.viz</a><input aria-label="Toggle navigation of pyskyfire.viz" checked="" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../core/index.html">pyskyfire.viz.core</a><input aria-label="Toggle navigation of pyskyfire.viz.core" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../core/PlotBase.html">pyskyfire.viz.core.PlotBase</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../core/_Adder.html">pyskyfire.viz.core._Adder</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../core/_Node.html">pyskyfire.viz.core._Node</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../engine_viz/index.html">pyskyfire.viz.engine_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.engine_viz" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../engine_viz/index.html">pyskyfire.viz.engine_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.engine_viz" class="toctree-checkbox" id="toctree-checkbox-25" name="toctree-checkbox-25" role="switch" type="checkbox"/><label for="toctree-checkbox-25"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../engine_viz/Engine3DViewer.html">pyskyfire.viz.engine_viz.Engine3DViewer</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../impeller_viz/index.html">pyskyfire.viz.impeller_viz</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../lookup_tables/index.html">pyskyfire.viz.lookup_tables</a><input aria-label="Toggle navigation of pyskyfire.viz.lookup_tables" class="toctree-checkbox" id="toctree-checkbox-25" name="toctree-checkbox-25" role="switch" type="checkbox"/><label for="toctree-checkbox-25"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../lookup_tables/index.html">pyskyfire.viz.lookup_tables</a><input aria-label="Toggle navigation of pyskyfire.viz.lookup_tables" class="toctree-checkbox" id="toctree-checkbox-26" name="toctree-checkbox-26" role="switch" type="checkbox"/><label for="toctree-checkbox-26"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../lookup_tables/PlotMoodyDiagram.html">pyskyfire.viz.lookup_tables.PlotMoodyDiagram</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../lookup_tables/PlotThetaVsEpsilon.html">pyskyfire.viz.lookup_tables.PlotThetaVsEpsilon</a></li>
 </ul>
 </li>
-<li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">pyskyfire.viz.network_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.network_viz" checked="" class="toctree-checkbox" id="toctree-checkbox-26" name="toctree-checkbox-26" role="switch" type="checkbox"/><label for="toctree-checkbox-26"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">pyskyfire.viz.network_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.network_viz" checked="" class="toctree-checkbox" id="toctree-checkbox-27" name="toctree-checkbox-27" role="switch" type="checkbox"/><label for="toctree-checkbox-27"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="NetworkVisualizer.html">pyskyfire.viz.network_viz.NetworkVisualizer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_BlockSpec.html">pyskyfire.viz.network_viz._BlockSpec</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_common/index.html">pyskyfire.viz.plot_common</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_common" class="toctree-checkbox" id="toctree-checkbox-27" name="toctree-checkbox-27" role="switch" type="checkbox"/><label for="toctree-checkbox-27"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_common/index.html">pyskyfire.viz.plot_common</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_common" class="toctree-checkbox" id="toctree-checkbox-28" name="toctree-checkbox-28" role="switch" type="checkbox"/><label for="toctree-checkbox-28"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../plot_common/PlotPTDiagram.html">pyskyfire.viz.plot_common.PlotPTDiagram</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_common/PlotResidualHistory.html">pyskyfire.viz.plot_common.PlotResidualHistory</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_common/PlotStationProperty.html">pyskyfire.viz.plot_common.PlotStationProperty</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_film_cooling/index.html">pyskyfire.viz.plot_film_cooling</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_film_cooling" class="toctree-checkbox" id="toctree-checkbox-28" name="toctree-checkbox-28" role="switch" type="checkbox"/><label for="toctree-checkbox-28"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_film_cooling/index.html">pyskyfire.viz.plot_film_cooling</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_film_cooling" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../plot_film_cooling/PlotFilmBoundaryLayer.html">pyskyfire.viz.plot_film_cooling.PlotFilmBoundaryLayer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_film_cooling/PlotFilmDryout.html">pyskyfire.viz.plot_film_cooling.PlotFilmDryout</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_film_cooling/PlotFilmEffectiveWallHTC.html">pyskyfire.viz.plot_film_cooling.PlotFilmEffectiveWallHTC</a></li>
@@ -385,7 +399,9 @@
 <li class="toctree-l3"><a class="reference internal" href="../plot_film_cooling/PlotGaseousFilmTemperatureGap.html">pyskyfire.viz.plot_film_cooling.PlotGaseousFilmTemperatureGap</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_regen/index.html">pyskyfire.viz.plot_regen</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_regen" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_regen/index.html">pyskyfire.viz.plot_regen</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_regen" class="toctree-checkbox" id="toctree-checkbox-30" name="toctree-checkbox-30" role="switch" type="checkbox"/><label for="toctree-checkbox-30"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotChannelHeight.html">pyskyfire.viz.plot_regen.PlotChannelHeight</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotChannelWidth.html">pyskyfire.viz.plot_regen.PlotChannelWidth</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotContour.html">pyskyfire.viz.plot_regen.PlotContour</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotCoolantArea.html">pyskyfire.viz.plot_regen.PlotCoolantArea</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotCoolantPhase.html">pyskyfire.viz.plot_regen.PlotCoolantPhase</a></li>
@@ -396,28 +412,31 @@
 <li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotHeatTransferCoefficient.html">pyskyfire.viz.plot_regen.PlotHeatTransferCoefficient</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotHydraulicDiameter.html">pyskyfire.viz.plot_regen.PlotHydraulicDiameter</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotRadiusOfCurvature.html">pyskyfire.viz.plot_regen.PlotRadiusOfCurvature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotReynoldsNumber.html">pyskyfire.viz.plot_regen.PlotReynoldsNumber</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotSaturationMargin.html">pyskyfire.viz.plot_regen.PlotSaturationMargin</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotTemperatureProfile.html">pyskyfire.viz.plot_regen.PlotTemperatureProfile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotThermalResistance.html">pyskyfire.viz.plot_regen.PlotThermalResistance</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotVelocity.html">pyskyfire.viz.plot_regen.PlotVelocity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotWallLayers.html">pyskyfire.viz.plot_regen.PlotWallLayers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotWallTemperature.html">pyskyfire.viz.plot_regen.PlotWallTemperature</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotdAdxCoolantArea.html">pyskyfire.viz.plot_regen.PlotdAdxCoolantArea</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotdAdxThermalCoolant.html">pyskyfire.viz.plot_regen.PlotdAdxThermalCoolant</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_regen/PlotdAdxThermalHotGas.html">pyskyfire.viz.plot_regen.PlotdAdxThermalHotGas</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_skycea/index.html">pyskyfire.viz.plot_skycea</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_skycea" class="toctree-checkbox" id="toctree-checkbox-30" name="toctree-checkbox-30" role="switch" type="checkbox"/><label for="toctree-checkbox-30"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../plot_skycea/index.html">pyskyfire.viz.plot_skycea</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_skycea" class="toctree-checkbox" id="toctree-checkbox-31" name="toctree-checkbox-31" role="switch" type="checkbox"/><label for="toctree-checkbox-31"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../plot_skycea/PlotTransportProperty.html">pyskyfire.viz.plot_skycea.PlotTransportProperty</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../plot_skycea/PlotTransportPropertyField.html">pyskyfire.viz.plot_skycea.PlotTransportPropertyField</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../report/index.html">pyskyfire.viz.report</a><input aria-label="Toggle navigation of pyskyfire.viz.report" class="toctree-checkbox" id="toctree-checkbox-31" name="toctree-checkbox-31" role="switch" type="checkbox"/><label for="toctree-checkbox-31"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../report/index.html">pyskyfire.viz.report</a><input aria-label="Toggle navigation of pyskyfire.viz.report" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../report/Report.html">pyskyfire.viz.report.Report</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../report/Tab.html">pyskyfire.viz.report.Tab</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../report/_Block.html">pyskyfire.viz.report._Block</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../report/_Block.html">pyskyfire.viz.report._Block</a></li>
 </ul>
 </li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-33" name="toctree-checkbox-33" role="switch" type="checkbox"/><label for="toctree-checkbox-33"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../sankey/PlotMassFlowSankey.html">pyskyfire.viz.sankey.PlotMassFlowSankey</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../sankey/_FlowLink.html">pyskyfire.viz.sankey._FlowLink</a></li>
 </ul>
@@ -621,11 +640,11 @@ both as a script output today and as the basis for a future graphical editor.</p
 <dl class="py data">
 <dt class="sig sig-object py" id="pyskyfire.viz.network_viz._HTML_TEMPLATE">
 <span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.network_viz.</span></span><span class="sig-name descname"><span class="pre">_HTML_TEMPLATE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">Multiline-String</span></span><a class="headerlink" href="#pyskyfire.viz.network_viz._HTML_TEMPLATE" title="Link to this definition">¶</a></dt>
-<dd><details><summary>Show Value</summary><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;&lt;!doctype html&gt;</span>
-<span class="sd">&lt;html lang=&quot;en&quot;&gt;</span>
+<dd><details><summary>Show Value</summary><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">"""&lt;!doctype html&gt;</span>
+<span class="sd">&lt;html lang="en"&gt;</span>
 <span class="sd">&lt;head&gt;</span>
-<span class="sd">  &lt;meta charset=&quot;utf-8&quot;&gt;</span>
-<span class="sd">  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1&quot;&gt;</span>
+<span class="sd">  &lt;meta charset="utf-8"&gt;</span>
+<span class="sd">  &lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;</span>
 <span class="sd">  &lt;title&gt;__TITLE__&lt;/title&gt;</span>
 <span class="sd">  &lt;script&gt;</span>
 <span class="sd">  __X6_SOURCE__</span>
@@ -633,7 +652,7 @@ both as a script output today and as the basis for a future graphical editor.</p
 <span class="sd">  &lt;style&gt;</span>
 <span class="sd">    :root { color-scheme: light; }</span>
 <span class="sd">    * { box-sizing: border-box; }</span>
-<span class="sd">    body { margin: 0; font-family: system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif; color: #17212b; background: #ffffff; }</span>
+<span class="sd">    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #17212b; background: #ffffff; }</span>
 <span class="sd">    .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid #d9e0e7; background: #f8fafc; }</span>
 <span class="sd">    .toolbar h1 { margin: 0 auto 0 0; font-size: 16px; font-weight: 650; }</span>
 <span class="sd">    .toolbar button { padding: 6px 10px; border: 1px solid #aab8c5; border-radius: 5px; background: #ffffff; color: #17212b; cursor: pointer; font: inherit; font-size: 13px; }</span>
@@ -644,24 +663,24 @@ both as a script output today and as the basis for a future graphical editor.</p
 <span class="sd">  &lt;/style&gt;</span>
 <span class="sd">&lt;/head&gt;</span>
 <span class="sd">&lt;body&gt;</span>
-<span class="sd">  &lt;div class=&quot;toolbar&quot;&gt;</span>
+<span class="sd">  &lt;div class="toolbar"&gt;</span>
 <span class="sd">    &lt;h1&gt;__TITLE__&lt;/h1&gt;</span>
-<span class="sd">    &lt;button id=&quot;save-layout&quot; type=&quot;button&quot;&gt;Save Layout&lt;/button&gt;</span>
-<span class="sd">    &lt;div class=&quot;hint&quot;&gt;</span>
+<span class="sd">    &lt;button id="save-layout" type="button"&gt;Save Layout&lt;/button&gt;</span>
+<span class="sd">    &lt;div class="hint"&gt;</span>
 <span class="sd">      Drag nodes to arrange the schematic, then use Save Layout to download the</span>
 <span class="sd">      current positions. Scroll to pan; Ctrl/Cmd + scroll to zoom.</span>
 <span class="sd">    &lt;/div&gt;</span>
 <span class="sd">  &lt;/div&gt;</span>
-<span class="sd">  &lt;div id=&quot;network-canvas&quot;&gt;&lt;/div&gt;</span>
+<span class="sd">  &lt;div id="network-canvas"&gt;&lt;/div&gt;</span>
 
-<span class="sd">  &lt;script id=&quot;network-data&quot; type=&quot;application/json&quot;&gt;__PAYLOAD__&lt;/script&gt;</span>
+<span class="sd">  &lt;script id="network-data" type="application/json"&gt;__PAYLOAD__&lt;/script&gt;</span>
 <span class="sd">  &lt;script&gt;</span>
 <span class="sd">  (() =&gt; {</span>
-<span class="sd">    const payload = JSON.parse(document.getElementById(&#39;network-data&#39;).textContent);</span>
-<span class="sd">    const container = document.getElementById(&#39;network-canvas&#39;);</span>
+<span class="sd">    const payload = JSON.parse(document.getElementById('network-data').textContent);</span>
+<span class="sd">    const container = document.getElementById('network-canvas');</span>
 
 <span class="sd">    if (!window.X6) {</span>
-<span class="sd">      container.innerHTML = &#39;&lt;div class=&quot;error&quot;&gt;Could not load AntV X6. Check your network connection, or pass a local X6 bundle through &lt;code&gt;x6_url&lt;/code&gt;.&lt;/div&gt;&#39;;</span>
+<span class="sd">      container.innerHTML = '&lt;div class="error"&gt;Could not load AntV X6. Check your network connection, or pass a local X6 bundle through &lt;code&gt;x6_url&lt;/code&gt;.&lt;/div&gt;';</span>
 <span class="sd">      return;</span>
 <span class="sd">    }</span>
 
@@ -674,30 +693,30 @@ both as a script output today and as the basis for a future graphical editor.</p
 <span class="sd">            magnet: false,</span>
 <span class="sd">            stroke,</span>
 <span class="sd">            strokeWidth: 1.25,</span>
-<span class="sd">            fill: &#39;#ffffff&#39;,</span>
+<span class="sd">            fill: '#ffffff',</span>
 <span class="sd">          },</span>
 <span class="sd">        },</span>
 <span class="sd">      };</span>
 <span class="sd">    }</span>
 
 <span class="sd">    const portGroups = {</span>
-<span class="sd">      &#39;station-left&#39;: makePortGroup(&#39;left&#39;, &#39;#355267&#39;),</span>
-<span class="sd">      &#39;station-right&#39;: makePortGroup(&#39;right&#39;, &#39;#355267&#39;),</span>
-<span class="sd">      &#39;station-top&#39;: makePortGroup(&#39;top&#39;, &#39;#355267&#39;),</span>
-<span class="sd">      &#39;station-bottom&#39;: makePortGroup(&#39;bottom&#39;, &#39;#355267&#39;),</span>
-<span class="sd">      &#39;signal-left&#39;: makePortGroup(&#39;left&#39;, &#39;#7a5a18&#39;),</span>
-<span class="sd">      &#39;signal-right&#39;: makePortGroup(&#39;right&#39;, &#39;#7a5a18&#39;),</span>
-<span class="sd">      &#39;signal-top&#39;: makePortGroup(&#39;top&#39;, &#39;#7a5a18&#39;),</span>
-<span class="sd">      &#39;signal-bottom&#39;: makePortGroup(&#39;bottom&#39;, &#39;#7a5a18&#39;),</span>
+<span class="sd">      'station-left': makePortGroup('left', '#355267'),</span>
+<span class="sd">      'station-right': makePortGroup('right', '#355267'),</span>
+<span class="sd">      'station-top': makePortGroup('top', '#355267'),</span>
+<span class="sd">      'station-bottom': makePortGroup('bottom', '#355267'),</span>
+<span class="sd">      'signal-left': makePortGroup('left', '#7a5a18'),</span>
+<span class="sd">      'signal-right': makePortGroup('right', '#7a5a18'),</span>
+<span class="sd">      'signal-top': makePortGroup('top', '#7a5a18'),</span>
+<span class="sd">      'signal-bottom': makePortGroup('bottom', '#7a5a18'),</span>
 <span class="sd">    };</span>
 
 <span class="sd">    const graph = new X6.Graph({</span>
 <span class="sd">      container,</span>
 <span class="sd">      width: Math.max(container.clientWidth, 900),</span>
 <span class="sd">      height: Math.max(container.clientHeight, 620),</span>
-<span class="sd">      grid: { visible: true, size: 10, type: &#39;mesh&#39;, args: [{ color: &#39;#e8edf2&#39;, thickness: 1 }] },</span>
+<span class="sd">      grid: { visible: true, size: 10, type: 'mesh', args: [{ color: '#e8edf2', thickness: 1 }] },</span>
 <span class="sd">      panning: true,</span>
-<span class="sd">      mousewheel: { enabled: true, modifiers: [&#39;ctrl&#39;, &#39;meta&#39;] },</span>
+<span class="sd">      mousewheel: { enabled: true, modifiers: ['ctrl', 'meta'] },</span>
 <span class="sd">      connecting: { allowBlank: false, allowNode: false, allowEdge: false, allowPort: false },</span>
 <span class="sd">    });</span>
 
@@ -712,17 +731,17 @@ both as a script output today and as the basis for a future graphical editor.</p
 
 <span class="sd">    for (const node of payload.nodes) {</span>
 <span class="sd">      const position = nodePosition(node);</span>
-<span class="sd">      const isSource = node.kind === &#39;source&#39;;</span>
+<span class="sd">      const isSource = node.kind === 'source';</span>
 <span class="sd">      const fillColor = isSource</span>
-<span class="sd">        ? &#39;#f7f9fb&#39;</span>
-<span class="sd">        : ((node.data &amp;&amp; node.data.fill) || &#39;#eef5fb&#39;);</span>
+<span class="sd">        ? '#f7f9fb'</span>
+<span class="sd">        : ((node.data &amp;&amp; node.data.fill) || '#eef5fb');</span>
 <span class="sd">      const strokeColor = isSource</span>
-<span class="sd">        ? &#39;#8092a1&#39;</span>
-<span class="sd">        : ((node.data &amp;&amp; node.data.stroke) || &#39;#2f6f96&#39;);</span>
+<span class="sd">        ? '#8092a1'</span>
+<span class="sd">        : ((node.data &amp;&amp; node.data.stroke) || '#2f6f96');</span>
 
 <span class="sd">      graph.addNode({</span>
 <span class="sd">        id: node.id,</span>
-<span class="sd">        shape: &#39;rect&#39;,</span>
+<span class="sd">        shape: 'rect',</span>
 <span class="sd">        x: position.x,</span>
 <span class="sd">        y: position.y,</span>
 <span class="sd">        width: node.width,</span>
@@ -737,7 +756,7 @@ both as a script output today and as the basis for a future graphical editor.</p
 <span class="sd">            ry: 7,</span>
 <span class="sd">          },</span>
 <span class="sd">          label: {</span>
-<span class="sd">            fill: &#39;#17212b&#39;,</span>
+<span class="sd">            fill: '#17212b',</span>
 <span class="sd">            fontSize: 12,</span>
 <span class="sd">            fontWeight: 560,</span>
 <span class="sd">            textWrap: { width: -16, height: -12, ellipsis: true },</span>
@@ -749,22 +768,22 @@ both as a script output today and as the basis for a future graphical editor.</p
 <span class="sd">    }</span>
 
 <span class="sd">    for (const edge of payload.edges) {</span>
-<span class="sd">      const isSignal = edge.kind === &#39;signal&#39;;</span>
+<span class="sd">      const isSignal = edge.kind === 'signal';</span>
 <span class="sd">      const config = {</span>
 <span class="sd">        id: edge.id,</span>
 <span class="sd">        source: edge.source,</span>
 <span class="sd">        target: edge.target,</span>
-<span class="sd">        router: { name: &#39;manhattan&#39;, args: { padding: 16 } },</span>
-<span class="sd">        connector: { name: &#39;rounded&#39;, args: { radius: 6 } },</span>
+<span class="sd">        router: { name: 'manhattan', args: { padding: 16 } },</span>
+<span class="sd">        connector: { name: 'rounded', args: { radius: 6 } },</span>
 <span class="sd">        attrs: {</span>
 <span class="sd">          line: {</span>
-<span class="sd">            stroke: isSignal ? &#39;#9a751e&#39; : &#39;#2f6f96&#39;,</span>
+<span class="sd">            stroke: isSignal ? '#9a751e' : '#2f6f96',</span>
 <span class="sd">            strokeWidth: isSignal ? 1.6 : 2.1,</span>
-<span class="sd">            strokeDasharray: isSignal ? &#39;6 4&#39; : &#39;&#39;,</span>
-<span class="sd">            targetMarker: { name: &#39;classic&#39;, size: 7 },</span>
+<span class="sd">            strokeDasharray: isSignal ? '6 4' : '',</span>
+<span class="sd">            targetMarker: { name: 'classic', size: 7 },</span>
 <span class="sd">          },</span>
 <span class="sd">        },</span>
-<span class="sd">        labels: [{ position: 0.5, attrs: { label: { text: edge.label, fill: isSignal ? &#39;#79590e&#39; : &#39;#1f4e6b&#39;, fontSize: 10 } } }],</span>
+<span class="sd">        labels: [{ position: 0.5, attrs: { label: { text: edge.label, fill: isSignal ? '#79590e' : '#1f4e6b', fontSize: 10 } } }],</span>
 <span class="sd">        data: { kind: edge.kind },</span>
 <span class="sd">      };</span>
 <span class="sd">      graph.addEdge(config);</span>
@@ -795,24 +814,24 @@ both as a script output today and as the basis for a future graphical editor.</p
 <span class="sd">    }</span>
 
 <span class="sd">    function layoutFilename() {</span>
-<span class="sd">      const slug = String(payload.title || &quot;pyskyfire-engine-network&quot;)</span>
+<span class="sd">      const slug = String(payload.title || "pyskyfire-engine-network")</span>
 <span class="sd">        .trim()</span>
 <span class="sd">        .toLowerCase()</span>
-<span class="sd">        .replace(/[^a-z0-9]+/g, &quot;-&quot;)</span>
-<span class="sd">        .replace(/^-+|-+$/g, &quot;&quot;);</span>
+<span class="sd">        .replace(/[^a-z0-9]+/g, "-")</span>
+<span class="sd">        .replace(/^-+|-+$/g, "");</span>
 
-<span class="sd">      return `${slug || &quot;pyskyfire-engine-network&quot;}.layout.json`;</span>
+<span class="sd">      return `${slug || "pyskyfire-engine-network"}.layout.json`;</span>
 <span class="sd">    }</span>
 
 <span class="sd">    function saveLayout() {</span>
 <span class="sd">      const json = `${JSON.stringify(currentLayout(), null, 2)}\n`;</span>
-<span class="sd">      const blob = new Blob([json], { type: &quot;application/json&quot; });</span>
+<span class="sd">      const blob = new Blob([json], { type: "application/json" });</span>
 <span class="sd">      const url = URL.createObjectURL(blob);</span>
 
-<span class="sd">      const link = document.createElement(&quot;a&quot;);</span>
+<span class="sd">      const link = document.createElement("a");</span>
 <span class="sd">      link.href = url;</span>
 <span class="sd">      link.download = layoutFilename();</span>
-<span class="sd">      link.style.display = &quot;none&quot;;</span>
+<span class="sd">      link.style.display = "none";</span>
 
 <span class="sd">      document.body.appendChild(link);</span>
 <span class="sd">      link.click();</span>
@@ -822,8 +841,8 @@ both as a script output today and as the basis for a future graphical editor.</p
 <span class="sd">    }</span>
 
 <span class="sd">    document</span>
-<span class="sd">      .getElementById(&quot;save-layout&quot;)</span>
-<span class="sd">      .addEventListener(&quot;click&quot;, saveLayout);</span>
+<span class="sd">      .getElementById("save-layout")</span>
+<span class="sd">      .addEventListener("click", saveLayout);</span>
 
 <span class="sd">    function nodeCenter(node) {</span>
 <span class="sd">      const bbox = node.getBBox();</span>
@@ -835,8 +854,8 @@ both as a script output today and as the basis for a future graphical editor.</p
 
 <span class="sd">    function sideToward(dx, dy) {</span>
 <span class="sd">      return Math.abs(dx) &gt; Math.abs(dy)</span>
-<span class="sd">        ? (dx &gt;= 0 ? &#39;right&#39; : &#39;left&#39;)</span>
-<span class="sd">        : (dy &gt;= 0 ? &#39;bottom&#39; : &#39;top&#39;);</span>
+<span class="sd">        ? (dx &gt;= 0 ? 'right' : 'left')</span>
+<span class="sd">        : (dy &gt;= 0 ? 'bottom' : 'top');</span>
 <span class="sd">    }</span>
 
 <span class="sd">    function updatePortSides() {</span>
@@ -875,7 +894,7 @@ both as a script output today and as the basis for a future graphical editor.</p
 <span class="sd">        const group = `${item.kind}-${sideToward(item.dx, item.dy)}`;</span>
 <span class="sd">        const port = item.node.getPort(item.portId);</span>
 <span class="sd">        if (port &amp;&amp; port.group !== group) {</span>
-<span class="sd">          item.node.setPortProp(item.portId, &#39;group&#39;, group);</span>
+<span class="sd">          item.node.setPortProp(item.portId, 'group', group);</span>
 <span class="sd">        }</span>
 <span class="sd">      }</span>
 <span class="sd">    }</span>
@@ -889,7 +908,7 @@ both as a script output today and as the basis for a future graphical editor.</p
 <span class="sd">      });</span>
 <span class="sd">    }</span>
 
-<span class="sd">    graph.on(&#39;node:change:position&#39;, schedulePortSideUpdate);</span>
+<span class="sd">    graph.on('node:change:position', schedulePortSideUpdate);</span>
 <span class="sd">    updatePortSides();</span>
 
 <span class="sd">    const nodeUndoStack = [];</span>
@@ -905,7 +924,7 @@ both as a script output today and as the basis for a future graphical editor.</p
 <span class="sd">    );</span>
 <span class="sd">    }</span>
 
-<span class="sd">    graph.on(&#39;node:move&#39;, ({ node }) =&gt; {</span>
+<span class="sd">    graph.on('node:move', ({ node }) =&gt; {</span>
 <span class="sd">    const position = node.position();</span>
 <span class="sd">    dragStart = {</span>
 <span class="sd">        id: node.id,</span>
@@ -914,7 +933,7 @@ both as a script output today and as the basis for a future graphical editor.</p
 <span class="sd">    };</span>
 <span class="sd">    });</span>
 
-<span class="sd">    graph.on(&#39;node:moved&#39;, ({ node }) =&gt; {</span>
+<span class="sd">    graph.on('node:moved', ({ node }) =&gt; {</span>
 <span class="sd">    if (!dragStart || dragStart.id !== node.id) return;</span>
 
 <span class="sd">    const position = node.position();</span>
@@ -930,11 +949,11 @@ both as a script output today and as the basis for a future graphical editor.</p
 <span class="sd">    dragStart = null;</span>
 <span class="sd">    });</span>
 
-<span class="sd">    document.addEventListener(&#39;keydown&#39;, (event) =&gt; {</span>
+<span class="sd">    document.addEventListener('keydown', (event) =&gt; {</span>
 <span class="sd">    const isUndoShortcut =</span>
 <span class="sd">        (event.ctrlKey || event.metaKey) &amp;&amp;</span>
 <span class="sd">        !event.shiftKey &amp;&amp;</span>
-<span class="sd">        event.key.toLowerCase() === &#39;z&#39;;</span>
+<span class="sd">        event.key.toLowerCase() === 'z';</span>
 
 <span class="sd">    if (!isUndoShortcut || isEditableElement(event.target)) return;</span>
 
@@ -955,7 +974,7 @@ both as a script output today and as the basis for a future graphical editor.</p
 <span class="sd">  &lt;/script&gt;</span>
 <span class="sd">&lt;/body&gt;</span>
 <span class="sd">&lt;/html&gt;</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 </pre></div>
 </div>
 </details></dd></dl>

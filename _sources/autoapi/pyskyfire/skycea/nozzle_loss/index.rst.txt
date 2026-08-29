@@ -1,0 +1,78 @@
+pyskyfire.skycea.nozzle_loss
+============================
+
+.. py:module:: pyskyfire.skycea.nozzle_loss
+
+.. autoapi-nested-parse::
+
+   Efficiency corrections from ideal (ODE) to delivered engine performance.
+
+   CEA, and therefore :class:`~pyskyfire.skycea.aerothermodynamics.Aerothermodynamics`,
+   solves a one-dimensional equilibrium expansion. Real nozzle flow loses
+   performance to two-dimensional divergence, the wall boundary layer and
+   finite-rate chemistry, and real injectors do not release the full ideal
+   combustion energy. The standard engineering treatment is to keep the ideal
+   solution and multiply it by efficiencies obtained from higher-fidelity codes:
+
+   .. math::
+
+       (I_{sp})_{actual} = (I_{sp})_{ideal}\, \eta_{cf}\, \eta_{c^*}
+
+   ``eta_cf`` is a *thrust-coefficient* efficiency and carries everything
+   downstream of the throat. ``eta_cstar`` is a *characteristic-velocity*
+   efficiency and carries everything upstream of it. This is the lumped form of
+   the JANNAF simplified methodology: formal JANNAF resolves the nozzle side into
+   separate kinetic (ODE->ODK), divergence (ODK->TDK) and boundary-layer terms,
+   whereas a single ``eta_cf`` taken from a TDK/ODE thrust-coefficient ratio rolls
+   all three into one number.
+
+   The reference implementation of the constants here is Binder, M., Tomsik, T.,
+   and Veres, J. P., "RL10A-3-3A Rocket Engine Modeling Project", NASA
+   TM-107318, 1997 (NTRS 19970010379), which states the relation in appendix E.2
+   and tabulates :math:`\eta_{cf}` in table E3.
+
+   Notes
+   -----
+   The nozzle discharge coefficient is deliberately *not* part of the specific
+   impulse chain. It rescales the mass flow that a given throat area passes, not
+   the impulse each unit of propellant delivers, and in the reference above it is
+   applied separately (sec. 4.2.3.3). :meth:`NozzleLoss.mass_flow` is provided for
+   that purpose; :meth:`NozzleLoss.apply` leaves mass flow untouched.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.skycea.nozzle_loss.RL10A_3_3A_ETA_CF
+   pyskyfire.skycea.nozzle_loss.RL10A_3_3A_LOSS
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/skycea/nozzle_loss/DeliveredPerformance
+   /autoapi/pyskyfire/skycea/nozzle_loss/EfficiencyTable
+   /autoapi/pyskyfire/skycea/nozzle_loss/NozzleLoss
+
+.. autoapisummary::
+
+   pyskyfire.skycea.nozzle_loss.DeliveredPerformance
+   pyskyfire.skycea.nozzle_loss.EfficiencyTable
+   pyskyfire.skycea.nozzle_loss.NozzleLoss
+
+
+Module Contents
+---------------
+
+.. py:data:: RL10A_3_3A_ETA_CF
+
+.. py:data:: RL10A_3_3A_LOSS
+

@@ -14,14 +14,21 @@ Attributes
    pyskyfire.common.solids.Inconel625
    pyskyfire.common.solids.Inconel718
    pyskyfire.common.solids.L0
+   pyskyfire.common.solids.PureSilver
    pyskyfire.common.solids.StainlessSteel304
+   pyskyfire.common.solids.StainlessSteel347
    pyskyfire.common.solids.T625
    pyskyfire.common.solids.T625_C
    pyskyfire.common.solids.T718_hi
    pyskyfire.common.solids.TEOS
+   pyskyfire.common.solids.T_347_NERVA
+   pyskyfire.common.solids.T_347_NERVA_F
+   pyskyfire.common.solids.T_347_RHO_NERVA
+   pyskyfire.common.solids.T_347_RHO_NERVA_F
    pyskyfire.common.solids.T_F
    pyskyfire.common.solids.T_cold
    pyskyfire.common.solids.T_hi
+   pyskyfire.common.solids.T_pure_silver
    pyskyfire.common.solids.T_ref
    pyskyfire.common.solids.YellowBrass_70_30
    pyskyfire.common.solids.ZirconiumOxide
@@ -35,15 +42,25 @@ Attributes
    pyskyfire.common.solids.k718_hi
    pyskyfire.common.solids.k718_table
    pyskyfire.common.solids.k_304_piecewise
+   pyskyfire.common.solids.k_347
+   pyskyfire.common.solids.k_347_NERVA
+   pyskyfire.common.solids.k_347_NERVA_BTU_HR_FT_F
+   pyskyfire.common.solids.k_347_table
    pyskyfire.common.solids.k_BTUin
    pyskyfire.common.solids.k_YellowBrass_70_30
    pyskyfire.common.solids.k_cold
    pyskyfire.common.solids.k_hi
+   pyskyfire.common.solids.k_pure_silver
+   pyskyfire.common.solids.k_pure_silver_values
    pyskyfire.common.solids.k_yb_cold
    pyskyfire.common.solids.k_yb_hi
    pyskyfire.common.solids.log10poly_304_cryo
    pyskyfire.common.solids.mills_304_highT
    pyskyfire.common.solids.rho0
+   pyskyfire.common.solids.rho_347
+   pyskyfire.common.solids.rho_347_NERVA
+   pyskyfire.common.solids.rho_347_NERVA_LB_IN3
+   pyskyfire.common.solids.rho_347_table
    pyskyfire.common.solids.rho_T
 
 
@@ -111,7 +128,11 @@ Module Contents
    :value: 2.44e-08
 
 
+.. py:data:: PureSilver
+
 .. py:data:: StainlessSteel304
+
+.. py:data:: StainlessSteel347
 
 .. py:data:: T625
 
@@ -121,11 +142,21 @@ Module Contents
 
 .. py:data:: TEOS
 
+.. py:data:: T_347_NERVA
+
+.. py:data:: T_347_NERVA_F
+
+.. py:data:: T_347_RHO_NERVA
+
+.. py:data:: T_347_RHO_NERVA_F
+
 .. py:data:: T_F
 
 .. py:data:: T_cold
 
 .. py:data:: T_hi
+
+.. py:data:: T_pure_silver
 
 .. py:data:: T_ref
    :value: 293.15
@@ -157,6 +188,14 @@ Module Contents
 
 .. py:data:: k_304_piecewise
 
+.. py:data:: k_347
+
+.. py:data:: k_347_NERVA
+
+.. py:data:: k_347_NERVA_BTU_HR_FT_F
+
+.. py:data:: k_347_table
+
 .. py:data:: k_BTUin
 
 .. py:data:: k_YellowBrass_70_30
@@ -164,6 +203,10 @@ Module Contents
 .. py:data:: k_cold
 
 .. py:data:: k_hi
+
+.. py:data:: k_pure_silver
+
+.. py:data:: k_pure_silver_values
 
 .. py:data:: k_yb_cold
 
@@ -176,6 +219,14 @@ Module Contents
 .. py:data:: rho0
    :value: 6.2e-08
 
+
+.. py:data:: rho_347
+
+.. py:data:: rho_347_NERVA
+
+.. py:data:: rho_347_NERVA_LB_IN3
+
+.. py:data:: rho_347_table
 
 .. py:data:: rho_T
 

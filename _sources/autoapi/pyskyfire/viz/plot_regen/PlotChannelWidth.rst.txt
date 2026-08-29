@@ -1,0 +1,36 @@
+pyskyfire.viz.plot_regen.PlotChannelWidth
+=========================================
+
+.. py:class:: pyskyfire.viz.plot_regen.PlotChannelWidth(thrust_chamber, circuit_index: IndexLike = None, reference_profiles: Optional[Sequence[Any]] = None)
+
+   Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.viz.plot_regen.PlotChannelWidth
+      :parts: 1
+      :private-bases:
+
+
+   
+   Compare calculated tube OD width with optional reference profiles.
+
+   The rounded-section geometry occupies an angular sector ``theta`` at the
+   hot-side tube radius ``r``.  Its measurable tube width there is therefore
+   the chord ``2 r sin(theta/2)``.  Reference profiles are expected to expose
+   ``x`` and ``tube_width_od`` arrays and may optionally provide ``name``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

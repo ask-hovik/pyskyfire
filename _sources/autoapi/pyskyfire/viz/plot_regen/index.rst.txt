@@ -13,7 +13,11 @@ Attributes
    pyskyfire.viz.plot_regen.PHASE_COLORS
    pyskyfire.viz.plot_regen.PHASE_LABELS
    pyskyfire.viz.plot_regen.PHASE_ORDER
+   pyskyfire.viz.plot_regen.RESISTANCE_COLORS
+   pyskyfire.viz.plot_regen.RESISTANCE_LABELS
+   pyskyfire.viz.plot_regen._COOLANT_LAYER_COLOR
    pyskyfire.viz.plot_regen._INK_SECONDARY
+   pyskyfire.viz.plot_regen._SOLID_LAYER_COLORS
 
 
 Classes
@@ -22,6 +26,8 @@ Classes
 .. toctree::
    :hidden:
 
+   /autoapi/pyskyfire/viz/plot_regen/PlotChannelHeight
+   /autoapi/pyskyfire/viz/plot_regen/PlotChannelWidth
    /autoapi/pyskyfire/viz/plot_regen/PlotContour
    /autoapi/pyskyfire/viz/plot_regen/PlotCoolantArea
    /autoapi/pyskyfire/viz/plot_regen/PlotCoolantPhase
@@ -32,9 +38,12 @@ Classes
    /autoapi/pyskyfire/viz/plot_regen/PlotHeatTransferCoefficient
    /autoapi/pyskyfire/viz/plot_regen/PlotHydraulicDiameter
    /autoapi/pyskyfire/viz/plot_regen/PlotRadiusOfCurvature
+   /autoapi/pyskyfire/viz/plot_regen/PlotReynoldsNumber
    /autoapi/pyskyfire/viz/plot_regen/PlotSaturationMargin
    /autoapi/pyskyfire/viz/plot_regen/PlotTemperatureProfile
+   /autoapi/pyskyfire/viz/plot_regen/PlotThermalResistance
    /autoapi/pyskyfire/viz/plot_regen/PlotVelocity
+   /autoapi/pyskyfire/viz/plot_regen/PlotWallLayers
    /autoapi/pyskyfire/viz/plot_regen/PlotWallTemperature
    /autoapi/pyskyfire/viz/plot_regen/PlotdAdxCoolantArea
    /autoapi/pyskyfire/viz/plot_regen/PlotdAdxThermalCoolant
@@ -42,6 +51,8 @@ Classes
 
 .. autoapisummary::
 
+   pyskyfire.viz.plot_regen.PlotChannelHeight
+   pyskyfire.viz.plot_regen.PlotChannelWidth
    pyskyfire.viz.plot_regen.PlotContour
    pyskyfire.viz.plot_regen.PlotCoolantArea
    pyskyfire.viz.plot_regen.PlotCoolantPhase
@@ -52,9 +63,12 @@ Classes
    pyskyfire.viz.plot_regen.PlotHeatTransferCoefficient
    pyskyfire.viz.plot_regen.PlotHydraulicDiameter
    pyskyfire.viz.plot_regen.PlotRadiusOfCurvature
+   pyskyfire.viz.plot_regen.PlotReynoldsNumber
    pyskyfire.viz.plot_regen.PlotSaturationMargin
    pyskyfire.viz.plot_regen.PlotTemperatureProfile
+   pyskyfire.viz.plot_regen.PlotThermalResistance
    pyskyfire.viz.plot_regen.PlotVelocity
+   pyskyfire.viz.plot_regen.PlotWallLayers
    pyskyfire.viz.plot_regen.PlotWallTemperature
    pyskyfire.viz.plot_regen.PlotdAdxCoolantArea
    pyskyfire.viz.plot_regen.PlotdAdxThermalCoolant
@@ -66,14 +80,65 @@ Functions
 
 .. autoapisummary::
 
+   pyskyfire.viz.plot_regen._interp_sorted
+   pyskyfire.viz.plot_regen._layer_label
    pyskyfire.viz.plot_regen._normalize_indices
    pyskyfire.viz.plot_regen._phase_array
    pyskyfire.viz.plot_regen._phase_segments
+   pyskyfire.viz.plot_regen._result_grid
    pyskyfire.viz.plot_regen._segment_bounds
 
 
 Module Contents
 ---------------
+
+.. py:function:: _interp_sorted(x_target, x_source, y_source) -> numpy.ndarray
+
+   
+   Interpolate onto ``x_target``, tolerating a descending source grid.
+
+   Counter-flow circuits march from the nozzle end, so their native grids run
+   the other way and ``np.interp`` would silently return garbage.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _layer_label(wall, index: int) -> str
+
+   
+   Name a wall layer from its own label, else its material, else its index.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
 
 .. py:function:: _normalize_indices(thrust_chamber, circuit_index: IndexLike)
 
@@ -129,6 +194,29 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
+.. py:function:: _result_grid(result, attribute: str) -> numpy.ndarray
+
+   
+   Return a result's native grid, falling back to legacy ``x``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
 .. py:function:: _segment_bounds(x: numpy.ndarray, i0: int, i1: int)
 
    
@@ -169,7 +257,19 @@ Module Contents
    :value: ('liquid', 'two_phase', 'vapour', 'supercritical', 'unknown')
 
 
+.. py:data:: RESISTANCE_COLORS
+
+.. py:data:: RESISTANCE_LABELS
+
+.. py:data:: _COOLANT_LAYER_COLOR
+   :value: '#2a78d6'
+
+
 .. py:data:: _INK_SECONDARY
    :value: '#52514e'
+
+
+.. py:data:: _SOLID_LAYER_COLORS
+   :value: ('#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948')
 
 

@@ -54,11 +54,67 @@ pyskyfire.regen.channel_placement.SurfacePlacement
    ..
        !! processed by numpydoc !!
 
+   .. py:method:: centerline_dtheta_dx(x, contour, flow_radius, flow_dr_dx)
+
+      
+      Honor the requested helix angle on the coolant-flow centreline.
+
+      ``gamma`` is measured from the local meridional direction.  Therefore
+      ``tan(gamma) = r dtheta / ds_meridional``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: compute_centerline_radius(x, contour)
 
       
-      Return the centerline radius r(x) for this placement.
+      Return the section-reference radius ``r(x)`` for this placement.
 
+      For surface channels this is the hot-wall radius used by the
+      cross-section models.  The coolant-flow centre is obtained separately
+      with :meth:`compute_flow_centerline_radius`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: compute_flow_centerline_radius(x, contour, wall_thickness, channel_height)
+
+      
+      Return the coolant centroid used by the 1-D passage model.
+
+      The section analytics construct a radial wall/channel stack, so its
+      consistent flow centre is the hot-wall radius plus the complete wall
+      stack and half the channel height.
 
 
 

@@ -1,7 +1,7 @@
 pyskyfire.viz.plot_regen.PlotWallTemperature
 ============================================
 
-.. py:class:: pyskyfire.viz.plot_regen.PlotWallTemperature(*regen_results, plot_hot: bool = True, plot_interfaces: bool = False, plot_coolant_wall: bool = False, template: str = 'plotly_white')
+.. py:class:: pyskyfire.viz.plot_regen.PlotWallTemperature(*regen_results, plot_hot: bool = True, plot_interfaces: bool = False, plot_coolant_wall: bool = False, plot_coolant_bulk: bool = False, plot_recovery: bool = False, plot_combustion: bool = False, thrust_chamber=None, mark_nonconverged: bool = True, template: str = 'plotly_white')
 
    Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
 
@@ -14,7 +14,17 @@ pyskyfire.viz.plot_regen.PlotWallTemperature
    Build a wall-temperature plot from one or more ``RegenResult`` objects.
 
    ``T`` must have shape ``(len(x), n_layers)``. The circuit name is used as the
-   legend-group title.
+   legend-group title. Nodes whose final scaled wall-balance residual exceeds
+   the solver tolerance are shown with red ``x`` markers by default.
+
+   The optional layers extend the plot outwards from the wall stack, cold side
+   first: ``plot_coolant_bulk`` (the bulk coolant the circuit marches on),
+   ``plot_recovery`` (the hot-side recovery temperature ``T_aw_hot``, which is
+   the driving potential behind the reported ``h_hot``), and
+   ``plot_combustion`` (gas static and total temperature, which needs
+   ``thrust_chamber``). Turning them all on gives the full cold-to-hot
+   overview at the cost of stretching the y-axis over the whole range, which
+   flattens the detail inside the wall stack.
 
 
 

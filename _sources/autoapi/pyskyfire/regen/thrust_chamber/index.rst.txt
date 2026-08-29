@@ -28,39 +28,88 @@ Functions
 
 .. autoapisummary::
 
+   pyskyfire.regen.thrust_chamber._radius_from_curvature
+   pyskyfire.regen.thrust_chamber._validate_cylindrical_curve
+   pyskyfire.regen.thrust_chamber.cylindrical_curve_arc_length_scale
    pyskyfire.regen.thrust_chamber.radius_of_curvature
+   pyskyfire.regen.thrust_chamber.signed_curvature
 
 
 Module Contents
 ---------------
 
-.. py:function:: radius_of_curvature(points: numpy.ndarray, axis: str = 'x', eps: float = 1e-12) -> numpy.ndarray
+.. py:function:: _radius_from_curvature(curvature, eps: float = 1e-09)
+
+.. py:function:: _validate_cylindrical_curve(points: numpy.ndarray) -> numpy.ndarray
+
+.. py:function:: cylindrical_curve_arc_length_scale(points: numpy.ndarray) -> numpy.ndarray
 
    
-   Signed radius of curvature for a curve expressed in cylindrical coordinates
-   [x, r, θ].
-
-   • Positive  → curve bends *away* from the symmetry axis  
-   • Negative  → curve bends *toward* the symmetry axis  
-   • np.inf    → locally straight (|:math:`\kappa`| below `eps`)
-
-   :Parameters:
-
-       **points** : (:obj:`N`, 3) :obj:`ndarray <numpy.ndarray>`
-           [[x, r, theta], …] ordered along the curve.
-
-       **axis** : {'x', 'y', 'z'}, :obj:`optional`
-           Which coordinate is the symmetry axis.  Default 'x'.
-
-       **eps** : :class:`python:float`, :obj:`optional`
-           Curvature values with |:math:`\kappa`| < eps are treated as zero (straight).
+   Return ``ds/dx`` for a cylindrical curve ``[x, r, theta]``.
 
 
 
-   :Returns:
 
-       **R** : (N,) :obj:`ndarray <numpy.ndarray>`
-           Signed radius of curvature at each sample.
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: radius_of_curvature(points: numpy.ndarray, axis: str = 'x', eps: float = 1e-09) -> numpy.ndarray
+
+   
+   Return signed 3-D radius of curvature for ``[x, r, theta]`` points.
+
+   Positive radii are concave (bending away from the symmetry axis), negative
+   radii are convex, and straight portions are represented by ``np.inf``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: signed_curvature(points: numpy.ndarray, eps: float = 1e-09) -> numpy.ndarray
+
+   
+   Return signed 3-D curvature for ``[x, r, theta]`` centerline points.
+
+   Cylindrical coordinates are first converted to Cartesian coordinates, so
+   azimuthal/helical bending contributes to curvature.  Positive curvature
+   bends radially away from the chamber axis (the RL10 concave convention),
+   while negative curvature bends toward it (convex).  Locally straight
+   portions return exactly zero.
+
+   Curvature is estimated from the circumcircle through each point and its
+   two neighbours (Menger curvature).  This avoids taking two numerical
+   derivatives of the sampled centerline, which strongly amplifies small
+   interpolation errors and makes nearly straight portions oscillate between
+   very large positive and negative radii.
+
+
+
+
 
 
 
