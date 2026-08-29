@@ -11,6 +11,7 @@ Attributes
 
    pyskyfire.viz.engine_viz.Point3
    pyskyfire.viz.engine_viz.TWO_PI
+   pyskyfire.viz.engine_viz._DEFAULT_CIRCUIT_COLORS
    pyskyfire.viz.engine_viz._EPS
 
 
@@ -437,7 +438,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: make_engine_3d(thrust_chamber, *, stride: int = 2, n_arc_pts: int = 8, show: bool = True)
+.. py:function:: make_engine_3d(thrust_chamber, *, stride: int = 2, n_arc_pts: int = 8, show: bool = True, circuit_colors: collections.abc.Sequence[str] | None = None)
 
    
    Build a PyVista visualization of cooling channels using real cross-sections.
@@ -462,6 +463,10 @@ Module Contents
 
        **show** : :ref:`bool <python:bltin-boolean-values>`
            If True, open the interactive PyVista window.
+
+       **circuit_colors** : :term:`python:sequence` :obj:`of` :class:`python:str`, :obj:`optional`
+           Colors indexed by cooling-circuit order. When omitted, the default
+           categorical palette is used.
 
 
 
@@ -740,6 +745,10 @@ Module Contents
 .. py:data:: Point3
 
 .. py:data:: TWO_PI
+
+.. py:data:: _DEFAULT_CIRCUIT_COLORS
+   :value: ('#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',...
+
 
 .. py:data:: _EPS
    :value: 1e-12

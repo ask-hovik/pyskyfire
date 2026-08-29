@@ -4,6 +4,14 @@ pyskyfire.viz.report
 .. py:module:: pyskyfire.viz.report
 
 
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.viz.report._MARKDOWN
+
+
 Classes
 -------
 
@@ -13,13 +21,11 @@ Classes
    /autoapi/pyskyfire/viz/report/Report
    /autoapi/pyskyfire/viz/report/Tab
    /autoapi/pyskyfire/viz/report/_Block
-   /autoapi/pyskyfire/viz/report/_Block
 
 .. autoapisummary::
 
    pyskyfire.viz.report.Report
    pyskyfire.viz.report.Tab
-   pyskyfire.viz.report._Block
    pyskyfire.viz.report._Block
 
 
@@ -35,8 +41,10 @@ Functions
    pyskyfire.viz.report._format_number
    pyskyfire.viz.report._is_fluid
    pyskyfire.viz.report._is_material
+   pyskyfire.viz.report._markdown_table_open
    pyskyfire.viz.report.dict_to_table_html
    pyskyfire.viz.report.format_value
+   pyskyfire.viz.report.markdown_to_html
 
 
 Module Contents
@@ -80,6 +88,29 @@ Module Contents
 
    
    Duck-typing to detect your Material objects without importing from solids.py.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _markdown_table_open(*_args, **_kwargs) -> str
+
+   
+   Give Markdown tables the report's standard table styling.
 
 
 
@@ -144,4 +175,29 @@ Module Contents
 
    ..
        !! processed by numpydoc !!
+
+.. py:function:: markdown_to_html(source: str) -> str
+
+   
+   Render trusted report Markdown while escaping embedded raw HTML.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: _MARKDOWN
 

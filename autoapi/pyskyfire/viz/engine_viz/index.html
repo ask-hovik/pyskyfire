@@ -433,7 +433,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../report/Report.html">pyskyfire.viz.report.Report</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../report/Tab.html">pyskyfire.viz.report.Tab</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../report/_Block.html">pyskyfire.viz.report._Block</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../report/_Block.html">pyskyfire.viz.report._Block</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-33" name="toctree-checkbox-33" role="switch" type="checkbox"/><label for="toctree-checkbox-33"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -494,7 +493,10 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.viz.engine_viz.TWO_PI" title="pyskyfire.viz.engine_viz.TWO_PI"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TWO_PI</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.engine_viz._EPS" title="pyskyfire.viz.engine_viz._EPS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_EPS</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.engine_viz._DEFAULT_CIRCUIT_COLORS" title="pyskyfire.viz.engine_viz._DEFAULT_CIRCUIT_COLORS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_DEFAULT_CIRCUIT_COLORS</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.viz.engine_viz._EPS" title="pyskyfire.viz.engine_viz._EPS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_EPS</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -765,7 +767,7 @@ ordered consistently around the perimeter.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pyskyfire.viz.engine_viz.make_engine_3d">
-<span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.engine_viz.</span></span><span class="sig-name descname"><span class="pre">make_engine_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thrust_chamber</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_arc_pts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyskyfire.viz.engine_viz.make_engine_3d" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.engine_viz.</span></span><span class="sig-name descname"><span class="pre">make_engine_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thrust_chamber</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_arc_pts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circuit_colors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.14)"><span class="pre">Sequence</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyskyfire.viz.engine_viz.make_engine_3d" title="Link to this definition">¶</a></dt>
 <dd><p>Build a PyVista visualization of cooling channels using real cross-sections.</p>
 <p>Pipeline:
 1. Collect a minimal wedge of channels from the thrust chamber.
@@ -783,6 +785,9 @@ ordered consistently around the perimeter.</p>
 <dt><strong>n_arc_pts</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a></span></dt><dd><p>Number of angular samples used for inner/outer arcs.</p>
 </dd>
 <dt><strong>show</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bltin-boolean-values" title="(in Python v3.14)"><span class="xref std std-ref">bool</span></a></span></dt><dd><p>If True, open the interactive PyVista window.</p>
+</dd>
+<dt><strong>circuit_colors</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/glossary.html#term-sequence" title="(in Python v3.14)"><span>sequence</span></a> <code class="xref py py-obj docutils literal notranslate"><span class="pre">of</span></code> <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">optional</span></code></span></dt><dd><p>Colors indexed by cooling-circuit order. When omitted, the default
+categorical palette is used.</p>
 </dd>
 </dl>
 </dd>
@@ -912,6 +917,11 @@ v: circumferential offset (along phi_hat)</p>
 <dd></dd></dl>
 
 <dl class="py data">
+<dt class="sig sig-object py" id="pyskyfire.viz.engine_viz._DEFAULT_CIRCUIT_COLORS">
+<span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.engine_viz.</span></span><span class="sig-name descname"><span class="pre">_DEFAULT_CIRCUIT_COLORS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('#1f77b4',</span> <span class="pre">'#ff7f0e',</span> <span class="pre">'#2ca02c',</span> <span class="pre">'#d62728',</span> <span class="pre">'#9467bd',</span> <span class="pre">'#8c564b',</span> <span class="pre">'#e377c2',</span> <span class="pre">'#7f7f7f',...</span></span><a class="headerlink" href="#pyskyfire.viz.engine_viz._DEFAULT_CIRCUIT_COLORS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
 <dt class="sig sig-object py" id="pyskyfire.viz.engine_viz._EPS">
 <span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.engine_viz.</span></span><span class="sig-name descname"><span class="pre">_EPS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1e-12</span></span><a class="headerlink" href="#pyskyfire.viz.engine_viz._EPS" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -1005,6 +1015,7 @@ v: circumferential offset (along phi_hat)</p>
 <li><a class="reference internal" href="#pyskyfire.viz.engine_viz.yz_to_uv_offsets"><code class="docutils literal notranslate"><span class="pre">yz_to_uv_offsets()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.engine_viz.Point3"><code class="docutils literal notranslate"><span class="pre">Point3</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.engine_viz.TWO_PI"><code class="docutils literal notranslate"><span class="pre">TWO_PI</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.viz.engine_viz._DEFAULT_CIRCUIT_COLORS"><code class="docutils literal notranslate"><span class="pre">_DEFAULT_CIRCUIT_COLORS</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.engine_viz._EPS"><code class="docutils literal notranslate"><span class="pre">_EPS</span></code></a></li>
 </ul>
 </li>

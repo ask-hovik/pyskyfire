@@ -433,7 +433,6 @@
 <li class="toctree-l3"><a class="reference internal" href="Report.html">pyskyfire.viz.report.Report</a></li>
 <li class="toctree-l3"><a class="reference internal" href="Tab.html">pyskyfire.viz.report.Tab</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_Block.html">pyskyfire.viz.report._Block</a></li>
-<li class="toctree-l3"><a class="reference internal" href="_Block.html">pyskyfire.viz.report._Block</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-33" name="toctree-checkbox-33" role="switch" type="checkbox"/><label for="toctree-checkbox-33"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -483,6 +482,18 @@
         <article role="main" id="furo-main-content">
           <section id="module-pyskyfire.viz.report">
 <span id="pyskyfire-viz-report"></span><h1>pyskyfire.viz.report<a class="headerlink" href="#module-pyskyfire.viz.report" title="Link to this heading">¶</a></h1>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.report._MARKDOWN" title="pyskyfire.viz.report._MARKDOWN"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_MARKDOWN</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
 <div class="toctree-wrapper compound">
@@ -497,9 +508,6 @@
 <td><p></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="_Block.html#pyskyfire.viz.report._Block" title="pyskyfire.viz.report._Block"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_Block</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="_Block.html#pyskyfire.viz.report._Block" title="pyskyfire.viz.report._Block"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_Block</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -532,11 +540,17 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.report._is_material" title="pyskyfire.viz.report._is_material"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_is_material</span></code></a>(→ bool)</p></td>
 <td><p>Duck-typing to detect your Material objects without importing from solids.py.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.viz.report.dict_to_table_html" title="pyskyfire.viz.report.dict_to_table_html"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict_to_table_html</span></code></a>(→ str)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.viz.report._markdown_table_open" title="pyskyfire.viz.report._markdown_table_open"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_markdown_table_open</span></code></a>(→ str)</p></td>
+<td><p>Give Markdown tables the report's standard table styling.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.report.dict_to_table_html" title="pyskyfire.viz.report.dict_to_table_html"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict_to_table_html</span></code></a>(→ str)</p></td>
 <td><p>Return HTML for a simple 2-column table of a dict.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.report.format_value" title="pyskyfire.viz.report.format_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">format_value</span></code></a>(→ str)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyskyfire.viz.report.format_value" title="pyskyfire.viz.report.format_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">format_value</span></code></a>(→ str)</p></td>
 <td><p>Human-friendly string for table cells.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyskyfire.viz.report.markdown_to_html" title="pyskyfire.viz.report.markdown_to_html"><code class="xref py py-obj docutils literal notranslate"><span class="pre">markdown_to_html</span></code></a>(→ str)</p></td>
+<td><p>Render trusted report Markdown while escaping embedded raw HTML.</p></td>
 </tr>
 </tbody>
 </table>
@@ -583,6 +597,12 @@ Keep it minimal per your request.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="pyskyfire.viz.report._markdown_table_open">
+<span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.report.</span></span><span class="sig-name descname"><span class="pre">_markdown_table_open</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">_kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="headerlink" href="#pyskyfire.viz.report._markdown_table_open" title="Link to this definition">¶</a></dt>
+<dd><p>Give Markdown tables the report’s standard table styling.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="pyskyfire.viz.report.dict_to_table_html">
 <span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.report.</span></span><span class="sig-name descname"><span class="pre">dict_to_table_html</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">col_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Key'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col_val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caption</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="headerlink" href="#pyskyfire.viz.report.dict_to_table_html" title="Link to this definition">¶</a></dt>
 <dd><p>Return HTML for a simple 2-column table of a dict.</p>
@@ -593,6 +613,17 @@ Keep it minimal per your request.</p>
 <span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.report.</span></span><span class="sig-name descname"><span class="pre">format_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="headerlink" href="#pyskyfire.viz.report.format_value" title="Link to this definition">¶</a></dt>
 <dd><p>Human-friendly string for table cells.</p>
 </dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyskyfire.viz.report.markdown_to_html">
+<span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.report.</span></span><span class="sig-name descname"><span class="pre">markdown_to_html</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="headerlink" href="#pyskyfire.viz.report.markdown_to_html" title="Link to this definition">¶</a></dt>
+<dd><p>Render trusted report Markdown while escaping embedded raw HTML.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="pyskyfire.viz.report._MARKDOWN">
+<span class="sig-prename descclassname"><span class="pre">pyskyfire.viz.report.</span></span><span class="sig-name descname"><span class="pre">_MARKDOWN</span></span><a class="headerlink" href="#pyskyfire.viz.report._MARKDOWN" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </section>
 </section>
@@ -653,6 +684,7 @@ Keep it minimal per your request.</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">pyskyfire.viz.report</a><ul>
+<li><a class="reference internal" href="#attributes">Attributes</a></li>
 <li><a class="reference internal" href="#classes">Classes</a></li>
 <li><a class="reference internal" href="#functions">Functions</a></li>
 <li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
@@ -663,8 +695,11 @@ Keep it minimal per your request.</p>
 <li><a class="reference internal" href="#pyskyfire.viz.report._format_number"><code class="docutils literal notranslate"><span class="pre">_format_number()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.report._is_fluid"><code class="docutils literal notranslate"><span class="pre">_is_fluid()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.report._is_material"><code class="docutils literal notranslate"><span class="pre">_is_material()</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.viz.report._markdown_table_open"><code class="docutils literal notranslate"><span class="pre">_markdown_table_open()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.report.dict_to_table_html"><code class="docutils literal notranslate"><span class="pre">dict_to_table_html()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.report.format_value"><code class="docutils literal notranslate"><span class="pre">format_value()</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.viz.report.markdown_to_html"><code class="docutils literal notranslate"><span class="pre">markdown_to_html()</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.viz.report._MARKDOWN"><code class="docutils literal notranslate"><span class="pre">_MARKDOWN</span></code></a></li>
 </ul>
 </li>
 </ul>

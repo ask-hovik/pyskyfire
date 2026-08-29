@@ -15,6 +15,30 @@ pyskyfire.viz.report.Tab
    .. py:method:: add_image(path: str, *, alt: str = '', caption: str | None = None, style: str = 'max-width:100%;height:auto;') -> Tab
 
 
+   .. py:method:: add_markdown(source: str) -> Tab
+
+      
+      Append a CommonMark prose block; embedded raw HTML is escaped.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: add_raw_html(raw_html: str) -> Tab
 
 
@@ -43,7 +67,4 @@ pyskyfire.viz.report.Tab
 
       ..
           !! processed by numpydoc !!
-
-
-   .. py:method:: add_text(text: str) -> Tab
 

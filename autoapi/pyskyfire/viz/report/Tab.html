@@ -433,7 +433,6 @@
 <li class="toctree-l3"><a class="reference internal" href="Report.html">pyskyfire.viz.report.Report</a></li>
 <li class="toctree-l3 current current-page"><a class="current reference internal" href="#">pyskyfire.viz.report.Tab</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_Block.html">pyskyfire.viz.report._Block</a></li>
-<li class="toctree-l3"><a class="reference internal" href="_Block.html">pyskyfire.viz.report._Block</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-33" name="toctree-checkbox-33" role="switch" type="checkbox"/><label for="toctree-checkbox-33"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -507,6 +506,12 @@
 <dd></dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="pyskyfire.viz.report.Tab.add_markdown">
+<span class="sig-name descname"><span class="pre">add_markdown</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#pyskyfire.viz.report.Tab" title="pyskyfire.viz.report.Tab"><span class="pre">Tab</span></a></span></span><a class="headerlink" href="#pyskyfire.viz.report.Tab.add_markdown" title="Link to this definition">¶</a></dt>
+<dd><p>Append a CommonMark prose block; embedded raw HTML is escaped.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="pyskyfire.viz.report.Tab.add_raw_html">
 <span class="sig-name descname"><span class="pre">add_raw_html</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_html</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#pyskyfire.viz.report.Tab" title="pyskyfire.viz.report.Tab"><span class="pre">Tab</span></a></span></span><a class="headerlink" href="#pyskyfire.viz.report.Tab.add_raw_html" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -521,11 +526,6 @@
 <span class="sig-name descname"><span class="pre">add_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">caption</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Key'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#pyskyfire.viz.report.Tab" title="pyskyfire.viz.report.Tab"><span class="pre">Tab</span></a></span></span><a class="headerlink" href="#pyskyfire.viz.report.Tab.add_table" title="Link to this definition">¶</a></dt>
 <dd><p>Append a key/value HTML table made from a dict.</p>
 </dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyskyfire.viz.report.Tab.add_text">
-<span class="sig-name descname"><span class="pre">add_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#pyskyfire.viz.report.Tab" title="pyskyfire.viz.report.Tab"><span class="pre">Tab</span></a></span></span><a class="headerlink" href="#pyskyfire.viz.report.Tab.add_text" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
 
 </dd></dl>
 
@@ -592,10 +592,10 @@
 <li><a class="reference internal" href="#pyskyfire.viz.report.Tab.add_figure"><code class="docutils literal notranslate"><span class="pre">pyskyfire.viz.report.Tab.add_figure()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.report.Tab.add_iframe"><code class="docutils literal notranslate"><span class="pre">pyskyfire.viz.report.Tab.add_iframe()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.report.Tab.add_image"><code class="docutils literal notranslate"><span class="pre">pyskyfire.viz.report.Tab.add_image()</span></code></a></li>
+<li><a class="reference internal" href="#pyskyfire.viz.report.Tab.add_markdown"><code class="docutils literal notranslate"><span class="pre">pyskyfire.viz.report.Tab.add_markdown()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.report.Tab.add_raw_html"><code class="docutils literal notranslate"><span class="pre">pyskyfire.viz.report.Tab.add_raw_html()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.report.Tab.add_svg"><code class="docutils literal notranslate"><span class="pre">pyskyfire.viz.report.Tab.add_svg()</span></code></a></li>
 <li><a class="reference internal" href="#pyskyfire.viz.report.Tab.add_table"><code class="docutils literal notranslate"><span class="pre">pyskyfire.viz.report.Tab.add_table()</span></code></a></li>
-<li><a class="reference internal" href="#pyskyfire.viz.report.Tab.add_text"><code class="docutils literal notranslate"><span class="pre">pyskyfire.viz.report.Tab.add_text()</span></code></a></li>
 </ul>
 </li>
 </ul>
