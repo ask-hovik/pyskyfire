@@ -2,6 +2,8 @@
 
 Pyskyfire is a Python library for analysing liquid-propellant rocket engines.
 
+**Project links:** [GitHub](https://github.com/ask-hovik/pyskyfire) · [PyPI](https://pypi.org/project/pyskyfire/)
+
 It supports:
 
 * combustion-performance and nozzle-flow calculations using NASA CEA;
