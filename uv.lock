@@ -1514,6 +1514,7 @@ dependencies = [
 
 [package.optional-dependencies]
 viz = [
+    { name = "markdown-it-py" },
     { name = "plotly" },
     { name = "pyvista" },
 ]
@@ -1553,6 +1554,7 @@ requires-dist = [
     { name = "cea", specifier = ">=3.3" },
     { name = "cloudpickle", specifier = ">=3.1" },
     { name = "coolprop", specifier = ">=7.0" },
+    { name = "markdown-it-py", marker = "extra == 'viz'", specifier = ">=4.0" },
     { name = "numpy", specifier = ">=2.3" },
     { name = "plotly", marker = "extra == 'viz'", specifier = ">=6.3" },
     { name = "pyvista", marker = "extra == 'viz'" },

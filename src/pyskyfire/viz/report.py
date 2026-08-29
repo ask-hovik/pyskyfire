@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Optional, Any, Mapping
 import html
+import textwrap
+from markdown_it import MarkdownIt
 import plotly.io as pio
 import plotly.graph_objects as go
 import numpy as _np
@@ -10,10 +12,22 @@ import base64, mimetypes, os
 
 # -------- Helper functions ----------------------------------------------------
 
-@dataclass
-class _Block:
-    kind: str  # "text" | "figure" | "raw" | "image" | "tikzjax"
-    payload: str
+_MARKDOWN = MarkdownIt("commonmark", {"html": False}).enable("table")
+
+
+def _markdown_table_open(*_args, **_kwargs) -> str:
+    """Give Markdown tables the report's standard table styling."""
+    return '<table class="psf-table psf-markdown-table">\n'
+
+
+_MARKDOWN.renderer.rules["table_open"] = _markdown_table_open
+
+
+def markdown_to_html(source: str) -> str:
+    """Render trusted report Markdown while escaping embedded raw HTML."""
+    if not isinstance(source, str):
+        raise TypeError("Markdown source must be a string")
+    return _MARKDOWN.render(textwrap.dedent(source).strip())
 
 def _file_to_data_uri(path: str) -> str:
     mime, _ = mimetypes.guess_type(path)
@@ -156,8 +170,8 @@ def dict_to_table_html(
 
 @dataclass
 class _Block:
-    kind: str  # "text" | "figure" | "raw"
-    payload: str  # already HTML for "raw" and "figure"; plain text for "text"
+    kind: str  # "markdown" | "figure" | "table" | "raw" | "image"
+    payload: str  # HTML for raw/figure/table; Markdown source for markdown
 
 # --- Tab container -----------------------------------------------------------
 
@@ -166,10 +180,11 @@ class Tab:
     title: str
     blocks: List[_Block] = field(default_factory=list)
 
-    def add_text(self, text: str) -> "Tab":
-        # simple safe text (escape + preserve newlines)
-        safe = html.escape(text).replace("\n", "<br>")
-        self.blocks.append(_Block("text", safe))
+    def add_markdown(self, source: str) -> "Tab":
+        """Append a CommonMark prose block; embedded raw HTML is escaped."""
+        if not isinstance(source, str):
+            raise TypeError("Markdown source must be a string")
+        self.blocks.append(_Block("markdown", source))
         return self
 
     def add_figure(self, fig: go.Figure, caption: Optional[str] = None) -> "Tab":
@@ -193,7 +208,8 @@ class Tab:
         table_html = dict_to_table_html(
             data, col_key=key_title, col_val=value_title, caption=caption, precision=precision
         )
-        return self.add_raw_html(table_html)
+        self.blocks.append(_Block("table", table_html))
+        return self
 
 
     def add_raw_html(self, raw_html: str) -> "Tab":
@@ -377,17 +393,55 @@ body {{
 .content {{
   padding: 18px 22px 40px;
   min-width: 0;
+  position: relative;
 }}
 .tab-panel {{ display: none; }}
 .tab-panel.active {{ display: block; }}
+.tab-panel.psf-preparing {{
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}}
+.content.psf-initializing::before {{
+  content: "Preparing report…";
+  color: var(--muted);
+  font-size: 14px;
+}}
 /* Blocks */
 .psf-block {{ margin: 16px 0; }}
-.psf-text {{ line-height: 1.5; color: var(--fg); }}
+.psf-markdown {{ line-height: 1.5; color: var(--fg); }}
+.psf-markdown > :first-child {{ margin-top: 0; }}
+.psf-markdown > :last-child {{ margin-bottom: 0; }}
+.psf-markdown pre {{ overflow-x: auto; }}
+.psf-markdown code {{ background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 4px; }}
+.psf-markdown pre code {{ display: block; padding: 10px 12px; }}
+.psf-markdown blockquote {{
+  margin-left: 0;
+  padding-left: 14px;
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+}}
 .psf-figure {{ margin: 12px 0; min-width: 0; }}
 .psf-caption {{ font-size: 12px; color: var(--muted); margin-top: 4px; }}
 /* Make Plotly plots use available width */
 .psf-figure .plotly-graph-div {{ width: 100% !important; }}
 /* --- Key/Value tables --- */
+.psf-table-cluster {{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+}}
+.psf-table-item {{
+  /* Fill each row with as many readable table columns as will fit. */
+  flex: 1 1 18rem;
+  min-width: min(18rem, 100%);
+  max-width: 100%;
+  overflow-x: auto;
+}}
 .psf-table {{
   width: max-content;
   max-width: 100%;
@@ -410,7 +464,11 @@ body {{
   font-weight: 600;
   margin: 0 0 6px 0;
 }}
-.psf-iframe {{ 
+.psf-table-cluster .psf-table {{
+  width: 100%;
+  margin: 0;
+}}
+.psf-iframe {{
   background: #fff; 
 }}
 </style>
@@ -465,32 +523,79 @@ async function psfPlaceLegend(plot, width) {{
   }}
 }}
 
-function psfResizePlots(panel) {{
+function psfAfterLayoutAndPaint() {{
+  return new Promise(resolve => requestAnimationFrame(() => {{
+    requestAnimationFrame(resolve);
+  }}));
+}}
+
+async function psfResizePlots(panel) {{
   if (!panel || !window.Plotly || !Plotly.Plots) return;
+
+  const plots = Array.from(panel.querySelectorAll('.plotly-graph-div'));
+  if (!plots.length) return;
 
   // Plotly figures are created while their tab panels are hidden, so their
   // initial dimensions cannot reflect the report's content column. Wait for
-  // the newly active panel to participate in layout before resizing it.
-  requestAnimationFrame(() => {{
-    requestAnimationFrame(() => {{
-      panel.querySelectorAll('.plotly-graph-div').forEach(async (plot) => {{
-        const width = plot.getBoundingClientRect().width;
-        if (width > 0) {{
-          plot.style.height = `${{width / PSF_PLOT_ASPECT_RATIO}}px`;
-        }}
-        if (plot.data) {{
-          Plotly.Plots.resize(plot);
-          await psfPlaceLegend(plot, width);
-          Plotly.Plots.resize(plot);
-        }}
-      }});
-    }});
-  }});
+  // the newly active panel to participate in layout before measuring it.
+  await psfAfterLayoutAndPaint();
+
+  for (const plot of plots) {{
+    const width = plot.getBoundingClientRect().width;
+    if (width > 0) {{
+      plot.style.height = `${{width / PSF_PLOT_ASPECT_RATIO}}px`;
+    }}
+    if (plot.data) {{
+      await Plotly.Plots.resize(plot);
+      await psfPlaceLegend(plot, width);
+      await Plotly.Plots.resize(plot);
+    }}
+  }}
+
+  // Plotly may schedule SVG/canvas updates after its promises settle.
+  await psfAfterLayoutAndPaint();
+}}
+
+async function psfResizeAllPlots() {{
+  const content = document.querySelector('.content');
+  const panels = Array.from(document.querySelectorAll('.tab-panel'));
+  if (!content || !panels.length) return;
+
+  const style = window.getComputedStyle(content);
+  const contentWidth = Math.max(
+    0,
+    content.clientWidth
+      - (parseFloat(style.paddingLeft) || 0)
+      - (parseFloat(style.paddingRight) || 0),
+  );
+  const prepared = panels.filter(panel => !panel.classList.contains('active'));
+
+  // Hidden tabs normally have no measurable width. Overlay them invisibly at
+  // the content width so Plotly can size every tab without affecting layout.
+  for (const panel of prepared) {{
+    panel.style.width = `${{contentWidth}}px`;
+    panel.classList.add('psf-preparing');
+  }}
+
+  try {{
+    await Promise.all(panels.map(panel => psfResizePlots(panel)));
+  }} finally {{
+    for (const panel of prepared) {{
+      panel.classList.remove('psf-preparing');
+      panel.style.removeProperty('width');
+    }}
+  }}
 }}
 
 function psfActivateTab(idx) {{
   const btns = document.querySelectorAll('.tab-btn');
   const panels = document.querySelectorAll('.tab-panel');
+  const panel = panels[idx];
+  if (!panel) return;
+
+  panel.classList.remove('psf-preparing');
+  panel.style.removeProperty('width');
+
   btns.forEach((b, i) => {{
     if (i === idx) b.classList.add('active'); else b.classList.remove('active');
   }});
@@ -499,19 +604,35 @@ function psfActivateTab(idx) {{
   }});
   // Persist selection
   try {{ localStorage.setItem('psf_active_tab', String(idx)); }} catch(e) {{}}
-  psfResizePlots(panels[idx]);
 }}
-window.addEventListener('DOMContentLoaded', () => {{
+window.addEventListener('DOMContentLoaded', async () => {{
   // Restore last active tab
   let idx = 0;
   try {{
     const s = localStorage.getItem('psf_active_tab');
     if (s !== null) idx = Math.max(0, parseInt(s, 10) || 0);
   }} catch(e) {{}}
+
+  const content = document.querySelector('.content');
+  if (content) content.classList.add('psf-initializing');
+  try {{
+    await psfResizeAllPlots();
+  }} catch (error) {{
+    console.error('Could not prepare report plots', error);
+  }} finally {{
+    if (content) content.classList.remove('psf-initializing');
+  }}
   psfActivateTab(idx);
 }});
+
+let psfWindowResizeTimer;
 window.addEventListener('resize', () => {{
-  psfResizePlots(document.querySelector('.tab-panel.active'));
+  clearTimeout(psfWindowResizeTimer);
+  psfWindowResizeTimer = setTimeout(() => {{
+    psfResizeAllPlots().catch(
+      error => console.error('Could not resize report plots', error),
+    );
+  }}, 120);
 }});
 </script>
 <script>
@@ -625,15 +746,43 @@ function activate(btn) {{
         panels = []
         for idx, tab in enumerate(self.tabs):
             blocks_html = []
+            pending_tables = []
+
+            def flush_tables():
+                if not pending_tables:
+                    return
+                if len(pending_tables) == 1:
+                    blocks_html.append(
+                        '<div class="psf-block">'
+                        f'{pending_tables[0]}</div>'
+                    )
+                else:
+                    items = "\n".join(
+                        f'<div class="psf-table-item">{table}</div>'
+                        for table in pending_tables
+                    )
+                    blocks_html.append(
+                        f'<div class="psf-block psf-table-cluster">{items}</div>'
+                    )
+                pending_tables.clear()
+
             for blk in tab.blocks:
-                if blk.kind == "text":
-                    blocks_html.append(f'<div class="psf-block psf-text">{blk.payload}</div>')
+                if blk.kind == "table":
+                    pending_tables.append(blk.payload)
+                    continue
+
+                # Any non-table block is a hard boundary between table runs.
+                flush_tables()
+                if blk.kind == "markdown":
+                    rendered = markdown_to_html(blk.payload)
+                    blocks_html.append(f'<div class="psf-block psf-markdown">{rendered}</div>')
                 elif blk.kind == "figure":
                     blocks_html.append(f'<div class="psf-block psf-figure">{blk.payload}</div>')
                 elif blk.kind == "raw":
                     blocks_html.append(f'<div class="psf-block">{blk.payload}</div>')
                 elif blk.kind == "image":
                     blocks_html.append(f'<div class="psf-block psf-figure">{blk.payload}</div>')
+            flush_tables()
             panel_html = f'<section class="tab-panel" id="psf-tab-{idx}">\n' + "\n".join(blocks_html) + "\n</section>"
             panels.append(panel_html)
         content_html = content_start + "\n".join(panels) + "\n  </main>\n</div>\n</body>\n</html>"

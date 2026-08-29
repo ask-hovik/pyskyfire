@@ -257,7 +257,7 @@ tab_params.add_table(thrust_chamber.combustion_transport.optimum, caption="Optim
 
 # --- Summary ------------------------------------------------------
 tab_summary = report.add_tab("Summary")
-tab_summary.add_text(
+tab_summary.add_markdown(
     "The film ring sits downstream of the injector, so the upstream stretch of "
     "the barrel is cooled regeneratively only. Both runs use the same chamber, "
     "the same channel geometry and the same regenerative coolant flow, so the "
@@ -282,7 +282,7 @@ p_ref = thrust_chamber.combustion_transport.get_p(x_injection)
 T_sat_ref = (coolant_transport.get_T_sat(params["p_coolant_in"])
              if hasattr(coolant_transport, "get_T_sat") else None)
 
-tab_film.add_text(
+tab_film.add_markdown(
     "Grisson film model, solved on its own. The liquid film absorbs the gas-side "
     "heat load as evaporation until it dries out, after which its vapour "
     "continues to shield the wall at a reduced recovery temperature."
@@ -306,7 +306,7 @@ for fig, caption in [
 
 # --- Cooling data, with and without film --------------------------
 tab_cooling = report.add_tab("Cooling Data")
-tab_cooling.add_text(
+tab_cooling.add_markdown(
     "Both runs overlaid. Note that the circuit flows nozzle-to-injector, so the "
     "coolant crosses the film-cooled stretch before it reaches the bare barrel "
     "upstream of the injection station. The hot-side boundary condition there is "

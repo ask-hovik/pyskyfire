@@ -83,6 +83,9 @@ pyrightconfig.json
 # built docs
 docs/_build/
 
+# other
+.claude
+
 # Non-public data
 /validation/Heimdall
 /notes

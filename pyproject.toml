@@ -42,6 +42,7 @@ include = [
 
 [project.optional-dependencies]
 viz = [
+  "markdown-it-py>=4.0",
   "plotly>=6.3",
   "pyvista",
 ]
