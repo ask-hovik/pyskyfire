@@ -8,6 +8,7 @@ import pytest
 from pyskyfire.regen import physics
 from pyskyfire.regen import coupled_solver
 from pyskyfire.regen.channel_placement import SurfacePlacement
+from pyskyfire.regen.cross_section import ChannelSection
 from pyskyfire.regen.coupled_solver import CoupledHeatExchangerPhysics
 from pyskyfire.regen.thrust_chamber import (
     CoolingCircuit,
@@ -115,7 +116,7 @@ class _Contour:
         return 0.1
 
 
-class _CrossSection:
+class _CrossSection(ChannelSection):
     @staticmethod
     def P_thermal(profiles):
         return np.ones_like(profiles.h)

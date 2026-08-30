@@ -55,6 +55,7 @@ Install the project and all development dependencies:
 
 ```bash
 uv sync --group dev
+source .venv/bin/activate
 ```
 
 If you only need the test dependencies, use:
@@ -78,18 +79,19 @@ uv sync --group test
 
 ## Running tests
 
-Run the test suite from the repository root:
+Run the appropriate test tier from the repository root:
 
 ```bash
-uv run --group test pytest -q tests
+test-light   # Fast unit tests
+test-medium  # Every test except the advanced example
+test-heavy   # Every test, including the advanced example
 ```
 
-During development, you can run an individual test file or test by passing its
-path to pytest:
+Additional pytest arguments are passed through, for example:
 
 ```bash
-uv run --group test pytest -q tests/packaging/test_package.py
-uv run --group test pytest -q tests/packaging/test_package.py::<test-name>
+test-light -x
+test-medium -k serialization
 ```
 
 Some example tests use optional visualisation dependencies and may require a

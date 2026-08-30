@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+title: "Pyskyfire: a simulation framework for liquid propellant rocket engines"
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+authors:
+  - given-names: "Ask Haugerud"
+    family-names: Hovik
+    email: ask@askhaugerudhovik.no
+    affiliation: "Independent researcher"
+    orcid: "https://orcid.org/0009-0000-3781-4639"
+repository-code: "https://github.com/ask-hovik/pyskyfire"
+url: "https://ask-hovik.github.io/pyskyfire/"
+abstract: >-
+  Pyskyfire is a Python based, object-oriented, openly licensed simulation
+  framework for regeneratively cooled liquid propellant rocket engines. It
+  covers engine contour generation from first-principles inputs, multi-pass
+  cooling channel geometry, chemical equilibrium combustion modelling,
+  regenerative cooling analysis of thrust chambers, pump, turbine and ducting
+  models, and steady state solution of the complete engine cycle.
+keywords:
+  - rocket engine
+  - liquid propellant
+  - regenerative cooling
+  - propulsion
+  - engine cycle analysis
+  - simulation
+license: MIT
+version: 0.3.0
+date-released: "2026-08-30"
+doi: 10.5281/zenodo.15791527
+references:
+  - type: thesis
+    title: "A Simulation Framework for Liquid Propellant Rocket Engines"
+    authors:
+      - given-names: "Ask Haugerud"
+        family-names: Hovik
+    thesis-type: "Master's thesis"
+    institution:
+      name: "Norwegian University of Science and Technology (NTNU)"
+    department: "Department of Energy and Process Engineering"
+    year: 2025
+    month: 7
+    url: "https://hdl.handle.net/11250/5273736"

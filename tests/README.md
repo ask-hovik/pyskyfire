@@ -14,15 +14,22 @@ The test suite is grouped by the kind of contract each test protects:
 - `browser/` protects behavior implemented by generated browser-side HTML,
   CSS, and JavaScript.
 
-Run every test from the repository root with:
+Run tests from the repository root using one of the three test tiers:
 
 ```bash
-uv run --group test pytest -q tests
+uv sync
+source .venv/bin/activate
 ```
 
-During development, a category can be run independently, for example:
+```bash
+test-light   # Fast unit tests
+test-medium  # Every test except the advanced example
+test-heavy   # Every test, including the advanced example
+```
+
+Additional pytest arguments are passed through, for example:
 
 ```bash
-uv run --group test pytest -q tests/unit
-uv run --group test pytest -q tests/validation
+test-light -x
+test-medium -k serialization
 ```

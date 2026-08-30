@@ -1,8 +1,16 @@
 {
   "version": 1,
   "nodes": {
+    "block:MassFlowMergerBlock:14756a6a1031": {
+      "x": 1220,
+      "y": 1200
+    },
     "block:MassFlowMergerBlock:32e3c628da11": {
       "x": 150,
+      "y": 1160
+    },
+    "block:MassFlowMergerBlock:9397b29e8eb1": {
+      "x": 620,
       "y": 1160
     },
     "block:MassFlowMergerBlock:9d28d992fb2f": {
@@ -10,76 +18,72 @@
       "y": 120
     },
     "block:MassFlowMergerBlock:9f616a873f3a": {
-      "x": 1240,
-      "y": 130
+      "x": 1220,
+      "y": 120
     },
-    "block:MassFlowMergerBlock:ec5015683bf3": {
-      "x": 940,
-      "y": 1140
+    "block:MassFlowSplitterBlock:23baf3dfd277": {
+      "x": 1220,
+      "y": 260
+    },
+    "block:MassFlowSplitterBlock:58959ed215ed": {
+      "x": 1220,
+      "y": 380
     },
     "block:MassFlowSplitterBlock:6eef48d91ec2": {
       "x": 300,
       "y": 310
     },
     "block:MassFlowSplitterBlock:7c79d3ae13b9": {
-      "x": 1240,
-      "y": 980
+      "x": 890,
+      "y": 1020
     },
     "block:MassFlowSplitterBlock:d4ba066e8b4e": {
-      "x": 280,
+      "x": 300,
       "y": 1010
     },
-    "block:MassFlowSplitterBlock:d63e3ad50899": {
-      "x": 1240,
-      "y": 330
+    "block:PumpBlock:2eb20b8200d1": {
+      "x": 890,
+      "y": 160
     },
     "block:PumpBlock:43834593695a": {
       "x": 10,
       "y": 210
     },
-    "block:PumpBlock:edf5ec69d4b3": {
-      "x": 940,
-      "y": 230
+    "block:PumpBlock:494a53577709": {
+      "x": 890,
+      "y": 390
     },
-    "block:RegenBlock:05abefacbe5b": {
-      "x": 600,
-      "y": 880
+    "block:RegenBlock:33072a2292c8": {
+      "x": 300,
+      "y": 710
     },
-    "block:RegenBlock:52351ea49566": {
-      "x": 600,
-      "y": 670
+    "block:RegenBlock:5010bc74c179": {
+      "x": 890,
+      "y": 630
     },
-    "block:RegenBlock:60e30f780ade": {
-      "x": 600,
-      "y": 490
-    },
-    "block:RegenBlock:e4fe6c515f9d": {
-      "x": 1240,
-      "y": 640
+    "block:RegenBlock:7c2d97454712": {
+      "x": 890,
+      "y": 760
     },
     "block:SimpleDuctBlock:0f060639e43c": {
-      "x": 1240,
-      "y": 490
+      "x": 890,
+      "y": 510
     },
     "block:SimpleDuctBlock:37844e45ded3": {
       "x": 150,
       "y": 1300
     },
     "block:SimpleDuctBlock:607a5fcee40c": {
-      "x": 280,
+      "x": 300,
       "y": 880
-    },
-    "block:SimpleDuctBlock:69a6930452b2": {
-      "x": 660,
-      "y": 1290
     },
     "block:SimpleDuctBlock:9cf90431341c": {
       "x": 500,
       "y": 1460
     },
     "block:SimpleDuctBlock:a24cfcaefedc": {
-      "x": 1240,
-      "y": 800
+      "x": 890,
+      "y": 890
     },
     "block:SimpleDuctBlock:a92b6f27df1e": {
       "x": 300,
@@ -89,24 +93,28 @@
       "x": 310,
       "y": 1460
     },
+    "block:SimpleDuctBlock:cdba0b96fefb": {
+      "x": 820,
+      "y": 1330
+    },
     "block:TransmissionBlock:df1115ee86ec": {
       "x": 10,
       "y": 510
     },
     "block:TransmissionBlock:ffc01a9fe794": {
-      "x": 940,
-      "y": 500
+      "x": 620,
+      "y": 270
     },
     "block:TurbineBlock:ad874c728e38": {
-      "x": 940,
-      "y": 830
+      "x": 620,
+      "y": 850
     },
     "block:TurbineBlock:d8e3d944c0cf": {
       "x": 10,
-      "y": 880
+      "y": 870
     },
     "source:station:5a8d3fa73f0b": {
-      "x": 1240,
+      "x": 1220,
       "y": 10
     },
     "source:station:fddc455c5427": {

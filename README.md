@@ -10,6 +10,7 @@ Model thrust-chamber thermodynamics, cooling channels, engine cycles, and get in
 [![Tests](https://img.shields.io/github/actions/workflow/status/ask-hovik/pyskyfire/tests.yml?branch=main&label=tests)](https://github.com/ask-hovik/pyskyfire/actions/workflows/tests.yml)
 [![Docs](https://img.shields.io/github/actions/workflow/status/ask-hovik/pyskyfire/docs.yml?branch=main&label=docs)](https://github.com/ask-hovik/pyskyfire/actions/workflows/docs.yml)
 [![License](https://img.shields.io/github/license/ask-hovik/pyskyfire.svg)](https://github.com/ask-hovik/pyskyfire/blob/main/LICENSE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15791527.svg)](https://doi.org/10.5281/zenodo.15791527)
 
 ------------------
 <p align="center">

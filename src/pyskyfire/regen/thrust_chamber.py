@@ -110,6 +110,7 @@ class CoolingCircuit:
         walls,                     # list of wall objects with .thickness(x)
         coolant_transport,
         roughness,
+        hot_gas_surface_area_multiplier=1.0,
     ):
         self.name = name
         self.contour = contour
@@ -119,6 +120,14 @@ class CoolingCircuit:
         self.coolant_transport = coolant_transport
         self.walls = walls
         self._roughness = roughness
+        self._hot_gas_surface_area_multiplier = hot_gas_surface_area_multiplier
+        if not callable(hot_gas_surface_area_multiplier):
+            multiplier = float(hot_gas_surface_area_multiplier)
+            if not np.isfinite(multiplier) or multiplier <= 0.0:
+                raise ValueError(
+                    "hot_gas_surface_area_multiplier must be finite and positive"
+                )
+            self._hot_gas_surface_area_multiplier = multiplier
 
         # fin/rib thermal enhancement toggle (default: disabled)
         self.enable_fin = getattr(self, "enable_fin", True)
@@ -158,6 +167,25 @@ class CoolingCircuit:
 
     def roughness(self, x):
         return self._roughness(x) if callable(self._roughness) else float(self._roughness)
+
+    def hot_gas_surface_area_multiplier(self, x):
+        """Return the circuit-specific effective hot-side area multiplier."""
+        coordinates = np.asarray(x, dtype=float)
+        modifier = self._hot_gas_surface_area_multiplier
+        if callable(modifier):
+            values = np.asarray(
+                [modifier(float(value)) for value in coordinates.flat],
+                dtype=float,
+            ).reshape(coordinates.shape)
+        else:
+            values = np.full_like(coordinates, modifier, dtype=float)
+
+        if not np.all(np.isfinite(values)) or np.any(values <= 0.0):
+            raise ValueError(
+                f"{self.name}: hot_gas_surface_area_multiplier must return "
+                "finite, positive values"
+            )
+        return float(values) if values.ndim == 0 else values
 
     def total_thickness(self, x):
         parts = [wall.thickness(x) for wall in self.walls]
@@ -231,7 +259,10 @@ class CoolingCircuit:
 
         prof = self._prof(section_centerline)
 
-        hot_perimeter  = self.cross_section.P_thermal(prof)
+        hot_perimeter = self.cross_section.effective_hot_gas_perimeter(
+            prof,
+            self.hot_gas_surface_area_multiplier(x_vals),
+        )
         cold_perimeter = self.cross_section.P_coolant(prof)
 
         self.dA_dx_thermal_exhaust_vals = hot_perimeter * self.ds_dx_vals

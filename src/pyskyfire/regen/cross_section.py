@@ -69,6 +69,17 @@ class ChannelSection(ABC):
     def P_thermal(self, prof: SectionProfiles) -> np.ndarray: ...
     @abstractmethod
     def P_coolant(self, prof: SectionProfiles) -> np.ndarray: ...
+    def effective_hot_gas_perimeter(
+        self,
+        prof: SectionProfiles,
+        surface_area_multiplier: np.ndarray,
+    ) -> np.ndarray:
+        """Return hot-gas perimeter including a circuit-supplied area factor."""
+        return self.P_thermal(prof) * np.asarray(
+            surface_area_multiplier,
+            dtype=float,
+        )
+
     def R_coolant_per_len(
         self,
         prof: SectionProfiles,
@@ -102,7 +113,7 @@ class ChannelSection(ABC):
 class CrossSectionSquared(ChannelSection):
     """Simplified rectangular channel section (wedge-sector approximation)."""
 
-    def __init__(self, blockage_ratio: float, n_points: int = 8, ):
+    def __init__(self, blockage_ratio: float, n_points: int = 8):
         super().__init__(n_points=n_points)
         self._blockage_ratio = blockage_ratio
         assert type(blockage_ratio) in (float, int) or callable(blockage_ratio), \
@@ -143,7 +154,7 @@ class CrossSectionSquared(ChannelSection):
         return 4.0 * A / P
     
     def P_thermal(self, prof: SectionProfiles) -> np.ndarray:
-        """Return thermal-contact perimeter [m]."""
+        """Return geometric hot-gas thermal-contact perimeter [m]."""
         r = prof.centerline[:, 1]
         th = self._theta_real(prof)
         return r * th

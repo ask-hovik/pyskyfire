@@ -65,7 +65,7 @@ Looking at the thrust chamber contour, one can notice the high aspect ratio in t
 </div>
 ``` 
 
-This example contains three sequential fuel cooling passes and one oxidizer pass. The fuel first cools the copper throat/chamber region, then travels through a co-current nozzle pass and returns through a counter-current nozzle pass. Inspect the 3d engine below:
+This example contains one fuel chamber pass and two serial oxidizer nozzle passes. The fuel enters just downstream of the throat and travels toward the injector. The oxidizer enters just downstream of the throat, travels to the nozzle exit, and then returns to its starting axial position before entering the turbine. All three circuits use uncoated copper walls. Inspect the 3D engine below:
 
 ```{raw} html
 <div class="psf-demo-frame psf-demo-frame--large">
@@ -110,7 +110,7 @@ Stations represent flowing propellant. Signals represent scalar quantities share
 :end-before: tutorial:end:initial-signals
 ```
 
-This example begins with estimates for the fuel and oxidizer pump powers. The transmission blocks later update the corresponding turbine power requirements. Pressure-drop signals are added separately after the blocks are created because each loss-producing block declares its own `dp_key`.
+This example begins with estimates for the fuel and oxidizer turbine power requirements. The transmission blocks later replace them with the pump loads calculated by the network. Pressure-drop signals are added separately after the blocks are created because each loss-producing block declares its own `dp_key`.
 
 ## Create the engine network
 
@@ -154,22 +154,24 @@ The fuel-side block sequence reads much like an engine flow schematic:
 
 ```python
 overcome=[
-    "duct_pump_regen_fuel",
-    "regen_throat_pass",
-    "duct_regen_turbine_fuel",
-    "fuel_turbine",
-    "duct_turbine_injector_fuel",
-    "fu_injector",
+    "Duct Pump-Regen Fuel",
+    "Regen Fuel Chamber Pass",
+    "Duct Regen-Turbine Fuel",
+    "Fuel Turbine",
+    "Duct Turbine-Injector Fuel",
+    "Fu Injector",
 ]
 ```
 
-A pressure-loss block named `regen_throat_pass` writes a signal named `dp_regen_throat_pass`. The pump collects `dp_<block name>` for every listed item, adds the baseline chamber-side pressure requirement, and determines the target pump outlet pressure. Its required shaft power is then emitted as `P_fuel_pump`.
+A pressure-loss block named `Regen Fuel Chamber Pass` writes a signal named `dp_Regen Fuel Chamber Pass`. The pump collects `dp_<block name>` for every listed item, adds the baseline chamber-side pressure requirement, and determines the target pump outlet pressure. Its required shaft power is then emitted as `P_Fuel Pump`.
 
 This is somewhat clunky. The pressure path is not inferred automatically from the network graph, so modifying the cycle topology requires manually updating `overcome`. It remains the current solution because it keeps the block models local and the fixed-point solver simple: the pump only needs scalar pressure-drop signals, rather than a general graph traversal and algebraic loop formulation. Treat each `overcome` list as part of the cycle definition and review it whenever a component is added, removed, bypassed, or moved.
 
 ### Oxidizer-side blocks
 
-The oxidizer side follows the same architecture, with a split into two parallel cooling branches before the turbine:
+The oxidizer side uses two pump stages. Stage 1 pumps the complete oxidizer flow only high enough to supply the common injector path. After the recirculation split, `ox_regen_flow_fraction` selects the fraction sent through stage 2; the example uses `0.5`. The remaining oxidizer bypasses the regenerative branch and proceeds directly toward the chamber.
+
+Stage 2 pumps only the selected fraction to the higher pressure needed by the two serial nozzle cooling passes and oxidizer turbine. Its `overcome` list consequently contains only components in that high-pressure branch. After turbine expansion, the heated branch recombines with the direct branch before the shared downstream duct and injector. The oxidizer transmission sums the shaft powers of both pump stages when setting the turbine power requirement:
 
 ```{literalinclude} ../../examples/advanced/sizer_sim.py
 :language: python
@@ -177,7 +179,7 @@ The oxidizer side follows the same architecture, with a split into two parallel 
 :end-before: tutorial:end:oxidizer-side-blocks
 ```
 
-The two oxidizer `RegenBlock` instances deliberately use the same name because they represent identical parallel paths. They therefore produce the same branch pressure-drop signal, which is the relevant loss for the pump's `overcome` list.
+This split avoids raising the entire oxidizer flow to the regenerative-circuit pressure. Change `ox_regen_flow_fraction` to explore the tradeoff between coolant/turbine mass flow and second-stage pump demand.
 
 Keeping track of which block is connected where can be difficult in the script view. Therefore, pyskyfire implements visualisation to view the engine network you have created. A visualisation of the above network is shown below: 
 

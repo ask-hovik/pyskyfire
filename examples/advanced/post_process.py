@@ -38,10 +38,14 @@ def add_common_report_content(output_dir, report, params, thrust_chamber, coolin
 
     # Engine overview
     tab_overview = report.add_tab("Engine Overview")
-    """engine_viewer = psf.viz.make_engine_3d(thrust_chamber, show=False)
-    tab_overview.add_iframe(engine_viewer.data_url, caption="Engine 3D")
+    engine_viewer = psf.viz.make_engine_3d(
+        thrust_chamber,
+        stride=3,
+        show=False,
+    )
     engine_viewer.save_html(output_dir / "engine-3d.html")
-    engine_viewer.close()"""
+    tab_overview.add_iframe(engine_viewer.data_url, caption="Engine 3D")
+    engine_viewer.close()
 
     contour_plot = psf.viz.PlotContour(thrust_chamber.contour)
     tab_overview.add_figure(contour_plot)
@@ -59,7 +63,17 @@ def add_common_report_content(output_dir, report, params, thrust_chamber, coolin
         )
     )
     tab_cooling.add_figure(psf.viz.PlotCoolantTemperature(*ordered_cooling_data))
-    tab_cooling.add_figure(psf.viz.PlotCoolantPressure(*ordered_cooling_data))
+    tab_cooling.add_figure(
+        psf.viz.PlotCoolantPressure(cooling_data["fuel_chamber"]),
+        caption="Fuel coolant pressure.",
+    )
+    tab_cooling.add_figure(
+        psf.viz.PlotCoolantPressure(
+            cooling_data["oxidizer_nozzle_outbound"],
+            cooling_data["oxidizer_nozzle_return"],
+        ),
+        caption="Oxidizer coolant pressure.",
+    )
     tab_cooling.add_figure(psf.viz.PlotHeatFlux(*ordered_cooling_data))
     tab_cooling.add_figure(psf.viz.PlotVelocity(*ordered_cooling_data))
 
@@ -87,11 +101,12 @@ def add_common_report_content(output_dir, report, params, thrust_chamber, coolin
 
     # Through-wall temperatures at three axial locations
     tab_gradient = report.add_tab("Thermal Gradient")
-    fuel_throat_data = cooling_data["fuel_throat"]
-    for x in (-0.1, 0.0, 0.05):
+    fuel_chamber_data = cooling_data["fuel_chamber"]
+    profile_x = sorted(float(x) for x in fuel_chamber_data.x)
+    for x in (profile_x[0], 0.0, profile_x[-1]):
         tab_gradient.add_figure(
             psf.viz.PlotTemperatureProfile(
-                fuel_throat_data,
+                fuel_chamber_data,
                 thrust_chamber,
                 0,
                 x,
@@ -128,11 +143,15 @@ def add_full_cycle_report_content(output_dir, report, results):
     oxidizer_stations = [
         "ox_engine_in",
         "ox_pump_in",
-        "ox_pump_out",
+        "ox_stage1_pump_out",
+        "ox_direct_branch",
+        "ox_stage2_pump_in",
+        "ox_regen_duct_in",
         "ox_regen_in",
         "ox_regen_out",
         "ox_turbine_in",
         "ox_turbine_out",
+        "ox_main_flow_merge",
         "ox_injector_plenum",
         "ox_chamber_in",
     ]

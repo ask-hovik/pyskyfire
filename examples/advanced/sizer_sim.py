@@ -18,13 +18,15 @@ from pathlib import Path
 import time
 
 import CoolProp.CoolProp as CP
+import numpy as np
 import pyskyfire as psf
+from scipy.integrate import cumulative_trapezoid
 
 
 # tutorial:start:run-mode
 # Choose: "regen_only" or "full_cycle" 
 RUN_MODE = "full_cycle"
-#RUN_MODE = "regen_only" 
+#RUN_MODE = "regen_only"
 RESULTS_FILENAME = "results.pkl"
 # tutorial:end:run-mode
 
@@ -38,7 +40,7 @@ def make_params():
         p_c=100e5,
         p_e=0.8e5,
         MR=2.8,
-        AR_c=2.5,
+        AR_c=2.0,
         F=100e3,
 
         # Fuel/oxidizer parameters
@@ -63,32 +65,33 @@ def make_params():
 
         # Cooling channels
         copper_roughness_height=0.0030e-3,
-        inconel_roughness_height=0.0015e-3,
-        throat_channel_count=140,
+        fuel_channel_count=140,
         nozzle_channel_count=120,
-        chamber_channel_count=220,
+        channel_blockage_ratio=0.1,
+        fuel_hot_gas_surface_area_multiplier=1.0,
+        ox_outbound_hot_gas_surface_area_multiplier=1.2,
+        ox_return_hot_gas_surface_area_multiplier=1.2,
+        fuel_throat_channel_height=2.0e-3,
+        fuel_channel_height_slope=6.0e-3,
         ox_channel_height=6e-3,
+        ox_single_pass_channel_height=2.5e-3,
 
-        # Wall thicknesses
-        oxygen_copper_thickness=0.6e-3,
-        fuel_copper_thickness=0.6e-3,
-        barrier_thickness=0.05e-3,
-        inconel_thickness=0.4e-3,
+        # All cooling circuits use the same uncoated copper wall.
+        copper_thickness=0.6e-3,
 
         # Materials
         copper=psf.common.solids.GRCop42,
-        zirconia=psf.common.solids.ZirconiumOxide,
-        inconel=psf.common.solids.Inconel625,
 
         # Pump parameters
-        eta_pump_fu=0.6,
+        eta_pump_fu=0.72,
         n_fu=50000,  # rpm
-        eta_pump_ox=0.6,
+        eta_pump_ox_stage1=0.76,
+        eta_pump_ox_stage2=0.72,
         n_ox=25000,  # rpm
 
         # Turbine efficiencies
-        eta_turbine_fu=0.73,
-        eta_turbine_ox=0.73,
+        eta_turbine_fu=0.75,
+        eta_turbine_ox=0.72,
 
         # Duct pressure ratios: fuel side
         eta_pump_regen_fu=0.95,
@@ -97,14 +100,15 @@ def make_params():
         eta_fu_injector=0.88,
 
         # Duct pressure ratios: oxidizer side
-        eta_pump_regen_ox=0.95,
-        eta_regen_turbine_ox=0.95,
+        eta_pump_regen_ox=0.98,
+        eta_regen_turbine_ox=0.98,
         eta_turbine_injector_ox=0.88,
         eta_ox_injector=0.88,
 
         # Mass-flow leakage fractions
         zeta_fu_recirc=0.005,
         zeta_ox_recirc=0.005,
+        ox_regen_flow_fraction=0.4,
         zeta_fu_turbine_bypass=0.005,
         zeta_ox_turbine_bypass=0.005,
 
@@ -138,6 +142,7 @@ def setup_thrust_chamber(params):
         p_e=params["p_e"],
         L_star=params["L_star"],
         p_amb=1e5,
+        minimum_cea_temperature=305.0,
     )
 
     xs, rs = psf.regen.contour.get_contour(
@@ -154,102 +159,92 @@ def setup_thrust_chamber(params):
     )
     contour = psf.regen.Contour(xs, rs, name="Methane Engine")
 
-    oxygen_copper_wall = psf.regen.Wall(
+    copper_wall = psf.regen.Wall(
         material=params["copper"],
-        thickness=params["oxygen_copper_thickness"],
-    )
-    fuel_copper_wall = psf.regen.Wall(
-        material=params["copper"],
-        thickness=params["fuel_copper_thickness"],
-    )
-    barrier_wall = psf.regen.Wall(
-        material=params["zirconia"],
-        thickness=params["barrier_thickness"],
-    )
-    inconel_wall = psf.regen.Wall(
-        material=params["inconel"],
-        thickness=params["inconel_thickness"],
+        thickness=params["copper_thickness"],
     )
 
-    channel_height_fn_1 = psf.regen.make_channel_height_fn(
-        contour=contour,
-        region_fractions=[-1.0, 0.3, 1.0],
-        flat_heights=[0.0025, 0.004],
-        pinch_factors=[-1.0, -4.0],
-        transition_widths=[0.000001],
-    )
+    def fuel_channel_height(x):
+        return (
+            params["fuel_throat_channel_height"]
+            + params["fuel_channel_height_slope"] * abs(x)
+        )
 
-    channel_height_fn_2 = psf.regen.make_channel_height_fn(
-        contour=contour,
-        region_fractions=[-1.0, 0.3, 1.0],
-        flat_heights=[0.0032, 0.004],
-        pinch_factors=[0.8, -4.0],
-        transition_widths=[0.0000001],
-    )
+    ox_outbound_span = (0.11, 1.0)
+    ox_return_span = (1.0, 0.21)
 
-    def ox_channel_height(_x):
+    def span_fraction_to_x(span_fraction):
+        if span_fraction >= 0.0:
+            return span_fraction * float(contour.xs[-1])
+        return span_fraction * -float(contour.xs[0])
+
+    ox_outbound_bounds = tuple(map(span_fraction_to_x, ox_outbound_span))
+    ox_return_bounds = tuple(map(span_fraction_to_x, ox_return_span))
+    ox_overlap_start = max(min(ox_outbound_bounds), min(ox_return_bounds))
+
+    def ox_channel_height(x):
+        if x < ox_overlap_start:
+            return params["ox_single_pass_channel_height"]
         return params["ox_channel_height"]
 
-    cross_section = psf.regen.CrossSectionRounded()
+    cross_section = psf.regen.CrossSectionSquared(
+        blockage_ratio=params["channel_blockage_ratio"],
+    )
     fuel_transport = psf.skycea.CoolantTransport(params["coolprop_fu"])
     ox_transport = psf.skycea.CoolantTransport(params["coolprop_ox"])
 
-    chamber_channel_placement = psf.regen.SurfacePlacement(n_channel_positions=params["chamber_channel_count"],)
-    throat_channel_placement = psf.regen.SurfacePlacement(n_channel_positions=params["throat_channel_count"],)
+    fuel_channel_placement = psf.regen.SurfacePlacement(n_channel_positions=params["fuel_channel_count"],)
     nozzle_channel_placement = psf.regen.SurfacePlacement(n_channel_positions=params["nozzle_channel_count"],)
 
-    fu_copper_pass = psf.regen.CoolingCircuit(
-        name="Fuel Copper Pass",
+    fuel_chamber_pass = psf.regen.CoolingCircuit(
+        name="Fuel Chamber Pass",
         contour=contour,
         coolant_transport=fuel_transport,
         cross_section=cross_section,
-        span=[-0.3, 0.29],
-        placement=throat_channel_placement,
-        walls=[barrier_wall, fuel_copper_wall],
+        span=[0.1, -1.0],
+        placement=fuel_channel_placement,
+        walls=[copper_wall],
         roughness=params["copper_roughness_height"],
-        channel_height=channel_height_fn_1,
+        channel_height=fuel_channel_height,
+        hot_gas_surface_area_multiplier=params[
+            "fuel_hot_gas_surface_area_multiplier"
+        ],
     )
 
-    fu_inco_pass_cocurrent = psf.regen.CoolingCircuit(
-        name="Fuel Inconel Pass Cocurrent",
-        contour=contour,
-        coolant_transport=fuel_transport,
-        cross_section=cross_section,
-        span=[0.31, 1.0],
-        placement=nozzle_channel_placement,
-        walls=[fuel_copper_wall],
-        roughness=params["inconel_roughness_height"],
-        channel_height=channel_height_fn_1,
-    )
-
-    fu_inco_pass_countercurrent = psf.regen.CoolingCircuit(
-        name="Fuel Inconel Pass Countercurrent",
-        contour=contour,
-        coolant_transport=fuel_transport,
-        cross_section=cross_section,
-        span=[1.0, 0.31],
-        placement=nozzle_channel_placement,
-        walls=[fuel_copper_wall],
-        roughness=params["inconel_roughness_height"],
-        channel_height=channel_height_fn_2,
-    )
-
-    ox_copper_pass = psf.regen.CoolingCircuit(
-        name="Oxidizer Copper Pass",
+    ox_nozzle_pass_outbound = psf.regen.CoolingCircuit(
+        name="Oxidizer Nozzle Pass Outbound",
         contour=contour,
         coolant_transport=ox_transport,
         cross_section=cross_section,
-        span=[-0.31, -1.0],
-        placement=chamber_channel_placement,
-        walls=[oxygen_copper_wall],
+        span=ox_outbound_span,
+        placement=nozzle_channel_placement,
+        walls=[copper_wall],
         roughness=params["copper_roughness_height"],
         channel_height=ox_channel_height,
+        hot_gas_surface_area_multiplier=params[
+            "ox_outbound_hot_gas_surface_area_multiplier"
+        ],
+    )
+
+    ox_nozzle_pass_return = psf.regen.CoolingCircuit(
+        name="Oxidizer Nozzle Pass Return",
+        contour=contour,
+        coolant_transport=ox_transport,
+        cross_section=cross_section,
+        span=ox_return_span,
+        placement=nozzle_channel_placement,
+        walls=[copper_wall],
+        roughness=params["copper_roughness_height"],
+        channel_height=ox_channel_height,
+        hot_gas_surface_area_multiplier=params[
+            "ox_return_hot_gas_surface_area_multiplier"
+        ],
     )
 
     return psf.regen.ThrustChamber(
         contour=contour,
         combustion_transport=aerothermodynamics,
-        cooling_circuits=[fu_copper_pass, fu_inco_pass_cocurrent, fu_inco_pass_countercurrent, ox_copper_pass,],
+        cooling_circuits=[fuel_chamber_pass, ox_nozzle_pass_outbound, ox_nozzle_pass_return],
         h_gas_corr=1.0,
         h_cold_corr=1.0,
         n_nodes=100,
@@ -258,10 +253,86 @@ def setup_thrust_chamber(params):
 
 # tutorial:end:thrust-chamber
 
+def gaussian_density_nodes(
+    start,
+    end,
+    count,
+    center=0.0,
+    amplitude=2.0,
+    standard_deviation=0.04,
+):
+    """Distribute nodes using a Gaussian spatial-density weighting."""
+    if count < 3:
+        raise ValueError("count must be at least 3")
+    if not start < center < end:
+        raise ValueError("center must lie strictly between start and end")
+    if amplitude < 0.0 or standard_deviation <= 0.0:
+        raise ValueError(
+            "amplitude must be nonnegative and standard_deviation must be positive"
+        )
+
+    samples = np.linspace(start, end, 2001)
+    density = 1.0 + amplitude * np.exp(
+        -0.5 * ((samples - center) / standard_deviation) ** 2
+    )
+    cumulative_density = cumulative_trapezoid(density, samples, initial=0.0)
+    center_cumulative_density = np.interp(center, samples, cumulative_density)
+
+    interval_count = count - 1
+    left_fraction = center_cumulative_density / cumulative_density[-1]
+    left_intervals = int(
+        np.clip(round(left_fraction * interval_count), 1, interval_count - 1)
+    )
+    right_intervals = interval_count - left_intervals
+
+    left_targets = np.linspace(
+        0.0,
+        center_cumulative_density,
+        left_intervals + 1,
+    )
+    right_targets = np.linspace(
+        center_cumulative_density,
+        cumulative_density[-1],
+        right_intervals + 1,
+    )
+    left_nodes = np.interp(left_targets, cumulative_density, samples)
+    right_nodes = np.interp(right_targets, cumulative_density, samples)
+    return np.concatenate((left_nodes[:-1], [center], right_nodes[1:]))
+
+
+def make_regen_node_spacings(thrust_chamber):
+    """Return the deliberately coarse grids used by this example.
+
+    The fuel chamber pass gets 15 throat-biased stations, including the throat
+    itself. The two oxidizer nozzle passes use eight uniform stations each.
+    """
+    throat_circuit = thrust_chamber.cooling_circuits[0]
+    x_start = float(np.min(throat_circuit.x_domain))
+    x_end = float(np.max(throat_circuit.x_domain))
+    if not x_start < 0.0 < x_end:
+        raise ValueError("The throat circuit must span x=0")
+
+    throat_nodes = gaussian_density_nodes(
+        start=x_start,
+        end=x_end,
+        count=15,
+        center=0.0,
+        amplitude=2.0,
+        standard_deviation=0.04,
+    )
+    throat_grid = {
+        "wall": throat_nodes.copy(),
+        "heat_flux": throat_nodes.copy(),
+        "coolant": throat_nodes.copy(),
+    }
+
+    return {0: throat_grid, 1: 8, 2: 8}
+
+
 def _solve_regen_circuit(
     thrust_chamber,
     circuit_index,
-    n_nodes,
+    nodes,
     T_coolant_in,
     p_coolant_in,
     mdot_coolant,
@@ -276,54 +347,56 @@ def _solve_regen_circuit(
 
     return psf.regen.coupled_steady_heating_analysis(
         thrust_chamber,
-        nodes=n_nodes,
+        nodes=nodes,
         circuit_index=circuit_index,
         boundary_conditions=boundary_conditions,
         solver="newton",
         output=True,
+        heat_curvature_correction=False,
     )
 
 
 # tutorial:start:regen-only
 def run_regen_only(params, thrust_chamber):
-    """Solve the sequential fuel passes and independent oxidizer pass."""
+    """Solve the fuel pass and the two serial oxidizer passes."""
 
     aerothermodynamics = thrust_chamber.combustion_transport
     mdot_fu = aerothermodynamics.mdot_fu
-    mdot_ox = aerothermodynamics.mdot_ox
+    ox_regen_flow_fraction = float(params["ox_regen_flow_fraction"])
+    if not 0.0 < ox_regen_flow_fraction < 1.0:
+        raise ValueError("ox_regen_flow_fraction must be strictly between 0 and 1")
+    mdot_ox = aerothermodynamics.mdot_ox * ox_regen_flow_fraction
 
     cooling_data = {}
+    node_spacings = make_regen_node_spacings(thrust_chamber)
 
-    fuel_passes = (
-        ("fuel_throat", 0, 100),
-        ("fuel_nozzle_cocurrent", 1, 40),
-        ("fuel_nozzle_countercurrent", 2, 40),
+    cooling_data["fuel_chamber"] = _solve_regen_circuit(
+        thrust_chamber=thrust_chamber,
+        circuit_index=0,
+        nodes=node_spacings[0],
+        T_coolant_in=params["T_regen_fu_in"],
+        p_coolant_in=params["p_regen_fu_in"],
+        mdot_coolant=mdot_fu,
     )
 
-    T_in = params["T_regen_fu_in"]
-    p_in = params["p_regen_fu_in"]
-
-    for result_name, circuit_index, n_nodes in fuel_passes:
+    T_in = params["T_regen_ox_in"]
+    p_in = params["p_regen_ox_in"]
+    oxidizer_passes = (
+        ("oxidizer_nozzle_outbound", 1),
+        ("oxidizer_nozzle_return", 2),
+    )
+    for result_name, circuit_index in oxidizer_passes:
         result = _solve_regen_circuit(
             thrust_chamber=thrust_chamber,
             circuit_index=circuit_index,
-            n_nodes=n_nodes,
+            nodes=node_spacings[circuit_index],
             T_coolant_in=T_in,
             p_coolant_in=p_in,
-            mdot_coolant=mdot_fu,
+            mdot_coolant=mdot_ox,
         )
         cooling_data[result_name] = result
         T_in = result.T_stagnation[-1]
         p_in = result.p_stagnation[-1]
-
-    cooling_data["oxidizer_copper"] = _solve_regen_circuit(
-        thrust_chamber=thrust_chamber,
-        circuit_index=3,
-        n_nodes=40,
-        T_coolant_in=params["T_regen_ox_in"],
-        p_coolant_in=params["p_regen_ox_in"],
-        mdot_coolant=mdot_ox,
-    )
 
     return cooling_data
 
@@ -342,8 +415,6 @@ def setup_initial_stations(params, thrust_chamber):
     stations["fu_shaft_recirc"]         = psf.common.Station(params["p_c"] * 1.4, params["T_tank_fu"] + 10, 0.1,)
     stations["fu_regen_duct_in"]        = psf.common.Station(params["p_c"] * 1.4, params["T_tank_fu"] + 10, mdot_fu_est*0.6,)
     stations["fu_regen_in"]             = psf.common.Station(params["p_c"] * 1.5, params["T_tank_fu"] + 10, mdot_fu_est*0.6,)
-    stations["fu_regen_interstage_1"]   = psf.common.Station(params["p_c"] * 1.4, params["T_tank_fu"] + 100, mdot_fu_est*0.6,)
-    stations["fu_regen_interstage_2"]   = psf.common.Station(params["p_c"] * 1.4, params["T_tank_fu"] + 180, mdot_fu_est*0.6,)
     stations["fu_regen_out"]            = psf.common.Station(params["p_c"] * 1.4, params["T_tank_fu"] + 250, mdot_fu_est*0.6,)
     stations["fu_turbine_inlet_split"]  = psf.common.Station(params["p_c"] * 1.3, params["T_tank_fu"] + 250, mdot_fu_est,)
     stations["fu_bypass_valve"]         = psf.common.Station(params["p_c"] * 1.3, params["T_tank_fu"] + 250, mdot_fu_est,)
@@ -353,21 +424,35 @@ def setup_initial_stations(params, thrust_chamber):
     stations["fu_injector_plenum"]      = psf.common.Station(params["p_c"] * 1.1, params["T_tank_fu"] + 200, mdot_fu_est,)
     stations["fu_chamber_in"]           = psf.common.Station(params["p_c"], params["T_tank_fu"] + 200, mdot_fu_est,)
 
+    ox_regen_flow_fraction = float(params["ox_regen_flow_fraction"])
+    if not 0.0 < ox_regen_flow_fraction < 1.0:
+        raise ValueError("ox_regen_flow_fraction must be strictly between 0 and 1")
+
     mdot_ox_est = thrust_chamber.combustion_transport.mdot_ox
+    mdot_ox_main_est = mdot_ox_est * 0.8
+    mdot_ox_regen_est = mdot_ox_main_est * ox_regen_flow_fraction
+    mdot_ox_direct_est = mdot_ox_main_est - mdot_ox_regen_est
+    mdot_ox_bypass_est = mdot_ox_regen_est * params["zeta_ox_turbine_bypass"]
+    mdot_ox_turbine_est = mdot_ox_regen_est - mdot_ox_bypass_est
     stations["ox_engine_in"]            = psf.common.Station(params["p_tank_ox"], params["T_tank_ox"], mdot_ox_est*0.8,)
     stations["ox_pump_in"]              = psf.common.Station(stations["ox_engine_in"].p, stations["ox_engine_in"].T, mdot_ox_est*0.8,)
-    stations["ox_pump_out"]             = psf.common.Station(params["p_c"] * 1.6, params["T_tank_ox"] + 10, mdot_ox_est*0.8,)
-    stations["ox_shaft_recirc"]         = psf.common.Station(params["p_c"] * 1.6, params["T_tank_ox"] + 10, 0.1,)
-    stations["ox_regen_duct_in"]        = psf.common.Station(params["p_c"] * 1.6, params["T_tank_ox"] + 10, mdot_ox_est,)
-    stations["ox_regen_in"]             = psf.common.Station(params["p_c"] * 1.5, params["T_tank_ox"] + 10, mdot=mdot_ox_est,)
-    stations["ox_regen_out"]            = psf.common.Station(params["p_c"] * 1.5, params["T_tank_ox"] + 250, mdot_ox_est / 2,)
-    stations["ox_turbine_inlet_split"]  = psf.common.Station(params["p_c"] * 1.5, params["T_tank_ox"] + 250, mdot_ox_est,)
-    stations["ox_bypass_valve"]         = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 250, mdot_ox_est,)
-    stations["ox_turbine_in"]           = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 250, mdot_ox_est,)
-    stations["ox_turbine_out"]          = psf.common.Station(params["p_c"] * 1.2, params["T_tank_ox"] + 200, mdot_ox_est,)
-    stations["ox_turbine_outlet_merge"] = psf.common.Station(params["p_c"] * 1.1, params["T_tank_ox"] + 200, mdot_ox_est,)
-    stations["ox_injector_plenum"]      = psf.common.Station(params["p_c"] * 1.1, params["T_tank_ox"] + 200, mdot_ox_est,)
-    stations["ox_chamber_in"]           = psf.common.Station(params["p_c"], params["T_tank_ox"] + 200, mdot_ox_est,)
+    stations["ox_stage1_pump_out"]      = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, mdot_ox_est*0.8,)
+    stations["ox_shaft_recirc"]         = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, 0.1,)
+    stations["ox_main_flow"]            = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, mdot_ox_main_est,)
+    stations["ox_direct_branch"]        = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, mdot_ox_direct_est,)
+    stations["ox_stage2_pump_in"]       = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, mdot_ox_regen_est,)
+    stations["ox_regen_duct_in"]        = psf.common.Station(params["p_c"] * 1.8, params["T_tank_ox"] + 15, mdot_ox_regen_est,)
+    stations["ox_regen_in"]             = psf.common.Station(params["p_c"] * 1.7, params["T_tank_ox"] + 15, mdot=mdot_ox_regen_est,)
+    stations["ox_regen_interstage"]     = psf.common.Station(params["p_c"] * 1.7, params["T_tank_ox"] + 130, mdot_ox_regen_est,)
+    stations["ox_regen_out"]            = psf.common.Station(params["p_c"] * 1.7, params["T_tank_ox"] + 250, mdot_ox_regen_est,)
+    stations["ox_turbine_inlet_split"]  = psf.common.Station(params["p_c"] * 1.6, params["T_tank_ox"] + 250, mdot_ox_regen_est,)
+    stations["ox_bypass_valve"]         = psf.common.Station(params["p_c"] * 1.6, params["T_tank_ox"] + 250, mdot_ox_bypass_est,)
+    stations["ox_turbine_in"]           = psf.common.Station(params["p_c"] * 1.6, params["T_tank_ox"] + 250, mdot_ox_turbine_est,)
+    stations["ox_turbine_out"]          = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 200, mdot_ox_turbine_est,)
+    stations["ox_heated_branch"]        = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 200, mdot_ox_regen_est,)
+    stations["ox_main_flow_merge"]      = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 100, mdot_ox_main_est,)
+    stations["ox_injector_plenum"]      = psf.common.Station(params["p_c"] * 1.1, params["T_tank_ox"] + 100, mdot_ox_main_est,)
+    stations["ox_chamber_in"]           = psf.common.Station(params["p_c"], params["T_tank_ox"] + 100, mdot_ox_main_est,)
 
     return stations
 
@@ -380,8 +465,6 @@ def setup_initial_signals(params):
 
     return {
         "p_c": params["p_c"],
-        "P_fuel_pump": 2.8e5,
-        "P_ox_pump": 2.0e5,
         "P_fuel_turbine_required": 2.8e5,
         "P_ox_turbine_required": 2.0e5,
     }
@@ -392,10 +475,14 @@ def setup_initial_signals(params):
 def engine_sizer(params, thrust_chamber):
     """Build and converge the full engine-cycle network."""
 
+    if not 0.0 < params["ox_regen_flow_fraction"] < 1.0:
+        raise ValueError("ox_regen_flow_fraction must be strictly between 0 and 1")
+
     # tutorial:start:network-setup
     stations = setup_initial_stations(params, thrust_chamber)
     signals = setup_initial_signals(params)
     blocks = []
+    regen_nodes = make_regen_node_spacings(thrust_chamber)
 
     fuel_medium = params["coolprop_fu"].propellants[0]
     ox_medium = params["coolprop_ox"].propellants[0]
@@ -418,7 +505,7 @@ def engine_sizer(params, thrust_chamber):
             st_out="fu_pump_out",
             overcome=[
                 "Duct Pump-Regen Fuel",
-                "Regen Throat Pass",
+                "Regen Fuel Chamber Pass",
                 "Duct Regen-Turbine Fuel",
                 "Fuel Turbine",
                 "Duct Turbine-Injector Fuel",
@@ -455,32 +542,15 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.RegenBlock(
-            name="Regen Throat Pass",
+            name="Regen Fuel Chamber Pass",
             st_in="fu_regen_in",
-            st_out="fu_regen_interstage_1",
+            st_out="fu_regen_out",
             circuit_index=0,
             thrust_chamber=thrust_chamber,
             medium=fuel_medium,
-        )
-    )
-    blocks.append(
-        psf.common.RegenBlock(
-            name="Regen Cocurrent Nozzle Pass",
-            st_in="fu_regen_interstage_1",
-            st_out="fu_regen_interstage_2",
-            circuit_index=1,
-            thrust_chamber=thrust_chamber,
-            medium=fuel_medium,
-        )
-    )
-    blocks.append(
-        psf.common.RegenBlock(
-            name="Regen Countercurrent Nozzle Pass",
-            st_in="fu_regen_interstage_2",
-            st_out="fu_regen_out",
-            circuit_index=2,
-            thrust_chamber=thrust_chamber,
-            medium=fuel_medium,
+            nodes=regen_nodes[0],
+            post_process_nodes=regen_nodes[0],
+            heat_curvature_correction=False,
         )
     )
     blocks.append(
@@ -562,14 +632,10 @@ def engine_sizer(params, thrust_chamber):
     )
     blocks.append(
         psf.common.PumpBlock(
-            name="Ox Pump",
+            name="Ox Pump Stage 1",
             st_in="ox_pump_in",
-            st_out="ox_pump_out",
+            st_out="ox_stage1_pump_out",
             overcome=[
-                "Duct Pump-Regen Ox",
-                "Ox Regen",
-                "Duct Regen-Turbine Ox",
-                "Ox Turbine",
                 "Duct Turbine-Injector Ox",
                 "Ox Injector",
             ],
@@ -577,19 +643,53 @@ def engine_sizer(params, thrust_chamber):
             p_base=params["p_c"],
             input_p=params["p_tank_ox"],
             n=params["n_ox"],
-            eta=params["eta_pump_ox"],
+            eta=params["eta_pump_ox_stage1"],
             medium=ox_medium,
         )
     )
     blocks.append(
         psf.common.MassFlowSplitterBlock(
             name="Split Ox Recirc",
-            st_in="ox_pump_out",
-            st_out=["ox_regen_duct_in", "ox_shaft_recirc"],
+            st_in="ox_stage1_pump_out",
+            st_out=["ox_main_flow", "ox_shaft_recirc"],
             fractions=[
                 1 - params["zeta_ox_recirc"],
                 params["zeta_ox_recirc"],
             ],
+            medium=ox_medium,
+        )
+    )
+    blocks.append(
+        psf.common.MassFlowSplitterBlock(
+            name="Split Ox Main Flow",
+            st_in="ox_main_flow",
+            st_out=["ox_stage2_pump_in", "ox_direct_branch"],
+            fractions=[
+                params["ox_regen_flow_fraction"],
+                1 - params["ox_regen_flow_fraction"],
+            ],
+            medium=ox_medium,
+        )
+    )
+    blocks.append(
+        psf.common.PumpBlock(
+            name="Ox Pump Stage 2",
+            st_in="ox_stage2_pump_in",
+            st_out="ox_regen_duct_in",
+            overcome=[
+                "Duct Pump-Regen Ox",
+                "Regen Ox Nozzle Outbound",
+                "Regen Ox Nozzle Return",
+                "Duct Regen-Turbine Ox",
+                "Ox Turbine",
+            ],
+            load_fraction=1.0,
+            # Stage 2 supplies only the additional pressure required by the
+            # regenerative-cooling and turbine branch.
+            p_base=0.0,
+            input_p=0.0,
+            n=params["n_ox"],
+            eta=params["eta_pump_ox_stage2"],
             medium=ox_medium,
         )
     )
@@ -603,16 +703,30 @@ def engine_sizer(params, thrust_chamber):
         )
     )
 
-    # The duplicated name is deliberate: these are identical parallel channels,
-    # so the pump should see a single branch pressure drop.
     blocks.append(
         psf.common.RegenBlock(
-            name="Ox Regen",
+            name="Regen Ox Nozzle Outbound",
             st_in="ox_regen_in",
-            st_out="ox_regen_out",
-            circuit_index=3,
+            st_out="ox_regen_interstage",
+            circuit_index=1,
             thrust_chamber=thrust_chamber,
             medium=ox_medium,
+            nodes=regen_nodes[1],
+            post_process_nodes=regen_nodes[1],
+            heat_curvature_correction=False,
+        )
+    )
+    blocks.append(
+        psf.common.RegenBlock(
+            name="Regen Ox Nozzle Return",
+            st_in="ox_regen_interstage",
+            st_out="ox_regen_out",
+            circuit_index=2,
+            thrust_chamber=thrust_chamber,
+            medium=ox_medium,
+            nodes=regen_nodes[2],
+            post_process_nodes=regen_nodes[2],
+            heat_curvature_correction=False,
         )
     )
     blocks.append(
@@ -650,14 +764,22 @@ def engine_sizer(params, thrust_chamber):
         psf.common.MassFlowMergerBlock(
             name="Merge Ox Bypass",
             st_in=["ox_turbine_out", "ox_bypass_valve"],
-            st_out="ox_turbine_outlet_merge",
+            st_out="ox_heated_branch",
+            medium=ox_medium,
+        )
+    )
+    blocks.append(
+        psf.common.MassFlowMergerBlock(
+            name="Merge Ox Main Flow",
+            st_in=["ox_direct_branch", "ox_heated_branch"],
+            st_out="ox_main_flow_merge",
             medium=ox_medium,
         )
     )
     blocks.append(
         psf.common.SimpleDuctBlock(
             name="Duct Turbine-Injector Ox",
-            st_in="ox_turbine_outlet_merge",
+            st_in="ox_main_flow_merge",
             st_out="ox_injector_plenum",
             pressure_ratio=params["eta_turbine_injector_ox"],
             medium=ox_medium,
@@ -675,7 +797,7 @@ def engine_sizer(params, thrust_chamber):
     blocks.append(
         psf.common.TransmissionBlock(
             name="Ox Shaft",
-            sink_keys=["P_Ox Pump"],
+            sink_keys=["P_Ox Pump Stage 1", "P_Ox Pump Stage 2"],
             source_keys=["P_ox_turbine_required"],
         )
     )
@@ -700,7 +822,7 @@ def engine_sizer(params, thrust_chamber):
 
     # tutorial:start:network-solve
     net = psf.common.EngineNetwork(stations, signals, blocks)
-    net.run_fixed_point(tol=1e-2, max_iter=100)
+    net.run_fixed_point(tol=1e-3, max_iter=200)
 
     return {
         "net": net,
@@ -717,10 +839,9 @@ def cooling_data_from_full_cycle(block_results):
     """Normalize full-cycle block results to the common cooling-data contract."""
 
     return {
-        "fuel_throat": block_results["Regen Throat Pass"],
-        "fuel_nozzle_cocurrent": block_results["Regen Cocurrent Nozzle Pass"],
-        "fuel_nozzle_countercurrent": block_results["Regen Countercurrent Nozzle Pass"],
-        "oxidizer_copper": block_results["Ox Regen"],
+        "fuel_chamber": block_results["Regen Fuel Chamber Pass"],
+        "oxidizer_nozzle_outbound": block_results["Regen Ox Nozzle Outbound"],
+        "oxidizer_nozzle_return": block_results["Regen Ox Nozzle Return"],
     }
 
 # tutorial:end:full-cycle-cooling-data

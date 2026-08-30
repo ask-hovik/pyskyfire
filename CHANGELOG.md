@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.3.0] - 2026-08-30
+
 ### Added
 - A new coupled cooling solver that balances hot-gas convection, conduction
   through multi-material walls, and coolant heat pickup. It supports separate
@@ -85,12 +89,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `npts` sizing-constructor argument, stored aerothermodynamic plotting
   grid, and deprecated `Nt` argument. Resolution now belongs to the requested
   solve or visualization.
-
----
-
-## [0.2.2] - 08-09-25
-## Added
-- Adding Cantera back in as a possible combustion backend model. CEA_Wrap will live on as an option when propellants not supported by cantera is needed. This will be used for all advanced implementations, including actual delivered isp estimates. 
 
 ---
 

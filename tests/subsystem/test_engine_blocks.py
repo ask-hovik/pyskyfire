@@ -81,7 +81,21 @@ def test_regen_block_forwards_inlet_state_and_returns_solver_outlet(monkeypatch)
         return result
 
     monkeypatch.setattr(blocks, "coupled_steady_heating_analysis", fake_analysis)
-    block = RegenBlock("jacket", "in", "out", 1, object(), "Water")
+    nodes = {
+        "wall": [0.0, 0.4, 1.0],
+        "heat_flux": [0.0, 0.4, 1.0],
+        "coolant": [0.0, 0.4, 1.0],
+    }
+    block = RegenBlock(
+        "jacket",
+        "in",
+        "out",
+        1,
+        object(),
+        "Water",
+        nodes=nodes,
+        heat_curvature_correction=False,
+    )
     inlet = Station(3.0e6, 300.0, 2.5)
 
     stations, signals = block.compute({"in": inlet}, {})
@@ -93,5 +107,7 @@ def test_regen_block_forwards_inlet_state_and_returns_solver_outlet(monkeypatch)
         inlet.mdot,
     )
     assert captured["circuit_index"] == 1
+    assert captured["nodes"] == nodes
+    assert captured["heat_curvature_correction"] is False
     assert stations["out"] == Station(2.7e6, 410.0, 2.5)
     assert signals == {"dp_jacket": pytest.approx(0.3e6)}

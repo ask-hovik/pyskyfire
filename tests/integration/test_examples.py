@@ -130,7 +130,8 @@ def test_coupled_film_regen_example(tmp_path: Path) -> None:
     )
 
 
-'''def test_advanced_simulation_and_post_processing(tmp_path: Path) -> None:
+@pytest.mark.advanced
+def test_advanced_simulation_and_post_processing(tmp_path: Path) -> None:
     """Post-process the result produced in the same isolated test run."""
 
     output_dir = tmp_path / "advanced"
@@ -147,4 +148,4 @@ def test_coupled_film_regen_example(tmp_path: Path) -> None:
         output_dir,
         ("methane_engine_report.html", "contour.html", "network.html"),
         extra_args=("--input", results_path),
-    )'''
+    )

@@ -4,12 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pyskyfire"
-version = "0.2.1"
+version = "0.3.0"
 description = "A Python library for rocket engine simulation and design."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { file = "LICENSE" }
-authors = [{ name = "Ask Haugerud Hovik", email = "ask.hovik@gmail.com" }]
+authors = [{ name = "Ask Haugerud Hovik", email = "ask@askhaugerudhovik.no" }]
 
 dependencies = [
   "numpy>=2.3",
@@ -31,6 +31,12 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/ask-hovik/pyskyfire"
 Issues = "https://github.com/ask-hovik/pyskyfire/issues"
+
+[project.scripts]
+build-docs = "pyskyfire._dev_commands:build_docs"
+test-light = "pyskyfire._dev_commands:test_light"
+test-medium = "pyskyfire._dev_commands:test_medium"
+test-heavy = "pyskyfire._dev_commands:test_heavy"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyskyfire"]
@@ -72,6 +78,11 @@ docs = [
 dev = [
   { include-group = "test" },
   { include-group = "docs" },
+]
+
+[tool.pytest.ini_options]
+markers = [
+  "advanced: long-running, resource-intensive example workflows",
 ]
 
 # ================================================================

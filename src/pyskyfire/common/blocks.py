@@ -325,6 +325,14 @@ class RegenBlock(FluidBlock):
         Geometry/physics object passed to the solver.
     medium : str
         CoolProp fluid string for the coolant.
+    nodes : int or explicit grids, optional
+        Axial discretization used by the iterative network solve.
+    post_process_nodes : int or explicit grids, optional
+        Axial discretization used to collect the final profiles.
+    heat_curvature_correction : bool, optional
+        Whether to apply the gas-side heat-transfer curvature correction.
+    pressure_curvature_correction : bool, optional
+        Whether to apply the coolant pressure-drop curvature correction.
 
     Attributes
     ----------
@@ -340,13 +348,21 @@ class RegenBlock(FluidBlock):
                  st_out: str,
                  circuit_index: int,
                  thrust_chamber, 
-                 medium):
+                 medium,
+                 nodes=100,
+                 post_process_nodes=50,
+                 heat_curvature_correction=True,
+                 pressure_curvature_correction=True):
 
         self.name = name
         self.st_in = st_in
         self.st_out = st_out
         self.circuit_index = circuit_index
         self.thrust_chamber = thrust_chamber
+        self.nodes = nodes
+        self.post_process_nodes = post_process_nodes
+        self.heat_curvature_correction = bool(heat_curvature_correction)
+        self.pressure_curvature_correction = bool(pressure_curvature_correction)
         super().__init__(medium)
 
         # ------------- metadata for EngineNetwork ---------------------
@@ -398,11 +414,13 @@ class RegenBlock(FluidBlock):
 
         cooling_data = coupled_steady_heating_analysis(
                            self.thrust_chamber,
-                           nodes          = 100,
+                           nodes          = self.nodes,
                            circuit_index  = self.circuit_index,
                            boundary_conditions = bc,
                            solver         = "newton",
-                           output         = False
+                           output         = False,
+                           heat_curvature_correction = self.heat_curvature_correction,
+                           pressure_curvature_correction = self.pressure_curvature_correction,
                        )
 
         # downstream thermo state
@@ -459,11 +477,13 @@ class RegenBlock(FluidBlock):
         # Use a finer axial grid for the final report
         cooling_data = coupled_steady_heating_analysis(
             self.thrust_chamber,
-            nodes          = 50,
+            nodes          = self.post_process_nodes,
             circuit_index  = self.circuit_index,
             boundary_conditions = bc,
             solver         = "newton",
             output         = False,
+            heat_curvature_correction = self.heat_curvature_correction,
+            pressure_curvature_correction = self.pressure_curvature_correction,
         )
 
         # Handy scalar that users often want

@@ -67,6 +67,7 @@ def _chamber(
     radius=0.1,
     length=1.0,
     n_nodes=200,
+    hot_gas_surface_area_multiplier=1.0,
 ):
     contour = _Cylinder(radius=radius, length=length)
     circuit = CoolingCircuit(
@@ -82,6 +83,7 @@ def _chamber(
         walls=[_Wall()],
         coolant_transport=None,
         roughness=0.0,
+        hot_gas_surface_area_multiplier=hot_gas_surface_area_multiplier,
     )
     chamber = ThrustChamber(
         contour=contour,
@@ -109,6 +111,43 @@ def test_axial_circuit_matches_the_annulus_it_sweeps() -> None:
     expected = _analytic_volume(radius=radius, height=height, length=length)
     assert circuit.volume == pytest.approx(expected, rel=1e-12)
     assert chamber.coolant_volume == pytest.approx(expected, rel=1e-12)
+
+
+def test_circuit_scales_hot_gas_area_with_scalar_multiplier() -> None:
+    _, baseline = _chamber()
+    _, enhanced = _chamber(hot_gas_surface_area_multiplier=1.5)
+
+    assert enhanced.dA_dx_thermal_exhaust_vals == pytest.approx(
+        1.5 * baseline.dA_dx_thermal_exhaust_vals
+    )
+    assert enhanced.dA_dx_thermal_coolant_vals == pytest.approx(
+        baseline.dA_dx_thermal_coolant_vals
+    )
+
+
+def test_circuit_accepts_position_dependent_hot_gas_area_multiplier() -> None:
+    _, baseline = _chamber()
+    _, enhanced = _chamber(
+        hot_gas_surface_area_multiplier=lambda x: 1.0 + 0.5 * x
+    )
+
+    expected = 1.0 + 0.5 * enhanced.x_domain
+    ratio = (
+        enhanced.dA_dx_thermal_exhaust_vals
+        / baseline.dA_dx_thermal_exhaust_vals
+    )
+    assert ratio == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("multiplier", [0.0, -1.0, np.inf, np.nan])
+def test_circuit_rejects_invalid_hot_gas_area_multiplier(multiplier) -> None:
+    with pytest.raises(ValueError, match="hot_gas_surface_area_multiplier"):
+        _chamber(hot_gas_surface_area_multiplier=multiplier)
+
+
+def test_circuit_rejects_invalid_callable_hot_gas_area_multiplier() -> None:
+    with pytest.raises(ValueError, match="must return finite, positive values"):
+        _chamber(hot_gas_surface_area_multiplier=lambda _x: 0.0)
 
 
 def test_volume_is_independent_of_channel_count() -> None:
