@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.3.0] - 2026-08-30
+## [0.3.0] - 30-08-2026
 
 ### Added
 - A new coupled cooling solver that balances hot-gas convection, conduction
@@ -94,13 +94,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.2.1] - 08-09-25
+## [0.2.1] - 08-09-2025
 ## Added
 - Various bug fixes
 
 ---
 
-## [0.2.0] - 08-09-25
+## [0.2.0] - 08-09-2025
 ## Added
 - New combustion properties driver CEA_Wrap, replaces RocketCEA and Cantera. The old interface to RocketCEA and Cantera, CombustionTransport, is replaced with Aerothermodynamics. Leverages the large amount of work that has gone into the NASA CEA database. This means that all of NASA CEAs propellants are now supported! Legacy CombustionTransport depricated. 
 - New method of hot gas heat transfer estimation in the regen solver based on the new Aerothermodynamics class. 
