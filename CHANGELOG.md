@@ -41,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   curvature-correction, and film-cooling examples.
 - A comprehensively rebuilt RL10A-3-3A validation case covering engine sizing,
   cycle layout, regenerative cooling, channel geometry, published reference data, and a single consolidated report.
+- Citation metadata in `CITATION.cff`, so releases are archived on Zenodo under
+  a citable DOI.
 
 ### Changed
 - Regenerative cooling was overhauled from the legacy heat-exchanger ODE into
