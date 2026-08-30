@@ -34,6 +34,7 @@ Issues = "https://github.com/ask-hovik/pyskyfire/issues"
 
 [project.scripts]
 build-docs = "pyskyfire._dev_commands:build_docs"
+build-dist = "pyskyfire._dev_commands:build_dist"
 test-light = "pyskyfire._dev_commands:test_light"
 test-medium = "pyskyfire._dev_commands:test_medium"
 test-heavy = "pyskyfire._dev_commands:test_heavy"

@@ -30,6 +30,10 @@ def build_docs() -> None:
     _run("build-docs")
 
 
+def build_dist() -> None:
+    _run("build-dist")
+
+
 def test_light() -> None:
     _run("test-light")
 

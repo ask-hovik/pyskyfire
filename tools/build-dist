@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Build the distribution artifacts (sdist and wheel) into dist/.
+#
+# Usage:
+#   build-dist            Remove dist/ and build fresh artifacts
+#   build-dist --no-clean Build without removing existing artifacts first
+#   build-dist --install  Install the built wheel into a throwaway environment
+#                         and import it, to check it stands on its own
+#
+# Any other arguments are passed straight through to uv build.
+#
+# dist/ is never cleaned by uv build itself, so stale artifacts from earlier
+# versions accumulate and a later publish would try to re-upload them.
+
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+cd "$repo_root"
+
+clean=1
+install_check=0
+build_args=()
+
+for arg in "$@"; do
+    case "$arg" in
+        --no-clean) clean=0 ;;
+        --install)  install_check=1 ;;
+        *)          build_args+=("$arg") ;;
+    esac
+done
+
+# An artifact built from a dirty tree silently differs from the commit it
+# claims to be; the version is baked in from pyproject.toml either way.
+if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
+    echo "warning: working tree has uncommitted changes; the artifacts will" >&2
+    echo "         not match any commit. Fine for testing, not for publishing." >&2
+    echo >&2
+fi
+
+if [[ $clean -eq 1 ]]; then
+    rm -rf dist
+fi
+
+uv build ${build_args[@]+"${build_args[@]}"}
+
+echo
+echo "Built into $repo_root/dist:"
+ls -1sh dist
+
+# The console scripts come from [project.scripts], and are the part most
+# likely to be missing from an artifact built before pyproject.toml changed.
+wheel="$(ls -t dist/*.whl | head -n 1)"
+echo
+echo "Console scripts declared in $(basename "$wheel"):"
+python3 - "$wheel" <<'PY'
+import sys, zipfile
+
+with zipfile.ZipFile(sys.argv[1]) as wheel:
+    names = [n for n in wheel.namelist() if n.endswith(".dist-info/entry_points.txt")]
+    if not names:
+        raise SystemExit("  none — [project.scripts] did not reach the wheel")
+    print("  " + wheel.read(names[0]).decode().strip().replace("\n", "\n  "))
+PY
+
+if [[ $install_check -eq 1 ]]; then
+    echo
+    echo "Importing the wheel in an isolated environment:"
+    uv run --isolated --no-project --with "$wheel" \
+        python -c "import pyskyfire; print('  ok:', pyskyfire.__file__)"
+fi
