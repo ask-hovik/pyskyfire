@@ -106,7 +106,7 @@ pyskyfire.regen.cross_section.CrossSectionSquared
    .. py:method:: P_thermal(prof: SectionProfiles) -> numpy.ndarray
 
       
-      Return thermal-contact perimeter [m].
+      Return geometric hot-gas thermal-contact perimeter [m].
 
 
 

@@ -1,7 +1,7 @@
 pyskyfire.common.blocks.RegenBlock
 ==================================
 
-.. py:class:: pyskyfire.common.blocks.RegenBlock(name: str, st_in: str, st_out: str, circuit_index: int, thrust_chamber, medium)
+.. py:class:: pyskyfire.common.blocks.RegenBlock(name: str, st_in: str, st_out: str, circuit_index: int, thrust_chamber, medium, nodes=100, post_process_nodes=50, heat_curvature_correction=True, pressure_curvature_correction=True)
 
    Bases: :py:obj:`FluidBlock`
 
@@ -35,6 +35,18 @@ pyskyfire.common.blocks.RegenBlock
 
        **medium** : :class:`python:str`
            CoolProp fluid string for the coolant.
+
+       **nodes** : :class:`python:int` or :obj:`explicit` :obj:`grids`, :obj:`optional`
+           Axial discretization used by the iterative network solve.
+
+       **post_process_nodes** : :class:`python:int` or :obj:`explicit` :obj:`grids`, :obj:`optional`
+           Axial discretization used to collect the final profiles.
+
+       **heat_curvature_correction** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           Whether to apply the gas-side heat-transfer curvature correction.
+
+       **pressure_curvature_correction** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           Whether to apply the coolant pressure-drop curvature correction.
 
    :Attributes:
 

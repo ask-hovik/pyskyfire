@@ -513,7 +513,7 @@
         <span class="n">p_c</span><span class="o">=</span><span class="mf">100e5</span><span class="p">,</span>
         <span class="n">p_e</span><span class="o">=</span><span class="mf">0.8e5</span><span class="p">,</span>
         <span class="n">MR</span><span class="o">=</span><span class="mf">2.8</span><span class="p">,</span>
-        <span class="n">AR_c</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span>
+        <span class="n">AR_c</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
         <span class="n">F</span><span class="o">=</span><span class="mf">100e3</span><span class="p">,</span>
 
         <span class="c1"># Fuel/oxidizer parameters</span>
@@ -538,32 +538,33 @@
 
         <span class="c1"># Cooling channels</span>
         <span class="n">copper_roughness_height</span><span class="o">=</span><span class="mf">0.0030e-3</span><span class="p">,</span>
-        <span class="n">inconel_roughness_height</span><span class="o">=</span><span class="mf">0.0015e-3</span><span class="p">,</span>
-        <span class="n">throat_channel_count</span><span class="o">=</span><span class="mi">140</span><span class="p">,</span>
+        <span class="n">fuel_channel_count</span><span class="o">=</span><span class="mi">140</span><span class="p">,</span>
         <span class="n">nozzle_channel_count</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
-        <span class="n">chamber_channel_count</span><span class="o">=</span><span class="mi">220</span><span class="p">,</span>
+        <span class="n">channel_blockage_ratio</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">fuel_hot_gas_surface_area_multiplier</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">ox_outbound_hot_gas_surface_area_multiplier</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>
+        <span class="n">ox_return_hot_gas_surface_area_multiplier</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>
+        <span class="n">fuel_throat_channel_height</span><span class="o">=</span><span class="mf">2.0e-3</span><span class="p">,</span>
+        <span class="n">fuel_channel_height_slope</span><span class="o">=</span><span class="mf">6.0e-3</span><span class="p">,</span>
         <span class="n">ox_channel_height</span><span class="o">=</span><span class="mf">6e-3</span><span class="p">,</span>
+        <span class="n">ox_single_pass_channel_height</span><span class="o">=</span><span class="mf">2.5e-3</span><span class="p">,</span>
 
-        <span class="c1"># Wall thicknesses</span>
-        <span class="n">oxygen_copper_thickness</span><span class="o">=</span><span class="mf">0.6e-3</span><span class="p">,</span>
-        <span class="n">fuel_copper_thickness</span><span class="o">=</span><span class="mf">0.6e-3</span><span class="p">,</span>
-        <span class="n">barrier_thickness</span><span class="o">=</span><span class="mf">0.05e-3</span><span class="p">,</span>
-        <span class="n">inconel_thickness</span><span class="o">=</span><span class="mf">0.4e-3</span><span class="p">,</span>
+        <span class="c1"># All cooling circuits use the same uncoated copper wall.</span>
+        <span class="n">copper_thickness</span><span class="o">=</span><span class="mf">0.6e-3</span><span class="p">,</span>
 
         <span class="c1"># Materials</span>
         <span class="n">copper</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">solids</span><span class="o">.</span><span class="n">GRCop42</span><span class="p">,</span>
-        <span class="n">zirconia</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">solids</span><span class="o">.</span><span class="n">ZirconiumOxide</span><span class="p">,</span>
-        <span class="n">inconel</span><span class="o">=</span><span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">solids</span><span class="o">.</span><span class="n">Inconel625</span><span class="p">,</span>
 
         <span class="c1"># Pump parameters</span>
-        <span class="n">eta_pump_fu</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+        <span class="n">eta_pump_fu</span><span class="o">=</span><span class="mf">0.72</span><span class="p">,</span>
         <span class="n">n_fu</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span>  <span class="c1"># rpm</span>
-        <span class="n">eta_pump_ox</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+        <span class="n">eta_pump_ox_stage1</span><span class="o">=</span><span class="mf">0.76</span><span class="p">,</span>
+        <span class="n">eta_pump_ox_stage2</span><span class="o">=</span><span class="mf">0.72</span><span class="p">,</span>
         <span class="n">n_ox</span><span class="o">=</span><span class="mi">25000</span><span class="p">,</span>  <span class="c1"># rpm</span>
 
         <span class="c1"># Turbine efficiencies</span>
-        <span class="n">eta_turbine_fu</span><span class="o">=</span><span class="mf">0.73</span><span class="p">,</span>
-        <span class="n">eta_turbine_ox</span><span class="o">=</span><span class="mf">0.73</span><span class="p">,</span>
+        <span class="n">eta_turbine_fu</span><span class="o">=</span><span class="mf">0.75</span><span class="p">,</span>
+        <span class="n">eta_turbine_ox</span><span class="o">=</span><span class="mf">0.72</span><span class="p">,</span>
 
         <span class="c1"># Duct pressure ratios: fuel side</span>
         <span class="n">eta_pump_regen_fu</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
@@ -572,14 +573,15 @@
         <span class="n">eta_fu_injector</span><span class="o">=</span><span class="mf">0.88</span><span class="p">,</span>
 
         <span class="c1"># Duct pressure ratios: oxidizer side</span>
-        <span class="n">eta_pump_regen_ox</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
-        <span class="n">eta_regen_turbine_ox</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+        <span class="n">eta_pump_regen_ox</span><span class="o">=</span><span class="mf">0.98</span><span class="p">,</span>
+        <span class="n">eta_regen_turbine_ox</span><span class="o">=</span><span class="mf">0.98</span><span class="p">,</span>
         <span class="n">eta_turbine_injector_ox</span><span class="o">=</span><span class="mf">0.88</span><span class="p">,</span>
         <span class="n">eta_ox_injector</span><span class="o">=</span><span class="mf">0.88</span><span class="p">,</span>
 
         <span class="c1"># Mass-flow leakage fractions</span>
         <span class="n">zeta_fu_recirc</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
         <span class="n">zeta_ox_recirc</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
+        <span class="n">ox_regen_flow_fraction</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
         <span class="n">zeta_fu_turbine_bypass</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
         <span class="n">zeta_ox_turbine_bypass</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
 
@@ -618,6 +620,7 @@
         <span class="n">p_e</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_e"</span><span class="p">],</span>
         <span class="n">L_star</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"L_star"</span><span class="p">],</span>
         <span class="n">p_amb</span><span class="o">=</span><span class="mf">1e5</span><span class="p">,</span>
+        <span class="n">minimum_cea_temperature</span><span class="o">=</span><span class="mf">305.0</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">xs</span><span class="p">,</span> <span class="n">rs</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">contour</span><span class="o">.</span><span class="n">get_contour</span><span class="p">(</span>
@@ -634,102 +637,92 @@
     <span class="p">)</span>
     <span class="n">contour</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">Contour</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Methane Engine"</span><span class="p">)</span>
 
-    <span class="n">oxygen_copper_wall</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">Wall</span><span class="p">(</span>
+    <span class="n">copper_wall</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">Wall</span><span class="p">(</span>
         <span class="n">material</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"copper"</span><span class="p">],</span>
-        <span class="n">thickness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"oxygen_copper_thickness"</span><span class="p">],</span>
-    <span class="p">)</span>
-    <span class="n">fuel_copper_wall</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">Wall</span><span class="p">(</span>
-        <span class="n">material</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"copper"</span><span class="p">],</span>
-        <span class="n">thickness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"fuel_copper_thickness"</span><span class="p">],</span>
-    <span class="p">)</span>
-    <span class="n">barrier_wall</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">Wall</span><span class="p">(</span>
-        <span class="n">material</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"zirconia"</span><span class="p">],</span>
-        <span class="n">thickness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"barrier_thickness"</span><span class="p">],</span>
-    <span class="p">)</span>
-    <span class="n">inconel_wall</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">Wall</span><span class="p">(</span>
-        <span class="n">material</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"inconel"</span><span class="p">],</span>
-        <span class="n">thickness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"inconel_thickness"</span><span class="p">],</span>
+        <span class="n">thickness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"copper_thickness"</span><span class="p">],</span>
     <span class="p">)</span>
 
-    <span class="n">channel_height_fn_1</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">make_channel_height_fn</span><span class="p">(</span>
-        <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
-        <span class="n">region_fractions</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
-        <span class="n">flat_heights</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0025</span><span class="p">,</span> <span class="mf">0.004</span><span class="p">],</span>
-        <span class="n">pinch_factors</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">4.0</span><span class="p">],</span>
-        <span class="n">transition_widths</span><span class="o">=</span><span class="p">[</span><span class="mf">0.000001</span><span class="p">],</span>
-    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fuel_channel_height</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">"fuel_throat_channel_height"</span><span class="p">]</span>
+            <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s2">"fuel_channel_height_slope"</span><span class="p">]</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="p">)</span>
 
-    <span class="n">channel_height_fn_2</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">make_channel_height_fn</span><span class="p">(</span>
-        <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
-        <span class="n">region_fractions</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
-        <span class="n">flat_heights</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0032</span><span class="p">,</span> <span class="mf">0.004</span><span class="p">],</span>
-        <span class="n">pinch_factors</span><span class="o">=</span><span class="p">[</span><span class="mf">0.8</span><span class="p">,</span> <span class="o">-</span><span class="mf">4.0</span><span class="p">],</span>
-        <span class="n">transition_widths</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0000001</span><span class="p">],</span>
-    <span class="p">)</span>
+    <span class="n">ox_outbound_span</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.11</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">ox_return_span</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.21</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">ox_channel_height</span><span class="p">(</span><span class="n">_x</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">span_fraction_to_x</span><span class="p">(</span><span class="n">span_fraction</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">span_fraction</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">span_fraction</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">contour</span><span class="o">.</span><span class="n">xs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">span_fraction</span> <span class="o">*</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="n">contour</span><span class="o">.</span><span class="n">xs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">ox_outbound_bounds</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">span_fraction_to_x</span><span class="p">,</span> <span class="n">ox_outbound_span</span><span class="p">))</span>
+    <span class="n">ox_return_bounds</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">span_fraction_to_x</span><span class="p">,</span> <span class="n">ox_return_span</span><span class="p">))</span>
+    <span class="n">ox_overlap_start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">ox_outbound_bounds</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">ox_return_bounds</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">ox_channel_height</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">ox_overlap_start</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">params</span><span class="p">[</span><span class="s2">"ox_single_pass_channel_height"</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">params</span><span class="p">[</span><span class="s2">"ox_channel_height"</span><span class="p">]</span>
 
-    <span class="n">cross_section</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CrossSectionRounded</span><span class="p">()</span>
+    <span class="n">cross_section</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CrossSectionSquared</span><span class="p">(</span>
+        <span class="n">blockage_ratio</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"channel_blockage_ratio"</span><span class="p">],</span>
+    <span class="p">)</span>
     <span class="n">fuel_transport</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">skycea</span><span class="o">.</span><span class="n">CoolantTransport</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"coolprop_fu"</span><span class="p">])</span>
     <span class="n">ox_transport</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">skycea</span><span class="o">.</span><span class="n">CoolantTransport</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"coolprop_ox"</span><span class="p">])</span>
 
-    <span class="n">chamber_channel_placement</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">SurfacePlacement</span><span class="p">(</span><span class="n">n_channel_positions</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"chamber_channel_count"</span><span class="p">],)</span>
-    <span class="n">throat_channel_placement</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">SurfacePlacement</span><span class="p">(</span><span class="n">n_channel_positions</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"throat_channel_count"</span><span class="p">],)</span>
+    <span class="n">fuel_channel_placement</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">SurfacePlacement</span><span class="p">(</span><span class="n">n_channel_positions</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"fuel_channel_count"</span><span class="p">],)</span>
     <span class="n">nozzle_channel_placement</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">SurfacePlacement</span><span class="p">(</span><span class="n">n_channel_positions</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"nozzle_channel_count"</span><span class="p">],)</span>
 
-    <span class="n">fu_copper_pass</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CoolingCircuit</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">"Fuel Copper Pass"</span><span class="p">,</span>
+    <span class="n">fuel_chamber_pass</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CoolingCircuit</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"Fuel Chamber Pass"</span><span class="p">,</span>
         <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
         <span class="n">coolant_transport</span><span class="o">=</span><span class="n">fuel_transport</span><span class="p">,</span>
         <span class="n">cross_section</span><span class="o">=</span><span class="n">cross_section</span><span class="p">,</span>
-        <span class="n">span</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.29</span><span class="p">],</span>
-        <span class="n">placement</span><span class="o">=</span><span class="n">throat_channel_placement</span><span class="p">,</span>
-        <span class="n">walls</span><span class="o">=</span><span class="p">[</span><span class="n">barrier_wall</span><span class="p">,</span> <span class="n">fuel_copper_wall</span><span class="p">],</span>
+        <span class="n">span</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">],</span>
+        <span class="n">placement</span><span class="o">=</span><span class="n">fuel_channel_placement</span><span class="p">,</span>
+        <span class="n">walls</span><span class="o">=</span><span class="p">[</span><span class="n">copper_wall</span><span class="p">],</span>
         <span class="n">roughness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"copper_roughness_height"</span><span class="p">],</span>
-        <span class="n">channel_height</span><span class="o">=</span><span class="n">channel_height_fn_1</span><span class="p">,</span>
+        <span class="n">channel_height</span><span class="o">=</span><span class="n">fuel_channel_height</span><span class="p">,</span>
+        <span class="n">hot_gas_surface_area_multiplier</span><span class="o">=</span><span class="n">params</span><span class="p">[</span>
+            <span class="s2">"fuel_hot_gas_surface_area_multiplier"</span>
+        <span class="p">],</span>
     <span class="p">)</span>
 
-    <span class="n">fu_inco_pass_cocurrent</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CoolingCircuit</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">"Fuel Inconel Pass Cocurrent"</span><span class="p">,</span>
-        <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
-        <span class="n">coolant_transport</span><span class="o">=</span><span class="n">fuel_transport</span><span class="p">,</span>
-        <span class="n">cross_section</span><span class="o">=</span><span class="n">cross_section</span><span class="p">,</span>
-        <span class="n">span</span><span class="o">=</span><span class="p">[</span><span class="mf">0.31</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>
-        <span class="n">placement</span><span class="o">=</span><span class="n">nozzle_channel_placement</span><span class="p">,</span>
-        <span class="n">walls</span><span class="o">=</span><span class="p">[</span><span class="n">fuel_copper_wall</span><span class="p">],</span>
-        <span class="n">roughness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"inconel_roughness_height"</span><span class="p">],</span>
-        <span class="n">channel_height</span><span class="o">=</span><span class="n">channel_height_fn_1</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="n">fu_inco_pass_countercurrent</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CoolingCircuit</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">"Fuel Inconel Pass Countercurrent"</span><span class="p">,</span>
-        <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
-        <span class="n">coolant_transport</span><span class="o">=</span><span class="n">fuel_transport</span><span class="p">,</span>
-        <span class="n">cross_section</span><span class="o">=</span><span class="n">cross_section</span><span class="p">,</span>
-        <span class="n">span</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.31</span><span class="p">],</span>
-        <span class="n">placement</span><span class="o">=</span><span class="n">nozzle_channel_placement</span><span class="p">,</span>
-        <span class="n">walls</span><span class="o">=</span><span class="p">[</span><span class="n">fuel_copper_wall</span><span class="p">],</span>
-        <span class="n">roughness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"inconel_roughness_height"</span><span class="p">],</span>
-        <span class="n">channel_height</span><span class="o">=</span><span class="n">channel_height_fn_2</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="n">ox_copper_pass</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CoolingCircuit</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">"Oxidizer Copper Pass"</span><span class="p">,</span>
+    <span class="n">ox_nozzle_pass_outbound</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CoolingCircuit</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"Oxidizer Nozzle Pass Outbound"</span><span class="p">,</span>
         <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
         <span class="n">coolant_transport</span><span class="o">=</span><span class="n">ox_transport</span><span class="p">,</span>
         <span class="n">cross_section</span><span class="o">=</span><span class="n">cross_section</span><span class="p">,</span>
-        <span class="n">span</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">0.31</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">],</span>
-        <span class="n">placement</span><span class="o">=</span><span class="n">chamber_channel_placement</span><span class="p">,</span>
-        <span class="n">walls</span><span class="o">=</span><span class="p">[</span><span class="n">oxygen_copper_wall</span><span class="p">],</span>
+        <span class="n">span</span><span class="o">=</span><span class="n">ox_outbound_span</span><span class="p">,</span>
+        <span class="n">placement</span><span class="o">=</span><span class="n">nozzle_channel_placement</span><span class="p">,</span>
+        <span class="n">walls</span><span class="o">=</span><span class="p">[</span><span class="n">copper_wall</span><span class="p">],</span>
         <span class="n">roughness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"copper_roughness_height"</span><span class="p">],</span>
         <span class="n">channel_height</span><span class="o">=</span><span class="n">ox_channel_height</span><span class="p">,</span>
+        <span class="n">hot_gas_surface_area_multiplier</span><span class="o">=</span><span class="n">params</span><span class="p">[</span>
+            <span class="s2">"ox_outbound_hot_gas_surface_area_multiplier"</span>
+        <span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="n">ox_nozzle_pass_return</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">CoolingCircuit</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"Oxidizer Nozzle Pass Return"</span><span class="p">,</span>
+        <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
+        <span class="n">coolant_transport</span><span class="o">=</span><span class="n">ox_transport</span><span class="p">,</span>
+        <span class="n">cross_section</span><span class="o">=</span><span class="n">cross_section</span><span class="p">,</span>
+        <span class="n">span</span><span class="o">=</span><span class="n">ox_return_span</span><span class="p">,</span>
+        <span class="n">placement</span><span class="o">=</span><span class="n">nozzle_channel_placement</span><span class="p">,</span>
+        <span class="n">walls</span><span class="o">=</span><span class="p">[</span><span class="n">copper_wall</span><span class="p">],</span>
+        <span class="n">roughness</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"copper_roughness_height"</span><span class="p">],</span>
+        <span class="n">channel_height</span><span class="o">=</span><span class="n">ox_channel_height</span><span class="p">,</span>
+        <span class="n">hot_gas_surface_area_multiplier</span><span class="o">=</span><span class="n">params</span><span class="p">[</span>
+            <span class="s2">"ox_return_hot_gas_surface_area_multiplier"</span>
+        <span class="p">],</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">psf</span><span class="o">.</span><span class="n">regen</span><span class="o">.</span><span class="n">ThrustChamber</span><span class="p">(</span>
         <span class="n">contour</span><span class="o">=</span><span class="n">contour</span><span class="p">,</span>
         <span class="n">combustion_transport</span><span class="o">=</span><span class="n">aerothermodynamics</span><span class="p">,</span>
-        <span class="n">cooling_circuits</span><span class="o">=</span><span class="p">[</span><span class="n">fu_copper_pass</span><span class="p">,</span> <span class="n">fu_inco_pass_cocurrent</span><span class="p">,</span> <span class="n">fu_inco_pass_countercurrent</span><span class="p">,</span> <span class="n">ox_copper_pass</span><span class="p">,],</span>
+        <span class="n">cooling_circuits</span><span class="o">=</span><span class="p">[</span><span class="n">fuel_chamber_pass</span><span class="p">,</span> <span class="n">ox_nozzle_pass_outbound</span><span class="p">,</span> <span class="n">ox_nozzle_pass_return</span><span class="p">],</span>
         <span class="n">h_gas_corr</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
         <span class="n">h_cold_corr</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
         <span class="n">n_nodes</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
@@ -747,7 +740,7 @@
     loading="lazy"
     sandbox="allow-scripts allow-same-origin">
   </iframe>
-</div><p>This example contains three sequential fuel cooling passes and one oxidizer pass. The fuel first cools the copper throat/chamber region, then travels through a co-current nozzle pass and returns through a counter-current nozzle pass. Inspect the 3d engine below:</p>
+</div><p>This example contains one fuel chamber pass and two serial oxidizer nozzle passes. The fuel enters just downstream of the throat and travels toward the injector. The oxidizer enters just downstream of the throat, travels to the nozzle exit, and then returns to its starting axial position before entering the turbine. All three circuits use uncoated copper walls. Inspect the 3D engine below:</p>
 <div class="psf-demo-frame psf-demo-frame--large">
   <iframe
     src="../_static/tutorial-artifacts/advanced-simulation/engine-3d.html"
@@ -771,8 +764,6 @@
     <span class="n">stations</span><span class="p">[</span><span class="s2">"fu_shaft_recirc"</span><span class="p">]</span>         <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_fu"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,)</span>
     <span class="n">stations</span><span class="p">[</span><span class="s2">"fu_regen_duct_in"</span><span class="p">]</span>        <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_fu"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="o">*</span><span class="mf">0.6</span><span class="p">,)</span>
     <span class="n">stations</span><span class="p">[</span><span class="s2">"fu_regen_in"</span><span class="p">]</span>             <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_fu"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="o">*</span><span class="mf">0.6</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"fu_regen_interstage_1"</span><span class="p">]</span>   <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_fu"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">100</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="o">*</span><span class="mf">0.6</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"fu_regen_interstage_2"</span><span class="p">]</span>   <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_fu"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">180</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="o">*</span><span class="mf">0.6</span><span class="p">,)</span>
     <span class="n">stations</span><span class="p">[</span><span class="s2">"fu_regen_out"</span><span class="p">]</span>            <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.4</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_fu"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="o">*</span><span class="mf">0.6</span><span class="p">,)</span>
     <span class="n">stations</span><span class="p">[</span><span class="s2">"fu_turbine_inlet_split"</span><span class="p">]</span>  <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_fu"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
     <span class="n">stations</span><span class="p">[</span><span class="s2">"fu_bypass_valve"</span><span class="p">]</span>         <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_fu"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
@@ -782,21 +773,35 @@
     <span class="n">stations</span><span class="p">[</span><span class="s2">"fu_injector_plenum"</span><span class="p">]</span>      <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_fu"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
     <span class="n">stations</span><span class="p">[</span><span class="s2">"fu_chamber_in"</span><span class="p">]</span>           <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_fu"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_fu_est</span><span class="p">,)</span>
 
+    <span class="n">ox_regen_flow_fraction</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"ox_regen_flow_fraction"</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mf">0.0</span> <span class="o">&lt;</span> <span class="n">ox_regen_flow_fraction</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"ox_regen_flow_fraction must be strictly between 0 and 1"</span><span class="p">)</span>
+
     <span class="n">mdot_ox_est</span> <span class="o">=</span> <span class="n">thrust_chamber</span><span class="o">.</span><span class="n">combustion_transport</span><span class="o">.</span><span class="n">mdot_ox</span>
+    <span class="n">mdot_ox_main_est</span> <span class="o">=</span> <span class="n">mdot_ox_est</span> <span class="o">*</span> <span class="mf">0.8</span>
+    <span class="n">mdot_ox_regen_est</span> <span class="o">=</span> <span class="n">mdot_ox_main_est</span> <span class="o">*</span> <span class="n">ox_regen_flow_fraction</span>
+    <span class="n">mdot_ox_direct_est</span> <span class="o">=</span> <span class="n">mdot_ox_main_est</span> <span class="o">-</span> <span class="n">mdot_ox_regen_est</span>
+    <span class="n">mdot_ox_bypass_est</span> <span class="o">=</span> <span class="n">mdot_ox_regen_est</span> <span class="o">*</span> <span class="n">params</span><span class="p">[</span><span class="s2">"zeta_ox_turbine_bypass"</span><span class="p">]</span>
+    <span class="n">mdot_ox_turbine_est</span> <span class="o">=</span> <span class="n">mdot_ox_regen_est</span> <span class="o">-</span> <span class="n">mdot_ox_bypass_est</span>
     <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_engine_in"</span><span class="p">]</span>            <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_tank_ox"</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">],</span> <span class="n">mdot_ox_est</span><span class="o">*</span><span class="mf">0.8</span><span class="p">,)</span>
     <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_pump_in"</span><span class="p">]</span>              <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">stations</span><span class="p">[</span><span class="s2">"ox_engine_in"</span><span class="p">]</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_engine_in"</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="o">*</span><span class="mf">0.8</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_pump_out"</span><span class="p">]</span>             <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="o">*</span><span class="mf">0.8</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_shaft_recirc"</span><span class="p">]</span>         <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_regen_duct_in"</span><span class="p">]</span>        <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_regen_in"</span><span class="p">]</span>             <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot_ox_est</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_regen_out"</span><span class="p">]</span>            <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_est</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_turbine_inlet_split"</span><span class="p">]</span>  <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_bypass_valve"</span><span class="p">]</span>         <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_turbine_in"</span><span class="p">]</span>           <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_turbine_out"</span><span class="p">]</span>          <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.2</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_turbine_outlet_merge"</span><span class="p">]</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_injector_plenum"</span><span class="p">]</span>      <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
-    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_chamber_in"</span><span class="p">]</span>           <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_stage1_pump_out"</span><span class="p">]</span>      <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_ox_est</span><span class="o">*</span><span class="mf">0.8</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_shaft_recirc"</span><span class="p">]</span>         <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_main_flow"</span><span class="p">]</span>            <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_ox_main_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_direct_branch"</span><span class="p">]</span>        <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_ox_direct_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_stage2_pump_in"</span><span class="p">]</span>       <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">mdot_ox_regen_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_regen_duct_in"</span><span class="p">]</span>        <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.8</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">15</span><span class="p">,</span> <span class="n">mdot_ox_regen_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_regen_in"</span><span class="p">]</span>             <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.7</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">15</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot_ox_regen_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_regen_interstage"</span><span class="p">]</span>     <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.7</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">130</span><span class="p">,</span> <span class="n">mdot_ox_regen_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_regen_out"</span><span class="p">]</span>            <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.7</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_regen_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_turbine_inlet_split"</span><span class="p">]</span>  <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_regen_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_bypass_valve"</span><span class="p">]</span>         <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_bypass_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_turbine_in"</span><span class="p">]</span>           <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.6</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">250</span><span class="p">,</span> <span class="n">mdot_ox_turbine_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_turbine_out"</span><span class="p">]</span>          <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_ox_turbine_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_heated_branch"</span><span class="p">]</span>        <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">200</span><span class="p">,</span> <span class="n">mdot_ox_regen_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_main_flow_merge"</span><span class="p">]</span>      <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">100</span><span class="p">,</span> <span class="n">mdot_ox_main_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_injector_plenum"</span><span class="p">]</span>      <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.1</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">100</span><span class="p">,</span> <span class="n">mdot_ox_main_est</span><span class="p">,)</span>
+    <span class="n">stations</span><span class="p">[</span><span class="s2">"ox_chamber_in"</span><span class="p">]</span>           <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">Station</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">"T_tank_ox"</span><span class="p">]</span> <span class="o">+</span> <span class="mi">100</span><span class="p">,</span> <span class="n">mdot_ox_main_est</span><span class="p">,)</span>
 
     <span class="k">return</span> <span class="n">stations</span>
 
@@ -820,8 +825,6 @@
 
     <span class="k">return</span> <span class="p">{</span>
         <span class="s2">"p_c"</span><span class="p">:</span> <span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">],</span>
-        <span class="s2">"P_fuel_pump"</span><span class="p">:</span> <span class="mf">2.8e5</span><span class="p">,</span>
-        <span class="s2">"P_ox_pump"</span><span class="p">:</span> <span class="mf">2.0e5</span><span class="p">,</span>
         <span class="s2">"P_fuel_turbine_required"</span><span class="p">:</span> <span class="mf">2.8e5</span><span class="p">,</span>
         <span class="s2">"P_ox_turbine_required"</span><span class="p">:</span> <span class="mf">2.0e5</span><span class="p">,</span>
     <span class="p">}</span>
@@ -829,7 +832,7 @@
 
 </pre></div>
 </div>
-<p>This example begins with estimates for the fuel and oxidizer pump powers. The transmission blocks later update the corresponding turbine power requirements. Pressure-drop signals are added separately after the blocks are created because each loss-producing block declares its own <code class="docutils literal notranslate"><span class="pre">dp_key</span></code>.</p>
+<p>This example begins with estimates for the fuel and oxidizer turbine power requirements. The transmission blocks later replace them with the pump loads calculated by the network. Pressure-drop signals are added separately after the blocks are created because each loss-producing block declares its own <code class="docutils literal notranslate"><span class="pre">dp_key</span></code>.</p>
 </section>
 <section id="create-the-engine-network">
 <h2>Create the engine network<a class="headerlink" href="#create-the-engine-network" title="Link to this heading">¶</a></h2>
@@ -837,6 +840,7 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">stations</span> <span class="o">=</span> <span class="n">setup_initial_stations</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">thrust_chamber</span><span class="p">)</span>
     <span class="n">signals</span> <span class="o">=</span> <span class="n">setup_initial_signals</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
     <span class="n">blocks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">regen_nodes</span> <span class="o">=</span> <span class="n">make_regen_node_spacings</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="p">)</span>
 
     <span class="n">fuel_medium</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">"coolprop_fu"</span><span class="p">]</span><span class="o">.</span><span class="n">propellants</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">ox_medium</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">"coolprop_ox"</span><span class="p">]</span><span class="o">.</span><span class="n">propellants</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -899,7 +903,7 @@
             <span class="n">st_out</span><span class="o">=</span><span class="s2">"fu_pump_out"</span><span class="p">,</span>
             <span class="n">overcome</span><span class="o">=</span><span class="p">[</span>
                 <span class="s2">"Duct Pump-Regen Fuel"</span><span class="p">,</span>
-                <span class="s2">"Regen Throat Pass"</span><span class="p">,</span>
+                <span class="s2">"Regen Fuel Chamber Pass"</span><span class="p">,</span>
                 <span class="s2">"Duct Regen-Turbine Fuel"</span><span class="p">,</span>
                 <span class="s2">"Fuel Turbine"</span><span class="p">,</span>
                 <span class="s2">"Duct Turbine-Injector Fuel"</span><span class="p">,</span>
@@ -936,32 +940,15 @@
     <span class="p">)</span>
     <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
         <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">RegenBlock</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">"Regen Throat Pass"</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"Regen Fuel Chamber Pass"</span><span class="p">,</span>
             <span class="n">st_in</span><span class="o">=</span><span class="s2">"fu_regen_in"</span><span class="p">,</span>
-            <span class="n">st_out</span><span class="o">=</span><span class="s2">"fu_regen_interstage_1"</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">"fu_regen_out"</span><span class="p">,</span>
             <span class="n">circuit_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
             <span class="n">thrust_chamber</span><span class="o">=</span><span class="n">thrust_chamber</span><span class="p">,</span>
             <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="p">)</span>
-    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">RegenBlock</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">"Regen Cocurrent Nozzle Pass"</span><span class="p">,</span>
-            <span class="n">st_in</span><span class="o">=</span><span class="s2">"fu_regen_interstage_1"</span><span class="p">,</span>
-            <span class="n">st_out</span><span class="o">=</span><span class="s2">"fu_regen_interstage_2"</span><span class="p">,</span>
-            <span class="n">circuit_index</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-            <span class="n">thrust_chamber</span><span class="o">=</span><span class="n">thrust_chamber</span><span class="p">,</span>
-            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="p">)</span>
-    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">RegenBlock</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">"Regen Countercurrent Nozzle Pass"</span><span class="p">,</span>
-            <span class="n">st_in</span><span class="o">=</span><span class="s2">"fu_regen_interstage_2"</span><span class="p">,</span>
-            <span class="n">st_out</span><span class="o">=</span><span class="s2">"fu_regen_out"</span><span class="p">,</span>
-            <span class="n">circuit_index</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-            <span class="n">thrust_chamber</span><span class="o">=</span><span class="n">thrust_chamber</span><span class="p">,</span>
-            <span class="n">medium</span><span class="o">=</span><span class="n">fuel_medium</span><span class="p">,</span>
+            <span class="n">nodes</span><span class="o">=</span><span class="n">regen_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">post_process_nodes</span><span class="o">=</span><span class="n">regen_nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">heat_curvature_correction</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="p">)</span>
     <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -1033,21 +1020,22 @@
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">PumpBlock.overcome</span></code> deserves special attention. It lists the downstream blocks whose pressure losses the pump must overcome:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">overcome</span><span class="o">=</span><span class="p">[</span>
-    <span class="s2">"duct_pump_regen_fuel"</span><span class="p">,</span>
-    <span class="s2">"regen_throat_pass"</span><span class="p">,</span>
-    <span class="s2">"duct_regen_turbine_fuel"</span><span class="p">,</span>
-    <span class="s2">"fuel_turbine"</span><span class="p">,</span>
-    <span class="s2">"duct_turbine_injector_fuel"</span><span class="p">,</span>
-    <span class="s2">"fu_injector"</span><span class="p">,</span>
+    <span class="s2">"Duct Pump-Regen Fuel"</span><span class="p">,</span>
+    <span class="s2">"Regen Fuel Chamber Pass"</span><span class="p">,</span>
+    <span class="s2">"Duct Regen-Turbine Fuel"</span><span class="p">,</span>
+    <span class="s2">"Fuel Turbine"</span><span class="p">,</span>
+    <span class="s2">"Duct Turbine-Injector Fuel"</span><span class="p">,</span>
+    <span class="s2">"Fu Injector"</span><span class="p">,</span>
 <span class="p">]</span>
 </pre></div>
 </div>
-<p>A pressure-loss block named <code class="docutils literal notranslate"><span class="pre">regen_throat_pass</span></code> writes a signal named <code class="docutils literal notranslate"><span class="pre">dp_regen_throat_pass</span></code>. The pump collects <code class="docutils literal notranslate"><span class="pre">dp_&lt;block</span> <span class="pre">name&gt;</span></code> for every listed item, adds the baseline chamber-side pressure requirement, and determines the target pump outlet pressure. Its required shaft power is then emitted as <code class="docutils literal notranslate"><span class="pre">P_fuel_pump</span></code>.</p>
+<p>A pressure-loss block named <code class="docutils literal notranslate"><span class="pre">Regen</span> <span class="pre">Fuel</span> <span class="pre">Chamber</span> <span class="pre">Pass</span></code> writes a signal named <code class="docutils literal notranslate"><span class="pre">dp_Regen</span> <span class="pre">Fuel</span> <span class="pre">Chamber</span> <span class="pre">Pass</span></code>. The pump collects <code class="docutils literal notranslate"><span class="pre">dp_&lt;block</span> <span class="pre">name&gt;</span></code> for every listed item, adds the baseline chamber-side pressure requirement, and determines the target pump outlet pressure. Its required shaft power is then emitted as <code class="docutils literal notranslate"><span class="pre">P_Fuel</span> <span class="pre">Pump</span></code>.</p>
 <p>This is somewhat clunky. The pressure path is not inferred automatically from the network graph, so modifying the cycle topology requires manually updating <code class="docutils literal notranslate"><span class="pre">overcome</span></code>. It remains the current solution because it keeps the block models local and the fixed-point solver simple: the pump only needs scalar pressure-drop signals, rather than a general graph traversal and algebraic loop formulation. Treat each <code class="docutils literal notranslate"><span class="pre">overcome</span></code> list as part of the cycle definition and review it whenever a component is added, removed, bypassed, or moved.</p>
 </section>
 <section id="oxidizer-side-blocks">
 <h3>Oxidizer-side blocks<a class="headerlink" href="#oxidizer-side-blocks" title="Link to this heading">¶</a></h3>
-<p>The oxidizer side follows the same architecture, with a split into two parallel cooling branches before the turbine:</p>
+<p>The oxidizer side uses two pump stages. Stage 1 pumps the complete oxidizer flow only high enough to supply the common injector path. After the recirculation split, <code class="docutils literal notranslate"><span class="pre">ox_regen_flow_fraction</span></code> selects the fraction sent through stage 2; the example uses <code class="docutils literal notranslate"><span class="pre">0.5</span></code>. The remaining oxidizer bypasses the regenerative branch and proceeds directly toward the chamber.</p>
+<p>Stage 2 pumps only the selected fraction to the higher pressure needed by the two serial nozzle cooling passes and oxidizer turbine. Its <code class="docutils literal notranslate"><span class="pre">overcome</span></code> list consequently contains only components in that high-pressure branch. After turbine expansion, the heated branch recombines with the direct branch before the shared downstream duct and injector. The oxidizer transmission sums the shaft powers of both pump stages when setting the turbine power requirement:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># Oxidizer-side blocks</span>
     <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
         <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowMergerBlock</span><span class="p">(</span>
@@ -1059,14 +1047,10 @@
     <span class="p">)</span>
     <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
         <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">PumpBlock</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">"Ox Pump"</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"Ox Pump Stage 1"</span><span class="p">,</span>
             <span class="n">st_in</span><span class="o">=</span><span class="s2">"ox_pump_in"</span><span class="p">,</span>
-            <span class="n">st_out</span><span class="o">=</span><span class="s2">"ox_pump_out"</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">"ox_stage1_pump_out"</span><span class="p">,</span>
             <span class="n">overcome</span><span class="o">=</span><span class="p">[</span>
-                <span class="s2">"Duct Pump-Regen Ox"</span><span class="p">,</span>
-                <span class="s2">"Ox Regen"</span><span class="p">,</span>
-                <span class="s2">"Duct Regen-Turbine Ox"</span><span class="p">,</span>
-                <span class="s2">"Ox Turbine"</span><span class="p">,</span>
                 <span class="s2">"Duct Turbine-Injector Ox"</span><span class="p">,</span>
                 <span class="s2">"Ox Injector"</span><span class="p">,</span>
             <span class="p">],</span>
@@ -1074,19 +1058,53 @@
             <span class="n">p_base</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_c"</span><span class="p">],</span>
             <span class="n">input_p</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"p_tank_ox"</span><span class="p">],</span>
             <span class="n">n</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"n_ox"</span><span class="p">],</span>
-            <span class="n">eta</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"eta_pump_ox"</span><span class="p">],</span>
+            <span class="n">eta</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"eta_pump_ox_stage1"</span><span class="p">],</span>
             <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="p">)</span>
     <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
         <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowSplitterBlock</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">"Split Ox Recirc"</span><span class="p">,</span>
-            <span class="n">st_in</span><span class="o">=</span><span class="s2">"ox_pump_out"</span><span class="p">,</span>
-            <span class="n">st_out</span><span class="o">=</span><span class="p">[</span><span class="s2">"ox_regen_duct_in"</span><span class="p">,</span> <span class="s2">"ox_shaft_recirc"</span><span class="p">],</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">"ox_stage1_pump_out"</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="p">[</span><span class="s2">"ox_main_flow"</span><span class="p">,</span> <span class="s2">"ox_shaft_recirc"</span><span class="p">],</span>
             <span class="n">fractions</span><span class="o">=</span><span class="p">[</span>
                 <span class="mi">1</span> <span class="o">-</span> <span class="n">params</span><span class="p">[</span><span class="s2">"zeta_ox_recirc"</span><span class="p">],</span>
                 <span class="n">params</span><span class="p">[</span><span class="s2">"zeta_ox_recirc"</span><span class="p">],</span>
             <span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowSplitterBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"Split Ox Main Flow"</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">"ox_main_flow"</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="p">[</span><span class="s2">"ox_stage2_pump_in"</span><span class="p">,</span> <span class="s2">"ox_direct_branch"</span><span class="p">],</span>
+            <span class="n">fractions</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">params</span><span class="p">[</span><span class="s2">"ox_regen_flow_fraction"</span><span class="p">],</span>
+                <span class="mi">1</span> <span class="o">-</span> <span class="n">params</span><span class="p">[</span><span class="s2">"ox_regen_flow_fraction"</span><span class="p">],</span>
+            <span class="p">],</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">PumpBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"Ox Pump Stage 2"</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">"ox_stage2_pump_in"</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">"ox_regen_duct_in"</span><span class="p">,</span>
+            <span class="n">overcome</span><span class="o">=</span><span class="p">[</span>
+                <span class="s2">"Duct Pump-Regen Ox"</span><span class="p">,</span>
+                <span class="s2">"Regen Ox Nozzle Outbound"</span><span class="p">,</span>
+                <span class="s2">"Regen Ox Nozzle Return"</span><span class="p">,</span>
+                <span class="s2">"Duct Regen-Turbine Ox"</span><span class="p">,</span>
+                <span class="s2">"Ox Turbine"</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="n">load_fraction</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+            <span class="c1"># Stage 2 supplies only the additional pressure required by the</span>
+            <span class="c1"># regenerative-cooling and turbine branch.</span>
+            <span class="n">p_base</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+            <span class="n">input_p</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+            <span class="n">n</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"n_ox"</span><span class="p">],</span>
+            <span class="n">eta</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"eta_pump_ox_stage2"</span><span class="p">],</span>
             <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="p">)</span>
@@ -1100,16 +1118,30 @@
         <span class="p">)</span>
     <span class="p">)</span>
 
-    <span class="c1"># The duplicated name is deliberate: these are identical parallel channels,</span>
-    <span class="c1"># so the pump should see a single branch pressure drop.</span>
     <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
         <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">RegenBlock</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">"Ox Regen"</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"Regen Ox Nozzle Outbound"</span><span class="p">,</span>
             <span class="n">st_in</span><span class="o">=</span><span class="s2">"ox_regen_in"</span><span class="p">,</span>
-            <span class="n">st_out</span><span class="o">=</span><span class="s2">"ox_regen_out"</span><span class="p">,</span>
-            <span class="n">circuit_index</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">"ox_regen_interstage"</span><span class="p">,</span>
+            <span class="n">circuit_index</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
             <span class="n">thrust_chamber</span><span class="o">=</span><span class="n">thrust_chamber</span><span class="p">,</span>
             <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+            <span class="n">nodes</span><span class="o">=</span><span class="n">regen_nodes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">post_process_nodes</span><span class="o">=</span><span class="n">regen_nodes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">heat_curvature_correction</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">RegenBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"Regen Ox Nozzle Return"</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">"ox_regen_interstage"</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">"ox_regen_out"</span><span class="p">,</span>
+            <span class="n">circuit_index</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">thrust_chamber</span><span class="o">=</span><span class="n">thrust_chamber</span><span class="p">,</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+            <span class="n">nodes</span><span class="o">=</span><span class="n">regen_nodes</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+            <span class="n">post_process_nodes</span><span class="o">=</span><span class="n">regen_nodes</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+            <span class="n">heat_curvature_correction</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="p">)</span>
     <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -1147,14 +1179,22 @@
         <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowMergerBlock</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">"Merge Ox Bypass"</span><span class="p">,</span>
             <span class="n">st_in</span><span class="o">=</span><span class="p">[</span><span class="s2">"ox_turbine_out"</span><span class="p">,</span> <span class="s2">"ox_bypass_valve"</span><span class="p">],</span>
-            <span class="n">st_out</span><span class="o">=</span><span class="s2">"ox_turbine_outlet_merge"</span><span class="p">,</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">"ox_heated_branch"</span><span class="p">,</span>
+            <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">MassFlowMergerBlock</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"Merge Ox Main Flow"</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="p">[</span><span class="s2">"ox_direct_branch"</span><span class="p">,</span> <span class="s2">"ox_heated_branch"</span><span class="p">],</span>
+            <span class="n">st_out</span><span class="o">=</span><span class="s2">"ox_main_flow_merge"</span><span class="p">,</span>
             <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="p">)</span>
     <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
         <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">SimpleDuctBlock</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">"Duct Turbine-Injector Ox"</span><span class="p">,</span>
-            <span class="n">st_in</span><span class="o">=</span><span class="s2">"ox_turbine_outlet_merge"</span><span class="p">,</span>
+            <span class="n">st_in</span><span class="o">=</span><span class="s2">"ox_main_flow_merge"</span><span class="p">,</span>
             <span class="n">st_out</span><span class="o">=</span><span class="s2">"ox_injector_plenum"</span><span class="p">,</span>
             <span class="n">pressure_ratio</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s2">"eta_turbine_injector_ox"</span><span class="p">],</span>
             <span class="n">medium</span><span class="o">=</span><span class="n">ox_medium</span><span class="p">,</span>
@@ -1172,14 +1212,14 @@
     <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
         <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">TransmissionBlock</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">"Ox Shaft"</span><span class="p">,</span>
-            <span class="n">sink_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">"P_Ox Pump"</span><span class="p">],</span>
+            <span class="n">sink_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">"P_Ox Pump Stage 1"</span><span class="p">,</span> <span class="s2">"P_Ox Pump Stage 2"</span><span class="p">],</span>
             <span class="n">source_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">"P_ox_turbine_required"</span><span class="p">],</span>
         <span class="p">)</span>
     <span class="p">)</span>
 
 </pre></div>
 </div>
-<p>The two oxidizer <code class="docutils literal notranslate"><span class="pre">RegenBlock</span></code> instances deliberately use the same name because they represent identical parallel paths. They therefore produce the same branch pressure-drop signal, which is the relevant loss for the pump’s <code class="docutils literal notranslate"><span class="pre">overcome</span></code> list.</p>
+<p>This split avoids raising the entire oxidizer flow to the regenerative-circuit pressure. Change <code class="docutils literal notranslate"><span class="pre">ox_regen_flow_fraction</span></code> to explore the tradeoff between coolant/turbine mass flow and second-stage pump demand.</p>
 <p>Keeping track of which block is connected where can be difficult in the script view. Therefore, pyskyfire implements visualisation to view the engine network you have created. A visualisation of the above network is shown below:</p>
 <div class="psf-demo-frame psf-demo-frame--large">
   <iframe
@@ -1210,7 +1250,7 @@
 <p>This bootstrap step exists because the pumps read downstream pressure-drop signals on their first sweep, while those signals are only calculated by the loss-producing blocks during the sweep. The initial values do not need to be exact, but they should be non-negative and consistent with the station guesses.</p>
 <p>The network is then constructed and solved:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">net</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">EngineNetwork</span><span class="p">(</span><span class="n">stations</span><span class="p">,</span> <span class="n">signals</span><span class="p">,</span> <span class="n">blocks</span><span class="p">)</span>
-    <span class="n">net</span><span class="o">.</span><span class="n">run_fixed_point</span><span class="p">(</span><span class="n">tol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">run_fixed_point</span><span class="p">(</span><span class="n">tol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">{</span>
         <span class="s2">"net"</span><span class="p">:</span> <span class="n">net</span><span class="p">,</span>
@@ -1234,10 +1274,9 @@
 <span class="w">    </span><span class="sd">"""Normalize full-cycle block results to the common cooling-data contract."""</span>
 
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">"fuel_throat"</span><span class="p">:</span> <span class="n">block_results</span><span class="p">[</span><span class="s2">"Regen Throat Pass"</span><span class="p">],</span>
-        <span class="s2">"fuel_nozzle_cocurrent"</span><span class="p">:</span> <span class="n">block_results</span><span class="p">[</span><span class="s2">"Regen Cocurrent Nozzle Pass"</span><span class="p">],</span>
-        <span class="s2">"fuel_nozzle_countercurrent"</span><span class="p">:</span> <span class="n">block_results</span><span class="p">[</span><span class="s2">"Regen Countercurrent Nozzle Pass"</span><span class="p">],</span>
-        <span class="s2">"oxidizer_copper"</span><span class="p">:</span> <span class="n">block_results</span><span class="p">[</span><span class="s2">"Ox Regen"</span><span class="p">],</span>
+        <span class="s2">"fuel_chamber"</span><span class="p">:</span> <span class="n">block_results</span><span class="p">[</span><span class="s2">"Regen Fuel Chamber Pass"</span><span class="p">],</span>
+        <span class="s2">"oxidizer_nozzle_outbound"</span><span class="p">:</span> <span class="n">block_results</span><span class="p">[</span><span class="s2">"Regen Ox Nozzle Outbound"</span><span class="p">],</span>
+        <span class="s2">"oxidizer_nozzle_return"</span><span class="p">:</span> <span class="n">block_results</span><span class="p">[</span><span class="s2">"Regen Ox Nozzle Return"</span><span class="p">],</span>
     <span class="p">}</span>
 
 </pre></div>
@@ -1326,10 +1365,14 @@ block_results
 
     <span class="c1"># Engine overview</span>
     <span class="n">tab_overview</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">"Engine Overview"</span><span class="p">)</span>
-<span class="w">    </span><span class="sd">"""engine_viewer = psf.viz.make_engine_3d(thrust_chamber, show=False)</span>
-<span class="sd">    tab_overview.add_iframe(engine_viewer.data_url, caption="Engine 3D")</span>
-<span class="sd">    engine_viewer.save_html(output_dir / "engine-3d.html")</span>
-<span class="sd">    engine_viewer.close()"""</span>
+    <span class="n">engine_viewer</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">make_engine_3d</span><span class="p">(</span>
+        <span class="n">thrust_chamber</span><span class="p">,</span>
+        <span class="n">stride</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">engine_viewer</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="n">output_dir</span> <span class="o">/</span> <span class="s2">"engine-3d.html"</span><span class="p">)</span>
+    <span class="n">tab_overview</span><span class="o">.</span><span class="n">add_iframe</span><span class="p">(</span><span class="n">engine_viewer</span><span class="o">.</span><span class="n">data_url</span><span class="p">,</span> <span class="n">caption</span><span class="o">=</span><span class="s2">"Engine 3D"</span><span class="p">)</span>
+    <span class="n">engine_viewer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="n">contour_plot</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotContour</span><span class="p">(</span><span class="n">thrust_chamber</span><span class="o">.</span><span class="n">contour</span><span class="p">)</span>
     <span class="n">tab_overview</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">contour_plot</span><span class="p">)</span>
@@ -1347,7 +1390,17 @@ block_results
         <span class="p">)</span>
     <span class="p">)</span>
     <span class="n">tab_cooling</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotCoolantTemperature</span><span class="p">(</span><span class="o">*</span><span class="n">ordered_cooling_data</span><span class="p">))</span>
-    <span class="n">tab_cooling</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotCoolantPressure</span><span class="p">(</span><span class="o">*</span><span class="n">ordered_cooling_data</span><span class="p">))</span>
+    <span class="n">tab_cooling</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotCoolantPressure</span><span class="p">(</span><span class="n">cooling_data</span><span class="p">[</span><span class="s2">"fuel_chamber"</span><span class="p">]),</span>
+        <span class="n">caption</span><span class="o">=</span><span class="s2">"Fuel coolant pressure."</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">tab_cooling</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
+        <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotCoolantPressure</span><span class="p">(</span>
+            <span class="n">cooling_data</span><span class="p">[</span><span class="s2">"oxidizer_nozzle_outbound"</span><span class="p">],</span>
+            <span class="n">cooling_data</span><span class="p">[</span><span class="s2">"oxidizer_nozzle_return"</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="n">caption</span><span class="o">=</span><span class="s2">"Oxidizer coolant pressure."</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="n">tab_cooling</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotHeatFlux</span><span class="p">(</span><span class="o">*</span><span class="n">ordered_cooling_data</span><span class="p">))</span>
     <span class="n">tab_cooling</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span><span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotVelocity</span><span class="p">(</span><span class="o">*</span><span class="n">ordered_cooling_data</span><span class="p">))</span>
 
@@ -1375,11 +1428,12 @@ block_results
 
     <span class="c1"># Through-wall temperatures at three axial locations</span>
     <span class="n">tab_gradient</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">add_tab</span><span class="p">(</span><span class="s2">"Thermal Gradient"</span><span class="p">)</span>
-    <span class="n">fuel_throat_data</span> <span class="o">=</span> <span class="n">cooling_data</span><span class="p">[</span><span class="s2">"fuel_throat"</span><span class="p">]</span>
-    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">):</span>
+    <span class="n">fuel_chamber_data</span> <span class="o">=</span> <span class="n">cooling_data</span><span class="p">[</span><span class="s2">"fuel_chamber"</span><span class="p">]</span>
+    <span class="n">profile_x</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">fuel_chamber_data</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span><span class="n">profile_x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">profile_x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
         <span class="n">tab_gradient</span><span class="o">.</span><span class="n">add_figure</span><span class="p">(</span>
             <span class="n">psf</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">PlotTemperatureProfile</span><span class="p">(</span>
-                <span class="n">fuel_throat_data</span><span class="p">,</span>
+                <span class="n">fuel_chamber_data</span><span class="p">,</span>
                 <span class="n">thrust_chamber</span><span class="p">,</span>
                 <span class="mi">0</span><span class="p">,</span>
                 <span class="n">x</span><span class="p">,</span>
@@ -1415,11 +1469,15 @@ block_results
     <span class="n">oxidizer_stations</span> <span class="o">=</span> <span class="p">[</span>
         <span class="s2">"ox_engine_in"</span><span class="p">,</span>
         <span class="s2">"ox_pump_in"</span><span class="p">,</span>
-        <span class="s2">"ox_pump_out"</span><span class="p">,</span>
+        <span class="s2">"ox_stage1_pump_out"</span><span class="p">,</span>
+        <span class="s2">"ox_direct_branch"</span><span class="p">,</span>
+        <span class="s2">"ox_stage2_pump_in"</span><span class="p">,</span>
+        <span class="s2">"ox_regen_duct_in"</span><span class="p">,</span>
         <span class="s2">"ox_regen_in"</span><span class="p">,</span>
         <span class="s2">"ox_regen_out"</span><span class="p">,</span>
         <span class="s2">"ox_turbine_in"</span><span class="p">,</span>
         <span class="s2">"ox_turbine_out"</span><span class="p">,</span>
+        <span class="s2">"ox_main_flow_merge"</span><span class="p">,</span>
         <span class="s2">"ox_injector_plenum"</span><span class="p">,</span>
         <span class="s2">"ox_chamber_in"</span><span class="p">,</span>
     <span class="p">]</span>

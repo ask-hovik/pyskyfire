@@ -1,0 +1,47 @@
+pyskyfire._dev_commands
+=======================
+
+.. py:module:: pyskyfire._dev_commands
+
+.. autoapi-nested-parse::
+
+   Console entry points for repository development commands.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire._dev_commands._repository_root
+   pyskyfire._dev_commands._run
+   pyskyfire._dev_commands.build_dist
+   pyskyfire._dev_commands.build_docs
+   pyskyfire._dev_commands.lint
+   pyskyfire._dev_commands.test_heavy
+   pyskyfire._dev_commands.test_light
+   pyskyfire._dev_commands.test_medium
+
+
+Module Contents
+---------------
+
+.. py:function:: _repository_root(command: str) -> pathlib.Path
+
+.. py:function:: _run(command: str) -> None
+
+.. py:function:: build_dist() -> None
+
+.. py:function:: build_docs() -> None
+
+.. py:function:: lint() -> None
+
+.. py:function:: test_heavy() -> None
+
+.. py:function:: test_light() -> None
+
+.. py:function:: test_medium() -> None
+

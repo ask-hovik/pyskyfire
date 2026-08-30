@@ -113,3 +113,27 @@ pyskyfire.regen.cross_section.ChannelSection
       ..
           !! processed by numpydoc !!
 
+
+   .. py:method:: effective_hot_gas_perimeter(prof: SectionProfiles, surface_area_multiplier: numpy.ndarray) -> numpy.ndarray
+
+      
+      Return hot-gas perimeter including a circuit-supplied area factor.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

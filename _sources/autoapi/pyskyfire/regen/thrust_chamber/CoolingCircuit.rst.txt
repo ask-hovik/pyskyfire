@@ -1,7 +1,7 @@
 pyskyfire.regen.thrust_chamber.CoolingCircuit
 =============================================
 
-.. py:class:: pyskyfire.regen.thrust_chamber.CoolingCircuit(name, contour, cross_section, span: list[float], placement, channel_height, walls, coolant_transport, roughness)
+.. py:class:: pyskyfire.regen.thrust_chamber.CoolingCircuit(name, contour, cross_section, span: list[float], placement, channel_height, walls, coolant_transport, roughness, hot_gas_surface_area_multiplier=1.0)
 
    
    Simulation-only representation of a cooling circuit.
@@ -154,6 +154,30 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
 
 
    .. py:method:: finalize()
+
+
+   .. py:method:: hot_gas_surface_area_multiplier(x)
+
+      
+      Return the circuit-specific effective hot-side area multiplier.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
 
 
    .. py:method:: hot_side_layer_thickness(x)
