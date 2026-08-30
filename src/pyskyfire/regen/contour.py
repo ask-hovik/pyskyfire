@@ -785,7 +785,7 @@ def get_contour_internal(r_c, r_t, area_ratio, L_c, theta_conv, theta_div, nozzl
                 warnings.warn(f"{str(e)} Will use a 15 degree cone instead.", stacklevel=2)
                 nozzle = "conical"
             else:
-                raise ValueError("Some error idk i'm tired")
+                raise ValueError("Some error idk i'm tired") from e
     elif nozzle == "conical": 
         theta_n = theta_div
     # --------------

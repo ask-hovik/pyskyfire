@@ -34,6 +34,10 @@ def build_dist() -> None:
     _run("build-dist")
 
 
+def lint() -> None:
+    _run("lint")
+
+
 def test_light() -> None:
     _run("test-light")
 

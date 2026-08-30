@@ -98,6 +98,20 @@ Some example tests use optional visualisation dependencies and may require a
 working display or an off-screen rendering setup. The GitHub Actions workflow
 uses Xvfb for these tests on Linux.
 
+## Linting
+
+Run the ruff checks from the repository root:
+
+```bash
+lint         # Report probable defects
+lint --fix   # Apply the fixes ruff considers safe
+```
+
+The rule selection in `pyproject.toml` deliberately covers likely defects,
+such as undefined names and common footguns, rather than stylistic
+preferences. There is no enforced code formatter. The same check runs in
+continuous integration, so it is worth running before opening a pull request.
+
 ## Documentation
 
 Documentation is built with Sphinx. Install the documentation dependencies and

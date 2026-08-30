@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Run the ruff lint rules, as described in CONTRIBUTING.md.
+#
+# Usage:
+#   lint         Report probable defects
+#   lint --fix   Apply the fixes ruff considers safe
+#
+# Any other arguments are passed straight through to ruff check.
+
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+cd "$repo_root"
+
+# --only-group skips installing pyskyfire and its dependencies; ruff reads the
+# rule selection from pyproject.toml and never imports the code it checks.
+uv run --only-group lint ruff check . "$@"

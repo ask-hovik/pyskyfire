@@ -12,7 +12,7 @@ ArrayLike = Union[float, int, np.ndarray]
 
 # Base Property Model Class
 class PropertyModel:
-    """Abstract base class for temperature-dependent property models.
+    r"""Abstract base class for temperature-dependent property models.
 
     All subclasses must implement ``__call__(T) -> np.ndarray``.
 
@@ -121,7 +121,7 @@ class PolynomialModel(PropertyModel):
 # Log-polynomial model (used in the NIST Cryo database)
 @dataclass
 class Log10PolynomialModel(PropertyModel):
-    """Log-polynomial model (NIST cryogenic form).
+    r"""Log-polynomial model (NIST cryogenic form).
 
     Implements :math:`y = 10^{P(\log_{10} T)}`,
     where :math:`P(x) = \sum_i a_i x^i`.
@@ -235,7 +235,7 @@ class TabulatedModel(PropertyModel):
 # Gaussian Sum Model 
 @dataclass
 class SumOfGaussiansModel(PropertyModel):
-    """Empirical model as a sum of Gaussian peaks.
+    r"""Empirical model as a sum of Gaussian peaks.
 
     Implements :math:`y(T) = \sum_i b_i \exp(-((T - c_i)/d_i)^2)`.
 

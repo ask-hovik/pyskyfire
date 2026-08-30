@@ -69,7 +69,7 @@ class Results(MutableMapping):
             store = object.__getattribute__(self, "_store")
         except AttributeError:
             # _store really isn't there yet → no custom attribute
-            raise AttributeError(f"{name!r} not found")
+            raise AttributeError(f"{name!r} not found") from None
         if name in store:
             return store[name]
         raise AttributeError(f"{name!r} not found in Results")
