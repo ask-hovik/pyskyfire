@@ -1,6 +1,6 @@
 # Regenerative Cooling
 
-This page explains the regenerative cooling model implemented in `pyskyfire.regen`. It traces the path through `coupled_solver.py`, shows how the solver calls the equations in `physics.py`, and explains how the hot-gas aerothermodynamic properties are prepared by `pyskyfire.skycea.aerothermodynamics`.
+This page explains the regenerative cooling model implemented in `pyskyfire.regen`. It traces the path through `coupled_solver.py`, shows how the solver calls the equations in `physics.py`, and explains how the hot-gas aerothermodynamic properties are prepared by `pyskyfire.thermo.aerothermodynamics`.
 
 The model is a quasi-one-dimensional steady heat-exchanger calculation. At each axial station, it balances three heat-transfer paths:
 
@@ -95,7 +95,15 @@ combustion_transport.get_a(x)
 combustion_transport.get_gamma(x)
 ```
 
-are normally supplied by `skycea.aerothermodynamics.Aerothermodynamics`, which precomputes CEA-based equilibrium and temperature-pressure maps along the chamber/nozzle contour.
+are normally supplied by `thermo.aerothermodynamics.Aerothermodynamics`, which precomputes CEA-based equilibrium and temperature-pressure maps along the chamber/nozzle contour. Its resolved hot-gas state is `thermo.CombustionGasState`.
+
+Fluid definitions and property models are shared through `thermo.Fluid` and
+`thermo.FluidTransport`. The general `thermo.state.FluidStateResolver` resolves
+`FluidState` and `SaturationState` data, with `FluidCapability` describing the
+available capabilities and `thermo.state.probe_fluid` detecting them.
+Coolant-specific film-temperature property evaluation remains in
+`regen.coolant_properties.film_properties(resolver, T_film, p, getters)` rather
+than on the general fluid-state resolver.
 
 ---
 
@@ -166,7 +174,7 @@ This single-channel mass flow is used for local velocity, Reynolds number, heat-
 
 ---
 
-## 4. Aerothermodynamics from `skycea.aerothermodynamics`
+## 4. Aerothermodynamics from `thermo.aerothermodynamics`
 
 The regenerative cooling solver needs the hot-gas state along the contour. In the CEA-based workflow, this is provided by the `Aerothermodynamics` class.
 
@@ -1078,54 +1086,113 @@ $$
 Re_{D_h} = \frac{\rho_c u_c D_h}{\mu_c}
 $$
 
-The Darcy friction factor is then computed by `physics.f_darcy`.
+The Darcy friction factor is supplied by the selected duct-friction backend.
+The native path retains the `physics.f_darcy` wrapper; the `fluids` path uses
+the scalar functions in `pyskyfire.ducts`.
 
 ### 11.1 Darcy friction factor
 
-The following laminar threshold is used:
+The `fluids` backend described here is selected explicitly; **`native` remains
+the default**, including for existing validation cases. For an existing thrust
+chamber and boundary conditions:
+
+```python
+import pyskyfire as psf
+
+cooling_data = psf.regen.coupled_steady_heating_analysis(
+    thrust_chamber,
+    boundary_conditions,
+    friction_model="fluids",
+    pressure_curvature_correction=True,
+)
+```
+
+`RegenBlock` accepts the same `friction_model="fluids"` keyword. Low-level
+calls instead use `model="fluids"`, for example:
+
+```python
+from pyskyfire.ducts import friction_pressure_gradient
+
+dp_ds = friction_pressure_gradient(
+    ReDh=1e5, Dh=0.004, rho=800.0, velocity=10.0,
+    roughness=4e-6, R_curv=0.05, model="fluids",
+)
+```
+
+Regen evaluates the circuit's local absolute roughness $\epsilon(x)$ in metres
+before passing it to the backend. For straight ducts, the `fluids` backend calls
+the upstream branches directly: $f_{lam}=64/Re$ and Clamond's
+near-machine-precision Colebrook solution $f_{turb}$ at the same relative
+roughness $\epsilon/D_h$. It uses $64/Re$ through $Re_{crit}=2040$ and Clamond
+from
 
 $$
-Re_{lam}=2300
+Re_{end}=2040\frac{3500}{2300}=3104.3478\ldots
 $$
 
-and turbulent threshold:
+onward. Between those bounds,
 
 $$
-Re_{turb}=3500
+x=\frac{Re-Re_{crit}}{Re_{end}-Re_{crit}},\qquad
+w=3x^2-2x^3,\qquad
+f=(1-w)f_{lam}+wf_{turb}.
 $$
 
-For laminar flow:
+This shared cubic smoothstep makes the composite factor continuous with zero
+blend-weight slope at both joins. Its relative width, $3500/2300$, preserves
+pyskyfire's established 2300--3500 band; it is an explicit pyskyfire
+numerical/model policy, not a transition width prescribed by `fluids`. Clamond
+is a numerical solver, not an empirical explicit approximation, and its
+numerical accuracy range must not be interpreted as an empirical validation
+range for a cooling channel.
+
+When `pressure_curvature_correction=True`, the `fluids` path directly calls the
+forced Schmidt laminar and turbulent branch functions, with $D_i=D_h$ and
+$D_c=2|R_{curv}(x)|$. Schmidt's critical Reynolds number is
 
 $$
-f = \frac{64}{Re_{D_h}}
+Re_{crit}=2300\left[1+8.6\left(\frac{D_h}{2|R_{curv}|}\right)^{0.45}\right],
 $$
 
-For turbulent smooth-wall flow, a Petukhov-type expression is used:
+rather than the straight-duct value 2040. The curved branches use the same
+policy as the straight branches: the Schmidt laminar value through $Re_{crit}$,
+the Schmidt turbulent value from $Re_{crit}(3500/2300)$ onward, and the cubic
+smoothstep blend between them. Scaling by $3500/2300$ is pyskyfire policy that
+preserves the relative width of its established transition band; neither
+Schmidt nor `fluids` prescribes this transition width.
+
+The effective factor is
 
 $$
-f = \left(0.79\ln Re_{D_h} - 1.64\right)^{-2}
+K_{curv}=\frac{f_{curved,blended}(Re,D_h,2|R_{curv}|,\epsilon)}
+{f_{straight,blended}(Re,D_h,\epsilon)},
+\qquad f=f_{straight,blended}K_{curv}=f_{curved,blended}.
 $$
 
-If roughness is supplied, the Colebrook-White equation is solved iteratively:
+Both numerator and denominator use the **same absolute roughness**, hence the
+same relative roughness for their common $D_h$. The result equals the selected
+upstream Schmidt laminar or turbulent branch exactly outside the curved
+transition interval. Inside that interval it is intentionally pyskyfire's
+smooth composite, not the exact result of the upstream generic curved-flow
+dispatcher. Upstream Schmidt laminar ignores roughness; Schmidt turbulent is
+called with the supplied roughness.
 
-$$
-\frac{1}{\sqrt{f}} + 2\log_{10}\left(
-\frac{\epsilon(x)}{3.71D_h}
-+ \frac{2.51}{Re_{D_h}\sqrt{f}}
-\right)=0
-$$
+For finite curved evaluations, the exported
+`pyskyfire.ducts.FrictionCorrelationWarning` warns at $Re\leq100$,
+$Re>150000$, or $D_h/(2|R_{curv}|)\geq0.14$. The first two flag the documented
+Schmidt Reynolds-number bounds. The ratio bound is a recommendation for the
+**transition criterion**, not a known geometry range for the entire friction
+fit. Calculation continues unmodified after a warning: no clipping or fallback
+is applied. These are helical-tube correlations applied locally through
+hydraulic diameter, not discrete bend-loss coefficients.
 
-where:
-
-$$
-\epsilon(x) = \texttt{roughness(x)}
-$$
-
-In the transitional regime, the solver linearly blends the laminar and turbulent friction factors:
-
-$$
-f = \mathrm{interp}\left(Re_{D_h};\ [2300,3500],\ [f_{lam},f_{turb}]\right)
-$$
+For comparison, native retains $64/Re$ below 2300, a linear blend over
+2300--3500, smooth-wall Petukhov $(0.79\ln Re-1.64)^{-2}$, and rough-wall
+Colebrook with its original **3.71** constant. Its bracketed `brentq` solve in
+$1/\sqrt{f}$ replaces `fsolve` without changing those equations. Native also
+retains its RTE/Ito curvature multiplier. See the
+[Moody diagram explanation](moody-diagram.md) for backend details, applicability
+cautions, and the representative **straight-duct `fluids` chart**.
 
 ### 11.2 Friction gradient
 
@@ -1142,8 +1209,13 @@ $$
 \left(\frac{dp}{dx}\right)_{fric} = -\frac{f}{D_h}\frac{\rho_c u_c^2}{2}\frac{ds}{dx}
 $$
 
-where $f$ already carries the Ito curvature multiplier when
-`pressure_curvature_correction` is enabled.
+where $f$ is the effective Darcy factor: the smoothly blended Schmidt curved
+factor for `fluids`, or the native straight factor with its RTE/Ito multiplier,
+when `pressure_curvature_correction` is enabled. The `fluids` result is exactly
+the selected Schmidt branch outside its transition interval. Disabling
+curvature correction uses the selected backend's straight factor only. The
+backend choice changes this friction term, not the path-length conversion or
+the acceleration term below.
 
 ### 11.3 Acceleration term
 

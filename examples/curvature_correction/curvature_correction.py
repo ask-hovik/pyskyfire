@@ -30,23 +30,23 @@ CASES = (
 
 def build_thrust_chamber():
     """Build one curvature-rich helical cooling-channel example."""
-    fuel = psf.common.Fluid(
+    fuel = psf.thermo.Fluid(
         type="fuel",
         propellants=["C2H5OH"],
         fractions=[1.0],
     )
-    oxidizer = psf.common.Fluid(
+    oxidizer = psf.thermo.Fluid(
         type="oxidizer",
         propellants=["N2O"],
         fractions=[1.0],
     )
-    coolant = psf.common.Fluid(
+    coolant = psf.thermo.Fluid(
         type="fuel",
         propellants=["ethanol"],
         fractions=[1.0],
     )
 
-    aerothermodynamics = psf.skycea.Aerothermodynamics.from_F_eps_Lstar(
+    aerothermodynamics = psf.thermo.Aerothermodynamics.from_F_eps_Lstar(
         fu=fuel,
         ox=oxidizer,
         MR=2.8,
@@ -56,7 +56,7 @@ def build_thrust_chamber():
         L_star=1.2,
     )
 
-    xs, rs = psf.regen.contour.get_contour(
+    xs, rs = psf.regen.contour.generate_contour(
         V_c=aerothermodynamics.V_c,
         AR_c=1.5,
         r_t=aerothermodynamics.r_t,
@@ -78,8 +78,10 @@ def build_thrust_chamber():
     circuit = psf.regen.CoolingCircuit(
         name="Helical cooling pass",
         contour=contour,
-        coolant_transport=psf.skycea.CoolantTransport(coolant),
-        cross_section=psf.regen.CrossSectionSquared(blockage_ratio=0.1),
+        coolant_transport=psf.thermo.FluidTransport(coolant),
+        cross_section=psf.regen.CrossSectionSquared(
+            rib_width=lambda pitch_mid: 0.1 * pitch_mid
+        ),
         span=[1.0, -1.0],
         placement=placement,
         walls=[

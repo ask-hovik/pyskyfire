@@ -333,6 +333,9 @@ class RegenBlock(FluidBlock):
         Whether to apply the gas-side heat-transfer curvature correction.
     pressure_curvature_correction : bool, optional
         Whether to apply the coolant pressure-drop curvature correction.
+    friction_model : {'native', 'fluids'}, optional
+        Backend supplying the coolant friction factor and its curvature
+        multiplier. See :mod:`pyskyfire.ducts.friction`.
 
     Attributes
     ----------
@@ -352,7 +355,8 @@ class RegenBlock(FluidBlock):
                  nodes=100,
                  post_process_nodes=50,
                  heat_curvature_correction=True,
-                 pressure_curvature_correction=True):
+                 pressure_curvature_correction=True,
+                 friction_model="native"):
 
         self.name = name
         self.st_in = st_in
@@ -363,6 +367,7 @@ class RegenBlock(FluidBlock):
         self.post_process_nodes = post_process_nodes
         self.heat_curvature_correction = bool(heat_curvature_correction)
         self.pressure_curvature_correction = bool(pressure_curvature_correction)
+        self.friction_model = friction_model
         super().__init__(medium)
 
         # ------------- metadata for EngineNetwork ---------------------
@@ -421,6 +426,7 @@ class RegenBlock(FluidBlock):
                            output         = False,
                            heat_curvature_correction = self.heat_curvature_correction,
                            pressure_curvature_correction = self.pressure_curvature_correction,
+                           friction_model = self.friction_model,
                        )
 
         # downstream thermo state
@@ -484,6 +490,7 @@ class RegenBlock(FluidBlock):
             output         = False,
             heat_curvature_correction = self.heat_curvature_correction,
             pressure_curvature_correction = self.pressure_curvature_correction,
+            friction_model = self.friction_model,
         )
 
         # Handy scalar that users often want

@@ -11,9 +11,9 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from pyskyfire.common.fluids import Fluid
-from pyskyfire.skycea import aerothermodynamics
-from pyskyfire.skycea.nozzle_loss import (
+from pyskyfire.thermo import aerothermodynamics
+from pyskyfire.thermo.fluid import Fluid
+from pyskyfire.thermo.nozzle_loss import (
     G0,
     PSI_TO_PA,
     RL10A_3_3A_ETA_CF,

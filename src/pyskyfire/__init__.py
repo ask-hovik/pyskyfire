@@ -6,7 +6,8 @@ Subpackages:
     regen   - Regenerative cooling analysis.
     pump    - Pump design and performance calculations.
     turbine - Turbine design and analysis.
-    skycea  - Chemical equilibrium wrapper
+    thermo  - Fluid properties, state resolution and chemical equilibrium
+    ducts   - Duct hydraulics: friction and pressure drop
     viz     - Visualisation
 """
 
@@ -19,14 +20,15 @@ try:
 except PackageNotFoundError:  # during editable installs without metadata
     __version__ = "0+unknown"
 
+from . import thermo
+from . import ducts
 from . import regen
 from . import pump
 from . import turbine
 from . import common
-from . import skycea
 
 
-__all__ = ["regen", "pump", "turbine", "common", "skycea"]
+__all__ = ["regen", "pump", "turbine", "common", "thermo", "ducts"]
 
 
 def __getattr__(name: str):

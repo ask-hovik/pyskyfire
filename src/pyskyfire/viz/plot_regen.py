@@ -5,7 +5,7 @@ import numpy as np
 import plotly.graph_objects as go
 from pyskyfire.regen import physics as regen_physics
 from .core import PlotBase
-from .plot_skycea import _visualization_x
+from .plot_thermo import _visualization_x
 
 
 def _result_grid(result, attribute: str) -> np.ndarray:
@@ -579,9 +579,9 @@ class PlotReynoldsNumber(PlotBase):
                 reynolds_coolant = np.empty_like(x_coolant)
                 coolant_state = None
                 if quality is not None and np.isfinite(quality).any():
-                    from pyskyfire.regen.coolant_state import CoolantState
+                    from pyskyfire.thermo.state import FluidStateResolver
 
-                    coolant_state = CoolantState(
+                    coolant_state = FluidStateResolver(
                         circuit.coolant_transport, float(pressure[0])
                     )
 
@@ -747,7 +747,7 @@ class PlotCoolantQuality(PlotBase):
     -----
     A quality profile says *where* the coolant boils, not how hot the wall gets
     there: the coolant-side coefficient is still a single-phase correlation
-    inside the dome. See :mod:`pyskyfire.regen.coolant_state`.
+    inside the dome. See :mod:`pyskyfire.regen.coolant_properties`.
     """
 
     def __init__(self, *regen_results, shade_dome: bool = True,
@@ -1217,9 +1217,19 @@ class PlotCoolantArea(PlotBase):
 
 
 class PlotChannelHeight(PlotBase):
-    """Plot the raw cooling-channel height profile for selected circuits."""
+    """Plot full internal coolant height, or optionally rounded base height.
 
-    def __init__(self, thrust_chamber, circuit_index: IndexLike = None):
+    ``height="full"`` (default) reports full height even when a rounded
+    section accepts base-height input. ``height="base"`` reports only the
+    legacy base parameter; ``height="both"`` overlays both with distinct
+    labels and line styles. Squared sections have equal full/base heights.
+    """
+
+    def __init__(
+        self, thrust_chamber, circuit_index: IndexLike = None, *, height: str = "full"
+    ):
+        if height not in ("full", "base", "both"):
+            raise ValueError("height must be 'full', 'base', or 'both'")
         super().__init__(go.Figure())
         self.template("plotly_white")
 
@@ -1229,25 +1239,44 @@ class PlotChannelHeight(PlotBase):
         for idx in indices:
             circuit = circuits[idx]
             x = np.asarray(circuit.x_domain, dtype=float)
-            height = np.asarray(circuit.channel_heights, dtype=float)
             name = getattr(circuit, "name", f"Circuit {idx}")
-            self.fig.add_trace(
-                go.Scatter(
-                    x=x,
-                    y=height,
-                    mode="lines",
-                    name=name,
-                    showlegend=True,
-                    hovertemplate=(
-                        "x = %{x:.4g} m<br>h = %{y:.4g} m<extra></extra>"
+            kinds = ("full", "base") if height == "both" else (height,)
+            full_values = None
+            for kind in kinds:
+                values = np.asarray(
+                    getattr(circuit, f"channel_{kind}_heights", circuit.channel_heights),
+                    dtype=float,
+                )
+                # Squared and custom sections without a separate base height
+                # need only one trace when both dimensions coincide.
+                if kind == "base" and full_values is not None and np.array_equal(values, full_values):
+                    continue
+                if kind == "full":
+                    full_values = values
+                label = name if height == "full" else f"{name} ({kind})"
+                self.fig.add_trace(
+                    go.Scatter(
+                        x=x,
+                        y=values,
+                        mode="lines",
+                        name=label,
+                        legendgroup=str(idx),
+                        line=dict(dash="dash" if kind == "base" else "solid"),
+                        showlegend=True,
+                        hovertemplate=(
+                            "x = %{x:.4g} m<br>" + kind
+                            + " height = %{y:.4g} m<extra></extra>"
+                        ),
                     ),
                 )
-            )
 
         self.fig.update_layout(
             title="Cooling Channel Height",
             xaxis=dict(title="Axial Position, x (m)"),
-            yaxis=dict(title="Channel Height, h (m)"),
+            yaxis=dict(title=(
+                "Base Channel Height, h_base (m)" if height == "base"
+                else "Channel Height, h (m)"
+            )),
             legend=dict(title=None),
             margin=dict(l=60, r=20, t=60, b=60),
         )
@@ -1277,7 +1306,16 @@ class PlotChannelWidth(PlotBase):
         for idx in indices:
             circuit = circuits[idx]
             x = np.asarray(circuit.x_domain, dtype=float)
-            radius = np.asarray(circuit.centerlines[0][:, 1], dtype=float)
+            # A rounded tube's outside width is set by how far its lobe centre
+            # sits from the engine axis. A squared section has no lobe, so its
+            # base point is the radius the chord is measured at.
+            sector_radius = getattr(circuit, "section_sector_radius", None)
+            radius = np.asarray(
+                circuit.cross_section_base_point_path[:, 1]
+                if sector_radius is None
+                else sector_radius,
+                dtype=float,
+            )
             theta = np.asarray(circuit.channel_local_sector, dtype=float)
             width = 2.0 * radius * np.sin(0.5 * theta)
             name = getattr(circuit, "name", f"Circuit {idx}")
@@ -1369,8 +1407,9 @@ class PlotWallLayers(PlotBase):
 
     * **The closeout wall.** The wall on the atmosphere side of the channel has
       no definition anywhere in the library, so it is drawn as a copy of the
-      coolant-facing layer and hatched to mark it as an assumption. Replace it
-      once a real definition exists (e.g. for strength calculations).
+      main layers in reverse order, excluding liners, and hatched to mark it
+      as an assumption. Replace it once a real definition exists
+      (e.g. for strength calculations).
     * **Ribs.** The channel band is the full circumferential sector, so the
       land between channels is not resolved; the band shows where coolant
       lives radially, not the channel-to-rib split.
@@ -1433,24 +1472,25 @@ class PlotWallLayers(PlotBase):
 
             x = self._sample_grid(circuit, interpolation_points)
 
-            # Radial stack, hot surface outward, starting from the same
-            # placement radius ``build_channel_centerlines`` builds on, so the
-            # drawing agrees with the geometry the solver ran.
-            r = np.array(
-                [
-                    float(
-                        circuit.placement.compute_centerline_radius(
-                            float(x_i), circuit.contour
-                        )
-                    )
-                    for x_i in x
-                ],
-                dtype=float,
-            )
+            # Meridional envelope of the resolved section; the hot-side
+            # stack starts inward of the physical coolant floor.
+            from pyskyfire.regen.channel_construction import build_channel_construction
+            construction = build_channel_construction(circuit)
+            prof = construction.profiles
+            if construction.section_type == "rounded":
+                inner_tip = (construction.flow_planes.origins
+                             - construction.inner_arc.radii[:, None] * construction.flow_planes.x_axes)
+                floor_radius = np.linalg.norm(inner_tip[:, 1:], axis=1)
+                radial_scale = np.linalg.norm(construction.flow_planes.x_axes[:, 1:], axis=1)
+            else:
+                floor_radius = prof.cross_section_base_point_path[:, 1]
+                radial_scale = prof.projection[:, 0, 0]
+            scale = np.interp(x, circuit.x_domain, radial_scale)
+            r = np.interp(x, circuit.x_domain, floor_radius) - circuit.total_thickness(x) * scale
 
             walls = list(circuit.walls)
             for layer_index, wall in enumerate(walls):
-                thickness = np.asarray(wall.thickness(x), dtype=float)
+                thickness = np.asarray(wall.thickness(x), dtype=float) * scale
                 r_next = r + thickness
                 self._add_band(
                     x,
@@ -1469,7 +1509,9 @@ class PlotWallLayers(PlotBase):
                 [float(circuit.channel_height(float(x_i))) for x_i in x],
                 dtype=float,
             )
-            r_next = r + height
+            if getattr(circuit.cross_section, "height_input", "full") == "base":
+                height = np.interp(x, circuit.x_domain, circuit.channel_full_heights)
+            r_next = r + height * scale
             self._add_band(
                 x,
                 r,
@@ -1481,10 +1523,11 @@ class PlotWallLayers(PlotBase):
             )
             r = r_next
 
-            if walls:
-                closeout = walls[-1]
-                closeout_index = len(walls) - 1
-                thickness = np.asarray(closeout.thickness(x), dtype=float)
+            for closeout_index in reversed(range(len(walls))):
+                closeout = walls[closeout_index]
+                if getattr(closeout, "role", "main") == "liner":
+                    continue
+                thickness = np.asarray(closeout.thickness(x), dtype=float) * scale
                 self._add_band(
                     x,
                     r,
@@ -1497,6 +1540,7 @@ class PlotWallLayers(PlotBase):
                     mirror=mirror,
                     pattern=True,
                 )
+                r = r + thickness
 
         if show_contour:
             contour = thrust_chamber.contour

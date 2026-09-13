@@ -8,6 +8,8 @@ import sys
 
 import pytest
 
+from pyskyfire.common import Results
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TIMEOUT_SECONDS = 30 * 60
@@ -143,9 +145,19 @@ def test_advanced_simulation_and_post_processing(tmp_path: Path) -> None:
         ("results.pkl",),
         timeout=60 * 60,
     )
+    results = Results.load(results_path)
+    report_artifacts = ["methane_engine_report.html", "contour.html"]
+    if results["mode"] == "full_cycle":
+        report_artifacts.append("network.html")
     run_example(
         "examples/advanced/post_process.py",
         output_dir,
-        ("methane_engine_report.html", "contour.html", "network.html"),
+        report_artifacts,
+        extra_args=("--input", results_path),
+    )
+    run_example(
+        "examples/advanced/export_onshape.py",
+        output_dir,
+        ("onshape-cooling-channels.json",),
         extra_args=("--input", results_path),
     )

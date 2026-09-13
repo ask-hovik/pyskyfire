@@ -25,8 +25,8 @@ from scipy.integrate import cumulative_trapezoid
 
 # tutorial:start:run-mode
 # Choose: "regen_only" or "full_cycle" 
-RUN_MODE = "full_cycle"
-#RUN_MODE = "regen_only"
+#RUN_MODE = "full_cycle"
+RUN_MODE = "regen_only"
 RESULTS_FILENAME = "results.pkl"
 # tutorial:end:run-mode
 
@@ -44,10 +44,10 @@ def make_params():
         F=100e3,
 
         # Fuel/oxidizer parameters
-        cea_fu=psf.common.Fluid(type="fuel", propellants=["CH4"], fractions=[1.0]),
-        cea_ox=psf.common.Fluid(type="oxidizer", propellants=["O2"], fractions=[1.0]),
-        coolprop_fu=psf.common.Fluid(type="fuel", propellants=["methane"], fractions=[1.0],),
-        coolprop_ox=psf.common.Fluid(type="oxidizer", propellants=["oxygen"], fractions=[1.0],),
+        cea_fu=psf.thermo.Fluid(type="fuel", propellants=["CH4"], fractions=[1.0]),
+        cea_ox=psf.thermo.Fluid(type="oxidizer", propellants=["O2"], fractions=[1.0]),
+        coolprop_fu=psf.thermo.Fluid(type="fuel", propellants=["methane"], fractions=[1.0],),
+        coolprop_ox=psf.thermo.Fluid(type="oxidizer", propellants=["oxygen"], fractions=[1.0],),
         T_gas_fu_in=300,  # Adjusted to fall within NASA CEA tables
         T_gas_ox_in=300,
 
@@ -57,8 +57,8 @@ def make_params():
 
         # Chamber/nozzle parameters
         theta_conv=35,
-        R_1f=0.5,
-        R_2f=1.0,
+        R_1f=1.0,
+        R_2f=1.5,
         R_3f=0.5,
         length_fraction=1.0,  # 80 % nozzle
         L_star=1.1,
@@ -66,8 +66,8 @@ def make_params():
         # Cooling channels
         copper_roughness_height=0.0030e-3,
         fuel_channel_count=140,
-        nozzle_channel_count=120,
-        channel_blockage_ratio=0.1,
+        nozzle_channel_count=50,
+        channel_rib_blockage=0.1,
         fuel_hot_gas_surface_area_multiplier=1.0,
         ox_outbound_hot_gas_surface_area_multiplier=1.2,
         ox_return_hot_gas_surface_area_multiplier=1.2,
@@ -131,7 +131,7 @@ def make_params():
 def setup_thrust_chamber(params):
     """Build the chamber geometry, walls, channels, and gas-side transport."""
 
-    aerothermodynamics = psf.skycea.Aerothermodynamics.from_F_pe_Lstar(
+    aerothermodynamics = psf.thermo.Aerothermodynamics.from_F_pe_Lstar(
         fu=params["cea_fu"],
         ox=params["cea_ox"],
         T_fu_in=params["T_gas_fu_in"],
@@ -145,7 +145,7 @@ def setup_thrust_chamber(params):
         minimum_cea_temperature=305.0,
     )
 
-    xs, rs = psf.regen.contour.get_contour(
+    xs, rs = psf.regen.contour.generate_contour(
         V_c=aerothermodynamics.V_c,
         r_t=aerothermodynamics.r_t,
         area_ratio=aerothermodynamics.eps,
@@ -187,20 +187,52 @@ def setup_thrust_chamber(params):
             return params["ox_single_pass_channel_height"]
         return params["ox_channel_height"]
 
-    cross_section = psf.regen.CrossSectionSquared(
-        blockage_ratio=params["channel_blockage_ratio"],
+    cross_section_squared = psf.regen.CrossSectionSquared(
+        rib_width=1e-3,
     )
-    fuel_transport = psf.skycea.CoolantTransport(params["coolprop_fu"])
-    ox_transport = psf.skycea.CoolantTransport(params["coolprop_ox"])
+
+    cross_section_rounded = psf.regen.CrossSectionRounded(height_input="base")
+    fuel_transport = psf.thermo.FluidTransport(params["coolprop_fu"])
+    ox_transport = psf.thermo.FluidTransport(params["coolprop_ox"])
+
+    # An area-preserving helix.
+    #
+    # A squared section holds A = h * [(pi*cos(gamma)/n) * (2*r_base + h) - rib],
+    # so with the channel height, rib width and channel count fixed, the area is
+    # constant exactly when cos(gamma) * (2*r_base + h) is. Anchoring that
+    # product where the nozzle circuits begin pins the helix at 20 deg there and
+    # opens it out as the nozzle radius grows, instead of letting the passage
+    # swell with the wall it wraps.
+    # The law is written against the nozzle's design height rather than the
+    # local one. Both ox circuits share this placement, and the analytical
+    # layout requires them to follow a single angular evolution, so the helix
+    # must not depend on anything that differs between them.
+    helix_start_x = min(ox_outbound_bounds)
+    helix_design_height = params["ox_channel_height"]
+    helix_reference = np.cos(np.radians(20.0)) * (
+        2.0
+        * (
+            contour.r(helix_start_x)
+            + float(copper_wall.thickness(helix_start_x))
+        )
+        + helix_design_height
+    )
+
+    def area_preserving_helix(r, t_wall):
+        """Return the helix angle that holds the coolant area constant [rad]."""
+        return float(np.arccos(np.clip(helix_reference / (2.0 * (r + t_wall) + helix_design_height), -1.0, 1.0,)))
 
     fuel_channel_placement = psf.regen.SurfacePlacement(n_channel_positions=params["fuel_channel_count"],)
-    nozzle_channel_placement = psf.regen.SurfacePlacement(n_channel_positions=params["nozzle_channel_count"],)
+    nozzle_channel_placement = psf.regen.SurfacePlacement(
+        n_channel_positions=params["nozzle_channel_count"],
+        helix_angle=area_preserving_helix,
+    )
 
     fuel_chamber_pass = psf.regen.CoolingCircuit(
         name="Fuel Chamber Pass",
         contour=contour,
         coolant_transport=fuel_transport,
-        cross_section=cross_section,
+        cross_section=cross_section_rounded,
         span=[0.1, -1.0],
         placement=fuel_channel_placement,
         walls=[copper_wall],
@@ -215,7 +247,7 @@ def setup_thrust_chamber(params):
         name="Oxidizer Nozzle Pass Outbound",
         contour=contour,
         coolant_transport=ox_transport,
-        cross_section=cross_section,
+        cross_section=cross_section_rounded,
         span=ox_outbound_span,
         placement=nozzle_channel_placement,
         walls=[copper_wall],
@@ -230,7 +262,7 @@ def setup_thrust_chamber(params):
         name="Oxidizer Nozzle Pass Return",
         contour=contour,
         coolant_transport=ox_transport,
-        cross_section=cross_section,
+        cross_section=cross_section_squared,
         span=ox_return_span,
         placement=nozzle_channel_placement,
         walls=[copper_wall],

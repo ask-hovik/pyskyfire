@@ -58,7 +58,7 @@ src/pyskyfire/
 ├── __init__.py
 ├── common/
 ├── regen/
-├── skycea/
+├── thermo/
 ├── pump/
 ├── turbine/
 └── viz/
@@ -84,11 +84,10 @@ The top-level file `src/pyskyfire/__init__.py` marks `pyskyfire` as a Python pac
 
 ### `pyskyfire.common`
 
-`common` contains objects and helper classes that are used by several other parts of Pyskyfire. It is where broadly useful concepts live: fluids, solids, results, engine stations, and engine-cycle blocks.
+`common` contains objects and helper classes that are used by several other parts of Pyskyfire. It is where broadly useful concepts live: solids, results, engine stations, and engine-cycle blocks. Fluid definitions and property models belong to `thermo`.
 
 | Module | Role |
 |---|---|
-| `fluids.py` | Defines a `Fluid` helper for propellant and coolant mixtures. It stores component names, composition fractions, and whether the mixture is given on a mass or mole basis. |
 | `solids.py` | Defines material-property models for solids. These can represent constant, polynomial, tabulated, or piecewise temperature-dependent properties such as thermal conductivity. |
 | `results.py` | Defines a dictionary-like `Results` container with dot access and save/load functionality. This is useful for storing simulation outputs in a convenient way. |
 | `engine_network.py` | Defines `Station` objects and the `EngineNetwork` fixed-point framework. This is used to connect pumps, turbines, cooling circuits, and other components into a larger engine-cycle calculation. |
@@ -119,21 +118,52 @@ wall temperatures, coolant temperatures, pressure losses, heat fluxes
 | `thrust_chamber.py` | Ties the physical thrust-chamber model together. It contains wall layers, cooling circuits, film-cooling inputs, and the chamber object used by the solver. |
 | `physics.py` | Contains local engineering correlations used by the solver, such as Bartz-style hot-gas heat transfer, Colburn coolant-side heat transfer, Reynolds number, Darcy friction factor, and adiabatic wall temperature. |
 | `solver.py` | Runs the regenerative-cooling calculation. It marches along the cooling circuit, solves local wall heat balances, and updates coolant temperature and pressure. |
+| `coolant_properties.py` | Defines the regenerative-cooling film-property policy through `film_properties(resolver, T_film, p, getters)`, separate from the general fluid-state resolver in `thermo.state`. |
 | `film_solver.py` | Contains film-cooling model functionality. Film cooling is separate from regenerative cooling because coolant is injected into the hot-gas side rather than only flowing inside wall channels. |
 | `film_solver_2.py` | Contains a newer or alternative film-cooling implementation. New users should normally start from documented examples or validation cases before relying on experimental modules. |
 | `__init__.py` | Re-exports selected objects from the `regen` subpackage so common classes and functions are easier to import. |
 
-### `pyskyfire.skycea`
+### `pyskyfire.thermo`
 
-`skycea` handles chemical-equilibrium and transport-property calculations. It connects engine geometry and propellant choices to the gas and coolant properties needed by the rest of the package.
+`thermo` owns fluid definitions, thermodynamic state resolution, transport properties, and combustion-gas aerothermodynamics. It connects engine geometry and propellant choices to the fluid properties needed by the rest of the package; coolant-specific heat-transfer policy remains in `regen`.
 
 | Module | Role |
 |---|---|
-| `aerothermodynamics.py` | Computes and stores hot-gas properties along the chamber/nozzle contour using CEA-based calculations. The regenerative-cooling solver uses this to get gas temperature, pressure, Mach number, enthalpy, viscosity, thermal conductivity, Prandtl number, and other properties at each axial location. |
-| `coolant_transport.py` | Defines transport-property containers for coolants and other fluids. Properties such as density, heat capacity, viscosity, conductivity, and Prandtl number can be constants or functions of temperature and pressure. |
-| `nozzle_solver.py` | Contains nozzle and CEA-based performance utilities. It supports the broader role of connecting propellants, chamber conditions, nozzle geometry, and CEA outputs. |
-| `data/` | Contains data files needed by the CEA wrapper, such as transport-property library data. |
-| `__init__.py` | Re-exports selected skycea functionality for easier imports. |
+| `fluid.py` | Defines `Fluid` for propellant and coolant mixtures, including component names, composition fractions, and mass or mole basis. |
+| `transport.py` | Defines `FluidTransport` and `TransportProperties`. Properties such as density, heat capacity, viscosity, conductivity, and Prandtl number can be constants or functions of temperature and pressure. |
+| `state.py` | Defines `FluidStateResolver`, the resolved `FluidState`, `FluidCapability`, and `SaturationState`; `probe_fluid` detects the available fluid capabilities. |
+| `aerothermodynamics.py` | Defines `Aerothermodynamics` and `CombustionGasState`. It computes and stores CEA-based hot-gas properties along the chamber/nozzle contour for the regenerative-cooling solver. |
+| `nozzle_loss.py` | Defines `NozzleLoss` for nozzle performance-loss calculations. |
+| `__init__.py` | Publicly exports `Fluid`, `FluidTransport`, `TransportProperties`, `FluidStateResolver`, `FluidState`, `FluidCapability`, `SaturationState`, `probe_fluid`, `Aerothermodynamics`, `CombustionGasState`, and `NozzleLoss`. |
+
+#### Thermo migration (unreleased)
+
+Update imports directly; no backwards aliases are provided. Paths below are
+relative to `pyskyfire`:
+
+| Previous import | Current import |
+|---|---|
+| `skycea` | `thermo` |
+| `common.fluids.Fluid` / `common.Fluid` | `thermo.Fluid` (defined in `thermo.fluid`) |
+| `skycea.coolant_transport.CoolantTransport` | `thermo.transport.FluidTransport` |
+| `skycea.coolant_transport.TransportProperties` | `thermo.transport.TransportProperties` |
+| `regen.coolant_state.CoolantState` | `thermo.state.FluidStateResolver` |
+| `regen.coolant_state.BulkState` | `thermo.state.FluidState` |
+| `regen.coolant_state.CoolantCapability` | `thermo.state.FluidCapability` |
+| `regen.coolant_state.SaturationState` | `thermo.state.SaturationState` |
+| `regen.coolant_state.probe_coolant` | `thermo.state.probe_fluid` |
+| `skycea.aerothermodynamics.GasState` | `thermo.aerothermodynamics.CombustionGasState` |
+| `skycea.aerothermodynamics.Aerothermodynamics` | `thermo.aerothermodynamics.Aerothermodynamics` |
+| `skycea.nozzle_loss.NozzleLoss` | `thermo.nozzle_loss.NozzleLoss` |
+
+All classes in the table are also available directly from `pyskyfire.thermo`.
+Film-property evaluation is no longer a method on the state resolver: use
+`pyskyfire.regen.coolant_properties.film_properties(resolver, T_film, p, getters)`.
+The `coolant_transport` argument on cooling circuits and film inputs retains its
+name; pass a `thermo.FluidTransport` instance.
+
+Old stored pickle files may require regenerating because modules and class names
+have changed. Compatibility with those files is not guaranteed.
 
 ### `pyskyfire.pump` / `pyskyfire.turbine`
 
@@ -148,7 +178,7 @@ The `pump` and `turbine` subpackages contain tools for turbopumps. They are both
 | `core.py` | Defines common Plotly helper functionality used by several plotting classes. It provides shared behaviour for configuring, showing, and saving figures. |
 | `plot_regen.py` | Plotting tools for regenerative-cooling results, such as wall temperature, coolant temperature, pressure, heat flux, and heat-transfer coefficients. |
 | `plot_film_cooling.py` | Plotting tools for film-cooling results. |
-| `plot_skycea.py` | Plotting tools for aerothermodynamic and CEA-derived results. |
+| `plot_thermo.py` | Plotting tools for aerothermodynamic and CEA-derived results. |
 | `plot_common.py` | Shared plotting utilities used by several plotting modules. |
 | `engine_viz.py` | 3D engine and cooling-channel visualisation tools. This includes geometry-oriented views of cooling circuits and engine structure. |
 | `impeller_viz.py` | Visualisation tools for pump and impeller geometry. |
@@ -160,8 +190,8 @@ The `pump` and `turbine` subpackages contain tools for turbopumps. They are both
 
 The subpackages each have a responsibility, but in order to run a regenerative cooling analysis or a full cycle analysis, the packages work together. A typical regenerative-cooling analysis might work like this:
 
-1. `common` defines shared concepts such as fluids, solids, stations, blocks, and results.
-2. `skycea` provides gas and coolant property models.
+1. `common` defines shared concepts such as solids, stations, blocks, and results.
+2. `thermo` defines fluids and provides gas and coolant state and property models.
 3. `regen` defines the thrust chamber, cooling channels, wall layers, heat-transfer correlations, and regenerative-cooling solver.
 4. `pump` and `turbine` provide machinery-related utilities and can be connected into an engine-cycle model.
 5. `common.engine_network` and `common.blocks` allow component models to be connected into a full engine network.
@@ -223,7 +253,7 @@ Cooling circuit + Contour
 Thrust chamber
 ```
 
-A `ThrustChamber` object therefore acts as a container for many other objects. It may contain a `Contour`, one or more `CoolingCircuit` objects, `Wall` objects, `CoolantTransport` objects, and an aerothermodynamic model for the combustion gas. The solver therefore does not need every detail written directly inside `solver.py`. Instead, it receives the thrust-chamber object and asks it for the geometry, material, gas-property, and coolant-property information it needs.
+A `ThrustChamber` object therefore acts as a container for many other objects. It may contain a `Contour`, one or more `CoolingCircuit` objects, `Wall` objects, `FluidTransport` objects, and an aerothermodynamic model for the combustion gas. The solver therefore does not need every detail written directly inside `solver.py`. Instead, it receives the thrust-chamber object and asks it for the geometry, material, gas-property, and coolant-property information it needs.
 
 A value used in the solver may come from another object several layers away. For example, the solver may ask a cooling circuit for its hydraulic diameter, and that cooling circuit may compute it from a cross-section object, a channel-height function, and a channel-placement object.
 
@@ -235,7 +265,7 @@ For regenerative cooling, start with:
 | `regen/thrust_chamber.py` | Shows how the physical thrust chamber, wall layers, and cooling circuits are represented. |
 | `regen/coupled_solver.py` | Shows the regenerative and film-coupled cooling solve procedure. |
 | `regen/physics.py` | Shows the local equations and correlations used by the solver. |
-| `skycea/aerothermodynamics.py` | Shows where the hot-gas properties come from. |
+| `thermo/aerothermodynamics.py` | Shows where the hot-gas properties come from. |
 | `viz/plot_regen.py` | Shows how regenerative-cooling results are plotted. |
 
 For engine-cycle work, start with:
@@ -261,9 +291,9 @@ Pyskyfire is organised like a typical Python engineering package:
 
 Inside `src/pyskyfire/`:
 
-- `common` contains shared data structures, material/fluid helpers, results containers, and engine-network logic.
+- `common` contains shared data structures, solid-material helpers, results containers, and engine-network logic.
 - `regen` contains thrust-chamber geometry, cooling-channel definitions, heat-transfer correlations, and the regenerative-cooling solver.
-- `skycea` provides CEA-based aerothermodynamics and transport-property interfaces.
+- `thermo` provides fluid definitions, state resolution, transport-property interfaces, and CEA-based aerothermodynamics.
 - `pump` contains preliminary centrifugal pump and impeller design tools.
 - `turbine` contains early turbine-related utilities.
 - `viz` contains plotting, reporting, and visualisation tools.

@@ -90,18 +90,22 @@ What is it like to use the package? Pyskyfire is an object-oriented library, so 
 import numpy as np
 import pyskyfire as psf
 
+# A fluid definition and its CoolProp-backed property model.
+coolant = psf.thermo.Fluid(type="fuel", propellants=["ethanol"], fractions=[1.0])
+coolant_transport = psf.thermo.FluidTransport(coolant)
+
 # A wall, a channel cross section, and how the channels wrap the contour.
 wall = psf.regen.Wall(material=psf.common.solids.StainlessSteel304, thickness=0.5e-3)
-cross_section = psf.regen.CrossSectionSquared(blockage_ratio=0.1)
+cross_section = psf.regen.CrossSectionSquared(rib_width=1.0e-3)
 placement = psf.regen.SurfacePlacement(
     n_channel_positions=60,
-    helix_angle=lambda x: np.radians(45),
+    helix_angle=lambda: np.radians(45),
 )
 
 # One regenerative cooling circuit, running from the nozzle exit to the injector.
 cooling_circuit = psf.regen.CoolingCircuit(
     name="Cooling Pass",
-    contour=contour,                      # from psf.regen.contour.get_contour(...)
+    contour=contour,                      # from psf.regen.contour.generate_contour(...)
     coolant_transport=coolant_transport,  # CoolProp-backed coolant properties
     cross_section=cross_section,
     span=[1.0, -1.0],
@@ -114,7 +118,7 @@ cooling_circuit = psf.regen.CoolingCircuit(
 # The thrust chamber ties geometry, hot-gas properties, and cooling circuits together.
 thrust_chamber = psf.regen.ThrustChamber(
     contour=contour,
-    combustion_transport=aerothermodynamics,  # from psf.skycea.Aerothermodynamics
+    combustion_transport=aerothermodynamics,  # from psf.thermo.Aerothermodynamics
     cooling_circuits=[cooling_circuit],
     n_nodes=150,
 )
@@ -151,6 +155,14 @@ report.save_html("engine-report.html")
 ```
 
 Look in the [documentation](https://ask-hovik.github.io/pyskyfire) to get started with pyskyfire. 
+
+## Thermo migration (unreleased)
+
+Fluid definitions, transport properties, fluid-state resolution, and combustion
+models now live in `pyskyfire.thermo`. Update imports to the new names; no
+backwards aliases are provided. Old stored pickle files may require regenerating
+because the modules and class names have changed; compatibility is not guaranteed.
+See the [migration details](docs/explanations/package-structure.md#thermo-migration-unreleased).
 
 # Contributing
 

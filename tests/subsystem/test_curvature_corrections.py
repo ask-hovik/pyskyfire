@@ -8,6 +8,7 @@ import pytest
 from pyskyfire.regen import physics
 from pyskyfire.regen import coupled_solver
 from pyskyfire.regen.channel_placement import SurfacePlacement
+from pyskyfire.regen.channel_layout import resolve_analytical_layout
 from pyskyfire.regen.cross_section import ChannelSection
 from pyskyfire.regen.coupled_solver import CoupledHeatExchangerPhysics
 from pyskyfire.regen.thrust_chamber import (
@@ -49,14 +50,10 @@ def test_constant_radius_helix_uses_full_3d_curvature() -> None:
     x = np.linspace(0.0, 2.0, 1001)
     radius = 2.0
     dtheta_dx = 0.7
-    points = np.column_stack(
-        [x, np.full_like(x, radius), dtheta_dx * x]
-    )
+    points = np.column_stack([x, np.full_like(x, radius), dtheta_dx * x])
 
     computed_radius = radius_of_curvature(points)
-    expected_radius = -(
-        1.0 + (radius * dtheta_dx) ** 2
-    ) / (radius * dtheta_dx**2)
+    expected_radius = -(1.0 + (radius * dtheta_dx) ** 2) / (radius * dtheta_dx**2)
     expected_ds_dx = np.sqrt(1.0 + (radius * dtheta_dx) ** 2)
 
     np.testing.assert_allclose(
@@ -140,7 +137,7 @@ class _Material:
         return 1.0
 
 
-def test_surface_helix_follows_coolant_centroid_and_requested_angle() -> None:
+def test_surface_helix_shares_one_winding_with_the_coolant_centroid() -> None:
     gamma = np.deg2rad(30.0)
     wall_thickness = 0.02
     channel_height = 0.04
@@ -164,17 +161,102 @@ def test_surface_helix_follows_coolant_centroid_and_requested_angle() -> None:
         compute_gas=False,
     )
 
-    flow_centerline = circuit.coolant_centerlines[0]
-    expected_radius = _Contour.r(flow_centerline[:, 0]) + wall_thickness + 0.5 * channel_height
+    flow_centerline = circuit.cooling_channel_centroid_path
+    reference_centerline = circuit.reference_path
     expected_meridional_scale = np.sqrt(1.0 + 0.1**2)
+    # The base point stands off the contour along its normal, and the centroid
+    # then sits half a channel height further along that same normal.
+    expected_radius = (
+        _Contour.r(circuit.x_domain)
+        + wall_thickness * expected_meridional_scale
+        + 0.5 * channel_height / expected_meridional_scale
+    )
 
     np.testing.assert_allclose(flow_centerline[:, 1], expected_radius)
+    # Standing off along the contour normal also moves the centroid upstream of
+    # the station it belongs to, so it carries its own axial coordinate.
+    np.testing.assert_allclose(
+        flow_centerline[:, 0],
+        circuit.x_domain - 0.5 * channel_height * 0.1 / expected_meridional_scale,
+    )
+    # One shared winding: the centroid turns at the reference path's angular
+    # rate, but it does so further out, so it runs slightly further than the
+    # nominal helix does.
+    rate = np.array([
+        circuit.placement.dtheta_dx(float(x), circuit.contour)
+        for x in circuit.x_domain
+    ])
     np.testing.assert_allclose(
         circuit.ds_dx_vals,
-        expected_meridional_scale / np.cos(gamma),
-        rtol=2e-7,
+        np.hypot(expected_meridional_scale, flow_centerline[:, 1] * rate),
+        rtol=1e-6,
+    )
+    assert np.all(circuit.ds_dx_vals > expected_meridional_scale / np.cos(gamma))
+    # Both paths are the same winding at different radii, which is what keeps
+    # circuits with equal helix angles from drifting apart.
+    np.testing.assert_allclose(flow_centerline[:, 2], reference_centerline[:, 2])
+    assert not np.allclose(flow_centerline[:, 1], reference_centerline[:, 1])
+
+    reference_segment_slopes = np.diff(reference_centerline[:, 2]) / np.diff(
+        reference_centerline[:, 0]
+    )
+    expected_reference_slopes = np.array(
+        [
+            circuit.placement.dtheta_dx(float(x), circuit.contour)
+            for x in reference_centerline[:, 0]
+        ]
+    )
+    np.testing.assert_allclose(
+        reference_segment_slopes,
+        0.5 * (expected_reference_slopes[1:] + expected_reference_slopes[:-1]),
     )
     assert circuit.is_helical
+
+
+def test_equal_helix_laws_make_overlapping_reference_paths_analytical() -> None:
+    placement = SurfacePlacement(8, helix_angle=np.deg2rad(45.0))
+    wall = Wall(_Material(), 0.02)
+
+    def circuit(name, span):
+        return CoolingCircuit(
+            name=name,
+            contour=_Contour(),
+            cross_section=_CrossSection(),
+            span=span,
+            placement=placement,
+            channel_height=lambda x: 0.04,
+            walls=[wall],
+            coolant_transport=SimpleNamespace(),
+            roughness=0.0,
+        )
+
+    first = circuit("first", [0.0, 1.0])
+    second = circuit("second", [0.2, 1.0])
+    chamber = ThrustChamber(
+        contour=_Contour(),
+        cooling_circuits=[first, second],
+        combustion_transport=SimpleNamespace(),
+        n_nodes=101,
+        compute_gas=False,
+    )
+
+    # Analytical validation is about the section-reference path. Deliberately
+    # make the coolant-centroid angle incompatible to prove it is irrelevant.
+    second.cooling_channel_centroid_path[:, 2] += (
+        np.linspace(
+            0.0,
+            1.0,
+            len(second.cooling_channel_centroid_path),
+        )
+        ** 2
+    )
+
+    layout = resolve_analytical_layout(chamber)
+
+    assert len(layout.channels) == 2
+    assert (
+        layout.channels[1].reference_path[-1, 2] - layout.channels[0].reference_path[-1, 2]
+    ) == pytest.approx(np.pi / 8.0)
 
 
 def test_cold_side_colburn_receives_curvature_factor(monkeypatch) -> None:
@@ -198,12 +280,13 @@ def test_cold_side_colburn_receives_curvature_factor(monkeypatch) -> None:
     )
     helper.circuit_index = 0
     helper.boundary_conditions = SimpleNamespace(mdot_coolant=1.0)
-    helper.coolant_state = SimpleNamespace(
-        film_properties=lambda *args: (1.0, 2.0, 3.0)
-    )
+    helper.coolant_state = SimpleNamespace(saturation=lambda pressure: None)
     helper.bulk_density = lambda *args: 4.0
     helper.heat_curvature_correction = True
 
+    monkeypatch.setattr(
+        coupled_solver, "film_properties", lambda *args: (1.0, 2.0, 3.0)
+    )
     monkeypatch.setattr(physics, "phi_curv", lambda *args: 1.23)
     monkeypatch.setattr(
         physics,
@@ -242,12 +325,13 @@ def test_heat_curvature_correction_can_be_disabled(monkeypatch) -> None:
     )
     helper.circuit_index = 0
     helper.boundary_conditions = SimpleNamespace(mdot_coolant=1.0)
-    helper.coolant_state = SimpleNamespace(
-        film_properties=lambda *args: (1.0, 2.0, 3.0)
-    )
+    helper.coolant_state = SimpleNamespace(saturation=lambda pressure: None)
     helper.bulk_density = lambda *args: 4.0
     helper.heat_curvature_correction = False
 
+    monkeypatch.setattr(
+        coupled_solver, "film_properties", lambda *args: (1.0, 2.0, 3.0)
+    )
     monkeypatch.setattr(
         physics,
         "phi_curv",
@@ -289,6 +373,7 @@ def test_pressure_loss_multiplies_darcy_factor_by_curvature(monkeypatch) -> None
     helper.boundary_conditions = SimpleNamespace(mdot_coolant=4.0)
     helper.coolant_state = SimpleNamespace(saturation=lambda pressure: None)
     helper.bulk_density = lambda *args: 10.0
+    helper.friction_model = "native"
     helper.pressure_curvature_correction = True
 
     monkeypatch.setattr(physics, "f_darcy", lambda *args: 2.0)
@@ -323,6 +408,7 @@ def test_pressure_curvature_correction_can_be_disabled(monkeypatch) -> None:
     helper.boundary_conditions = SimpleNamespace(mdot_coolant=4.0)
     helper.coolant_state = SimpleNamespace(saturation=lambda pressure: None)
     helper.bulk_density = lambda *args: 10.0
+    helper.friction_model = "native"
     helper.pressure_curvature_correction = False
 
     monkeypatch.setattr(physics, "f_darcy", lambda *args: 2.0)

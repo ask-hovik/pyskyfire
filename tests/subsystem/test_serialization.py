@@ -5,13 +5,13 @@ import numpy as np
 import pytest
 
 import pyskyfire as psf
-from pyskyfire.skycea.aerothermodynamics import GasState
+from pyskyfire.thermo.aerothermodynamics import CombustionGasState
 
 
 def test_aerothermodynamics_rebuilds_cea_solvers_after_round_trip() -> None:
-    fuel = psf.common.Fluid("fuel", ["CH4"], [1.0])
-    oxidizer = psf.common.Fluid("oxidizer", ["O2"], [1.0])
-    transport = psf.skycea.Aerothermodynamics.from_F_eps_Lstar(
+    fuel = psf.thermo.Fluid("fuel", ["CH4"], [1.0])
+    oxidizer = psf.thermo.Fluid("oxidizer", ["O2"], [1.0])
+    transport = psf.thermo.Aerothermodynamics.from_F_eps_Lstar(
         fu=fuel,
         ox=oxidizer,
         MR=2.8,
@@ -24,7 +24,9 @@ def test_aerothermodynamics_rebuilds_cea_solvers_after_round_trip() -> None:
     )
 
     expected_state = transport.equilibrium_state("tp", 3000.0, 2.0e6)
-    transport._cache[(0.0, None, None, transport.transport)] = GasState(T=1.0)
+    transport._cache[(0.0, None, None, transport.transport)] = CombustionGasState(
+            T=1.0
+        )
     restored = cloudpickle.loads(cloudpickle.dumps(transport))
     assert restored.cache_size == 0
     restored_state = restored.equilibrium_state("tp", 3000.0, 2.0e6)
@@ -38,9 +40,9 @@ def test_aerothermodynamics_rebuilds_cea_solvers_after_round_trip() -> None:
 
 
 def test_conditioned_gas_states_are_not_cached() -> None:
-    fuel = psf.common.Fluid("fuel", ["CH4"], [1.0])
-    oxidizer = psf.common.Fluid("oxidizer", ["O2"], [1.0])
-    transport = psf.skycea.Aerothermodynamics.from_F_eps_Lstar(
+    fuel = psf.thermo.Fluid("fuel", ["CH4"], [1.0])
+    oxidizer = psf.thermo.Fluid("oxidizer", ["O2"], [1.0])
+    transport = psf.thermo.Aerothermodynamics.from_F_eps_Lstar(
         fu=fuel,
         ox=oxidizer,
         MR=2.8,
@@ -50,13 +52,13 @@ def test_conditioned_gas_states_are_not_cached() -> None:
         L_star=1.1,
     )
     base_key = (0.0, None, None, transport.transport)
-    transport._cache[base_key] = GasState(p=2.0e6)
+    transport._cache[base_key] = CombustionGasState(p=2.0e6)
     calls = 0
 
     def equilibrium_state(problem, value, pressure):
         nonlocal calls
         calls += 1
-        return GasState(T=float(value), p=float(pressure))
+        return CombustionGasState(T=float(value), p=float(pressure))
 
     transport.equilibrium_state = equilibrium_state
 
@@ -68,9 +70,9 @@ def test_conditioned_gas_states_are_not_cached() -> None:
 
 
 def test_temperature_conditioned_gas_state_uses_c1_tangent_extrapolation() -> None:
-    fuel = psf.common.Fluid("fuel", ["CH4"], [1.0])
-    oxidizer = psf.common.Fluid("oxidizer", ["O2"], [1.0])
-    transport = psf.skycea.Aerothermodynamics.from_F_eps_Lstar(
+    fuel = psf.thermo.Fluid("fuel", ["CH4"], [1.0])
+    oxidizer = psf.thermo.Fluid("oxidizer", ["O2"], [1.0])
+    transport = psf.thermo.Aerothermodynamics.from_F_eps_Lstar(
         fu=fuel,
         ox=oxidizer,
         MR=2.8,
@@ -80,13 +82,13 @@ def test_temperature_conditioned_gas_state_uses_c1_tangent_extrapolation() -> No
         L_star=1.1,
     )
     base_key = (0.0, None, None, transport.transport)
-    transport._cache[base_key] = GasState(p=2.0e6)
+    transport._cache[base_key] = CombustionGasState(p=2.0e6)
     calls = []
 
     def equilibrium_state(problem, value, pressure):
         calls.append((problem, value, pressure))
         value = float(value)
-        return GasState(
+        return CombustionGasState(
             T=value,
             p=float(pressure),
             rho=np.exp(0.001 * value),
@@ -117,9 +119,9 @@ def test_temperature_conditioned_gas_state_uses_c1_tangent_extrapolation() -> No
 
 
 def test_temperature_extrapolation_boundary_is_dynamic() -> None:
-    fuel = psf.common.Fluid("fuel", ["CH4"], [1.0])
-    oxidizer = psf.common.Fluid("oxidizer", ["O2"], [1.0])
-    transport = psf.skycea.Aerothermodynamics.from_F_eps_Lstar(
+    fuel = psf.thermo.Fluid("fuel", ["CH4"], [1.0])
+    oxidizer = psf.thermo.Fluid("oxidizer", ["O2"], [1.0])
+    transport = psf.thermo.Aerothermodynamics.from_F_eps_Lstar(
         fu=fuel,
         ox=oxidizer,
         MR=2.8,
@@ -130,13 +132,13 @@ def test_temperature_extrapolation_boundary_is_dynamic() -> None:
         minimum_cea_temperature=400.0,
     )
     base_key = (0.0, None, None, transport.transport)
-    transport._cache[base_key] = GasState(p=2.0e6)
+    transport._cache[base_key] = CombustionGasState(p=2.0e6)
     calls = []
 
     def equilibrium_state(problem, value, pressure):
         calls.append((problem, value, pressure))
         value = float(value)
-        return GasState(
+        return CombustionGasState(
             T=value,
             p=float(pressure),
             rho=1.0,
@@ -180,8 +182,8 @@ def test_temperature_extrapolation_boundary_is_dynamic() -> None:
 
 @pytest.mark.parametrize("value", [0.0, -1.0, np.inf, np.nan])
 def test_temperature_extrapolation_boundary_must_be_positive(value) -> None:
-    transport = psf.skycea.Aerothermodynamics.__new__(
-        psf.skycea.Aerothermodynamics
+    transport = psf.thermo.Aerothermodynamics.__new__(
+        psf.thermo.Aerothermodynamics
     )
     transport._temperature_tangent_cache = {}
 

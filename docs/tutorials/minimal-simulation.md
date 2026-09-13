@@ -39,7 +39,7 @@ where $L_c$ is the chamber length, and $S_c$ is the area of the cross section of
 
 ![Thrust chamber contour](../_static/images/thrust-chamber-contour.svg)
 
-The remaining inputs define the cooling wall and flow channels: material, hot-gas-to-coolant wall thickness, channel count, rib blockage, coolant-side roughness, helix angle and channel height.
+The remaining inputs define the cooling wall and flow channels: material, hot-gas-to-coolant wall thickness, channel count, rib thickness, coolant-side roughness, helix angle and channel height.
 
 ## Compute the combustion and coolant models
 
@@ -52,7 +52,7 @@ Pyskyfire uses the supplied design point to construct an aerothermodynamic model
 :dedent: 4
 ```
 
-The aerothermodynamics class has multiple constructors allowing you to choose which set of inputs is used to construct the hot gas properties. In this example `from_F_eps_Lstar` is used. See other options in {doc}`Aerothermodynamics <../autoapi/pyskyfire/skycea/aerothermodynamics/Aerothermodynamics>`. The calculated `V_c`, `r_t` and `mdot_fu` are inserted into `params` for convenience. `CoolantTransport` supplies coolant thermodynamic and transport properties.
+The aerothermodynamics class has multiple constructors allowing you to choose which set of inputs is used to construct the hot gas properties. In this example `from_F_eps_Lstar` is used. See other options in {doc}`Aerothermodynamics <../autoapi/pyskyfire/thermo/aerothermodynamics/Aerothermodynamics>`. The calculated `V_c`, `r_t` and `mdot_fu` are inserted into `params` for convenience. `FluidTransport` supplies coolant thermodynamic and transport properties.
 
 ## Generate the thrust-chamber contour
 
@@ -65,7 +65,11 @@ Next, we are going to create a nozzle contour. We can choose between a conical n
 :dedent: 4
 ```
 
-`get_contour` exposes further shaping parameters beyond those used here. The three curvature factors, `R_1f`, `R_2f`, and `R_3f`, affect the chamber-to-throat and nozzle transitions.
+`generate_contour` exposes further shaping parameters beyond those used here. Each curvature factor multiplies the throat radius `r_t`. In the flow direction:
+
+- `R_2f` rounds the junction between the cylindrical chamber and the converging section; `0` or `None` gives a sharp corner.
+- `R_1f` rounds the throat entrance, joining the converging section to the throat.
+- `R_3f` rounds the throat exit, joining the throat to the diverging nozzle.
 
 ```{raw} html
 <div class="psf-wide-frame">
@@ -126,7 +130,11 @@ Before solving the heat-transfer problem, it may be nice to inspect the generate
 </div>
 ``` 
 
-This view is useful for checking that channels cover the intended contour span and have the expected placement before interpreting a thermal result. Unfortunately, rib visualisation is currently not implemented, so cooling channels will always cover the entire chamber wall in the visualsation (but not in simulation). A fix for this will be implemented in the future. 
+This view is useful for checking that channels cover the intended contour span
+and have the expected placement before interpreting a thermal result. Squared
+channels use circular floor and roof arcs in planes perpendicular to the engine
+axis, with projected rib faces. The viewer and Onshape exporter share this
+{doc}`construction geometry <../explanations/channel-construction>`.
 
 ## Run the steady-state cooling analysis
 

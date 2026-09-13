@@ -9,20 +9,20 @@ from scipy.optimize import minimize_scalar
 import pyskyfire as psf
 
 
-def make_aerothermodynamics(MR: float) -> psf.skycea.Aerothermodynamics:
-    fu = psf.common.Fluid(
+def make_aerothermodynamics(MR: float) -> psf.thermo.Aerothermodynamics:
+    fu = psf.thermo.Fluid(
         type="fuel",
         propellants=["CH4"],  # Ethanol for CEA
         fractions=[1.0],
     )
 
-    ox = psf.common.Fluid(
+    ox = psf.thermo.Fluid(
         type="oxidizer",
         propellants=["O2"],  # Nitrous oxide for CEA
         fractions=[1.0],
     )
 
-    return psf.skycea.Aerothermodynamics.from_F_eps_Lstar(
+    return psf.thermo.Aerothermodynamics.from_F_eps_Lstar(
         fu=fu,
         ox=ox,
         MR=MR,
@@ -104,7 +104,7 @@ def main(output_dir: Path | None = None) -> None:
     # tutorial:end:plot
 
     # tutorial:start:contour
-    xs, rs = psf.regen.contour.get_contour(
+    xs, rs = psf.regen.contour.generate_contour(
         V_c=aero_opt.V_c,
         AR_c=1.8,
         r_t=aero_opt.r_t,

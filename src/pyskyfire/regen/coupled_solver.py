@@ -88,11 +88,11 @@ usable state variable there -- inside the dome it is pinned to
 :math:`T_\\text{sat}(p)` while the fluid keeps absorbing heat -- and a
 temperature march stepping past saturation silently lands on the superheated
 vapour branch, with a ~19x density error. See
-:mod:`pyskyfire.regen.coolant_state` for the full argument and for what the
+:mod:`pyskyfire.regen.coolant_properties` for the full argument and for what the
 two-phase treatment does and does not cover.
 
 Two coolants keep the old temperature march, via
-:func:`~pyskyfire.regen.coolant_state.probe_coolant`:
+:func:`~pyskyfire.thermo.state.probe_fluid`:
 
 * **mixtures**, because a mixture ``(h, p)`` flash costs ~374 ms against ~57 us
   for a pure fluid and would put a 100-node run into the hours;
@@ -124,14 +124,15 @@ from typing import Callable, Optional, Sequence, Union
 import numpy as np
 from scipy.optimize import least_squares
 
-from . import physics
-from .coolant_state import (
-    _SATURATION_NUDGE,
+from pyskyfire.ducts import friction as ducts_friction
+from pyskyfire.thermo.state import (
     PHASE_SUPERCRITICAL,
     PHASE_TWO_PHASE,
-    CoolantState,
-    _off_saturation,
+    FluidStateResolver,
 )
+
+from . import physics
+from .coolant_properties import _SATURATION_NUDGE, _off_saturation, film_properties
 from .film_solver import (
     GaseousFilmResults,
     GrissonFilmCoolingModel,
@@ -216,7 +217,7 @@ class RegenResult:
     coolant_quality: Optional[np.ndarray] = None
     #: Local coolant saturation temperature [K]; ``nan`` where undefined.
     coolant_T_sat: Optional[np.ndarray] = None
-    #: Per-station ``PHASE_*`` label from :mod:`pyskyfire.regen.coolant_state`.
+    #: Per-station ``PHASE_*`` label from :mod:`pyskyfire.thermo.state`.
     coolant_phase: Optional[np.ndarray] = None
     #: True when the coolant advanced on enthalpy rather than temperature.
     enthalpy_march: bool = False
@@ -459,7 +460,10 @@ class CoupledHeatExchangerPhysics:
     heat_curvature_correction : bool, optional
         Apply the RL10 curvature multiplier to coolant-side heat transfer.
     pressure_curvature_correction : bool, optional
-        Apply the RTE/Ito curvature multiplier to Darcy pressure loss.
+        Apply the selected backend's curvature multiplier to Darcy pressure loss.
+    friction_model : {'native', 'fluids'}, optional
+        Backend for the coolant Darcy friction factor and its curvature
+        multiplier. See :mod:`pyskyfire.ducts.friction`.
     """
 
     def __init__(
@@ -468,9 +472,10 @@ class CoupledHeatExchangerPhysics:
         boundary_conditions,
         circuit_index,
         film_model=None,
-        coolant_state: Optional[CoolantState] = None,
+        coolant_state: Optional[FluidStateResolver] = None,
         heat_curvature_correction: bool = True,
         pressure_curvature_correction: bool = True,
+        friction_model: str = "native",
     ):
         self.thrust_chamber = thrust_chamber
         self.boundary_conditions = boundary_conditions
@@ -480,9 +485,12 @@ class CoupledHeatExchangerPhysics:
         self.pressure_curvature_correction = bool(
             pressure_curvature_correction
         )
+        self.friction_model = ducts_friction.resolve_friction_model(
+            friction_model
+        )
 
         circuit = thrust_chamber.cooling_circuits[circuit_index]
-        self.coolant_state = coolant_state or CoolantState(
+        self.coolant_state = coolant_state or FluidStateResolver(
             circuit.coolant_transport, boundary_conditions.p_coolant_in
         )
 
@@ -632,7 +640,7 @@ class CoupledHeatExchangerPhysics:
         This is a **single-phase** correlation everywhere, including inside the
         boiling dome, where it is evaluated on saturated-liquid properties. It
         therefore models neither flow-boiling enhancement nor dryout. See
-        :mod:`pyskyfire.regen.coolant_state`.
+        :mod:`pyskyfire.regen.coolant_properties`.
         """
         circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
 
@@ -643,8 +651,8 @@ class CoupledHeatExchangerPhysics:
         ct = circuit.coolant_transport
         # Clamped to saturated liquid once the film temperature crosses T_sat,
         # rather than falling through to CoolProp's vapour branch.
-        k_cf, Cp_cr, mu_cf = self.coolant_state.film_properties(
-            T_coolant_film, p, (ct.get_k, ct.get_cp, ct.get_mu)
+        k_cf, Cp_cr, mu_cf = film_properties(
+            self.coolant_state, T_coolant_film, p, (ct.get_k, ct.get_cp, ct.get_mu)
         )
 
         D_c = circuit.Dh_coolant(x)
@@ -816,7 +824,7 @@ class CoupledHeatExchangerPhysics:
 
         Single-phase only -- it assumes all the heat is sensible. Used for
         coolants that cannot support the enthalpy march (mixtures, and backends
-        without saturation data); see :func:`.coolant_state.probe_coolant`.
+        without saturation data); see :func:`~pyskyfire.thermo.state.probe_fluid`.
         """
         circuit = self.thrust_chamber.cooling_circuits[self.circuit_index]
         cp = circuit.coolant_transport.get_cp(T_cool, p_cool)
@@ -871,18 +879,37 @@ class CoupledHeatExchangerPhysics:
             hydraulic_diameter,
             mu_cool,
         )
-        friction = physics.f_darcy(
-            reynolds,
-            hydraulic_diameter,
-            x,
-            circuit.roughness,
-        )
-        if self.pressure_curvature_correction:
-            friction *= physics.phi_curv_friction(
+        if self.friction_model == "native":
+            # Routed through ``physics`` rather than ``ducts`` directly so the
+            # module-level correlations stay the single native call site.
+            friction = physics.f_darcy(
                 reynolds,
                 hydraulic_diameter,
-                circuit.radius_of_curvature(x),
+                x,
+                circuit.roughness,
             )
+            if self.pressure_curvature_correction:
+                friction *= physics.phi_curv_friction(
+                    reynolds,
+                    hydraulic_diameter,
+                    circuit.radius_of_curvature(x),
+                )
+        else:
+            roughness = physics._resolve_roughness(circuit.roughness, x)
+            friction = ducts_friction.darcy_friction_factor(
+                reynolds,
+                hydraulic_diameter,
+                roughness,
+                model=self.friction_model,
+            )
+            if self.pressure_curvature_correction:
+                friction *= ducts_friction.curvature_multiplier(
+                    reynolds,
+                    hydraulic_diameter,
+                    circuit.radius_of_curvature(x),
+                    roughness=roughness,
+                    model=self.friction_model,
+                )
 
         return (
             -friction
@@ -1088,6 +1115,7 @@ def solve_coupled_heat_exchanger(
     log_residuals: bool = True,
     heat_curvature_correction: bool = True,
     pressure_curvature_correction: bool = True,
+    friction_model: str = "native",
 ) -> RegenResult:
     """Solve wall heating on detailed nodes coupled to lumped coolant nodes.
 
@@ -1133,7 +1161,7 @@ def solve_coupled_heat_exchanger(
     p_cool_in = boundary_conditions.p_coolant_in
     p_stagnation_arr[0] = p_cool_in
 
-    coolant_state = CoolantState(circuit.coolant_transport, p_cool_in)
+    coolant_state = FluidStateResolver(circuit.coolant_transport, p_cool_in)
     capability = coolant_state.capability
     use_enthalpy = capability.enthalpy_march
     if not use_enthalpy:
@@ -1163,6 +1191,7 @@ def solve_coupled_heat_exchanger(
         coolant_state=coolant_state,
         heat_curvature_correction=heat_curvature_correction,
         pressure_curvature_correction=pressure_curvature_correction,
+        friction_model=friction_model,
     )
 
     # ``p_coolant_in`` is the inlet *stagnation* pressure; the static value the
@@ -1573,6 +1602,7 @@ def coupled_steady_heating_analysis(
     output: bool = True,
     heat_curvature_correction: bool = True,
     pressure_curvature_correction: bool = True,
+    friction_model: str = "native",
 ) -> RegenResult:
     """Run a steady heating analysis with film cooling, regen cooling, or both.
 
@@ -1610,7 +1640,18 @@ def coupled_steady_heating_analysis(
         Apply the RL10 coolant heat-transfer curvature correction. Default
         True.
     pressure_curvature_correction : bool, optional
-        Apply the RTE/Ito Darcy-friction curvature correction. Default True.
+        Apply the selected backend's Darcy-friction curvature correction.
+        Default True.
+    friction_model : {'native', 'fluids'}, optional
+        Which correlation set supplies the coolant Darcy friction factor and
+        its curvature multiplier. ``'native'`` (default) is the RL10-derived
+        model pyskyfire has always used. ``'fluids'`` takes both from the
+        ``fluids`` library: laminar and Clamond straight-duct branches, and
+        laminar and turbulent Schmidt curved-duct branches. Both use the same
+        smooth transition policy, starting at ``Re=2040`` for a straight duct
+        and Schmidt's geometry-dependent critical Reynolds number for a curved
+        duct. See :mod:`pyskyfire.ducts.friction` for details and applicability
+        warnings.
 
     Returns
     -------
@@ -1653,6 +1694,7 @@ def coupled_steady_heating_analysis(
         film_model=film_model,
         heat_curvature_correction=heat_curvature_correction,
         pressure_curvature_correction=pressure_curvature_correction,
+        friction_model=friction_model,
     )
 
 

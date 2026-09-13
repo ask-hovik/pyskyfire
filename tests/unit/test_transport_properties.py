@@ -3,8 +3,7 @@
 import CoolProp.CoolProp as CP
 import pytest
 
-from pyskyfire.common import Fluid
-from pyskyfire.skycea.coolant_transport import CoolantTransport, TransportProperties
+from pyskyfire.thermo import Fluid, FluidTransport, TransportProperties
 
 
 def test_transport_properties_support_constants_and_callables() -> None:
@@ -25,7 +24,7 @@ def test_transport_properties_support_constants_and_callables() -> None:
     assert properties.compressible_coolant
 
 
-def test_transport_properties_require_coolant_specific_fields() -> None:
+def test_transport_properties_require_fluid_specific_fields() -> None:
     properties = TransportProperties(Pr=1.0, mu=1.0, k=1.0)
 
     with pytest.raises(ValueError, match="density"):
@@ -36,8 +35,8 @@ def test_transport_properties_require_coolant_specific_fields() -> None:
         properties.gamma_coolant(300.0, 1e5)
 
 
-def test_coolant_transport_matches_direct_coolprop_queries() -> None:
-    transport = CoolantTransport(Fluid("coolant", ["Water"], [1.0]))
+def test_fluid_transport_matches_direct_coolprop_queries() -> None:
+    transport = FluidTransport(Fluid("coolant", ["Water"], [1.0]))
     temperature, pressure = 300.0, 2.0e5
 
     assert transport.get_rho(temperature, pressure) == pytest.approx(

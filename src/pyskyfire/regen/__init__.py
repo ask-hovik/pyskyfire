@@ -1,10 +1,13 @@
+from .design_inputs import *
 from .channel_height import *
 from .channel_placement import *
+from .channel_helpers import *
+from .channel_construction import *
+from .channel_layout import *
 from .contour import *
-from .coolant_state import *
+from .coolant_properties import *
 from .coupled_solver import *
 from .film_solver import *
 from .physics import *
 from .thrust_chamber import *
 from .cross_section import *
-

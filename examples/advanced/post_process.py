@@ -38,14 +38,15 @@ def add_common_report_content(output_dir, report, params, thrust_chamber, coolin
 
     # Engine overview
     tab_overview = report.add_tab("Engine Overview")
-    engine_viewer = psf.viz.make_engine_3d(
-        thrust_chamber,
-        stride=3,
-        show=False,
+    engine_viewer = psf.viz.Scene(color_by="p_static")
+    engine_viewer.add(
+        psf.viz.ThrustChamberComponent(
+            thrust_chamber, cooling_data=cooling_data, stride=3, layout="analytical",
+        ),
+        name="chamber",
     )
     engine_viewer.save_html(output_dir / "engine-3d.html")
     tab_overview.add_iframe(engine_viewer.data_url, caption="Engine 3D")
-    engine_viewer.close()
 
     contour_plot = psf.viz.PlotContour(thrust_chamber.contour)
     tab_overview.add_figure(contour_plot)

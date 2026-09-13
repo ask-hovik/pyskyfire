@@ -3,7 +3,7 @@ import os, json, numpy as np, math
 import plotly.graph_objects as go
 from .core import PlotBase
 import re
-from pyskyfire.regen import f_darcy
+from pyskyfire.ducts import darcy_friction_factor
 from typing import Iterable, Optional, Sequence
 
 
@@ -130,13 +130,14 @@ class PlotThetaVsEpsilon(PlotBase):
             yaxis=dict(title=r"$\theta\ (^{\circ})$")
         )
 
-# TODO: the moody diagram log with annotations doesn't work well. So have to redo it. But the bones are there. 
 class PlotMoodyDiagram(PlotBase):
     """
-    Moody-style plot of Darcy friction factor vs Reynolds number, using
-    the correlations implemented in pyskyfire.physics.f_darcy.
+    Representative straight-duct Moody chart using the ``fluids`` backend.
 
-    Each curve corresponds to a chosen relative roughness ε/D.
+    Each curve corresponds to a chosen relative roughness ε/D. The ``fluids``
+    laminar and Clamond branches are joined with pyskyfire's shared cubic
+    smoothstep transition. This chart does not change the solver's default
+    friction backend.
     """
 
     def __init__(
@@ -159,23 +160,29 @@ class PlotMoodyDiagram(PlotBase):
                 1e-2, 3e-2,
             ]
 
-        # Reynolds sample (log-spaced)
+        # Reynolds sample (log-spaced), including the exact transition bounds.
         Re_vals = np.logspace(np.log10(Re_min), np.log10(Re_max), n_pts)
+        transition_start = 2040.0
+        transition_end = transition_start * 3500.0 / 2300.0
+        transition_samples = [
+            value
+            for value in (transition_start, transition_end)
+            if Re_min <= value <= Re_max
+        ]
+        if transition_samples:
+            Re_vals = np.unique(np.concatenate([Re_vals, transition_samples]))
 
-        # Use Dh=1 so absolute roughness = ε (since ε/D * Dh = ε)
+        # Use Dh=1 so absolute roughness equals the relative roughness value.
         Dh = 1.0
-        x_dummy = 0.0  # physics.f_darcy signature requires x; not used for constants
 
         # Plot a curve per ε/D
         for eps_over_D in rel_rough_list:
-            if eps_over_D == 0:
-                roughness = None
-            else:
-                # constant absolute roughness ε = (ε/D) * Dh
-                eps_abs = eps_over_D * Dh
-                roughness = (lambda _x, e=eps_abs: e)
-
-            f_vals = np.array([f_darcy(ReDh=Re, Dh=Dh, x=x_dummy, roughness=roughness) for Re in Re_vals])
+            f_vals = np.array([
+                darcy_friction_factor(
+                    ReDh=Re, Dh=Dh, roughness=eps_over_D * Dh, model="fluids"
+                )
+                for Re in Re_vals
+            ])
 
             label = f"{eps_over_D:.6f}".rstrip("0").rstrip(".")
             self.fig.add_trace(go.Scatter(
@@ -189,7 +196,7 @@ class PlotMoodyDiagram(PlotBase):
         # Axis setup: log Re; friction factor axis commonly shown log as well
         # (you can switch yaxis type to "linear" if you prefer)
         self.fig.update_layout(
-            title="Darcy friction factor vs Reynolds number",
+            title="Moody diagram — fluids smooth transition, straight ducts",
             xaxis=dict(title="Re", type="log", showgrid=True),
             yaxis=dict(title="f",  type="log", showgrid=True),
             margin=dict(l=70, r=70, t=50, b=60),
@@ -222,7 +229,8 @@ class PlotMoodyDiagram(PlotBase):
             xs_all.append(x)
 
             self.fig.add_annotation(
-                x=float(x[i]), y=float(y[i]),
+                # Plotly annotations on log axes use log10 coordinates.
+                x=float(np.log10(x[i])), y=float(np.log10(y[i])),
                 xref="x", yref="y",
                 text=tr.name,  # ε/D text
                 xanchor="left", yanchor="bottom",

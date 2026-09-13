@@ -1,9 +1,10 @@
-"""Contracts for common fluid descriptors and result containers."""
+"""Contracts for fluid descriptors and common result containers."""
 
 import numpy as np
 import pytest
 
-from pyskyfire.common import Fluid, Results
+from pyskyfire.common import Results
+from pyskyfire.thermo import Fluid
 
 
 def test_mass_fractions_are_converted_to_mole_fractions() -> None:

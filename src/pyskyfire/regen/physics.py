@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.optimize import brentq, fsolve
 
+from pyskyfire.ducts import friction as ducts_friction
+
 
 def kader_temperature_plus(y_plus, prandtl, eta):
     """Return Kader's dimensionless turbulent temperature profile.
@@ -396,14 +398,27 @@ def phi_curv_friction(Re_c, D_c, R_curv):
 
     The correlation uses hydraulic radius ``r_h = D_h/4`` and applies only
     for ``Re * (r_h/R)^2 > 6``.  It is independent of bend direction.
-    """
-    group = _curvature_group(Re_c, 0.25 * D_c, R_curv)
-    if group <= 6.0:
-        return 1.0
-    return group**0.05
 
-ReDh_laminar = 2300         # Maximum Reynolds number for laminar flow in a pipe
-ReDh_turbulent = 3500  # TODO: move to common constants page
+    This is a thin wrapper over
+    :func:`pyskyfire.ducts.curvature_multiplier` with ``model='native'``. The
+    physics lives in :mod:`pyskyfire.ducts` so that piping and cooling
+    channels share one implementation.
+    """
+    return ducts_friction.curvature_multiplier(
+        Re_c, D_c, R_curv, model="native"
+    )
+
+#: Re-exported from :mod:`pyskyfire.ducts.friction`, which owns these bounds.
+ReDh_laminar = ducts_friction.ReDh_laminar
+ReDh_turbulent = ducts_friction.ReDh_turbulent
+
+
+def _resolve_roughness(roughness, x):
+    """Return absolute roughness [m] from regen's callable-or-``None`` form."""
+    if roughness is None:
+        return 0.0
+    return roughness(x) if callable(roughness) else roughness
+
 
 def f_darcy_laminar(ReDh, Dh, x):
     """Laminar Darcy friction factor.
@@ -422,10 +437,10 @@ def f_darcy_laminar(ReDh, Dh, x):
     float
         Darcy friction factor (dimensionless).
     """
-    return 64.0 / ReDh      # Reference [3]
+    return ducts_friction._native_laminar(ReDh)      # Reference [3]
 
 def f_darcy_turbulent(ReDh, Dh, x, roughness):
-    """Turbulent Darcy friction factor using Putukhov or Colebrook–White.
+    """Turbulent Darcy friction factor using Petukhov or Colebrook–White.
 
     Parameters
     ----------
@@ -443,17 +458,9 @@ def f_darcy_turbulent(ReDh, Dh, x, roughness):
     float
         Darcy friction factor (dimensionless).
     """
-    if roughness == None:
-        # Putukhov equation [1]
-        return (0.79 * np.log(ReDh) - 1.64)**(-2)   
-
-    else:
-        # Colebrook-White by iteration
-        roughness_x = roughness(x)
-        def func_to_solve(f):
-            return 1/(f**0.5) + 2 * np.log10( roughness_x / (3.71 * Dh) + 2.51 / (ReDh * f**0.5) )    # Reference [2]
-
-        return fsolve(func = func_to_solve, x0 = 0.02)[0]
+    return ducts_friction._native_turbulent(
+        ReDh, Dh, _resolve_roughness(roughness, x)
+    )   # References [1], [2]
 
 def f_darcy(ReDh, Dh, x, roughness):
     """Composite laminar–turbulent Darcy friction factor with smooth transition.
@@ -474,20 +481,9 @@ def f_darcy(ReDh, Dh, x, roughness):
     float
         Darcy friction factor (dimensionless).
     """
-    # Check for laminar flow
-    if ReDh < ReDh_laminar:
-        return f_darcy_laminar(ReDh = ReDh, Dh = Dh, x = x)     
-
-    elif ReDh < ReDh_turbulent:
-        f_lam = f_darcy_laminar(ReDh = ReDh, Dh = Dh, x = x)     
-        f_turb = f_darcy_turbulent(ReDh = ReDh, Dh = Dh, x = x, roughness=roughness)     
-
-        # "Blend" between the laminar and turbulent region
-        return np.interp(ReDh, [ReDh_laminar, ReDh_turbulent], [f_lam, f_turb])
-
-    # Turbulent flow
-    else:
-        return f_darcy_turbulent(ReDh = ReDh, Dh = Dh, x = x, roughness=roughness)     
+    return ducts_friction.darcy_friction_factor(
+        ReDh, Dh, _resolve_roughness(roughness, x), model="native"
+    )
 
 def T_aw(gamma, M_inf, T_inf, Pr):
     """Compute the adiabatic-wall (recovery) temperature.

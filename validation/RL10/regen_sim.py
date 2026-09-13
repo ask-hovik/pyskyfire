@@ -234,9 +234,9 @@ params = dict(
     x_e = 46.0 * 0.0254,
 
     # Fuel/oxidizer parameters
-    cea_fu = psf.common.Fluid(type="fuel", propellants=["H2"], fractions=[1.0]),
-    cea_ox = psf.common.Fluid(type="oxidizer", propellants=["O2(L)"], fractions=[1.0]),
-    coolant_fu =  psf.common.Fluid(type="fuel", propellants=["Hydrogen"], fractions=[1.0]),
+    cea_fu = psf.thermo.Fluid(type="fuel", propellants=["H2"], fractions=[1.0]),
+    cea_ox = psf.thermo.Fluid(type="oxidizer", propellants=["O2(L)"], fractions=[1.0]),
+    coolant_fu =  psf.thermo.Fluid(type="fuel", propellants=["Hydrogen"], fractions=[1.0]),
     T_gas_fu_in = 200,  # Adjusted by a few kelvin to fall within NASA CEA tables
     T_gas_ox_in = 100,  # Also adjusted
     minimum_cea_temperature = 200.0,
@@ -261,7 +261,7 @@ params = dict(
 # Setup
 # =====
 
-aerothermodynamics = psf.skycea.Aerothermodynamics.from_mass_flows_eps_Lstar(fu=params["cea_fu"],
+aerothermodynamics = psf.thermo.Aerothermodynamics.from_mass_flows_eps_Lstar(fu=params["cea_fu"],
                                                                     ox=params["cea_ox"],
                                                                     T_fu_in=params["T_gas_fu_in"],
                                                                     T_ox_in=params["T_gas_ox_in"],
@@ -408,6 +408,7 @@ silver_wall = psf.regen.Wall(
     material=psf.common.solids.PureSilver,
     thickness=silver_insert_thickness,
     name="Silver throat insert",
+    role="liner",
 )
 #wall = psf.regen.Wall(material = psf.common.solids.copper, thickness = params["wall_thickness"] )
 
@@ -574,12 +575,12 @@ channel_height_fn = channel_height_from_json(
     wall_thickness=params["wall_thickness"],
 )
 
-def helix_fn(x):
+def helix_fn():
     return 0#45*3.14*180
 
 cross_section = psf.regen.CrossSectionRounded()
-#cross_section_squared = psf.regen.CrossSectionSquared(blockage_ratio=0.1)
-LH2_transport = psf.skycea.CoolantTransport(params["coolant_fu"])
+#cross_section_squared = psf.regen.CrossSectionSquared(rib_width=lambda pitch_mid: 0.1 * pitch_mid)
+LH2_transport = psf.thermo.FluidTransport(params["coolant_fu"])
 
 def build_thrust_chamber(channel_height=channel_height_fn, *, compute_gas=False):
     """Construct the RL10 chamber for a supplied channel-height function."""
@@ -597,6 +598,7 @@ def build_thrust_chamber(channel_height=channel_height_fn, *, compute_gas=False)
             helix_angle=helix_fn,
         ),
         walls=[wall],
+        enable_fin=True,
         roughness=params["roughness_height"],
         channel_height=channel_height,
     )
@@ -615,6 +617,7 @@ def build_thrust_chamber(channel_height=channel_height_fn, *, compute_gas=False)
             helix_angle=helix_fn,
         ),
         walls=[silver_wall, wall],
+        enable_fin=True,
         roughness=params["roughness_height"],
         channel_height=channel_height,
     )
@@ -626,7 +629,6 @@ def build_thrust_chamber(channel_height=channel_height_fn, *, compute_gas=False)
         h_gas_corr=1.08,
         h_cold_corr=1.0,
         n_nodes=150,
-        enable_fin=True,
         compute_gas=compute_gas,
     )
 
@@ -643,6 +645,7 @@ def run_simulation(
     full_nodes=100,
     use_reference_nodes=False,
     output=True,
+    friction_model="native",
 ):
     """Run both RL10 cooling passes and return ``(chamber, [half, full])``.
 
@@ -651,6 +654,9 @@ def run_simulation(
     that mode, ``half_nodes`` and ``full_nodes`` are ignored. This is the
     default; set ``use_reference_nodes=False`` to use the uniform grids given
     by ``half_nodes`` and ``full_nodes`` instead.
+
+    ``friction_model`` selects the coolant friction backend, either
+    ``"native"`` or ``"fluids"``. See :func:`run_friction_benchmark`.
     """
     chamber = thrust_chamber if chamber is None else chamber
     if use_reference_nodes:
@@ -671,6 +677,7 @@ def run_simulation(
         solver="newton",
         output=output,
         heat_curvature_correction=True,
+        friction_model=friction_model,
     )
 
     boundary_conditions_b = psf.regen.BoundaryConditions(
@@ -686,8 +693,54 @@ def run_simulation(
         solver="newton",
         output=output,
         heat_curvature_correction=True,
+        friction_model=friction_model,
     )
     return chamber, [cooling_data_a, cooling_data_b]
+
+
+def run_friction_benchmark(
+    chamber=None,
+    *,
+    use_reference_nodes=True,
+    output=True,
+    friction_models=("native", "fluids"),
+):
+    """Run the full RL10 case once per friction backend.
+
+    Returns ``(chamber, {model_name: [cooling_data_a, cooling_data_b]})``. All
+    runs share one thrust chamber, so the only thing that varies between them
+    is the coolant friction correlation. That makes the spread between the
+    resulting pressure curves a direct read on how much the friction model
+    alone contributes to the total predicted pressure drop.
+    """
+    chamber = thrust_chamber if chamber is None else chamber
+    runs = {}
+    for model in friction_models:
+        if output:
+            print(f"\n=== RL10 regen solve, friction_model={model!r} ===")
+        _, cooling_data = run_simulation(
+            chamber,
+            use_reference_nodes=use_reference_nodes,
+            output=output,
+            friction_model=model,
+        )
+        runs[model] = cooling_data
+    return chamber, runs
+
+
+def save_friction_benchmark(chamber, runs, path=None):
+    """Save a completed friction-model benchmark."""
+    path = (
+        os.path.join(script_dir, "friction_benchmark_results.pkl")
+        if path is None
+        else path
+    )
+    results = psf.common.Results()
+    results.add(name="params", obj=params)
+    results.add(name="thrust_chamber", obj=chamber)
+    results.add(name="friction_runs", obj=runs)
+    results.save(path)
+    return path
 
 
 def save_simulation(chamber, cooling_data, path=None):

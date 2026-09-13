@@ -6,7 +6,7 @@ import pytest
 from pyskyfire.regen.contour import (
     compute_chamber_volume,
     compute_cutoff_length,
-    get_contour,
+    generate_contour,
     integrate_area,
 )
 
@@ -15,7 +15,7 @@ from pyskyfire.regen.contour import (
 def test_generated_contour_hits_throat_and_exit_area_ratio(nozzle) -> None:
     throat_radius = 0.05
     area_ratio = 10.0
-    x, radius = get_contour(
+    x, radius = generate_contour(
         r_t=throat_radius,
         area_ratio=area_ratio,
         r_c=0.1,
@@ -33,7 +33,7 @@ def test_generated_contour_hits_throat_and_exit_area_ratio(nozzle) -> None:
 
 def test_contour_volume_mode_reproduces_requested_chamber_volume() -> None:
     target_volume = 0.005
-    x, radius = get_contour(
+    x, radius = generate_contour(
         r_t=0.05,
         area_ratio=8.0,
         r_c=0.1,
@@ -58,4 +58,4 @@ def test_cutoff_length_and_integrated_area_have_closed_forms_on_a_cylinder() -> 
 
 def test_contour_rejects_ambiguous_input_modes() -> None:
     with pytest.raises(ValueError, match="Invalid input combination"):
-        get_contour(r_t=0.05, area_ratio=8.0, r_c=0.1)
+        generate_contour(r_t=0.05, area_ratio=8.0, r_c=0.1)

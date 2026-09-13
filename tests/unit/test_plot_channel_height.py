@@ -57,11 +57,9 @@ def test_channel_width_plot_compares_hot_side_chord_with_reference() -> None:
     circuit = SimpleNamespace(
         name="Full Pass",
         x_domain=np.array([0.0, 1.0]),
-        centerlines=[
-            np.column_stack(
-                [np.array([0.0, 1.0]), radius, np.zeros(2)]
-            )
-        ],
+        cross_section_base_point_path=np.column_stack(
+            [np.array([0.0, 1.0]), radius, np.zeros(2)]
+        ),
         channel_local_sector=theta,
     )
     reference = SimpleNamespace(
@@ -87,11 +85,31 @@ def test_channel_width_plot_compares_hot_side_chord_with_reference() -> None:
     assert plot.fig.layout.yaxis.title.text == "Tube Width OD (m)"
 
 
+def test_channel_width_plot_measures_a_rounded_tube_at_its_lobe_centre() -> None:
+    theta = np.array([0.2, 0.1])
+    sector_radius = np.array([0.052, 0.083])
+    circuit = SimpleNamespace(
+        name="Full Pass",
+        x_domain=np.array([0.0, 1.0]),
+        cross_section_base_point_path=np.column_stack(
+            [np.array([0.0, 1.0]), sector_radius, np.zeros(2)]
+        ),
+        section_sector_radius=sector_radius,
+        channel_local_sector=theta,
+    )
+
+    plot = PlotChannelWidth(SimpleNamespace(cooling_circuits=[circuit]))
+
+    np.testing.assert_allclose(
+        plot.fig.data[0].y, 2.0 * sector_radius * np.sin(theta / 2.0)
+    )
+
+
 def test_channel_width_plot_rejects_mismatched_reference_arrays() -> None:
     circuit = SimpleNamespace(
         name="Full Pass",
         x_domain=np.array([0.0]),
-        centerlines=[np.array([[0.0, 0.05, 0.0]])],
+        cross_section_base_point_path=np.array([[0.0, 0.05, 0.0]]),
         channel_local_sector=np.array([0.1]),
     )
     reference = SimpleNamespace(
@@ -104,3 +122,19 @@ def test_channel_width_plot_rejects_mismatched_reference_arrays() -> None:
             SimpleNamespace(cooling_circuits=[circuit]),
             reference_profiles=[reference],
         )
+
+
+def test_channel_height_plot_rejects_unknown_height_mode():
+    import pytest
+
+    with pytest.raises(ValueError, match="height must"):
+        PlotChannelHeight(SimpleNamespace(cooling_circuits=[]), height="input")
+
+
+def test_plot_both_does_not_duplicate_identical_squared_heights():
+    circuit = SimpleNamespace(
+        name="Squared", x_domain=np.array([0.0, 1.0]), channel_heights=np.array([0.002, 0.003]),
+    )
+    plot = PlotChannelHeight(SimpleNamespace(cooling_circuits=[circuit]), height="both")
+    assert len(plot.fig.data) == 1
+    np.testing.assert_array_equal(plot.fig.data[0].y, circuit.channel_heights)

@@ -92,6 +92,15 @@ def test_only_insert_throat_radius_is_added_to_area_ratio_contour() -> None:
 
 def test_only_long_tube_circuit_receives_silver_layer() -> None:
     tree = ast.parse(REGEN_SIM_PATH.read_text())
+    silver = next(
+        node.value for node in tree.body
+        if isinstance(node, ast.Assign)
+        and any(isinstance(target, ast.Name) and target.id == "silver_wall"
+                for target in node.targets)
+    )
+    assert ast.literal_eval(next(
+        keyword.value for keyword in silver.keywords if keyword.arg == "role"
+    )) == "liner"
     build = next(
         node
         for node in tree.body
@@ -117,7 +126,7 @@ def test_only_long_tube_circuit_receives_silver_layer() -> None:
 def test_hot_side_liner_is_separate_from_channel_wall_geometry() -> None:
     circuit = psf.regen.CoolingCircuit.__new__(psf.regen.CoolingCircuit)
     circuit.walls = [
-        psf.regen.Wall(object(), 0.002, name="liner"),
+        psf.regen.Wall(object(), 0.002, name="liner", role="liner"),
         psf.regen.Wall(object(), 0.0003, name="tube wall"),
     ]
     circuit.channel_heights = np.array([0.003, 0.003])

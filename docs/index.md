@@ -65,6 +65,9 @@ Explanations describe the engineering models, code structure, and analysis metho
 * {doc}`Package Structure <explanations/package-structure>`
   Overview of the repository, source packages, examples, validation cases, and their roles.
 
+* {doc}`Design-Input Functions <explanations/design-input-functions>`
+  Explanation of the quantities a geometry input function may depend on, which are available where, and why.
+
 * {doc}`Regenerative Cooling <explanations/regenerative-cooling-explanation>`
   Explanation of the regenerative-cooling model, solver structure, heat-transfer paths, and governing quantities.
 
@@ -83,8 +86,8 @@ The reference section is generated from the source code and documents the availa
 
 | Package                                                    | Purpose                                                                                                                   |
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| {doc}`pyskyfire.common <autoapi/pyskyfire/common/index>`   | Shared objects including fluids, material models, result containers, stations, blocks, and engine-network infrastructure. |
-| {doc}`pyskyfire.skycea <autoapi/pyskyfire/skycea/index>`   | NASA CEA-based combustion and aerothermodynamic calculations, nozzle utilities, and coolant transport properties.         |
+| {doc}`pyskyfire.common <autoapi/pyskyfire/common/index>`   | Shared objects including solid-material models, result containers, stations, blocks, and engine-network infrastructure. |
+| {doc}`pyskyfire.thermo <autoapi/pyskyfire/thermo/index>`   | Fluid definitions, state resolution, transport properties, NASA CEA-based combustion and aerothermodynamics, and nozzle losses.         |
 | {doc}`pyskyfire.regen <autoapi/pyskyfire/regen/index>`     | Thrust-chamber geometry, cooling channels, wall models, regenerative cooling, and film cooling.                           |
 | {doc}`pyskyfire.pump <autoapi/pyskyfire/pump/index>`       | Pump and turbopump analysis utilities.                                                                                    |
 | {doc}`pyskyfire.turbine <autoapi/pyskyfire/turbine/index>` | Turbine models and utilities for engine-cycle calculations.                                                               |
@@ -124,6 +127,7 @@ tutorials/advanced-simulation
 :hidden:
 
 howto/mixture-ratio-optimisation
+howto/3d-scenes
 ```
 
 ```{toctree}
@@ -143,6 +147,8 @@ validation/rl10a-3-3a
 
 explanations/capabilities
 explanations/package-structure
+explanations/design-input-functions
+explanations/channel-construction
 explanations/regenerative-cooling-explanation
 explanations/specific-impulse
 explanations/moody-diagram
@@ -159,7 +165,7 @@ autoapi/pyskyfire/common/index
 autoapi/pyskyfire/regen/index
 autoapi/pyskyfire/pump/index
 autoapi/pyskyfire/turbine/index
-autoapi/pyskyfire/skycea/index
+autoapi/pyskyfire/thermo/index
 autoapi/pyskyfire/viz/index
 
 ```

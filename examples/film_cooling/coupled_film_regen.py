@@ -46,9 +46,9 @@ params = dict(
     AR_c   = 1.8,
 
     # Propellants
-    cea_fu = psf.common.Fluid(type="fuel", propellants=["C2H5OH"], fractions=[1.0]),
-    cea_ox = psf.common.Fluid(type="oxidizer", propellants=["N2O"], fractions=[1.0]),
-    coolprop_fu = psf.common.Fluid(type="fuel", propellants=["ethanol"], fractions=[1.0]),
+    cea_fu = psf.thermo.Fluid(type="fuel", propellants=["C2H5OH"], fractions=[1.0]),
+    cea_ox = psf.thermo.Fluid(type="oxidizer", propellants=["N2O"], fractions=[1.0]),
+    coolprop_fu = psf.thermo.Fluid(type="fuel", propellants=["ethanol"], fractions=[1.0]),
 
     # Coolant inlet conditions
     T_coolant_in = 298.15,
@@ -58,7 +58,7 @@ params = dict(
     material = psf.common.solids.StainlessSteel304,
     wall_thickness = 0.5e-3,
     n_channels = 60,
-    blockage_ratio = 0.0,
+    rib_width = 0.0,
     roughness_height = 10e-6,
 
     # Film cooling inputs.
@@ -74,7 +74,7 @@ params = dict(
     film_mole_fraction_H2O = 0.4,
 )
 
-aerothermodynamics = psf.skycea.Aerothermodynamics.from_F_eps_Lstar(
+aerothermodynamics = psf.thermo.Aerothermodynamics.from_F_eps_Lstar(
     fu=params["cea_fu"],
     ox=params["cea_ox"],
     MR=params["MR"],
@@ -87,9 +87,9 @@ aerothermodynamics = psf.skycea.Aerothermodynamics.from_F_eps_Lstar(
 params["V_c"] = aerothermodynamics.V_c
 params["r_t"] = aerothermodynamics.r_t
 
-coolant_transport = psf.skycea.CoolantTransport(params["coolprop_fu"])
+coolant_transport = psf.thermo.FluidTransport(params["coolprop_fu"])
 
-xs, rs = psf.regen.contour.get_contour(
+xs, rs = psf.regen.contour.generate_contour(
     V_c=params["V_c"],
     AR_c=params["AR_c"],
     r_t=params["r_t"],
@@ -102,12 +102,12 @@ xs, rs = psf.regen.contour.get_contour(
 contour = psf.regen.Contour(xs, rs, name="Minimal Contour")
 
 wall = psf.regen.Wall(material=params["material"], thickness=params["wall_thickness"])
-cross_section_squared = psf.regen.CrossSectionSquared(blockage_ratio=params["blockage_ratio"])
+cross_section_squared = psf.regen.CrossSectionSquared(rib_width=params["rib_width"])
 
-def channel_height_function(x):
+def channel_height_function():
     return 2e-3
 
-def helix_fn(x):
+def helix_fn():
     return 45 * 3.14 / 180
 
 helical_placement = psf.regen.SurfacePlacement(

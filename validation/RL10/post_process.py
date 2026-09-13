@@ -440,12 +440,16 @@ def add_regen_tabs(report, results):
     tab_overview.add_markdown("## Introduction")
     tab_overview.add_markdown(REPORT_INTRODUCTION)
 
-    engine_viewer = psf.viz.make_engine_3d(
-        thrust_chamber,
-        show=False,
-        stride=2,
-        # Circuits are ordered short (half pass), then long (full pass).
-        circuit_colors=("#2b2d31", PYSKYFIRE_RED),
+    engine_viewer = psf.viz.Scene(color_by="T_static")
+    engine_viewer.add(
+        psf.viz.ThrustChamberComponent(
+            thrust_chamber,
+            cooling_data=(cooling_data_a, cooling_data_b),
+            stride=2,
+            # Circuits are ordered short (half pass), then long (full pass).
+            circuit_colors=("#2b2d31", PYSKYFIRE_RED),
+        ),
+        name="chamber",
     )
     os.makedirs(standalone_dir, exist_ok=True)
     engine_viewer.save_html(os.path.join(standalone_dir, "engine-3d.html"))
@@ -460,7 +464,6 @@ def add_regen_tabs(report, results):
             "360 passages in the nozzle; upstream, only the long tubes remain."
         ),
     )
-    engine_viewer.close()
     tab_overview.add_markdown(REPORT_REPRODUCTION_GUIDE)
 
     # -------------- Operating point -----------------

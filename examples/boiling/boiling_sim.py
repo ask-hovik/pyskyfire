@@ -84,15 +84,15 @@ def main(output_dir: Path | None = None) -> None:
         L_star=1.2,                                                                             # Combustion chamber characteristic length 
         MR=2.8,                                                                                 # Mixture ratio
         AR_c=3,                                                                               # Chamber aspect ratio
-        cea_fu=psf.common.Fluid(type="fuel", propellants=["C2H5OH"], fractions=[1.0]),          # Ethanol
-        cea_ox=psf.common.Fluid(type="oxidizer", propellants=["N2O"], fractions=[1.0]),         # Nitrous oxide
-        coolprop_fu=psf.common.Fluid(type="fuel", propellants=["ethanol"], fractions=[1.0]),    # Ethanol
+        cea_fu=psf.thermo.Fluid(type="fuel", propellants=["C2H5OH"], fractions=[1.0]),          # Ethanol
+        cea_ox=psf.thermo.Fluid(type="oxidizer", propellants=["N2O"], fractions=[1.0]),         # Nitrous oxide
+        coolprop_fu=psf.thermo.Fluid(type="fuel", propellants=["ethanol"], fractions=[1.0]),    # Ethanol
         T_coolant_in=350,                                                                    # Coolant inlet temperature
         p_coolant_in=23e5,                                                                      # Coolant inlet pressure
         material=psf.common.solids.GRCop42,                                           # Wall material
         wall_thickness=0.2e-3,                                                                  # Wall thickness
         n_channels=60,                                                                          # Number of cooling channels
-        blockage_ratio=0.1,                                                                     # Fraction of cooling channel cross section filled with ribs
+        rib_blockage=0.1,                                                                       # Rib thickness as a fraction of the channel pitch
         roughness_height=10e-6,                                                                 # Cooling channel roughness parameter
         helix_angle=45,                                                                         # Cooling channel helix angle
         channel_height=3e-3                                                                     # Cooling channel height
@@ -101,7 +101,7 @@ def main(output_dir: Path | None = None) -> None:
 
     # tutorial:start:aerothermodynamics
     # Create hot gas property object:
-    aerothermodynamics = psf.skycea.Aerothermodynamics.from_F_eps_Lstar(
+    aerothermodynamics = psf.thermo.Aerothermodynamics.from_F_eps_Lstar(
         fu=params["cea_fu"],        # Fuel input
         ox=params["cea_ox"],        # Ox input
         MR=params["MR"],            # Mixture ratio
@@ -116,20 +116,20 @@ def main(output_dir: Path | None = None) -> None:
     params["mdot_fu"] = aerothermodynamics.mdot_fu # retrieve fuel mass flow rate
 
     # Create coolant property object:
-    coolant_transport = psf.skycea.CoolantTransport(params["coolprop_fu"]) # 
+    coolant_transport = psf.thermo.FluidTransport(params["coolprop_fu"]) # 
     # tutorial:end:aerothermodynamics
 
     # tutorial:start:contour
     # Calculate contour points
-    xs, rs = psf.regen.contour.get_contour(
+    xs, rs = psf.regen.contour.generate_contour(
         V_c=params["V_c"],          # Chamber volume
         AR_c=params["AR_c"],        # Chamber aspect ratio
         r_t=params["r_t"],          # Throat radius
         area_ratio=params["eps"],   # Area ratio
         nozzle="rao",               # Type of nozzle
-        R_1f=1,                     # Throat radius parameter
-        R_2f=2,                     # Chamber-to-contraction radius parameter
-        R_3f=0.3,                   # Throat-to-nozzle radius parameter
+        R_1f=1,                     # Throat entrance curvature radius / r_t
+        R_2f=2,                     # Chamber fillet radius / r_t
+        R_3f=0.3,                   # Throat exit curvature radius / r_t
     )
 
     # Create contour object
@@ -144,12 +144,14 @@ def main(output_dir: Path | None = None) -> None:
     # tutorial:end:walls
 
     # tutorial:start:cooling-circuit
-    cross_section = psf.regen.CrossSectionSquared(blockage_ratio=params["blockage_ratio"])
+    cross_section = psf.regen.CrossSectionSquared(
+        rib_width=lambda pitch_mid: params["rib_blockage"] * pitch_mid
+    )
 
-    def channel_height_function(x):
+    def channel_height_function():
         return params["channel_height"]
 
-    def helix_angle_function(x):
+    def helix_angle_function():
         return params["helix_angle"] * 3.14 / 180
 
     placement = psf.regen.SurfacePlacement(
@@ -227,12 +229,15 @@ def main(output_dir: Path | None = None) -> None:
     tab_overview = report.add_tab("Engine Overview")
 
     # 3D engine
-    engine_viewer = psf.viz.make_engine_3d(thrust_chamber, show=False)
+    engine_viewer = psf.viz.Scene(color_by="p_static")
+    engine_viewer.add(
+        psf.viz.ThrustChamberComponent(thrust_chamber, cooling_data=cooling_data),
+        name="chamber",
+    )
     tab_overview.add_iframe(
         engine_viewer.data_url,
         caption="Engine 3D",
     )
-    engine_viewer.close()
 
     # Engine contour
     contour_plot = psf.viz.PlotContour(thrust_chamber.contour)

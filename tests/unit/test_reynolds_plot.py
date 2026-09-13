@@ -13,7 +13,7 @@ class _CombustionTransport:
         return SimpleNamespace(rho=1.0, M=1.0, a=100.0, mu=0.01)
 
 
-class _CoolantTransport:
+class _FluidTransport:
     def get_rho(self, temperature, pressure):
         return 1.0
 
@@ -23,7 +23,7 @@ class _CoolantTransport:
 
 def _chamber(diameter=1.0):
     circuit = SimpleNamespace(
-        coolant_transport=_CoolantTransport(),
+        coolant_transport=_FluidTransport(),
         Dh_coolant=lambda x: diameter,
     )
     return SimpleNamespace(

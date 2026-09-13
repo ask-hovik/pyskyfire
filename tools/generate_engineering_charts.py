@@ -1,5 +1,6 @@
 """Generate the interactive charts used by the engineering explanations."""
 
+import argparse
 from pathlib import Path
 
 import pyskyfire as psf
@@ -14,17 +15,24 @@ OUTPUT_DIRECTORY = (
 
 
 def main() -> None:
-    """Write each engineering chart to its own HTML file."""
+    """Write all engineering charts, or only the selected chart."""
+    charts = {
+        "rao": ("rao-nozzle-angles.html", psf.viz.PlotThetaVsEpsilon),
+        "moody": ("moody-diagram.html", psf.viz.PlotMoodyDiagram),
+    }
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--chart", choices=charts,
+        help="Generate only this chart (default: generate all charts).",
+    )
+    args = parser.parse_args()
+    selected = [args.chart] if args.chart else charts
     OUTPUT_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
-    charts = {
-        "rao-nozzle-angles.html": psf.viz.PlotThetaVsEpsilon(),
-        "moody-diagram.html": psf.viz.PlotMoodyDiagram(),
-    }
-
-    for filename, chart in charts.items():
+    for name in selected:
+        filename, chart_factory = charts[name]
         output_path = OUTPUT_DIRECTORY / filename
-        chart.save_html(output_path)
+        chart_factory().save_html(output_path)
         print(f"Chart saved to {output_path}")
 
 

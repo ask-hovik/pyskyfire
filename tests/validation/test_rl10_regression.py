@@ -16,11 +16,15 @@ RL10_SIMULATION = (
 # tolerances. A change here should prompt a review of why the numerical RL10
 # solution moved before the new baseline is accepted.
 RELATIVE_TOLERANCE = 1.0e-6
+# Re-baselined when the rounded lobes started being sized at the radius they
+# actually end up at: each tube is now tangent to the sector it owns and keeps
+# that sector's share of the gas area, which grows the RL10 tubes by about one
+# percent in area. The experimental validation cases were unaffected.
 EXPECTED = {
-    "peak_heat_flux": 30_902_258.786_860_1,
-    "max_hot_wall_temperature": 1_028.656_784_141_646_8,
-    "coolant_outlet_stagnation_temperature": 254.796_867_530_316_23,
-    "coolant_outlet_stagnation_pressure": 5_903_235.081_605_2,
+    "peak_heat_flux": 30_911_822.917_523_645,
+    "max_hot_wall_temperature": 1_033.624_922_710_149_8,
+    "coolant_outlet_stagnation_temperature": 256.805_615_011_842_5,
+    "coolant_outlet_stagnation_pressure": 5_957_708.215_064_475,
 }
 
 

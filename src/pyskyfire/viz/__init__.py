@@ -21,9 +21,11 @@ from .plot_film_cooling import *
 from .report import *
 from .core import *
 from .lookup_tables import *
-from .plot_skycea import *
+from .plot_thermo import *
 from .plot_common import *
 from .engine_viz import *
 from .impeller_viz import *
 from .network_viz import *
 from .sankey import *
+from .scene import *
+from .components import *

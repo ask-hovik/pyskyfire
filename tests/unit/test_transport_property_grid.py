@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from pyskyfire.viz.plot_skycea import (
+from pyskyfire.viz.plot_thermo import (
     PlotTransportProperty,
     _visualization_x,
     result_gas_x,
@@ -84,10 +84,10 @@ def test_missing_grid_reports_the_available_choices() -> None:
         _visualization_x(transport, x=None, results=None, nodes=None)
 
 
-def test_legacy_precomputed_objects_keep_working() -> None:
-    legacy = SimpleNamespace(x_nodes=np.array([0.0, 1.0]))
+def test_precomputed_objects_with_x_nodes_keep_working() -> None:
+    precomputed = SimpleNamespace(x_nodes=np.array([0.0, 1.0]))
 
-    grid = _visualization_x(legacy, x=None, results=None, nodes=None)
+    grid = _visualization_x(precomputed, x=None, results=None, nodes=None)
 
     assert grid == pytest.approx([0.0, 1.0])
 

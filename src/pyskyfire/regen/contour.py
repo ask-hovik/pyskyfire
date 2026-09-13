@@ -717,7 +717,7 @@ def get_theta_e_n(length_fraction, epsilon_value):
     return np.radians(final_theta_e), np.radians(final_theta_n)
 
 
-def get_contour_internal(r_c, r_t, area_ratio, L_c, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz):
+def generate_contour_internal(r_c, r_t, area_ratio, L_c, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz):
     """Generate the full nozzle contour coordinates from geometric inputs.
 
     Builds chamber and nozzle segments (with optional chamber fillet), throat
@@ -1013,7 +1013,7 @@ def compute_chamber_volume(xs, rs):
     return volume
 
 
-def get_contour(
+def generate_contour(
     r_t, 
     area_ratio,
     r_c=None,
@@ -1031,7 +1031,7 @@ def get_contour(
     angle_input="degrees",
     export_tikz=False 
 ):
-    """High-level API to generate a nozzle contour using four input modes.
+    """Generate a chamber and nozzle contour using four input modes.
 
     Exactly one of the following input combinations must be provided:
 
@@ -1058,9 +1058,19 @@ def get_contour(
         Convergence/divergence angles (degrees if ``angle_input='degrees'``).
     nozzle : {'rao', 'conical'}, optional
         Nozzle geometry. Default ``'rao'``.
-    R_1f, R_2f, R_3f : float, optional
-        Throat/chamber fillet/exit curvature scale factors (× ``r_t``).
-        ``R_2f=0`` or ``None`` gives a hard corner.
+    R_1f : float, optional
+        Dimensionless throat entrance curvature factor. The arc joining the
+        converging section to the throat (upstream of the minimum radius) has
+        radius ``R1 = R_1f * r_t``. Default ``1.5``.
+    R_2f : float or None, optional
+        Dimensionless chamber fillet curvature factor. The arc joining the
+        cylindrical chamber to the converging section has radius
+        ``R2 = R_2f * r_t``. Default ``0.5``. Set to ``0`` or ``None`` for a
+        sharp corner at the chamber-to-converging-section junction.
+    R_3f : float, optional
+        Dimensionless throat exit curvature factor. The arc joining the throat
+        to the diverging nozzle (downstream of the minimum radius) has radius
+        ``R3 = R_3f * r_t``. Default ``0.382``.
     length_fraction : float, optional
         Rao length fraction in ``[0.60, 1.00]`` (Default ``0.8``).
     angle_input : {'degrees', 'radians'}, optional
@@ -1079,9 +1089,15 @@ def get_contour(
         If the input combination is invalid, or the internal minimization/root
         solve fails to produce a consistent chamber length.
 
+    Notes
+    -----
+    In the flow direction, the curvature factors occur in the order
+    ``R_2f`` (chamber fillet), ``R_1f`` (throat entrance), then ``R_3f``
+    (throat exit). All three scale the throat radius ``r_t``.
+
     See Also
     --------
-    get_contour_internal
+    generate_contour_internal
         Low-level builder used by all modes.
     compute_chamber_volume
         Volume integral used by modes that solve for ``L_c``.
@@ -1109,7 +1125,7 @@ def get_contour(
     # 1) Direct input: r_c, L_c
     # --------------------------------------------------------------------------
     if direct_input and (V_c is None and eps_c is None and AR_c is None):
-        xs, ys = get_contour_internal(r_c, r_t, area_ratio, L_c, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz)
+        xs, ys = generate_contour_internal(r_c, r_t, area_ratio, L_c, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz)
         #V = compute_chamber_volume(xs, ys) # TODO: yeah this should be just a property of the contour object. Need to rewrite this whole file
         #print(f"V: {V}")
         #input()
@@ -1124,7 +1140,7 @@ def get_contour(
         r_c = np.sqrt(A_c / np.pi)
         
         def volume_error(Lc_guess):
-            xs_guess, ys_guess = get_contour_internal(
+            xs_guess, ys_guess = generate_contour_internal(
                 r_c, r_t, area_ratio, Lc_guess, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz)
             vol = compute_chamber_volume(xs_guess, ys_guess)
             return abs(vol - V_c)
@@ -1133,7 +1149,7 @@ def get_contour(
         if not sol.success:
             raise ValueError("Minimization failed for L_c with provided V_c and eps_c.")
         L_c = sol.x
-        xs, ys = get_contour_internal(r_c, r_t, area_ratio, L_c, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz)
+        xs, ys = generate_contour_internal(r_c, r_t, area_ratio, L_c, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz)
         return xs, ys
     
 
@@ -1162,7 +1178,7 @@ def get_contour(
 
         def ar_constraint(r_c_guess): 
             
-            xs_guess, ys_guess = get_contour_internal(
+            xs_guess, ys_guess = generate_contour_internal(
                 r_c_guess, r_t, area_ratio, L_c_trial,
                 theta_conv, theta_div, nozzle,
                 R_1f, R_2f, R_3f, length_fraction, export_tikz)
@@ -1177,7 +1193,7 @@ def get_contour(
         sol = root_scalar(ar_constraint, bracket=[r_min, r_max], method="bisect")
         r_c_opt = sol.root
 
-        xs_opt, ys_opt = get_contour_internal(
+        xs_opt, ys_opt = generate_contour_internal(
             r_c_opt, r_t, area_ratio, L_c_trial,
             theta_conv, theta_div, nozzle,
             R_1f, R_2f, R_3f, length_fraction, export_tikz
@@ -1187,7 +1203,7 @@ def get_contour(
                                       xs_chamber=xs_opt,
                                       ys_chamber=ys_opt)
         
-        return get_contour_internal(
+        return generate_contour_internal(
             r_c_opt, r_t, area_ratio, L_c_final,
             theta_conv, theta_div, nozzle,
             R_1f, R_2f, R_3f, length_fraction, export_tikz
@@ -1203,7 +1219,7 @@ def get_contour(
     # --------------------------------------------------------------------------
     elif volume_r_c:
         def volume_error(Lc_guess):
-            xs_guess, ys_guess = get_contour_internal(r_c, r_t, area_ratio, Lc_guess, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz)
+            xs_guess, ys_guess = generate_contour_internal(r_c, r_t, area_ratio, Lc_guess, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz)
             vol = compute_chamber_volume(xs_guess, ys_guess)
             return abs(vol - V_c)
         
@@ -1211,7 +1227,7 @@ def get_contour(
         if not sol.success:
             raise ValueError("Minimization failed for L_c with provided V_c and r_c.")
         L_c = sol.x
-        xs, ys = get_contour_internal(r_c, r_t, area_ratio, L_c, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz)
+        xs, ys = generate_contour_internal(r_c, r_t, area_ratio, L_c, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz)
         return xs, ys
     
     else:

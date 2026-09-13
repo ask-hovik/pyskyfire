@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from pyskyfire.regen.coupled_solver import _clear_gas_cache_after
-from pyskyfire.skycea.aerothermodynamics import Aerothermodynamics
+from pyskyfire.thermo.aerothermodynamics import Aerothermodynamics
 
 
 class _CombustionTransport:

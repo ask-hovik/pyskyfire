@@ -1,17 +1,24 @@
-from abc import ABC, abstractmethod
 import numpy as np
 
-class ChannelPlacement(ABC):
-    """Abstract base class defining how coolant channels are positioned.
+from pyskyfire.regen.design_inputs import (
+    DesignContext,
+    contour_providers,
+    make_evaluator,
+)
 
-    Subclasses implement different placement strategies (surface, internal)
-    that compute the radial coordinate of the channel centerline.
+class ChannelPlacement:
+    """Base class defining how coolant channels are wound around the contour.
+
+    A placement owns the circumferential packing and the winding rate; where a
+    section then sits radially is resolved from the cross section and the wall
+    stack rather than from the placement. On its own this class describes
+    plain axial channels, and subclasses (surface, internal) refine it.
 
     Parameters
     ----------
     n_channel_positions : int
         Number of circumferential channel locations (“leaves”).
-    channel_width : callable or None, optional
+    channel_angular_width : callable or None, optional
         Function returning angular width [rad]. May be `None` if uniform.
     occludes : bool, optional
         Whether this placement blocks part of the wall from hot gas view.
@@ -20,7 +27,7 @@ class ChannelPlacement(ABC):
     ----------
     n_channel_positions : int
         Number of circumferential positions.
-    channel_width : callable or None
+    channel_angular_width : callable or None
         Angular width function or constant.
     occludes : bool
         Whether the placement occludes hot surface area.
@@ -30,56 +37,100 @@ class ChannelPlacement(ABC):
     SurfacePlacement
     InternalPlacement
     """
-    def __init__(self, n_channel_positions: int, channel_width=None, occludes: bool = True):
+    def __init__(
+        self,
+        n_channel_positions: int,
+        channel_angular_width=None,
+        occludes: bool = True,
+        helix_angle=0.0,
+    ):
         self.n_channel_positions = n_channel_positions   # << new home
-        self.channel_width = channel_width
         self.occludes = occludes
 
-    @abstractmethod
-    def compute_centerline_radius(self,
-                                  x: float,
-                                  contour) -> float:
-        """Return the section-reference radius ``r(x)`` for this placement.
+        self._channel_angular_width = channel_angular_width
+        self._channel_angular_width_evaluator = (
+            None
+            if channel_angular_width is None
+            else make_evaluator(
+                channel_angular_width,
+                slot="channel_angular_width",
+                label=f"{type(self).__name__}.channel_angular_width",
+            )
+        )
 
-        For surface channels this is the hot-wall radius used by the
-        cross-section models.  The coolant-flow centre is obtained separately
-        with :meth:`compute_flow_centerline_radius`.
-        """
-        raise NotImplementedError
+        self._helix_angle = helix_angle
+        self._helix_angle_evaluator = make_evaluator(
+            helix_angle,
+            slot="helix_angle",
+            label=f"{type(self).__name__}.helix_angle",
+        )
 
-    def compute_flow_centerline_radius(
+    def __setstate__(self, state):
+        """Load placements serialized before the angular-width rename."""
+        if (
+            "channel_angular_width" not in state
+            and "channel_width" in state
+        ):
+            state["channel_angular_width"] = state.pop("channel_width")
+        state.pop("_circuit", None)
+        self.__dict__.update(state)
+
+    # ---------------- design inputs ----------------
+    def _context(
         self,
-        x: float,
-        contour,
-        wall_thickness: float,
-        channel_height: float,
-    ) -> float:
-        """Return the radius of the modeled coolant-flow centre [m].
+        x,
+        contour=None,
+        circuit=None,
+        *,
+        include_section: bool,
+    ) -> DesignContext:
+        """Build the design-input context for one station.
 
-        Placements that already describe a flow centre need no offset.  A
-        surface placement overrides this because its section reference is the
-        hot wall.
+        A placement may be shared by several circuits, so the circuit is passed
+        in per call rather than stored. Without one, only tier A is available.
         """
-        return self.compute_centerline_radius(x, contour)
+        if circuit is not None:
+            return circuit.design_context(x, include_section=include_section)
+        return DesignContext(contour_providers(contour, float(x)))
+
+    def helix_angle(self, x, contour=None, circuit=None) -> float:
+        """Return the local helix angle [rad], measured from the meridian."""
+        evaluator = self._helix_angle_evaluator
+        if evaluator.constant_value is not None:
+            return evaluator.constant_value
+        # include_section reaches the channel height, which is built before any
+        # helix angle is evaluated. The pitch quantities are still absent, so a
+        # helix law cannot circularly depend on the pitch it sets.
+        return evaluator(
+            self._context(x, contour, circuit, include_section=True)
+        )
+
+    @property
+    def has_channel_angular_width(self) -> bool:
+        """Whether this placement defines its own angular-width law."""
+        return self._channel_angular_width_evaluator is not None
+
+    def channel_angular_width(self, x, contour=None, circuit=None) -> float:
+        """Return the user-specified angular width [rad] at ``x``."""
+        evaluator = self._channel_angular_width_evaluator
+        if evaluator is None:
+            raise AttributeError(
+                f"{type(self).__name__} does not define channel_angular_width"
+            )
+        if evaluator.constant_value is not None:
+            return evaluator.constant_value
+        return evaluator(
+            self._context(x, contour, circuit, include_section=True)
+        )
 
     def channel_count(self) -> int:
         return self.n_channel_positions
     
-    def dtheta_dx(self, x: float, contour) -> float:
+    def dtheta_dx(self, x: float, contour, circuit=None) -> float:
         """Return dθ/dx [rad/m] for the representative lane centerline.
         Default: 0 (axial/vertical channels).
         """
         return 0.0
-
-    def centerline_dtheta_dx(
-        self,
-        x: float,
-        contour,
-        flow_radius: float,
-        flow_dr_dx: float,
-    ) -> float:
-        """Return ``dtheta/dx`` for the actual coolant-flow centreline."""
-        return self.dtheta_dx(x, contour)
 
 class SurfacePlacement(ChannelPlacement):
     """Placement model for surface-mounted cooling channels.
@@ -106,78 +157,28 @@ class SurfacePlacement(ChannelPlacement):
     ChannelPlacement
     InternalPlacement
     """
-    def __init__(self, n_channel_positions: int, helix_angle = lambda *args: 0.0):
+    def __init__(self, n_channel_positions: int, helix_angle=0.0):
         self.n_channels_per_leaf = 1
-        super().__init__(n_channel_positions, channel_width = None, occludes=True)
-        self.helix_angle = helix_angle  # float or callable(x)->float
-
-    def compute_centerline_radius(self, x, contour):
-        r_hot   = contour.r(x)
-        #alpha       = contour.normal_angle(x)
-        #t_total = wall_group.total_thickness(x)
-        #TODO: This is approximately correct. Will want to reimplement the effect of the channel wall thickness in the future. 
-        return r_hot #+ t_total/np.cos(alpha)
-
-    def compute_flow_centerline_radius(
-        self,
-        x,
-        contour,
-        wall_thickness,
-        channel_height,
-    ):
-        """Return the coolant centroid used by the 1-D passage model.
-
-        The section analytics construct a radial wall/channel stack, so its
-        consistent flow centre is the hot-wall radius plus the complete wall
-        stack and half the channel height.
-        """
-        return (
-            self.compute_centerline_radius(x, contour)
-            + float(wall_thickness)
-            + 0.5 * float(channel_height)
+        super().__init__(
+            n_channel_positions,
+            channel_angular_width=None,
+            occludes=True,
+            helix_angle=helix_angle,
         )
-    
-    def dtheta_dx(self, x, contour):
-        gamma = (
-            self.helix_angle(x)
-            if callable(self.helix_angle)
-            else float(self.helix_angle)
-        )
-        r = self.compute_centerline_radius(x, contour)
+
+    def dtheta_dx(self, x, contour, circuit=None):
+        gamma = self.helix_angle(x, contour, circuit)
+        r = float(contour.r(x))
         drdx = contour.dr_dx(x)
         # guard r≈0 near axis (should not happen for chamber wall, but robust)
         r = max(1e-12, r)
         return np.tan(gamma) * np.sqrt(1.0 + drdx**2) / r
 
-    def centerline_dtheta_dx(
-        self,
-        x,
-        contour,
-        flow_radius,
-        flow_dr_dx,
-    ):
-        """Honor the requested helix angle on the coolant-flow centreline.
-
-        ``gamma`` is measured from the local meridional direction.  Therefore
-        ``tan(gamma) = r dtheta / ds_meridional``.
-        """
-        gamma = (
-            self.helix_angle(x)
-            if callable(self.helix_angle)
-            else float(self.helix_angle)
-        )
-        radius = max(abs(float(flow_radius)), 1e-12)
-        return (
-            np.tan(gamma)
-            * np.sqrt(1.0 + float(flow_dr_dx) ** 2)
-            / radius
-        )
-
 class InternalPlacement(ChannelPlacement):
     """Placement model for in-wall or in-chamber heat-exchanger channels.
 
     Allows multiple stacked channels per angular leaf and optional
-    user-defined width laws.
+    user-defined angular-width laws.
 
     Parameters
     ----------
@@ -185,7 +186,7 @@ class InternalPlacement(ChannelPlacement):
         Number of circumferential leaves.
     n_channels_per_leaf : int
         Channels stacked radially per leaf.
-    channel_width : callable
+    channel_angular_width : callable
         Function returning angular spacing between channel rows [rad].
     occludes : bool, optional
         Whether this placement occludes the hot-side wall. Default False.
@@ -196,7 +197,7 @@ class InternalPlacement(ChannelPlacement):
         Number of circumferential leaves.
     n_channels_per_leaf : int
         Channels per leaf.
-    channel_width : callable
+    channel_angular_width : callable
         Angular spacing function.
     occludes : bool
         Occlusion flag.
@@ -211,18 +212,17 @@ class InternalPlacement(ChannelPlacement):
                     n_channel_positions: int,          # leaves
                     n_channels_per_leaf: int,          # radial stack in each leaf
                     *,
-                    channel_width,                          # row-to-row θ-spacing
-                    occludes: bool=False):
+                    channel_angular_width,                  # row-to-row θ-spacing
+                    occludes: bool=False,
+                    helix_angle=0.0):
             
         super().__init__(n_channel_positions,
-                        channel_width=channel_width,
-                        occludes=occludes)
-        
+                        channel_angular_width=channel_angular_width,
+                        occludes=occludes,
+                        helix_angle=helix_angle)
+
         self.n_channels_per_leaf = n_channels_per_leaf
 
-    def compute_centerline_radius(self, x, contour):
-        return 1 # TODO: I need a better way to implement this
-
-    # override: total = leaves ×  channels / leaf
-    """def channel_count(self) -> int:
-        return self.n_channel_positions# * self.n_channels_per_leaf"""
+    def dtheta_dx(self, x, contour, circuit=None):
+        gamma = self.helix_angle(x, contour, circuit)
+        return np.tan(gamma) * np.sqrt(1 + float(contour.dr_dx(x))**2) / float(contour.r(x))

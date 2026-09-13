@@ -5,8 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from pyskyfire.common import Fluid
-from pyskyfire.skycea import Aerothermodynamics
+from pyskyfire.thermo import Aerothermodynamics, Fluid
 
 
 @pytest.fixture(scope="module")

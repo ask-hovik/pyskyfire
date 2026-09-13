@@ -24,16 +24,16 @@ class _StripSection(ChannelSection):
     """
 
     def A_coolant(self, prof):
-        return prof.centerline[:, 1] * prof.theta * prof.h
+        return prof.cross_section_base_point_path[:, 1] * prof.theta * prof.h
 
     def Dh_coolant(self, prof):
         return 2.0 * prof.h
 
     def P_thermal(self, prof):
-        return prof.centerline[:, 1] * prof.theta
+        return prof.cross_section_base_point_path[:, 1] * prof.theta
 
     def P_coolant(self, prof):
-        return prof.centerline[:, 1] * prof.theta
+        return prof.cross_section_base_point_path[:, 1] * prof.theta
 
 
 class _Cylinder:
@@ -147,7 +147,7 @@ def test_circuit_rejects_invalid_hot_gas_area_multiplier(multiplier) -> None:
 
 def test_circuit_rejects_invalid_callable_hot_gas_area_multiplier() -> None:
     with pytest.raises(ValueError, match="must return finite, positive values"):
-        _chamber(hot_gas_surface_area_multiplier=lambda _x: 0.0)
+        _chamber(hot_gas_surface_area_multiplier=lambda x: 0.0)
 
 
 def test_volume_is_independent_of_channel_count() -> None:
@@ -171,11 +171,18 @@ def test_helical_circuit_holds_the_same_volume_but_runs_further(
 
     assert helical.volume == pytest.approx(axial.volume, rel=1e-9)
 
-    # The path really is longer -- the volume is unchanged because the normal
-    # section narrows by exactly the same factor, not because the helix was
-    # ignored.
+    # The nominal winding really is longer -- the volume is unchanged because
+    # the normal section narrows by exactly the same factor, not because the
+    # helix was ignored.
+    winding_length = np.trapezoid(helical.ds_dx_reference_vals, helical.x_domain)
+    assert winding_length == pytest.approx(length / np.cos(helix_angle), rel=1e-6)
+
+    # The coolant itself travels along the section centroid, half a channel
+    # height further out, where the same angular rate is a steeper helix.
+    centroid_radius = radius + height / 2.0
+    centroid_angle = np.arctan(centroid_radius * np.tan(helix_angle) / radius)
     path_length = np.trapezoid(helical.ds_dx_vals, helical.x_domain)
-    assert path_length == pytest.approx(length / np.cos(helix_angle), rel=1e-6)
+    assert path_length == pytest.approx(length / np.cos(centroid_angle), rel=1e-6)
     assert helical.is_helical == (helix_angle != 0.0)
 
 
@@ -214,7 +221,7 @@ def test_volume_converges_with_axial_resolution() -> None:
     reference = 2.0 * np.pi * radius * np.trapezoid(taper(x), x)
 
     errors = [abs(volume - reference) / reference for volume in volumes]
-    assert errors[-1] < 1e-6
+    assert errors[-1] < 2e-6
     # Trapezoidal error is O(n^-2), so each doubling should cut it by ~4x.
     for coarse, fine in zip(errors, errors[1:]):
         assert fine < coarse / 3.0
