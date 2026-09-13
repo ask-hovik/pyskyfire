@@ -44,6 +44,7 @@ _BLOCK_TITLES = {
     "TurbineBlock": "Turbine",
     "RegenBlock": "Regen cooling",
     "SimpleDuctBlock": "Duct",
+    "PipeBlock": "Pipe",
     "MassFlowSplitterBlock": "Flow splitter",
     "MassFlowMergerBlock": "Flow merger",
     "TransmissionBlock": "Shaft transmission",
@@ -137,7 +138,7 @@ def _block_colors(spec: _BlockSpec) -> tuple[str, str]:
 
     if spec.class_name == "RegenBlock":
         return "#fdecea", "#c62828"   # red
-    if spec.class_name == "SimpleDuctBlock":
+    if spec.class_name in ("SimpleDuctBlock", "PipeBlock"):
         return "#e3f2fd", "#1565c0"   # blue
     if spec.class_name == "PumpBlock":
         return "#e8f5e9", "#2e7d32"   # green

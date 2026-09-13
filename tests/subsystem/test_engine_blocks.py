@@ -8,12 +8,14 @@ import pytest
 from pyskyfire.common import (
     MassFlowMergerBlock,
     MassFlowSplitterBlock,
+    PipeBlock,
     RegenBlock,
     SimpleDuctBlock,
     Station,
     TransmissionBlock,
 )
 from pyskyfire.common import blocks
+from pyskyfire.ducts import Pipe, PipeStation, Straight
 
 
 def test_adiabatic_duct_preserves_enthalpy_and_mass_flow() -> None:
@@ -29,6 +31,43 @@ def test_adiabatic_duct_preserves_enthalpy_and_mass_flow() -> None:
     assert outlet.mdot == pytest.approx(inlet.mdot)
     assert h_out == pytest.approx(h_in, rel=1e-10)
     assert signals["dp_duct"] == pytest.approx(0.2 * inlet.p)
+
+
+def test_pipe_block_adapts_the_public_pipe_solver(monkeypatch) -> None:
+    pipe = Pipe(
+        [PipeStation((0, 0, 0), 0.02), PipeStation((1, 0, 0), 0.02)],
+        [Straight()],
+    )
+    transport = SimpleNamespace(fluid="Water")
+    results = [
+        SimpleNamespace(p=[3.0e6, 2.8e6], T=[320.0, 320.0], total_pressure_loss=2.0e5),
+        SimpleNamespace(p=[3.0e6, 2.75e6], T=[320.0, 320.0], total_pressure_loss=2.5e5),
+    ]
+    calls = []
+
+    def fake_solve(self, **kwargs):
+        calls.append(kwargs)
+        return results[len(calls) - 1]
+
+    monkeypatch.setattr(Pipe, "solve", fake_solve)
+    block = PipeBlock("feed", "in", "out", pipe, transport, friction_model="native")
+    inlet = Station(3.0e6, 320.0, 1.2)
+
+    stations, signals = block.compute({"in": inlet}, {})
+
+    assert block.station_inputs == ["in"]
+    assert block.station_outputs == ["out"]
+    assert block.signal_inputs == []
+    assert block.signal_outputs == ["dp_feed"]
+    assert stations == {"out": Station(2.8e6, 320.0, 1.2)}
+    assert signals == {"dp_feed": 2.0e5}
+    assert calls[0]["inlet_state"].p == inlet.p
+    assert calls[0]["inlet_state"].T == inlet.T
+    assert calls[0]["mass_flow"] == inlet.mdot
+    assert calls[0]["transport"] is transport
+    assert calls[0]["friction_model"] == "native"
+
+    assert block.post_process({"in": inlet}, {}) is results[1]
 
 
 def test_splitter_and_merger_conserve_mass_and_enthalpy() -> None:

@@ -4,7 +4,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from pyskyfire.common import EngineNetwork, Station
+from pyskyfire.common import EngineNetwork, PipeBlock, Station
+from pyskyfire.ducts import Pipe, PipeStation, Straight
 
 
 class _ConstantBlock:
@@ -41,6 +42,38 @@ def test_fixed_point_converges_and_collects_post_process_results(capsys) -> None
     assert network.stations["out"] == Station(2.0e6, 350.0, 3.0)
     assert network.block_results == {"constant": {"final_target": 4.0}}
     assert "Converged in 2 iterations" in capsys.readouterr().out
+
+
+def test_network_collects_detailed_pipe_result(capsys) -> None:
+    class Transport:
+        fluid = "constant"
+
+        @staticmethod
+        def get_rho(T, p):
+            return 1000.0
+
+        @staticmethod
+        def get_mu(T, p):
+            return 1.0e-3
+
+    pipe = Pipe(
+        [PipeStation((0, 0, 0), 0.02), PipeStation((1, 0, 0), 0.02)],
+        [Straight()],
+    )
+    block = PipeBlock("feed", "in", "out", pipe, Transport())
+    network = EngineNetwork(
+        stations={"in": Station(2.0e6, 300.0, 0.1)},
+        signals={},
+        blocks=[block],
+    )
+
+    network.run_fixed_point(tol=1e-12, max_iter=3)
+
+    assert network.stations["out"].p < network.stations["in"].p
+    assert network.signals["dp_feed"] > 0.0
+    result = network.block_results["feed"]
+    assert result.p[-1] == pytest.approx(network.stations["out"].p)
+    capsys.readouterr()
 
 
 def test_fixed_point_reports_nonconvergence() -> None:

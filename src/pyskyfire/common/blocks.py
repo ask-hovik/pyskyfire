@@ -8,6 +8,8 @@ import numpy as np
 
 # internal imports
 from pyskyfire.common.engine_network import Station
+from pyskyfire.ducts.pipe import Pipe
+from pyskyfire.thermo.state import FluidState, PHASE_UNKNOWN
 from pyskyfire.regen.coupled_solver import (
     BoundaryConditions,
     RegenResult,
@@ -814,6 +816,89 @@ class SimpleDuctBlock(FluidBlock):
         )
 
         return {self.st_out: st_o}, {self.dp_key: dp}
+
+
+class PipeBlock(FluidBlock):
+    """Engine-network adapter for one explicitly resolved :class:`Pipe`.
+
+    The contained pipe remains independently usable through :meth:`Pipe.solve`.
+    This block only translates network stations into that public solver API and
+    emits the resulting outlet station and ``dp_<name>`` loss signal.
+
+    Parameters
+    ----------
+    name : str
+        Block name used for the pressure-loss signal.
+    st_in, st_out : str
+        Inlet and outlet network station keys.
+    pipe : pyskyfire.ducts.Pipe
+        Physical pipe model.
+    transport : object
+        Fluid-property provider accepted by :meth:`Pipe.solve`.
+    friction_model : {'native', 'fluids'}, optional
+        Distributed-friction backend. Default ``'fluids'``.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        st_in: str,
+        st_out: str,
+        pipe: Pipe,
+        transport,
+        friction_model: str = "fluids",
+    ):
+        if not isinstance(pipe, Pipe):
+            raise TypeError("pipe must be a pyskyfire.ducts.Pipe")
+
+        self.name = name
+        self.st_in = st_in
+        self.st_out = st_out
+        self.pipe = pipe
+        self.transport = transport
+        self.friction_model = friction_model
+        super().__init__(getattr(transport, "fluid", type(transport).__name__))
+
+        self.station_inputs = [st_in]
+        self.station_outputs = [st_out]
+        self.signal_inputs = []
+        self.dp_key = f"dp_{name}"
+        self.signal_outputs = [self.dp_key]
+
+    def _solve(self, station: Station):
+        inlet_state = FluidState(
+            T=station.T,
+            p=station.p,
+            h=float("nan"),
+            quality=float("nan"),
+            rho=float("nan"),
+            phase=PHASE_UNKNOWN,
+            T_sat=float("nan"),
+        )
+        return self.pipe.solve(
+            inlet_state=inlet_state,
+            mass_flow=station.mdot,
+            transport=self.transport,
+            friction_model=self.friction_model,
+        )
+
+    def compute(
+        self,
+        stations: Dict[str, "Station"],
+        signals: Dict[str, float],
+    ) -> tuple[Dict[str, "Station"], Dict[str, float]]:
+        inlet = stations[self.st_in]
+        result = self._solve(inlet)
+        outlet = Station(
+            p=float(result.p[-1]),
+            T=float(result.T[-1]),
+            mdot=inlet.mdot,
+        )
+        return {self.st_out: outlet}, {self.dp_key: result.total_pressure_loss}
+
+    def post_process(self, stations, signals):
+        """Return the detailed pipe result at the converged inlet condition."""
+        return self._solve(stations[self.st_in])
 
 
 class MassFlowSplitterBlock(FluidBlock):

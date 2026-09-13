@@ -4,11 +4,11 @@ import asyncio
 import base64
 from pathlib import Path
 import shutil
-from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
+from pyskyfire import ducts
 from pyskyfire.viz import FieldData, PipeComponent, Scene
 
 
@@ -26,9 +26,15 @@ def test_offline_scene_renders_point_and_cell_fields(tmp_path):
     executable = Path(browser).resolve()
     if executable.name == "brave-browser" and executable.with_name("brave").is_file():
         browser = str(executable.with_name("brave"))
-    pipe = SimpleNamespace(centerline=np.array([[0., 0, 0], [1., 0, 0], [1., 1., 0]]), radius=0.1)
+    # A solver pipe, so the refined rounded bend reaches the renderer too.
+    stations, connections = ducts.generate_pipe_stations([
+        ducts.PathNode((0., 0., 0.), 0.2),
+        ducts.PathNode((1., 0., 0.), 0.2, bend=ducts.RoundedBend(radius=0.3)),
+        ducts.PathNode((1., 1., 0.), 0.2),
+    ])
+    pipe = ducts.Pipe(stations, connections)
     scene = Scene(color_by="p_static")
-    scene.add(PipeComponent(pipe, {"p_static": FieldData([1e6, 2e6, 3e6], "Pa", "Static pressure")}), name="points")
+    scene.add(PipeComponent(pipe, {"p_static": FieldData(np.linspace(3e6, 1e6, len(stations)), "Pa", "Static pressure")}), name="points")
     other = scene.add(PipeComponent(pipe), name="cells", position=(0, 0, 0.4))
     other.fields["p_static"] = FieldData(np.linspace(1e6, 3e6, len(other.mesh.triangles)), "Pa", "Static pressure", "cell")
     output = scene.save_html(tmp_path/"scene.html")

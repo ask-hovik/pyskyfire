@@ -139,13 +139,49 @@ channel endpoints, **not manifold ports**. Individual channel nodes expose
 at the axis and first hub-curve station. There is no discrete radial outlet
 anchor because the current impeller model has no volute outlet geometry.
 
-## Explicit pipe geometry and extension components
+## Pipes and ducts
 
-There is not yet a physical pipe class in pyskyfire. `PipeComponent` consumes an
-object exposing `centerline` (an N×3 Cartesian array in metres) and `radius`
-(a positive scalar or one radius per station). The frame is that of the supplied
-coordinates. A swept open-ended polygonal tube follows those stations. Curved
-bends must be sampled by the caller; no route or bend radius is inferred.
+`PipeComponent` draws a `ducts.Pipe` directly; the solved model is never routed
+or modified.
+
+```python
+pipe = psf.ducts.Pipe(stations, connections, roughness=15e-6)
+result = pipe.solve(inlet_state=inlet, mass_flow=0.1, transport=transport)
+
+scene.add(psf.viz.PipeComponent(pipe, result), name="fuel_feed")
+```
+
+A lumped `RoundedBend` is one connection between its two tangent points, so
+`Pipe.centerline` crosses the corner as a chord. For drawing, `PipeComponent`
+calls `Pipe.display_path(segments=...)`, which reopens each such bend into the
+arc its resolved `center` and `normal` describe. `segments` on the component
+sets that refinement, defaulting to 16. A `RoundedBend` built by hand without
+`center` and `normal` keeps its chord, because the bend plane is not
+recoverable from the loss model alone. `Continuous` connections are already
+physical arc stations, so their resolution stays with their own `segments`.
+
+Refinement is display-only. Lengths, losses, and every other solver quantity
+come from the stations and connections, which `display_path()` does not touch.
+
+Passing a `PipeResult` attaches its fields through `psf.viz.pipe_fields()`:
+`p_static`, `T_static`, `density`, and `velocity` per station, plus
+`pressure_loss`, `reynolds`, `darcy_factor`, and `loss_coefficient` per
+connection. Station names match the thrust chamber's, so one `color_by` spans a
+duct and a chamber. Per-connection values become cell fields on the rings
+spanning that connection; NaN where a connection does not define the quantity,
+such as the Darcy factor of a lumped bend.
+
+`results` also accepts a plain mapping of names to `FieldData`, either
+point-associated with one value per station or cell-associated with one value
+per connection:
+
+```python
+psf.viz.PipeComponent(pipe, {"p_static": FieldData(values, "Pa", "Static pressure")})
+```
+
+Any other object exposing `centerline` (an N×3 Cartesian array in metres) and
+`radius` (a positive scalar or one radius per station) is accepted too, and is
+swept exactly as supplied with no refinement:
 
 ```python
 from types import SimpleNamespace
@@ -157,11 +193,10 @@ pipe = SimpleNamespace(
 )
 ```
 
-Optional `results` maps names to `FieldData` with one value per pipe station:
-`FieldData(pressure_values, "Pa", "Static pressure")`. Values repeat around the
-section. These values must come from the caller's simulation; visualization
-does not compute pressure loss. Translating or rotating the component changes
-only its scene placement, never its length, bends, or engineering model.
+Translating or rotating the component changes only its scene placement, never
+its length, bends, or engineering model.
+
+## Extension components
 
 Custom components implement `build() -> SceneNode`, returning a fresh hierarchy.
 `MeshData(points, triangles)` stores local vertices and triangle connectivity.

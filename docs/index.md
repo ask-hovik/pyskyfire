@@ -47,6 +47,9 @@ Tutorials are guided, runnable introductions to a complete workflow.
 
 Howtos guide you through achieving a specific goal. For example hoe to use pyskyfire to find an optimum mixture ratio: {doc}`Mixture ratio optimisation <howto/mixture-ratio-optimisation>`  
 
+* {doc}`Define and solve a pipe <howto/pipes>`
+  Construct explicit pipe stations and connections, solve pressure loss independently, or use the same pipe in an engine network.
+
 ### Validation
 
 Validation reports compare Pyskyfire analyses with published engine data.
@@ -89,6 +92,7 @@ The reference section is generated from the source code and documents the availa
 | {doc}`pyskyfire.common <autoapi/pyskyfire/common/index>`   | Shared objects including solid-material models, result containers, stations, blocks, and engine-network infrastructure. |
 | {doc}`pyskyfire.thermo <autoapi/pyskyfire/thermo/index>`   | Fluid definitions, state resolution, transport properties, NASA CEA-based combustion and aerothermodynamics, and nozzle losses.         |
 | {doc}`pyskyfire.regen <autoapi/pyskyfire/regen/index>`     | Thrust-chamber geometry, cooling channels, wall models, regenerative cooling, and film cooling.                           |
+| {doc}`pyskyfire.ducts <autoapi/pyskyfire/ducts/index>`     | Shared duct friction, explicit pipe geometry, pressure-loss solving, and pipe-path generation.                            |
 | {doc}`pyskyfire.pump <autoapi/pyskyfire/pump/index>`       | Pump and turbopump analysis utilities.                                                                                    |
 | {doc}`pyskyfire.turbine <autoapi/pyskyfire/turbine/index>` | Turbine models and utilities for engine-cycle calculations.                                                               |
 | {doc}`pyskyfire.viz <autoapi/pyskyfire/viz/index>`         | Plotting, reporting, pressure-temperature diagrams, and 3D engine visualisation.                                          |
@@ -127,6 +131,7 @@ tutorials/advanced-simulation
 :hidden:
 
 howto/mixture-ratio-optimisation
+howto/pipes
 howto/3d-scenes
 ```
 
@@ -162,6 +167,7 @@ explanations/rao-nozzle
 :hidden:
 
 autoapi/pyskyfire/common/index
+autoapi/pyskyfire/ducts/index
 autoapi/pyskyfire/regen/index
 autoapi/pyskyfire/pump/index
 autoapi/pyskyfire/turbine/index

@@ -6,12 +6,13 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from pyskyfire.ducts import DisplayPath, PipeResult
 from pyskyfire.regen.channel_construction import build_channel_construction
 from pyskyfire.regen.cad_geometry import transverse_construction
 from pyskyfire.regen.channel_layout import ChannelLayout, resolve_analytical_layout, resolve_numerical_layout
 from .scene import Anchor, FieldData, MeshData, SceneNode, Transform
 
-__all__ = ["ThrustChamberComponent", "ImpellerComponent", "PipeComponent"]
+__all__ = ["ThrustChamberComponent", "ImpellerComponent", "PipeComponent", "pipe_fields"]
 
 _COLORS = ("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
            "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf")
@@ -217,35 +218,107 @@ class ImpellerComponent:
         return root
 
 
+# PipeResult attribute, field name, base SI units, label. Station arrays carry
+# one value per PipeStation; connection arrays one per connection. Names match
+# the thrust chamber's where the quantity is the same, so one ``color_by`` can
+# span a duct and a chamber. No unit conversion is performed.
+_PIPE_STATION_FIELDS = {
+    "p": ("p_static", "Pa", "Static pressure"),
+    "T": ("T_static", "K", "Static temperature"),
+    "density": ("density", "kg/m³", "Density"),
+    "velocity": ("velocity", "m/s", "Velocity"),
+}
+_PIPE_CONNECTION_FIELDS = {
+    "pressure_loss": ("pressure_loss", "Pa", "Connection pressure loss"),
+    "reynolds": ("reynolds", "1", "Reynolds number"),
+    "darcy_factor": ("darcy_factor", "1", "Darcy friction factor"),
+    "loss_coefficient": ("loss_coefficient", "1", "Loss coefficient"),
+}
+
+
+def pipe_fields(result):
+    """Adapt a :class:`~pyskyfire.ducts.PipeResult` into scene fields.
+
+    Station quantities become point fields and connection quantities become
+    cell fields, both in the base SI units the solver already works in. NaN is
+    retained where a connection does not define a quantity, such as the Darcy
+    factor of a lumped bend. :class:`PipeComponent` maps either association
+    onto its swept mesh.
+    """
+    if not isinstance(result, PipeResult):
+        raise TypeError("pipe_fields expects a ducts.PipeResult")
+    fields = {name: FieldData(getattr(result, attribute), units, label)
+              for attribute, (name, units, label) in _PIPE_STATION_FIELDS.items()}
+    fields.update({name: FieldData(getattr(result, attribute), units, label, "cell")
+                   for attribute, (name, units, label) in _PIPE_CONNECTION_FIELDS.items()})
+    return fields
+
+
+def _display_path(pipe, segments):
+    """Refined drawing geometry, or the supplied polyline for a plain object."""
+    resolve = getattr(pipe, "display_path", None)
+    if callable(resolve):
+        return resolve(segments=segments)
+    points = np.asarray(pipe.centerline, dtype=float)
+    if points.ndim != 2 or points.shape[1] != 3 or len(points) < 2 or not np.isfinite(points).all():
+        raise ValueError("Pipe centerline must be finite with shape (N,3), N >= 2")
+    radius = np.broadcast_to(np.asarray(pipe.radius, dtype=float), (len(points),))
+    return DisplayPath(points, radius, np.arange(len(points), dtype=float),
+                       np.arange(len(points) - 1))
+
+
+def _mapped_pipe_field(f, path, n_theta):
+    """Carry one source field onto the refined mesh, keeping its association."""
+    if f.association == "point":
+        if len(f.values) != path.station_count:
+            raise ValueError("Pipe point fields must have one value per centerline station")
+        values = np.interp(path.station, np.arange(path.station_count), f.values)
+        return FieldData(np.repeat(values, n_theta), f.units, f.label)
+    if len(f.values) != path.connection_count:
+        raise ValueError("Pipe cell fields must have one value per pipe connection")
+    # _surface emits two triangles per ring pair, so a segment owns 2*n_theta cells.
+    return FieldData(np.repeat(f.values[path.connection], 2*n_theta), f.units, f.label, "cell")
+
+
 @dataclass
 class PipeComponent:
     """Display an explicitly defined pipe; never route or modify a solver model.
 
-    ``pipe.centerline`` is an (N,3) Cartesian polyline in metres. ``pipe.radius``
-    is a positive scalar or one radius per station, in metres. The local frame
-    is the frame of the supplied coordinates (no implicit recentering).
-    ``results`` maps field names to point-associated FieldData with one value
-    per centerline station. Their values are repeated around each ring.
+    The pipe supplies its own geometry. A :class:`~pyskyfire.ducts.Pipe` offers
+    ``display_path(segments=...)``, which opens its lumped rounded bends into
+    arcs for drawing without touching the solved model; ``segments`` sets that
+    refinement. Any other object is read through ``centerline``, an (N,3)
+    Cartesian polyline in metres, and ``radius``, a positive scalar or one
+    radius per station, and is drawn exactly as supplied. The local frame is
+    the frame of those coordinates (no implicit recentering).
+
+    ``results`` is a :class:`~pyskyfire.ducts.PipeResult`, or a mapping of field
+    names to FieldData: point-associated with one value per station, or
+    cell-associated with one value per connection. Station values are
+    interpolated along refined bends and repeated around each ring; connection
+    values fill the rings spanning that connection.
     """
 
     pipe: object
     results: object = None
     n_theta: int = 16
+    segments: int = 16
 
     def build(self):
-        p = np.asarray(self.pipe.centerline, dtype=float)
-        if p.ndim != 2 or p.shape[1] != 3 or len(p) < 2 or not np.isfinite(p).all():
-            raise ValueError("Pipe centerline must be finite with shape (N,3), N >= 2")
         if not isinstance(self.n_theta, int) or self.n_theta < 3:
             raise ValueError("n_theta must be an integer of at least 3")
-        radius = np.broadcast_to(np.asarray(self.pipe.radius, dtype=float), (len(p),))
+        path = _display_path(self.pipe, self.segments)
+        p = path.points
+        if len(p) < 2:
+            raise ValueError("Pipe centerline must be finite with shape (N,3), N >= 2")
+        radius = path.radius
         if not np.isfinite(radius).all() or (radius <= 0).any():
             raise ValueError("Pipe radii must be finite and positive")
-        segments = np.diff(p, axis=0)
-        lengths = np.linalg.norm(segments, axis=1)
+        legs = np.diff(p, axis=0)
+        lengths = np.linalg.norm(legs, axis=1)
         if (lengths <= 0).any():
             raise ValueError("Pipe centerline must not contain consecutive duplicate points")
-        direction = segments / lengths[:, None]
+        direction = legs / lengths[:, None]
         tangent = np.vstack((direction[0], direction[:-1]+direction[1:], direction[-1]))
         norms = np.linalg.norm(tangent, axis=1)
         if (norms < 1e-10).any():
@@ -264,11 +337,10 @@ class PipeComponent:
             u /= np.linalg.norm(u)
             v = np.cross(axis, u)
             rings.append(center+r*(np.cos(theta)[:, None]*u+np.sin(theta)[:, None]*v))
+        results = pipe_fields(self.results) if isinstance(self.results, PipeResult) else self.results
         fields = {}
-        if self.results is not None:
-            for name, f in self.results.items():
-                if f.association != "point" or len(f.values) != len(p):
-                    raise ValueError("Pipe fields must have one point value per centerline station")
-                fields[name] = FieldData(np.repeat(f.values, self.n_theta), f.units, f.label)
+        if results is not None:
+            for name, f in results.items():
+                fields[name] = _mapped_pipe_field(f, path, self.n_theta)
         return SceneNode("pipe", mesh=_surface(rings, closed=True), fields=fields,
                          anchors=_end_anchors(p), metadata={"kind": "pipe"})

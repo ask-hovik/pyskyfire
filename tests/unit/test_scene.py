@@ -7,11 +7,12 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
+from pyskyfire import ducts
 from pyskyfire.regen.channel_layout import ChannelLayout, ResolvedChannel
 from pyskyfire.regen.cross_section import CrossSectionSquared, CrossSectionRounded
 from pyskyfire.viz import (
     Anchor, FieldData, ImpellerComponent, MeshData, PipeComponent, Scene,
-    SceneNode, ThrustChamberComponent, Transform,
+    SceneNode, ThrustChamberComponent, Transform, pipe_fields,
 )
 from pyskyfire.viz.backends.threejs import scene_payload
 
@@ -173,6 +174,95 @@ def test_pipe_uses_only_supplied_route_and_station_fields():
     np.testing.assert_allclose(np.linalg.norm(rings-original[:, None, :], axis=2), 0.01, atol=1e-12)
     np.testing.assert_array_equal(model.centerline, original)
     np.testing.assert_array_equal(root.fields["p_static"].values, np.repeat([3e6, 2e6, 1e6], 16))
+
+
+def bent_pipe(radius=0.05, diameter=0.01):
+    """A solver pipe whose single corner is one lumped bend between tangents."""
+    stations, connections = ducts.generate_pipe_stations([
+        ducts.PathNode((0, 0, 0), diameter),
+        ducts.PathNode((1, 0, 0), diameter, bend=ducts.RoundedBend(radius=radius)),
+        ducts.PathNode((1, 1, 0), diameter),
+    ])
+    return ducts.Pipe(stations, connections)
+
+
+class ConstantTransport:
+    def get_rho(self, T, p):
+        return 1000.0
+
+    def get_mu(self, T, p):
+        return 1.0e-3
+
+
+def solved_bent_pipe():
+    from pyskyfire.thermo import PHASE_UNKNOWN, FluidState
+    pipe = bent_pipe()
+    state = FluidState(T=300., p=2e6, h=np.nan, quality=np.nan, rho=np.nan,
+                       phase=PHASE_UNKNOWN, T_sat=np.nan)
+    return pipe, pipe.solve(inlet_state=state, mass_flow=0.1, transport=ConstantTransport())
+
+
+def test_solver_pipe_is_drawn_through_its_own_refined_bend_geometry():
+    pipe = bent_pipe()
+    bend = pipe.connections[1]
+    root = PipeComponent(pipe, n_theta=8, segments=6).build()
+    rings = root.mesh.points.reshape(-1, 8, 3)
+    centers = rings.mean(axis=1)
+
+    # The corner is swept as an arc, not as the solver centerline's chord.
+    assert len(centers) == len(pipe.display_path(segments=6).points) > len(pipe.stations)
+    arc = centers[2:8]
+    np.testing.assert_allclose(
+        np.linalg.norm(arc-np.asarray(bend.center), axis=1), bend.radius, atol=1e-9)
+    np.testing.assert_allclose(centers[0], pipe.centerline[0], atol=1e-12)
+    np.testing.assert_allclose(centers[-1], pipe.centerline[-1], atol=1e-12)
+    np.testing.assert_allclose(
+        np.linalg.norm(rings-centers[:, None, :], axis=2), 0.005, atol=1e-12)
+    assert root.anchors["inlet"].position.tolist() == [0, 0, 0]
+
+
+def test_pipe_result_becomes_station_point_fields_and_connection_cell_fields():
+    pipe, result = solved_bent_pipe()
+    root = PipeComponent(pipe, result, n_theta=8, segments=4).build()
+    path = pipe.display_path(segments=4)
+
+    assert set(pipe_fields(result)) == set(root.fields)
+    for name in ("p_static", "T_static", "density", "velocity"):
+        assert root.fields[name].association == "point"
+        assert len(root.fields[name].values) == len(root.mesh.points)
+    for name in ("pressure_loss", "reynolds", "darcy_factor", "loss_coefficient"):
+        assert root.fields[name].association == "cell"
+        assert len(root.fields[name].values) == len(root.mesh.triangles)
+
+    # Station values land on their own stations; the bend interpolates between.
+    pressure = root.fields["p_static"].values.reshape(-1, 8)[:, 0]
+    np.testing.assert_allclose(pressure[[0, 1, 5, 6]], result.p, rtol=1e-12)
+    assert np.all(np.diff(pressure) <= 0)
+    # A lumped bend defines no Darcy factor, and the NaN survives the mapping.
+    darcy = root.fields["darcy_factor"].values.reshape(-1, 2*8)[:, 0]
+    np.testing.assert_array_equal(np.isnan(darcy), np.isnan(result.darcy_factor[path.connection]))
+    assert np.isnan(result.darcy_factor[1])
+
+
+def test_pipe_fields_reject_wrong_association_lengths():
+    pipe, result = solved_bent_pipe()
+    with pytest.raises(ValueError, match="one value per centerline station"):
+        PipeComponent(pipe, {"p": FieldData([1., 2.], "Pa", "P")}).build()
+    with pytest.raises(ValueError, match="one value per pipe connection"):
+        PipeComponent(pipe, {"p": FieldData([1., 2.], "Pa", "P", "cell")}).build()
+    with pytest.raises(TypeError, match="PipeResult"):
+        pipe_fields(result.stations)
+
+
+def test_solver_pipe_shares_a_color_field_with_a_chamber():
+    chamber, layout, chamber_result = chamber_case()
+    pipe, result = solved_bent_pipe()
+    scene = Scene(color_by="p_static")
+    scene.add(ThrustChamberComponent(chamber, chamber_result, layout=layout), name="chamber")
+    duct = scene.add(PipeComponent(pipe, result), name="feed", position=(0, 0, 1))
+    limits = scene_payload(scene)["style"]["limits"]
+    assert limits[0] <= float(result.p.min()) and limits[1] >= float(result.p.max())
+    assert duct.metadata["kind"] == "pipe"
 
 
 def test_impeller_can_share_scene_with_channels_and_pipe():

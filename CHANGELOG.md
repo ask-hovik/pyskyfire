@@ -9,8 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Modular 3D scenes with thrust-chamber, impeller, and explicitly shaped pipe
-  components; SI rigid placement and visual inlet/outlet anchors; optional
+- An RL10 turbine-discharge duct example that builds the Figure G1 bending
+  table as an explicit `Pipe`. It reproduces the tabulated tangent distances
+  and the 51.7 in actual duct length, takes the 2.402 in bore from the
+  drawing's OD and wall callouts, and compares lumped rounded-bend against
+  continuous-curvature connections. The report includes orthographic views
+  drawn as true tube silhouettes with projected end faces, for comparison
+  against the fabrication drawing. See `examples/rl10_duct/rl10_duct.py`.
+- `PipeComponent` renders a solved `Pipe` directly, and `Pipe.display_path()`
+  reopens lumped `RoundedBend` connections into their arcs for drawing so a
+  bend no longer appears as a chord cut across its corner. Passing a
+  `PipeResult` attaches its fields through `psf.viz.pipe_fields()`: station
+  quantities as point fields, connection quantities as cell fields, with names
+  matching the thrust chamber's so one `color_by` spans both. Refinement is
+  display-only and does not touch any solver quantity. The RL10 duct report
+  gained a 3D view of the solved tube.
+- Modular 3D scenes with thrust-chamber, impeller, and pipe components; SI
+  rigid placement and visual inlet/outlet anchors; optional
   cooling-result scalar fields in desktop and offline HTML output. Cooling
   channel instances share geometry built once per resolved seed. See the
   3D scene guide and `examples/visualisation/scene.py`.

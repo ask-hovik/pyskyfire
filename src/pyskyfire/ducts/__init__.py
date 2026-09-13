@@ -1,13 +1,10 @@
 """Duct hydraulics shared by cooling channels, piping and manifolds.
 
-This subpackage is a leaf: it depends only on numpy, scipy and ``fluids``, and
-never imports from :mod:`pyskyfire.regen` or :mod:`pyskyfire.common`. That
-keeps it importable from anywhere in the library without a cycle, which is the
-whole reason it exists as a separate package rather than living in
-:mod:`pyskyfire.common`.
-
-Currently it provides the friction physics behind pressure drop. Centerline
-geometry, fittings and the arc-length march will follow.
+This subpackage contains reusable friction physics and explicit pipe geometry.
+It does not import from :mod:`pyskyfire.regen` or :mod:`pyskyfire.common`, so
+cooling channels and engine-network adapters can both depend on it without a
+cycle. Pipe state records use the lower-level :mod:`pyskyfire.thermo` package.
 """
 
 from .friction import *
+from .pipe import *

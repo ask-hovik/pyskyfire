@@ -112,6 +112,15 @@ def test_curvature_correction_example(tmp_path: Path) -> None:
     )
 
 
+def test_rl10_duct_example(tmp_path: Path) -> None:
+    run_example(
+        "examples/rl10_duct/rl10_duct.py",
+        tmp_path / "rl10-duct",
+        ("rl10-duct-report.html",),
+        timeout=5 * 60,
+    )
+
+
 def test_minimal_film_cooling_example(tmp_path: Path) -> None:
     run_example(
         "examples/film_cooling/minimal_film_cooling.py",
