@@ -48,6 +48,7 @@ Tutorials are guided, runnable introductions to a complete workflow.
 Howtos guide you through achieving a specific goal. For example hoe to use pyskyfire to find an optimum mixture ratio: {doc}`Mixture ratio optimisation <howto/mixture-ratio-optimisation>`  
 
 * {doc}`Define and solve a pipe <howto/pipes>`
+* {doc}`Design and solve a volute <howto/volutes>`
   Construct explicit pipe stations and connections, solve pressure loss independently, or use the same pipe in an engine network.
 
 ### Validation
@@ -132,6 +133,10 @@ tutorials/advanced-simulation
 
 howto/mixture-ratio-optimisation
 howto/pipes
+howto/heat-exchangers
+howto/volutes
+howto/cross-sections
+howto/impellers
 howto/3d-scenes
 ```
 
@@ -168,6 +173,7 @@ explanations/rao-nozzle
 
 autoapi/pyskyfire/common/index
 autoapi/pyskyfire/ducts/index
+autoapi/pyskyfire/heat_exchanger/index
 autoapi/pyskyfire/regen/index
 autoapi/pyskyfire/pump/index
 autoapi/pyskyfire/turbine/index

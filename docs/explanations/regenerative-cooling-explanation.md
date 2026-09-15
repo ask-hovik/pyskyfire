@@ -1111,7 +1111,7 @@ cooling_data = psf.regen.coupled_steady_heating_analysis(
 calls instead use `model="fluids"`, for example:
 
 ```python
-from pyskyfire.ducts import friction_pressure_gradient
+from pyskyfire.common import friction_pressure_gradient
 
 dp_ds = friction_pressure_gradient(
     ReDh=1e5, Dh=0.004, rho=800.0, velocity=10.0,

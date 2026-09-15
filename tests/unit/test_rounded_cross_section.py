@@ -93,7 +93,7 @@ def test_height_below_rounded_minimum_is_rejected():
         section.A_coolant(profiles)
 
 
-@pytest.mark.parametrize("section_name", ["CrossSectionRounded", "CrossSectionRoundedInternal"])
+@pytest.mark.parametrize("section_name", ["CrossSectionRounded"])
 @pytest.mark.parametrize("base", [0.0, 0.004, 0.02])
 def test_base_input_matches_full_input_and_legacy_section_equations(section_name, base):
     from dataclasses import replace

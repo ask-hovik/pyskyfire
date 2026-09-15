@@ -80,7 +80,7 @@ def build_thrust_chamber():
         contour=contour,
         coolant_transport=psf.thermo.FluidTransport(coolant),
         cross_section=psf.regen.CrossSectionSquared(
-            rib_width=lambda pitch_mid: 0.1 * pitch_mid
+            sidewall_half_thickness=lambda pitch_mid: (0.1 * pitch_mid) / 2
         ),
         span=[1.0, -1.0],
         placement=placement,

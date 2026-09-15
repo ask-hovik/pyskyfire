@@ -5,8 +5,9 @@ the shared library exposes centerlines, layouts, and lazy section planes, while
 this script owns one particular Onshape JSON contract.
 
 Squared sections use transverse construction planes and projected rib faces.
-Rounded sections are transformed into transverse elliptical arcs. Optional
-hot-wall profiles use the same planes. Simulation geometry remains unchanged.
+Rounded sections are transformed into transverse elliptical arcs. Every export
+carries a hot wall: rounded/mixed profiles use the same planes, while plain
+walls revolve the contour. Simulation geometry remains unchanged.
 
 Hot-wall profiles also carry ``runs``: spans of consecutive sections whose
 curves are the same channels in the same order. The FeatureScript lofts those
@@ -28,7 +29,6 @@ from pyskyfire.regen.cad_geometry import build_hot_wall, transverse_construction
 SUPPORTED_SECTIONS = (
     psf.regen.CrossSectionSquared,
     psf.regen.CrossSectionRounded,
-    psf.regen.CrossSectionRoundedInternal,
 )
 
 RESULTS_FILENAME = "results.pkl"
@@ -104,10 +104,8 @@ def build_onshape_data(
     *,
     layout: str = "analytical",
     circuit_selectors=None,
-    include_hot_wall=False,
     hot_wall_trim_fraction=0.1,
     hot_wall_transition_fraction=0.02,
-    hot_wall_transition_length_m=None,
 ) -> dict:
     """Return the JSON-serializable Onshape cooling-channel document."""
 
@@ -155,7 +153,7 @@ def build_onshape_data(
 
     data = {
         "schema": "pyskyfire.onshape.cooling-channels",
-        "schemaVersion": 6,
+        "schemaVersion": 8,
         "units": {"length": "millimeter", "angle": "degree"},
         "coordinateSystem": {
             "description": (
@@ -173,14 +171,12 @@ def build_onshape_data(
         "channels": channels,
     }
 
-    if include_hot_wall:
-        data["hotWall"] = build_hot_wall(
-            thrust_chamber,
-            resolved,
-            trim_fraction=hot_wall_trim_fraction,
-            transition_fraction=hot_wall_transition_fraction,
-            transition_length_m=hot_wall_transition_length_m,
-        )
+    data["hotWall"] = build_hot_wall(
+        thrust_chamber,
+        resolved,
+        trim_fraction=hot_wall_trim_fraction,
+        transition_fraction=hot_wall_transition_fraction,
+    )
     return data
 
 
@@ -190,10 +186,8 @@ def export_onshape_json(
     *,
     layout: str = "analytical",
     circuit_selectors=None,
-    include_hot_wall=False,
     hot_wall_trim_fraction=0.1,
     hot_wall_transition_fraction=0.02,
-    hot_wall_transition_length_m=None,
 ) -> Path:
     """Load a saved simulation and write its Onshape JSON document."""
 
@@ -204,10 +198,8 @@ def export_onshape_json(
         results["thrust_chamber"],
         layout=layout,
         circuit_selectors=circuit_selectors,
-        include_hot_wall=include_hot_wall,
         hot_wall_trim_fraction=hot_wall_trim_fraction,
         hot_wall_transition_fraction=hot_wall_transition_fraction,
-        hot_wall_transition_length_m=hot_wall_transition_length_m,
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
@@ -263,25 +255,18 @@ def parse_args(
         ),
     )
     parser.add_argument(
-        "--hot-wall", action="store_true", help="Include continuous hot-wall profiles."
-    )
-    parser.add_argument(
         "--hot-wall-trim-fraction",
         type=float,
         default=0.1,
         help="Fraction of each arc parameter span trimmed per blended side (default: 0.1).",
     )
-    transition = parser.add_mutually_exclusive_group()
-    transition.add_argument(
+    parser.add_argument(
         "--hot-wall-transition-fraction",
         type=float,
         default=0.02,
-        help="Transition length / full contour axial length (default: 0.02).",
-    )
-    transition.add_argument(
-        "--hot-wall-transition-length-m",
-        type=float,
-        help="Absolute transition length in metres instead of a fraction.",
+        help=(
+            "Empty interleave-zone width / full contour axial length (default: 0.02)."
+        ),
     )
     return parser.parse_args()
 
@@ -293,10 +278,8 @@ def main(**defaults) -> None:
         args.output_dir / args.output_name,
         layout=args.layout,
         circuit_selectors=args.circuits,
-        include_hot_wall=args.hot_wall,
         hot_wall_trim_fraction=args.hot_wall_trim_fraction,
         hot_wall_transition_fraction=args.hot_wall_transition_fraction,
-        hot_wall_transition_length_m=args.hot_wall_transition_length_m,
     )
     print(f"Onshape cooling-channel data saved to {output_path}")
 

@@ -9,21 +9,124 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- An RL10 turbine-discharge duct example that builds the Figure G1 bending
-  table as an explicit `Pipe`. It reproduces the tabulated tangent distances
-  and the 51.7 in actual duct length, takes the 2.402 in bore from the
-  drawing's OD and wall callouts, and compares lumped rounded-bend against
-  continuous-curvature connections. The report includes orthographic views
-  drawn as true tube silhouettes with projected end faces, for comparison
-  against the fabrication drawing. See `examples/rl10_duct/rl10_duct.py`.
+- General path-based heat exchangers with prescribed chamber gas, coupled
+  counterflow/coflow fluids, equal-flow copied channels, explicit shared-wall
+  segment links, ideal series headers, and wall-temperature reports.
+- Shared `ducts.Path`, `PathStation`, `PathPlacement`, and transported section
+  frames; hydrogen/oxygen and paired ring/spoke baffle examples.
+- Gnielinski convection in `common.physics` and shared acceleration pressure
+  change in `common.momentum`.
+- Volutes and collectors in `pyskyfire.ducts`, for the shaped manifold on a pump
+  discharge and the plain constant-area toroidal manifold sometimes used on a
+  cooling-circuit inlet. `EllipticalSlottedSection` is a bore fed through a
+  fixed-width slot, with each wall-to-bore fillet tangent to both, so the bore
+  centre follows from the bore size alone and the inlet height stays fixed as
+  the passage grows. `ConstantAngularMomentum` sizes that passage from Aungier's
+  Eq. 11-5, `ConstantArea` gives the unshaped collector, and `Volute.solve` runs
+  his one-dimensional loss analysis (Eqs. 5-105 to 5-110): meridional and
+  tangential velocity dump, skin friction, and exit cone, each reported
+  separately. The sizing parameter defaults to `SP = 1.0`, which zeroes the
+  tangential term. `VoluteBlock` adapts the solver to an engine network.
+  A shaped volute wants zero area at the tongue, which no section family can
+  provide, so stations where the area law could not be satisfied are flagged
+  through `geometry.clipped` rather than failing.
+- `Volute(tilt=...)` inclines the inlet plane away from radial, for a pump
+  whose discharge points downward or a manifold following a nozzle's slope. It
+  is constant around the circumference and rotates the section plane rigidly,
+  so it decides where the passage sits and leaves every loss scalar unchanged.
+  `Volute.sweep()` places the sections in machine coordinates.
+- `VoluteComponent` draws a resolved volute passage in a `Scene`, swept from the
+  tongue through one revolution and capped at both ends so the step between the
+  two faces is the cutwater. `volute_fields()` colours it by any per-station
+  quantity. Capping needs each section to be star-shaped about a known point,
+  which `VoluteSection.fan_origin` supplies: for a slotted bore the area
+  centroid will not do, since a long throat drags it inboard of the fillets.
+- `examples/volute/volute_report.py` designs two radial pump-discharge volutes
+  and one manifold inclined 45 degrees, gives each its own scene, and reports
+  their geometry and loss breakdown. Separate scenes rather than one shared one
+  so each passage keeps its own colour scale: they differ in through-flow
+  velocity by about a factor of three, and a shared scale flattened the two
+  slower ones to a single tone.
+- The volute bore is elliptical, and its aspect ratio doubles as the way past
+  the area floor at the tongue. `EllipticalSlottedSection.aspect_ratio` defaults
+  to one, a circle; above or below one it gives a bore oblong across the slot or
+  outward from it. `size` is the semi-axis across the slot whatever the aspect,
+  so the slot still floors it at `inlet_width / 2`.
+  A shaped volute wants a vanishing area at the tongue and no bore spanning the
+  slot can shrink that far, but flattening one shrinks its area roughly as one
+  over the aspect ratio without narrowing it below the slot. `Volute` now works
+  down three regimes as the tongue is approached -- solve the size, then, once
+  that has bottomed out, solve the aspect ratio up to `max_aspect_ratio`
+  (default four), and only then clip -- which roughly halves the clipped run and
+  cuts the area excess over the law near the tongue by an order of magnitude.
+  `VoluteGeometry` gained `aspect` and `flattened`; `clipped` now means the
+  flattest allowed section was still too big. Each fillet is placed by solving
+  its tangency to the ellipse, which bisects rather than converging faster on
+  purpose: the root slides onto the end of its bracket and meets it tangentially
+  as the bore closes onto the slot, where Newton stalls and a fixed-point
+  iteration on the same residual diverges. `SectionEllipseArc` joins `SectionArc`
+  in `common.section_geometry`.
+- `Volute(exit_cone=...)` attaches an `ExitCone`, the duct carrying collected
+  flow from the full-collection plane to a pipe flange of a stated diameter, at
+  any angle between tangential and radial and any elevation out of the
+  volute's own plane. `first_angle` turns within the volute's plane from
+  tangential, fixed at the volute outlet since the duct has moved round the
+  volute by the time it reaches its flange; `"radial"` solves for the turn that
+  points the flange straight out from the machine axis wherever it ends up,
+  which is closer than a right angle away from tangential by exactly how far
+  the duct has travelled round, and a numeric angle beyond that bound is
+  rejected as pointing back inward. `second_angle` lifts the outlet out of that
+  plane on top of the first angle. `arc_length_parameter` sets the duct's
+  length in outlet diameters, with a floor of one; too tight a bend for that
+  length is rejected rather than built self-intersecting. The geometry does not
+  feed back into Aungier's loss analysis beyond the flange diameter, which sets
+  station 7; `Volute.solve()` and `VoluteBlock` now default `exit_diameter` from
+  an attached cone. `Volute.sweep_exit_cone()` and `VoluteComponent` continue
+  the swept duct seamlessly from the volute's own last ring -- bit-identical,
+  not merely tracing the same curve at different points along it -- through to
+  a circle at the flange; a tilted volute's cutwater edge carries its own
+  tilted section frame into the duct rather than snapping to the untilted
+  default. The example gives each of its three volutes a different outlet:
+  tangential, radial, and an intermediate angle with elevation.
+- Clicking a part in the standalone 3D viewer selects the top-level component
+  that owns it and reports, in a box beside the click, its name, kind, anchors
+  in scene coordinates, and the `position=`/`rotation=` arguments that reproduce
+  its placement. The angles are derived in Python through `Transform`'s own
+  extrinsic xyz convention, so they can be pasted back into `scene.add()`
+  without reinterpretation. One cooling channel selects its whole thrust
+  chamber; descending into circuits and individual channels is not implemented.
+- A field dropdown in the standalone viewer's legend recolors the scene by any
+  field its components carry, with a "None" entry restoring component colors.
+  The HTML already carried every field, so this costs no payload and no rerun:
+  `color_by` now chooses the initial selection rather than the only one, and
+  `clim` pins that field's range while the rest range over their own values.
+  Components lacking the selected field fall back to their material color.
+- `Scene(show_axes=True)` draws a corner orientation triad labelled x, y, z in
+  both the desktop and standalone HTML viewers. It marks the scene frame's
+  directions only: it sits in a fixed corner viewport, so it carries no ticks
+  and shows neither the origin's screen position nor the scene's scale. The
+  RL10 report's engine scene turns it on, so the duct's parked orientation can
+  be read against the chamber axis.
+- `validation/RL10/plumbing/`, where explicit RL10 tubing accumulates one
+  module per physical component. `bending_table.py` converts a fabrication
+  bending table into `PathNode` control vertices, absorbing each corner's
+  `R tan(angle / 2)` tangent distance and rolling bend planes about the
+  intervening straight. `turbine_discharge_duct.py` is the Figure G1 duct: it
+  reproduces the tabulated tangent distances and the 51.7 in actual duct
+  length, and takes the 2.402 in bore from the drawing's OD and wall callouts.
+  The duct is drawn in the RL10 report's 3D engine scene as a `PipeComponent`,
+  at true size but parked beside the chamber, since its mounting point on the
+  turbine housing is not modelled. Nothing is wired into `sizer_sim.py` yet,
+  because a `SimpleDuctBlock` pressure ratio covers a whole network leg and can
+  only be retired once every component along that leg is modelled. This
+  replaces the `examples/rl10_duct` example, which has been removed.
 - `PipeComponent` renders a solved `Pipe` directly, and `Pipe.display_path()`
   reopens lumped `RoundedBend` connections into their arcs for drawing so a
   bend no longer appears as a chord cut across its corner. Passing a
   `PipeResult` attaches its fields through `psf.viz.pipe_fields()`: station
   quantities as point fields, connection quantities as cell fields, with names
   matching the thrust chamber's so one `color_by` spans both. Refinement is
-  display-only and does not touch any solver quantity. The RL10 duct report
-  gained a 3D view of the solved tube.
+  display-only and does not touch any solver quantity.
 - Modular 3D scenes with thrust-chamber, impeller, and pipe components; SI
   rigid placement and visual inlet/outlet anchors; optional
   cooling-result scalar fields in desktop and offline HTML output. Cooling
@@ -58,6 +161,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   page for the slot table and the full glossary.
 
 ### Changed
+- Heat-transfer physics and friction now live in `common.physics` and
+  `common.friction`; regen and ducts import the shared implementations.
+- Removed `PipeStation` and node-level diameter. Pipes use `PathStation` and
+  `Pipe(diameter=...)`; `Path.from_nodes` / `generate_path_stations` replace
+  `generate_pipe_stations`. Repository examples and validation callers migrated.
+- Plain hot-wall spans revolve one spline per smooth run of the chamber
+  contour instead of one cubic Bézier per contour interval, so a revolved wall
+  is a single smooth face rather than hundreds of short segments. Runs are cut
+  where the meridian's tangent jumps, so a throat corner or an interpolated,
+  faceted contour keeps its shape. Onshape JSON is now version 8, and the
+  FeatureScript has to be updated with it.
+- The example Onshape exporter shared by the advanced and RL10 entry points
+  always writes the hot wall. `--hot-wall` and the `include_hot_wall` keyword
+  are gone; `--hot-wall-trim-fraction` and `--hot-wall-transition-fraction`
+  still tune it, and the chamber must carry a contour.
+- The standalone 3D scene viewer rotates with `TrackballControls` instead of
+  `OrbitControls`, so the view can be spun continuously to any orientation
+  rather than stopping at the poles of a fixed up-axis, as in CAD. Pressing
+  `R` restores the initial view. `OrbitControls.js` is no longer bundled.
 - **Breaking:** `pyskyfire.skycea` is now `pyskyfire.thermo`, which also owns
   `Fluid` (formerly in `common`) and fluid-state resolution (formerly in
   `regen.coolant_state`). `CoolantTransport` becomes `FluidTransport`,
@@ -120,7 +242,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `rounded_base_height` and their local helpers). The viewer and the exporter
   both build sections from `build_channel_construction`.
 
+### Added
+- `BladeSettings(start=(hub, tip))` slants an impeller's leading edge, starting
+  the blade further downstream on the hub than at the tip. A hub streamline is
+  far longer in `m'` than a tip streamline, since `dm' = dm/r` and the hub runs
+  close to the axis, so a leading edge placed on a single station makes the hub
+  section wrap much further than the tip section -- 178° against 101° in the
+  impeller example -- and the difference shows up as leading-edge sweep. A
+  slanted leading edge is how a blade development is normally drawn, and it
+  evens the wrap out: `start=(0.34, 0.05)` takes that spread from 77° to 14°.
+  A section can only begin on a span line, so the slant is expressed as which
+  hub and shroud stations pair, and `MeridionalContours.with_leading_edge`
+  re-pairs the passage to carry it. The inlet velocity triangle and the inlet
+  metal angles now come from the leading edge rather than the inlet plane, with
+  `cm` from unblocked continuity through the component of the through-flow that
+  crosses it, taking the flow direction from the two wall tangents so that the
+  area a leading edge passes does not depend on how the stations were paired to
+  place it; eye sizing still uses the inlet plane and `phi1`. The example uses
+  a slanted leading edge.
+
 ### Fixed
+- Generated impeller blades are stacked on the trailing edge, so it lies in one
+  axial plane instead of trailing around the wheel. Each span section wraps by
+  the integral of its own metal-angle law over its own conformal length, and
+  the hub section is much longer in `m'` than the tip section, so the two wrap
+  differently by construction: 216 and 121 degrees in the impeller example.
+  pyTurbo builds every section from a common leading edge, which pushed that
+  95 degree difference onto the trailing edge -- more than the 60 degree blade
+  pitch, which gave the wheel a screw-like look and a trailing edge no radial
+  machine has. The leading edge now carries the difference as sweep, the way a
+  blade development is stacked. Stacking is a rigid rotation of each section
+  about the shaft, so metal angles, wrap, thickness and the passage are
+  unchanged, and a splitter is rotated with the main blade it follows.
 - Resolved channel geometry is built once per geometry instead of once per
   solver residual. A single-station section has to be interpolated out of the
   whole-circuit bundle, since it carries resolved fields such as the lobe

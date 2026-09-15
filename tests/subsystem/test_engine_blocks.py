@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import CoolProp.CoolProp as CP
 import pytest
 
-from pyskyfire.common import (
+from pyskyfire.network import (
     MassFlowMergerBlock,
     MassFlowSplitterBlock,
     PipeBlock,
@@ -13,9 +13,18 @@ from pyskyfire.common import (
     SimpleDuctBlock,
     Station,
     TransmissionBlock,
+    VoluteBlock,
 )
-from pyskyfire.common import blocks
-from pyskyfire.ducts import Pipe, PipeStation, Straight
+from pyskyfire.network import blocks
+from pyskyfire.ducts import (
+    EllipticalSlottedSection,
+    ExitCone,
+    Pipe,
+    PathStation,
+    Straight,
+    Volute,
+    VoluteInlet,
+)
 
 
 def test_adiabatic_duct_preserves_enthalpy_and_mass_flow() -> None:
@@ -35,9 +44,9 @@ def test_adiabatic_duct_preserves_enthalpy_and_mass_flow() -> None:
 
 def test_pipe_block_adapts_the_public_pipe_solver(monkeypatch) -> None:
     pipe = Pipe(
-        [PipeStation((0, 0, 0), 0.02), PipeStation((1, 0, 0), 0.02)],
+        [PathStation((0, 0, 0)), PathStation((1, 0, 0))],
         [Straight()],
-    )
+    diameter=0.02)
     transport = SimpleNamespace(fluid="Water")
     results = [
         SimpleNamespace(p=[3.0e6, 2.8e6], T=[320.0, 320.0], total_pressure_loss=2.0e5),
@@ -150,3 +159,86 @@ def test_regen_block_forwards_inlet_state_and_returns_solver_outlet(monkeypatch)
     assert captured["heat_curvature_correction"] is False
     assert stations["out"] == Station(2.7e6, 410.0, 2.5)
     assert signals == {"dp_jacket": pytest.approx(0.3e6)}
+
+
+def test_volute_block_adapts_the_public_volute_solver(monkeypatch) -> None:
+    volute = Volute(
+        EllipticalSlottedSection(inlet_width=0.012, fillet_radius=0.003),
+        VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0),
+        n_stations=13,
+    )
+    transport = SimpleNamespace(fluid="Water")
+    results = [
+        SimpleNamespace(
+            states=(SimpleNamespace(p=3.0e6), SimpleNamespace(p=2.8e6)),
+            total_pressure_loss=2.0e5,
+        ),
+        SimpleNamespace(
+            states=(SimpleNamespace(p=3.0e6), SimpleNamespace(p=2.9e6)),
+            total_pressure_loss=1.0e5,
+        ),
+    ]
+    calls = []
+
+    def fake_solve(self, **kwargs):
+        calls.append(kwargs)
+        return results[len(calls) - 1]
+
+    monkeypatch.setattr(Volute, "solve", fake_solve)
+    block = VoluteBlock(
+        "discharge", "in", "out", volute, transport,
+        exit_diameter=0.05, roughness=1.0e-5, friction_model="native",
+    )
+    inlet = Station(3.0e6, 320.0, 1.2)
+
+    stations, signals = block.compute({"in": inlet}, {})
+
+    assert block.station_inputs == ["in"]
+    assert block.station_outputs == ["out"]
+    assert block.signal_inputs == []
+    assert block.signal_outputs == ["dp_discharge"]
+    assert stations == {"out": Station(2.8e6, 320.0, 1.2)}
+    assert signals == {"dp_discharge": 2.0e5}
+    assert calls[0]["inlet_state"].p == inlet.p
+    assert calls[0]["inlet_state"].T == inlet.T
+    assert calls[0]["mass_flow"] == inlet.mdot
+    assert calls[0]["transport"] is transport
+    assert calls[0]["exit_diameter"] == 0.05
+    assert calls[0]["roughness"] == 1.0e-5
+    assert calls[0]["friction_model"] == "native"
+
+    assert block.post_process({"in": inlet}, {}) is results[1]
+
+
+def test_volute_block_defaults_exit_diameter_from_an_attached_exit_cone(monkeypatch) -> None:
+    cone = ExitCone(final_diameter=0.04, first_angle="tangential")
+    volute = Volute(
+        EllipticalSlottedSection(inlet_width=0.012, fillet_radius=0.003),
+        VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0),
+        exit_cone=cone,
+        n_stations=13,
+    )
+    transport = SimpleNamespace(fluid="Water")
+    calls = []
+
+    def fake_solve(self, **kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(
+            states=(SimpleNamespace(p=3.0e6), SimpleNamespace(p=2.8e6)),
+            total_pressure_loss=2.0e5,
+        )
+
+    monkeypatch.setattr(Volute, "solve", fake_solve)
+    block = VoluteBlock("discharge", "in", "out", volute, transport)
+    block.compute({"in": Station(3.0e6, 320.0, 1.2)}, {})
+    assert calls[0]["exit_diameter"] is None
+
+
+def test_volute_block_requires_exit_diameter_without_an_exit_cone() -> None:
+    volute = Volute(
+        EllipticalSlottedSection(inlet_width=0.012, fillet_radius=0.003),
+        VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0),
+        n_stations=13,
+    )
+    with pytest.raises(ValueError, match="exit_diameter is required"):
+        VoluteBlock("discharge", "in", "out", volute, SimpleNamespace(fluid="Water"))

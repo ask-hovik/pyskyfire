@@ -7,8 +7,9 @@ import CoolProp.CoolProp as CP
 import numpy as np
 
 # internal imports
-from pyskyfire.common.engine_network import Station
+from pyskyfire.network.engine_network import Station
 from pyskyfire.ducts.pipe import Pipe
+from pyskyfire.ducts.volute import Volute
 from pyskyfire.thermo.state import FluidState, PHASE_UNKNOWN
 from pyskyfire.regen.coupled_solver import (
     BoundaryConditions,
@@ -45,9 +46,9 @@ class FluidBlock(ABC):
 
     See Also
     --------
-    :class:`~pyskyfire.common.engine_network.Station`
+    :class:`~pyskyfire.network.engine_network.Station`
         Thermodynamic state container used by the network.
-    :class:`~pyskyfire.common.blocks.SignalBlock`
+    :class:`~pyskyfire.network.blocks.SignalBlock`
         Abstract base for blocks that operate on **scalar signals** only.
 
     Notes
@@ -337,7 +338,7 @@ class RegenBlock(FluidBlock):
         Whether to apply the coolant pressure-drop curvature correction.
     friction_model : {'native', 'fluids'}, optional
         Backend supplying the coolant friction factor and its curvature
-        multiplier. See :mod:`pyskyfire.ducts.friction`.
+        multiplier. See :mod:`pyskyfire.common.friction`.
 
     Attributes
     ----------
@@ -898,6 +899,114 @@ class PipeBlock(FluidBlock):
 
     def post_process(self, stations, signals):
         """Return the detailed pipe result at the converged inlet condition."""
+        return self._solve(stations[self.st_in])
+
+
+class VoluteBlock(FluidBlock):
+    """Engine-network adapter for one :class:`Volute` or collector.
+
+    The contained volute remains independently usable through
+    :meth:`Volute.solve`. This block only translates network stations into that
+    public solver API and emits the resulting outlet station and ``dp_<name>``
+    loss signal. Its geometry is resolved once, when the volute is built, so
+    the network may iterate the operating point freely.
+
+    Parameters
+    ----------
+    name : str
+        Block name used for the pressure-loss signal.
+    st_in, st_out : str
+        Inlet and outlet network station keys.
+    volute : pyskyfire.ducts.Volute
+        Physical volute model.
+    transport : object
+        Fluid-property provider accepted by :meth:`Volute.solve`.
+    exit_diameter : float, optional
+        Diameter of the round pipe the exit cone discharges to [m]. Defaults to
+        the volute's attached :class:`~pyskyfire.ducts.ExitCone` final
+        diameter, and is required when the volute has none.
+    roughness : float, optional
+        Absolute wall roughness [m].
+    friction_model : {'native', 'fluids'}, optional
+        Skin-friction backend. Default ``'fluids'``.
+
+    Notes
+    -----
+    The volute is adiabatic, so the outlet station carries the inlet
+    temperature. The inlet velocity components are a design input of the volute
+    itself rather than something the network sets, so a mass flow that
+    disagrees with them raises
+    :class:`~pyskyfire.ducts.volute.VoluteConsistencyWarning` on every solve.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        st_in: str,
+        st_out: str,
+        volute: Volute,
+        transport,
+        exit_diameter: float | None = None,
+        roughness: float = 0.0,
+        friction_model: str = "fluids",
+    ):
+        if not isinstance(volute, Volute):
+            raise TypeError("volute must be a pyskyfire.ducts.Volute")
+        if exit_diameter is None and volute.exit_geometry is None:
+            raise ValueError(
+                "exit_diameter is required when the volute has no exit cone")
+
+        self.name = name
+        self.st_in = st_in
+        self.st_out = st_out
+        self.volute = volute
+        self.transport = transport
+        self.exit_diameter = None if exit_diameter is None else float(exit_diameter)
+        self.roughness = float(roughness)
+        self.friction_model = friction_model
+        super().__init__(getattr(transport, "fluid", type(transport).__name__))
+
+        self.station_inputs = [st_in]
+        self.station_outputs = [st_out]
+        self.signal_inputs = []
+        self.dp_key = f"dp_{name}"
+        self.signal_outputs = [self.dp_key]
+
+    def _solve(self, station: Station):
+        inlet_state = FluidState(
+            T=station.T,
+            p=station.p,
+            h=float("nan"),
+            quality=float("nan"),
+            rho=float("nan"),
+            phase=PHASE_UNKNOWN,
+            T_sat=float("nan"),
+        )
+        return self.volute.solve(
+            inlet_state=inlet_state,
+            mass_flow=station.mdot,
+            transport=self.transport,
+            exit_diameter=self.exit_diameter,
+            roughness=self.roughness,
+            friction_model=self.friction_model,
+        )
+
+    def compute(
+        self,
+        stations: Dict[str, "Station"],
+        signals: Dict[str, float],
+    ) -> tuple[Dict[str, "Station"], Dict[str, float]]:
+        inlet = stations[self.st_in]
+        result = self._solve(inlet)
+        outlet = Station(
+            p=float(result.states[-1].p),
+            T=inlet.T,
+            mdot=inlet.mdot,
+        )
+        return {self.st_out: outlet}, {self.dp_key: result.total_pressure_loss}
+
+    def post_process(self, stations, signals):
+        """Return the detailed volute result at the converged inlet condition."""
         return self._solve(stations[self.st_in])
 
 

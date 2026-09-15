@@ -38,12 +38,12 @@ def inlet(p=2.0e6, T=300.0):
 
 def test_generator_replaces_corner_vertex_with_forward_tangent_stations():
     nodes = [
-        ducts.PathNode((0.0, 0.0, 0.0), 0.01),
-        ducts.PathNode((0.0, 0.0, 0.5), 0.01, ducts.RoundedBend(0.05)),
-        ducts.PathNode((0.0, 0.5, 0.75), 0.01),
+        ducts.PathNode((0.0, 0.0, 0.0)),
+        ducts.PathNode((0.0, 0.0, 0.5), ducts.RoundedBend(0.05)),
+        ducts.PathNode((0.0, 0.5, 0.75)),
     ]
 
-    stations, connections = ducts.generate_pipe_stations(nodes)
+    stations, connections = ducts.generate_path_stations(nodes)
     bend = connections[1]
     incoming = np.array([0.0, 0.0, 1.0])
     outgoing = np.array([0.0, 0.5, 0.25])
@@ -67,12 +67,12 @@ def test_continuous_corner_is_discretized_with_exact_arc_metadata():
     radius = 0.2
     segments = 8
     nodes = [
-        ducts.PathNode((0, 0, 0), 0.02),
-        ducts.PathNode((1, 0, 0), 0.02, ducts.Continuous(radius, segments)),
-        ducts.PathNode((1, 1, 0), 0.02),
+        ducts.PathNode((0, 0, 0)),
+        ducts.PathNode((1, 0, 0), ducts.Continuous(radius, segments)),
+        ducts.PathNode((1, 1, 0)),
     ]
 
-    stations, connections = ducts.generate_pipe_stations(nodes)
+    stations, connections = ducts.generate_path_stations(nodes)
     continuous = [item for item in connections if isinstance(item, ducts.Continuous)]
 
     assert len(continuous) == segments
@@ -86,44 +86,44 @@ def test_continuous_corner_is_discretized_with_exact_arc_metadata():
 @pytest.mark.parametrize(
     "nodes, message",
     [
-        ([ducts.PathNode((0, 0, 0), 0.01, ducts.RoundedBend(0.1)), ducts.PathNode((1, 0, 0), 0.01)], "first and last"),
-        ([ducts.PathNode((0, 0, 0), 0.01), ducts.PathNode((1, 0, 0), 0.01), ducts.PathNode((1, 1, 0), 0.01)], "must define"),
-        ([ducts.PathNode((0, 0, 0), 0.01), ducts.PathNode((1, 0, 0), 0.01, ducts.RoundedBend(0.1)), ducts.PathNode((0, 0, 0), 0.01)], "reversing"),
-        ([ducts.PathNode((0, 0, 0), 0.01), ducts.PathNode((0.1, 0, 0), 0.01, ducts.RoundedBend(1.0)), ducts.PathNode((0.1, 1, 0), 0.01)], "incoming leg"),
+        ([ducts.PathNode((0, 0, 0), ducts.RoundedBend(0.1)), ducts.PathNode((1, 0, 0))], "first and last"),
+        ([ducts.PathNode((0, 0, 0)), ducts.PathNode((1, 0, 0)), ducts.PathNode((1, 1, 0))], "must define"),
+        ([ducts.PathNode((0, 0, 0)), ducts.PathNode((1, 0, 0), ducts.RoundedBend(0.1)), ducts.PathNode((0, 0, 0))], "reversing"),
+        ([ducts.PathNode((0, 0, 0)), ducts.PathNode((0.1, 0, 0), ducts.RoundedBend(1.0)), ducts.PathNode((0.1, 1, 0))], "incoming leg"),
     ],
 )
 def test_generator_rejects_ambiguous_or_impossible_paths(nodes, message):
     with pytest.raises(ValueError, match=message):
-        ducts.generate_pipe_stations(nodes)
+        ducts.generate_path_stations(nodes)
 
 
 def test_generator_rejects_overlapping_neighboring_bends():
     nodes = [
-        ducts.PathNode((0, 0, 0), 0.01),
-        ducts.PathNode((1, 0, 0), 0.01, ducts.RoundedBend(0.6)),
-        ducts.PathNode((1, 1, 0), 0.01, ducts.RoundedBend(0.6)),
-        ducts.PathNode((2, 1, 0), 0.01),
+        ducts.PathNode((0, 0, 0)),
+        ducts.PathNode((1, 0, 0), ducts.RoundedBend(0.6)),
+        ducts.PathNode((1, 1, 0), ducts.RoundedBend(0.6)),
+        ducts.PathNode((2, 1, 0)),
     ]
     with pytest.raises(ValueError, match="overlap or touch"):
-        ducts.generate_pipe_stations(nodes)
+        ducts.generate_path_stations(nodes)
 
 
-def test_collinear_control_node_is_preserved_as_diameter_station():
-    stations, connections = ducts.generate_pipe_stations([
-        ducts.PathNode((0, 0, 0), 0.01),
-        ducts.PathNode((1, 0, 0), 0.02),
-        ducts.PathNode((2, 0, 0), 0.03),
+def test_collinear_control_node_is_preserved_as_path_station():
+    stations, connections = ducts.generate_path_stations([
+        ducts.PathNode((0, 0, 0)),
+        ducts.PathNode((1, 0, 0)),
+        ducts.PathNode((2, 0, 0)),
     ])
-    assert [station.diameter for station in stations] == [0.01, 0.02, 0.03]
+    assert [station.position[0] for station in stations] == [0, 1, 2]
     assert all(isinstance(connection, ducts.Straight) for connection in connections)
 
 
 def test_pipe_accepts_manual_public_representation_and_exposes_visual_geometry():
     stations = (
-        ducts.PipeStation((0, 0, 0), 0.02),
-        ducts.PipeStation((1, 0, 0), 0.04),
+        ducts.PathStation((0, 0, 0)),
+        ducts.PathStation((1, 0, 0)),
     )
-    pipe = ducts.Pipe(stations, (ducts.Straight(),), roughness=1.0e-5)
+    pipe = ducts.Pipe(stations, (ducts.Straight(),), roughness=1.0e-5, diameter=[0.02, 0.04])
     np.testing.assert_allclose(pipe.centerline, [[0, 0, 0], [1, 0, 0]])
     np.testing.assert_allclose(pipe.radius, [0.01, 0.02])
     assert pipe.stations is stations
@@ -131,13 +131,13 @@ def test_pipe_accepts_manual_public_representation_and_exposes_visual_geometry()
 
 def test_pipe_validates_connection_count_and_lumped_bend_diameter():
     stations = [
-        ducts.PipeStation((0, 0, 0), 0.02),
-        ducts.PipeStation((1, 0, 0), 0.03),
+        ducts.PathStation((0, 0, 0)),
+        ducts.PathStation((1, 0, 0)),
     ]
     with pytest.raises(ValueError, match="exactly one connection"):
-        ducts.Pipe(stations, ())
+        ducts.Pipe(stations, (), diameter=[0.02, 0.03])
     with pytest.raises(ValueError, match="equal endpoint diameters"):
-        ducts.Pipe(stations, (ducts.RoundedBend(0.1, angle=math.pi / 2),))
+        ducts.Pipe(stations, (ducts.RoundedBend(0.1, angle=math.pi / 2),), diameter=[0.02, 0.03])
 
 
 def test_straight_loss_matches_darcy_weisbach_for_constant_properties():
@@ -148,10 +148,10 @@ def test_straight_loss_matches_darcy_weisbach_for_constant_properties():
     mu = 1.0e-3
     roughness = 2.0e-5
     pipe = ducts.Pipe(
-        [ducts.PipeStation((0, 0, 0), diameter), ducts.PipeStation((length, 0, 0), diameter)],
+        [ducts.PathStation((0, 0, 0)), ducts.PathStation((length, 0, 0))],
         [ducts.Straight()],
         roughness=roughness,
-    )
+    diameter=diameter)
 
     result = pipe.solve(
         inlet_state=inlet(),
@@ -172,9 +172,9 @@ def test_straight_loss_matches_darcy_weisbach_for_constant_properties():
 
 def test_variable_diameter_changes_station_velocity_but_adds_no_acceleration_loss():
     pipe = ducts.Pipe(
-        [ducts.PipeStation((0, 0, 0), 0.01), ducts.PipeStation((1, 0, 0), 0.02)],
+        [ducts.PathStation((0, 0, 0)), ducts.PathStation((1, 0, 0))],
         [ducts.Straight()],
-    )
+    diameter=[0.01, 0.02])
     result = pipe.solve(inlet_state=inlet(), mass_flow=0.05, transport=ConstantTransport())
 
     assert result.velocity[0] / result.velocity[1] == pytest.approx(4.0)
@@ -193,9 +193,9 @@ def test_continuous_connection_applies_explicit_curvature(monkeypatch):
 
     monkeypatch.setattr(pipe_module, "curvature_multiplier", multiplier)
     pipe = ducts.Pipe(
-        [ducts.PipeStation((0, 0, 0), 0.02), ducts.PipeStation((0.1, 0.1, 0), 0.02)],
+        [ducts.PathStation((0, 0, 0)), ducts.PathStation((0.1, 0.1, 0))],
         [ducts.Continuous(radius=0.1, length=math.pi * 0.1 / 2.0)],
-    )
+    diameter=0.02)
     result = pipe.solve(inlet_state=inlet(), mass_flow=0.1, transport=ConstantTransport())
 
     assert captured and all(radius == 0.1 for radius in captured)
@@ -212,12 +212,12 @@ def test_manual_continuous_connections_estimate_menger_curvature(monkeypatch):
     )
     pipe = ducts.Pipe(
         [
-            ducts.PipeStation((1, 0, 0), 0.02),
-            ducts.PipeStation((0, 1, 0), 0.02),
-            ducts.PipeStation((-1, 0, 0), 0.02),
+            ducts.PathStation((1, 0, 0)),
+            ducts.PathStation((0, 1, 0)),
+            ducts.PathStation((-1, 0, 0)),
         ],
         [ducts.Continuous(), ducts.Continuous()],
-    )
+    diameter=0.02)
     pipe.solve(inlet_state=inlet(), mass_flow=0.1, transport=ConstantTransport())
     assert radii
     np.testing.assert_allclose(radii, 1.0)
@@ -231,10 +231,10 @@ def test_rounded_bend_matches_complete_fluids_K_without_arc_double_counting():
     rho = 1000.0
     mu = 1.0e-3
     pipe = ducts.Pipe(
-        [ducts.PipeStation((0, 0, 0), diameter), ducts.PipeStation((radius, radius, 0), diameter)],
+        [ducts.PathStation((0, 0, 0)), ducts.PathStation((radius, radius, 0))],
         [ducts.RoundedBend(radius, angle=angle)],
         roughness=1.0e-5,
-    )
+    diameter=diameter)
     result = pipe.solve(
         inlet_state=inlet(), mass_flow=mass_flow, transport=ConstantTransport(rho, mu)
     )
@@ -256,9 +256,9 @@ def test_rounded_bend_matches_complete_fluids_K_without_arc_double_counting():
 
 def test_pipe_rejects_invalid_mass_flow_and_nonpositive_pressure():
     pipe = ducts.Pipe(
-        [ducts.PipeStation((0, 0, 0), 0.001), ducts.PipeStation((100, 0, 0), 0.001)],
+        [ducts.PathStation((0, 0, 0)), ducts.PathStation((100, 0, 0))],
         [ducts.Straight()],
-    )
+    diameter=0.001)
     with pytest.raises(ValueError, match="mass_flow"):
         pipe.solve(inlet_state=inlet(), mass_flow=0.0, transport=ConstantTransport())
     with pytest.raises(RuntimeError, match="pressure fell"):
@@ -266,12 +266,12 @@ def test_pipe_rejects_invalid_mass_flow_and_nonpositive_pressure():
 
 
 def bent_pipe(radius=0.05, diameter=0.01):
-    stations, connections = ducts.generate_pipe_stations([
-        ducts.PathNode((0, 0, 0), diameter),
-        ducts.PathNode((1, 0, 0), diameter, bend=ducts.RoundedBend(radius=radius)),
-        ducts.PathNode((1, 1, 0), diameter),
+    stations, connections = ducts.generate_path_stations([
+        ducts.PathNode((0, 0, 0)),
+        ducts.PathNode((1, 0, 0), bend=ducts.RoundedBend(radius=radius)),
+        ducts.PathNode((1, 1, 0)),
     ])
-    return ducts.Pipe(stations, connections)
+    return ducts.Pipe(stations, connections, diameter=diameter)
 
 
 def test_display_path_reopens_lumped_bends_without_touching_the_solver_model():
@@ -306,22 +306,22 @@ def test_display_path_station_and_connection_indices_track_their_source():
 
 def test_display_path_keeps_the_chord_when_a_bend_has_no_resolved_plane():
     pipe = ducts.Pipe(
-        [ducts.PipeStation((0, 0, 0), 0.01), ducts.PipeStation((1, 0, 0), 0.01)],
+        [ducts.PathStation((0, 0, 0)), ducts.PathStation((1, 0, 0))],
         [ducts.RoundedBend(0.1, angle=math.pi / 2)],
-    )
+    diameter=0.01)
     path = pipe.display_path(segments=8)
     np.testing.assert_allclose(path.points, pipe.centerline)
     np.testing.assert_array_equal(path.connection, [0])
 
 
 def test_display_path_rejects_a_bend_plane_that_contradicts_its_stations():
-    stations, connections = ducts.generate_pipe_stations([
-        ducts.PathNode((0, 0, 0), 0.01),
-        ducts.PathNode((1, 0, 0), 0.01, bend=ducts.RoundedBend(radius=0.05)),
-        ducts.PathNode((1, 1, 0), 0.01),
+    stations, connections = ducts.generate_path_stations([
+        ducts.PathNode((0, 0, 0)),
+        ducts.PathNode((1, 0, 0), bend=ducts.RoundedBend(radius=0.05)),
+        ducts.PathNode((1, 1, 0)),
     ])
     broken = replace(connections[1], center=(5.0, 5.0, 5.0))
-    pipe = ducts.Pipe(stations, (connections[0], broken, connections[2]))
+    pipe = ducts.Pipe(stations, (connections[0], broken, connections[2]), diameter=0.01)
     with pytest.raises(ValueError, match="inconsistent with its tangent stations"):
         pipe.display_path()
 
@@ -333,7 +333,7 @@ def test_display_path_validates_segments_and_interpolates_changing_radius():
             pipe.display_path(segments=bad)
 
     tapered = ducts.Pipe(
-        [ducts.PipeStation((0, 0, 0), 0.02), ducts.PipeStation((1, 0, 0), 0.04)],
+        [ducts.PathStation((0, 0, 0)), ducts.PathStation((1, 0, 0))],
         [ducts.Straight()],
-    )
+    diameter=[0.02, 0.04])
     np.testing.assert_allclose(tapered.display_path().radius, [0.01, 0.02])

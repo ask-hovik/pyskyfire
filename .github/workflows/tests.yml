@@ -78,6 +78,15 @@ jobs:
       - name: Install visualisation dependencies
         run: uv pip install --system plotly pyvista
 
+      - name: Install impeller geometry dependency
+        run: uv pip install --system pyturbo-aero==1.3.8
+
+      - name: Run impeller tests and report example
+        run: >-
+          xvfb-run -a pytest -q
+          tests/unit/test_impeller.py
+          tests/integration/test_impeller_report.py
+
       - name: Run minimal-example test
         run: >-
           xvfb-run -a pytest -q
@@ -114,7 +123,7 @@ jobs:
       - name: Build and install wheel
         run: |
           uv build --wheel --out-dir "$RUNNER_TEMP/dist"
-          uv pip install --system pytest plotly pyvista "$RUNNER_TEMP"/dist/*.whl
+          uv pip install --system pytest plotly pyvista pyturbo-aero==1.3.8 "$RUNNER_TEMP"/dist/*.whl
 
       - name: Run package and all-example tests
         run: xvfb-run -a pytest -q tests

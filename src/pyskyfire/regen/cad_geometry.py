@@ -1,4 +1,4 @@
-"""Geometry-only transverse sections and continuous hot-wall profiles.
+"""Geometry-only transverse sections and hot-wall surfaces.
 
 No solver dimensions, paths or section analytics are modified here. Oblique
 sections represent the local prismatic approximation, not exact CAD sweep cuts.
@@ -11,6 +11,32 @@ import numpy as np
 
 from .channel_construction import build_channel_construction
 from .channel_helpers import build_axis_normal_section_planes
+from pyskyfire.common.section_geometry import SectionLine
+
+
+@dataclass(frozen=True)
+class PlanarLine:
+    """Directed line, sharing the sampling/export contract of PlanarArc."""
+
+    start: np.ndarray
+    end: np.ndarray
+
+    def point(self, fraction):
+        return self.start + np.asarray(fraction)[..., None]*(self.end-self.start)
+
+    def tangent(self, fraction):
+        vector = self.end-self.start
+        return vector/np.linalg.norm(vector)
+
+    def trimmed(self, left, right):
+        return PlanarLine(self.point(left), self.point(right))
+
+    def transformed(self, matrix, origin):
+        return PlanarLine(origin+matrix@self.start, origin+matrix@self.end)
+
+    def to_data(self):
+        return {"kind": "line", "start_uv_mm": (self.start*1000).tolist(),
+                "end_uv_mm": (self.end*1000).tolist()}
 
 
 @dataclass(frozen=True)
@@ -39,10 +65,6 @@ class PlanarArc:
         return replace(
             self, start=self.start + left * delta, end=self.end - right * delta
         )
-
-    def segment(self, first, last):
-        """The part of this arc between two fractions of its parameter span."""
-        return self.trimmed(first, 1 - last)
 
     def transformed(self, matrix, origin):
         return replace(
@@ -78,19 +100,6 @@ class PlanarArc:
             "startParameter": float(min(start, end) / (2 * np.pi) % 1),
             "endParameter": float(max(start, end) / (2 * np.pi) % 1),
         }
-
-
-def _de_casteljau(control_points, fraction):
-    """Split a cubic Bezier, returning the control points of both halves."""
-    p = np.asarray(control_points, dtype=float)
-    t = float(fraction)
-    a = p[:-1] + t * np.diff(p, axis=0)
-    b = a[:-1] + t * np.diff(a, axis=0)
-    c = b[0] + t * (b[1] - b[0])
-    return (
-        np.array([p[0], a[0], b[0], c]),
-        np.array([c, b[1], a[2], p[3]]),
-    )
 
 
 @dataclass(frozen=True)
@@ -130,20 +139,6 @@ class TangentBezier:
             + 3 * t**2 * (p[3] - p[2])
         )
         return v / np.linalg.norm(v)
-
-    def segment(self, first, last):
-        """The part of this curve between two parameters, by de Casteljau.
-
-        Subdivision is exact, so a split profile still describes the same
-        curve as the profile it was split from.
-        """
-        p = self.control_points
-        if last <= first:
-            raise ValueError("A Bezier segment must span an increasing parameter")
-        # Split at ``last`` first, then reparameterize ``first`` onto the piece
-        # that is left, so both cuts come from one pair of de Casteljau passes.
-        head = _de_casteljau(p, last)[0]
-        return type(self)(_de_casteljau(head, first / last)[1])
 
     def to_data(self):
         return {
@@ -195,6 +190,9 @@ def transverse_construction(construction):
         arcs = []
         for i in range(len(planes)):
             matrix = transverse_matrix(construction, planes, i)
+            if isinstance(source, SectionLine):
+                arcs.append(PlanarLine(matrix@source.starts[i], matrix@source.ends[i]))
+                continue
             radius = source.radii[i]
             arcs.append(
                 PlanarArc(
@@ -209,39 +207,41 @@ def transverse_construction(construction):
     return TransverseConstruction(construction, planes, *families)
 
 
-def hot_wall_stations(
-    spans, samples, contour_span, *, transition_fraction=0.02, transition_length_m=None
-):
-    """Physical hand-offs, including gaps, independent of sample spacing.
+def _span_union(spans):
+    union = []
+    for a, b in sorted(spans):
+        if union and a <= union[-1][1]:
+            union[-1][1] = max(union[-1][1], b)
+        else:
+            union.append([a, b])
+    return union
 
-    Each uncovered internal interval is one hand-off. Other internal circuit
-    endpoints are individual hand-offs. Intervals are centered and never clipped.
+
+def hot_wall_regions(spans, squared, contour_span, *, transition_fraction=0.02):
+    """Partition covered spans by construction type and active channel seeds.
+
+    With rounded channels, changes into/out of shared spans leave a centered
+    open transition zone. Its width is a fraction of the full contour length,
+    matching the former blend-zone convention. Empty spans are never connected.
+    Squared-only spans can share a revolve regardless of channel count or winding.
     """
     lo, hi = map(float, contour_span)
     length = hi - lo
     if not np.isfinite(length) or length <= 0:
         raise ValueError("Full contour must have positive finite axial length")
-    if transition_length_m is None:
-        if not np.isfinite(transition_fraction) or not 0 < transition_fraction <= 1:
-            raise ValueError("Hot-wall transition fraction must be in (0, 1]")
-        transition = transition_fraction * length
-    else:
-        transition = float(transition_length_m)
-        if not np.isfinite(transition) or transition <= 0:
-            raise ValueError("Hot-wall transition length must be positive and finite")
-    spans = sorted((float(a), float(b)) for a, b in spans)
-    if not spans or any(
-        not np.isfinite(a + b) or b <= a or a < lo or b > hi for a, b in spans
+    fraction = float(transition_fraction)
+    if not np.isfinite(fraction) or not 0 < fraction <= 1:
+        raise ValueError("Hot-wall transition fraction must be in (0, 1]")
+    half_width = fraction * length / 2
+    if (
+        not spans
+        or len(spans) != len(squared)
+        or any(not np.isfinite(a + b) or b <= a or a < lo or b > hi for a, b in spans)
     ):
         raise ValueError(
             "Circuit spans must be nonempty and lie within the full contour"
         )
-    union = []
-    for a, b in spans:
-        if union and a <= union[-1][1]:
-            union[-1][1] = max(union[-1][1], b)
-        else:
-            union.append([a, b])
+    union = _span_union(spans)
     uncovered = max(0.0, 1 - sum(b - a for a, b in union) / length)
     if uncovered > 0.1 + 1e-12:
         warnings.warn(
@@ -249,41 +249,115 @@ def hot_wall_stations(
             UserWarning,
             stacklevel=2,
         )
-    start, end = union[0][0], union[-1][1]
-    gaps = [(a[1], b[0]) for a, b in zip(union[:-1], union[1:])]
-    gap_ends = {v for gap in gaps for v in gap}
-    events = [
-        (v, v)
-        for v in sorted({v for span in spans for v in span})
-        if start < v < end and v not in gap_ends
-    ]
-    events += gaps
-    intervals = []
-    for a, b in sorted(events):
-        mid = (a + b) / 2
-        width = max(transition, b - a)
-        left, right = mid - width / 2, mid + width / 2
-        # Preserve exact gap endpoints when the gap sets the width.
-        if b - a >= transition:
-            left, right = a, b
-        if left < start or right > end:
-            raise ValueError(
-                "Hot-wall transition extends beyond circuit-covered extent; reduce transition length"
-            )
-        if intervals and left < intervals[-1][1] - 1e-12 * length:
-            raise ValueError(
-                "Overlapping hot-wall transition intervals; reduce transition length"
-            )
-        intervals.append((left, right))
-    stations = np.unique(
-        np.concatenate(
-            [np.asarray(samples), [start, end], np.asarray(intervals).ravel()]
+    ends = sorted({v for span in spans for v in span})
+    cells = []
+    for a, b in zip(ends, ends[1:]):
+        active = tuple(
+            i for i, (start, stop) in enumerate(spans) if start <= a and b <= stop
         )
+        cells.append((a, b, active))
+    sites = []
+    if not all(squared):
+        for before, after in zip(cells, cells[1:]):
+            if before[2] and after[2] and max(len(before[2]), len(after[2])) > 1:
+                sites.append(before[1])
+    exclusions = _span_union(
+        [(max(lo, x - half_width), min(hi, x + half_width)) for x in sites]
     )
-    stations = stations[(stations >= start) & (stations <= end)]
-    for a, b in intervals:
-        stations = stations[~((stations > a) & (stations < b))]
-    return stations, intervals, uncovered
+    regions = []
+    for a, b, active in cells:
+        if not active:
+            continue
+        pieces = [(a, b)]
+        for left, right in exclusions:
+            remaining = []
+            for start, stop in pieces:
+                if right <= start or left >= stop:
+                    remaining.append((start, stop))
+                else:
+                    if start < left:
+                        remaining.append((start, left))
+                    if right < stop:
+                        remaining.append((right, stop))
+            pieces = remaining
+        mode = "revolve" if all(squared[i] for i in active) else "loft"
+        for start, stop in pieces:
+            if (
+                regions
+                and mode == regions[-1]["mode"] == "revolve"
+                and regions[-1]["end"] == start
+            ):
+                regions[-1]["end"] = stop
+            else:
+                regions.append(dict(start=start, end=stop, active=active, mode=mode))
+    return regions, exclusions, uncovered
+
+
+def _interval_bezier(contour, a, b):
+    """The cubic Bezier through four evenly spaced samples of one interval."""
+    x = np.linspace(a, b, 4)
+    r = np.asarray(contour.r(x))
+    inner = np.linalg.solve(
+        [[12, 6], [6, 12]],
+        [27 * r[1] - 8 * r[0] - r[3], 27 * r[2] - r[0] - 8 * r[3]],
+    )
+    return TangentBezier(np.column_stack(([r[0], *inner, r[3]], x)))
+
+
+def _secant_tangent(contour, x, step):
+    """Unit (radius, axial) tangent of the meridian, from a short secant.
+
+    ``step`` is signed: a negative step reads the interval behind ``x``. The
+    result always points in the direction of increasing axial position, so a
+    contour corner shows up as two differing tangents at one knot.
+    """
+    r_here, r_there = np.asarray(contour.r(np.array([x, x + step])), dtype=float)
+    tangent = np.array([r_there - r_here, step]) * np.sign(step)
+    return tangent / np.linalg.norm(tangent)
+
+
+def contour_corner_knots(contour, grid, *, tolerance=1e-3):
+    """Interior grid positions where the meridian's tangent jumps.
+
+    The throat carries independent slopes on either side, and interpolated
+    contours corner at every input point. A spline may only be fitted through
+    a smooth run, so these are the positions the run has to be cut at.
+    """
+    corners = []
+    for previous, x, following in zip(grid, grid[1:], grid[2:]):
+        step = 1e-4 * min(x - previous, following - x)
+        behind = _secant_tangent(contour, x, -step)
+        ahead = _secant_tangent(contour, x, step)
+        if np.dot(behind, ahead) < np.cos(tolerance):
+            corners.append(x)
+    return corners
+
+
+def hot_wall_revolve(contour, start, end):
+    """Meridional splines in (radius, axial) mm, one per smooth contour run.
+
+    Each spline interpolates the contour's own knots, so CAD receives one
+    curve where the contour is smooth instead of a chain of short segments
+    that reads as faceted. Runs are cut at tangent discontinuities, which
+    keeps the throat corner sharp, and a trimmed span contributes its exact
+    endpoints without depending on coolant sampling.
+    """
+    knots = np.asarray(contour.xs)
+    grid = np.unique(np.r_[start, knots[(knots > start) & (knots < end)], end])
+    cuts = [start, *contour_corner_knots(contour, grid), end]
+    curves = []
+    for a, b in zip(cuts, cuts[1:]):
+        x = grid[(grid >= a) & (grid <= b)]
+        if len(x) < 2:
+            continue
+        # A run of a single interval has too few points to fit a spline
+        # through, so it keeps the cubic Bezier that reproduces it exactly.
+        if len(x) == 2:
+            curves.append(_interval_bezier(contour, x[0], x[1]).to_data())
+            continue
+        points = np.column_stack((np.asarray(contour.r(x), dtype=float), x)) * 1000
+        curves.append({"kind": "spline", "points_uv_mm": points.tolist()})
+    return {"span_mm": [float(start * 1000), float(end * 1000)], "curves": curves}
 
 
 def _rotation(angle):
@@ -388,141 +462,6 @@ def join_hot_wall(pieces, trim_fraction):
     return result
 
 
-def _azimuths(points):
-    return np.arctan2(np.asarray(points)[..., 1], np.asarray(points)[..., 0])
-
-
-def _fraction_at_azimuth(curve, target, samples=129):
-    """Fraction at which a curve reaches ``target`` azimuth about the axis.
-
-    ``join_hot_wall`` checks that a profile never folds in azimuth, so each of
-    its curves turns monotonically and this root is unique.
-    """
-    grid = np.linspace(0.0, 1.0, samples)
-    angles = np.unwrap(_azimuths(curve.point(grid)))
-    if angles[-1] <= angles[0]:
-        raise ValueError("Hot-wall curve does not advance in azimuth")
-    target = angles[0] + (target - angles[0]) % (2 * np.pi)
-    if target > angles[-1]:
-        raise ValueError("Azimuth lies outside the curve it was located on")
-    index = max(1, int(np.searchsorted(angles, target)))
-    low, high = grid[index - 1], grid[index]
-    base = angles[index - 1]
-    for _ in range(60):
-        middle = (low + high) / 2
-        raw = float(_azimuths(curve.point(middle)))
-        value = base + (raw - base + np.pi) % (2 * np.pi) - np.pi
-        if value < target:
-            low = middle
-        else:
-            high = middle
-    return (low + high) / 2
-
-
-def _ordered_profile(curves):
-    """Rotate a closed profile so its start azimuths increase from the seam."""
-    starts = np.array([float(_azimuths(c.point(0))) % (2 * np.pi) for _, c in curves])
-    seam = int(np.argmin(starts))
-    return list(curves[seam:]) + list(curves[:seam]), np.roll(starts, -seam)
-
-
-def _azimuth_extents(curves):
-    return np.array(
-        [
-            np.ptp(np.unwrap(_azimuths(c.point(np.linspace(0, 1, 33)))))
-            for _, c in curves
-        ]
-    )
-
-
-def _cluster_azimuths(values, tolerance):
-    """Group nearly coincident azimuths, closing the group across the seam."""
-    order = np.argsort(values)
-    groups = []
-    for index in order:
-        if groups and values[index] - values[groups[-1][-1]] <= tolerance:
-            groups[-1].append(index)
-        else:
-            groups.append([index])
-    if len(groups) > 1 and (
-        values[groups[0][0]] + 2 * np.pi - values[groups[-1][-1]] <= tolerance
-    ):
-        groups[0] = groups.pop() + groups[0]
-    return groups
-
-
-def hot_wall_bridge(first, second):
-    """Split two profiles of unlike topology onto one set of azimuth cuts.
-
-    A circuit hand-off replaces one channel pattern with another, so the two
-    profiles bounding it share no curves and nothing pairs them by index. Both
-    do wind once about the axis, though, so azimuth pairs them: cut each at
-    every curve start of either profile and the two carry the same number of
-    curves, spanning the same angular intervals, in the same order. Splitting
-    is exact, and a profile keeps its own curve starts wherever the two nearly
-    coincide, so neither side gains a sliver the other's cut would have made.
-    """
-    profiles = [_ordered_profile(first), _ordered_profile(second)]
-    extents = np.concatenate([_azimuth_extents(curves) for curves, _ in profiles])
-    if np.any(extents <= 0):
-        raise ValueError("Hot-wall bridge profiles must advance in azimuth")
-    tolerance = 0.25 * float(extents.min())
-
-    marks = np.concatenate([starts for _, starts in profiles])
-    offsets = np.cumsum([0] + [len(starts) for _, starts in profiles])
-    sides = np.concatenate(
-        [np.full(len(starts), s) for s, (_, starts) in enumerate(profiles)]
-    )
-    # Groups are already in ascending azimuth, and no group's azimuths reach
-    # into another's, so this one order runs both profiles the same way round.
-    # Ordering by either profile's own cuts instead would swap a pair wherever
-    # a borrowed cut fell just the other side of a curve start.
-    groups = _cluster_azimuths(marks, tolerance)
-    located = [[], []]
-    for group in groups:
-        centre = float(np.mean(np.unwrap(marks[group])) % (2 * np.pi))
-        for side in (0, 1):
-            own = [index for index in group if sides[index] == side]
-            if len(own) > 1:
-                raise ValueError(
-                    "Hot-wall bridge profile has two curve starts at one azimuth"
-                )
-            # A profile's own curve starts are placed, not searched for. Going
-            # back through an azimuth would round them onto the curve before.
-            located[side].append(
-                (own[0] - offsets[side], 0.0)
-                if own
-                else _locate_azimuth(*profiles[side], centre)
-            )
-    names = [f"bridge_span_{k}" for k in range(len(groups))]
-    split = []
-    for side in (0, 1):
-        curves = profiles[side][0]
-        pieces = []
-        for k, (index, fraction) in enumerate(located[side]):
-            following, next_fraction = located[side][(k + 1) % len(groups)]
-            end = next_fraction if following == index else 1.0
-            pieces.append((names[k], curves[index][1].segment(fraction, end)))
-        _check_closed(pieces)
-        split.append(pieces)
-    return names, split[0], split[1]
-
-
-def _check_closed(pieces):
-    for (_, first), (_, second) in zip(pieces, pieces[1:] + pieces[:1]):
-        if not np.allclose(first.point(1), second.point(0), atol=1e-10, rtol=0):
-            raise ValueError("Split hot-wall bridge profile is not closed")
-
-
-def _locate_azimuth(curves, starts, azimuth):
-    """Which curve of an ordered profile an azimuth falls on, and where."""
-    value = starts[0] + (azimuth - starts[0]) % (2 * np.pi)
-    index = int(np.searchsorted(starts, value, side="right")) - 1
-    if np.isclose(value, starts[index], rtol=0, atol=1e-12):
-        return index, 0.0
-    return index, _fraction_at_azimuth(curves[index][1], value)
-
-
 def _station_index(stations, x):
     """Index of the construction sample at ``x``.
 
@@ -541,130 +480,110 @@ def _station_index(stations, x):
     return index
 
 
-def topology_runs(sections):
-    """Group consecutive sections sharing one ordered list of curve names.
-
-    ``join_hot_wall`` pins the seam to a stable channel, so inside a run curve
-    ``j`` belongs to the same channel at every station. CAD can then pair
-    curves by index instead of matching vertices by proximity, which aliases
-    onto a neighbouring channel once a helix advances past half a pitch. A
-    circuit hand-off changes the name list and starts a new run.
-    """
-    runs = []
-    for index, section in enumerate(sections):
-        names = [curve["name"] for curve in section["curves"]]
-        if runs and runs[-1]["curveNames"] == names:
-            runs[-1]["sectionIndices"].append(index)
-        else:
-            runs.append({"sectionIndices": [index], "curveNames": names})
-    return runs
-
-
 def build_hot_wall(
     chamber,
     resolved,
     *,
     trim_fraction=0.1,
     transition_fraction=0.02,
-    transition_length_m=None,
 ):
+    """Export contour revolves and independent, circumferentially blended lofts."""
+    from .cross_section import CrossSectionSquared
+
     channels = resolved.channels
-    spans = [(c.reference_path[0, 0], c.reference_path[-1, 0]) for c in channels]
-    xs = np.asarray(chamber.contour.xs)
-    stations, intervals, uncovered = hot_wall_stations(
-        spans,
-        np.concatenate([c.reference_path[:, 0] for c in channels]),
-        (xs[0], xs[-1]),
-        transition_fraction=transition_fraction,
-        transition_length_m=transition_length_m,
-    )
-    cached = []
-    for channel, (a, b) in zip(channels, spans):
-        path = channel.reference_path
-        grid = np.unique(np.r_[path[:, 0], stations[(stations >= a) & (stations <= b)]])
-        sample = np.column_stack(
+    # Multiple seeds of one circuit must not create fictitious interleave sites.
+    circuit_indices = sorted({c.circuit_index for c in channels})
+    spans = []
+    squared = []
+    for index in circuit_indices:
+        seeds = [c for c in channels if c.circuit_index == index]
+        spans.append(
             (
-                grid,
-                np.interp(grid, path[:, 0], path[:, 1]),
-                np.interp(grid, path[:, 0], path[:, 2]),
+                min(c.reference_path[0, 0] for c in seeds),
+                max(c.reference_path[-1, 0] for c in seeds),
             )
         )
-        circuit = chamber.cooling_circuits[channel.circuit_index]
-        if hasattr(chamber.contour, "r"):
-            sample[:, 1] = chamber.contour.r(grid)
-        construction = build_channel_construction(circuit, sample)
-        cached.append((construction, transverse_construction(construction)))
-    sections = []
-    profiles = []
-    for x in stations:
-        pieces = []
-        for channel, (a, b), (construction, transverse) in zip(channels, spans, cached):
-            if not a <= x <= b:
-                continue
-            i = _station_index(construction.reference_path[:, 0], x)
-            for instance in range(channel.pattern_count):
-                rotation = instance * channel.pattern_angle_rad
-                arc = _hot_arc(construction, transverse, i, rotation)
-                pieces.append(
-                    (
-                        f"{channel.name}_{instance}",
-                        construction.section_type,
-                        arc,
-                        construction.reference_path[i, 2] + rotation,
+        squared.append(
+            isinstance(
+                chamber.cooling_circuits[index].cross_section, CrossSectionSquared
+            )
+        )
+    xs = np.asarray(chamber.contour.xs)
+    regions, exclusions, uncovered = hot_wall_regions(
+        spans, squared, (xs[0], xs[-1]), transition_fraction=transition_fraction
+    )
+    sections, runs, revolves = [], [], []
+    for region in regions:
+        a, b = region["start"], region["end"]
+        if region["mode"] == "revolve":
+            revolves.append(hot_wall_revolve(chamber.contour, a, b))
+            continue
+        active_circuits = {circuit_indices[i] for i in region["active"]}
+        active = [c for c in channels if c.circuit_index in active_circuits]
+        samples = np.concatenate([c.reference_path[:, 0] for c in active])
+        stations = np.unique(np.r_[a, samples[(samples > a) & (samples < b)], b])
+        cached = []
+        for channel in active:
+            path = channel.reference_path
+            grid = np.unique(np.r_[path[:, 0], stations])
+            sample = np.column_stack(
+                (grid, chamber.contour.r(grid), np.interp(grid, path[:, 0], path[:, 2]))
+            )
+            circuit = chamber.cooling_circuits[channel.circuit_index]
+            construction = build_channel_construction(circuit, sample)
+            cached.append((construction, transverse_construction(construction)))
+        indices = []
+        for x in stations:
+            pieces = []
+            for channel, (construction, transverse) in zip(active, cached):
+                i = _station_index(construction.reference_path[:, 0], x)
+                for instance in range(channel.pattern_count):
+                    rotation = instance * channel.pattern_angle_rad
+                    arc = _hot_arc(construction, transverse, i, rotation)
+                    pieces.append(
+                        (
+                            f"{channel.name}_{instance}",
+                            construction.section_type,
+                            arc,
+                            construction.reference_path[i, 2] + rotation,
+                        )
                     )
-                )
-        if not pieces:
-            continue  # Internal uncovered spans are bridged by the single loft.
-        try:
-            curves = join_hot_wall(pieces, trim_fraction)
-        except ValueError as exc:
-            raise ValueError(f"Hot wall at x={x:.9g} m: {exc}") from exc
-        sections.append(
-            {
-                "name": f"hot_wall_{len(sections)}",
-                "plane": {
-                    "origin_mm": [0.0, 0.0, float(x * 1000)],
-                    "normal": [0.0, 0.0, 1.0],
-                    "xAxis": [1.0, 0.0, 0.0],
-                },
-                "curves": [dict(curve.to_data(), name=name) for name, curve in curves],
-            }
-        )
-        profiles.append(curves)
-    runs = topology_runs(sections)
-    bridges = []
-    for before, after in zip(runs, runs[1:]):
-        i, j = before["sectionIndices"][-1], after["sectionIndices"][0]
-        try:
-            names, first, second = hot_wall_bridge(profiles[i], profiles[j])
-        except ValueError as exc:
-            raise ValueError(
-                f"Hot-wall hand-off between x={stations[i]:.9g} m and "
-                f"x={stations[j]:.9g} m: {exc}"
-            ) from exc
-        bridges.append(
-            {
-                "beforeSection": i,
-                "afterSection": j,
-                "curveNames": names,
-                "sections": [
-                    {
-                        "plane": sections[index]["plane"],
-                        "curves": [
-                            dict(curve.to_data(), name=name) for name, curve in side
-                        ],
-                    }
-                    for index, side in ((i, first), (j, second))
-                ],
-            }
-        )
-    return {
+            try:
+                curves = join_hot_wall(pieces, trim_fraction)
+            except ValueError as exc:
+                raise ValueError(f"Hot wall at x={x:.9g} m: {exc}") from exc
+            indices.append(len(sections))
+            sections.append(
+                {
+                    "name": f"hot_wall_{len(sections)}",
+                    "plane": {
+                        "origin_mm": [0.0, 0.0, float(x * 1000)],
+                        "normal": [0.0, 0.0, 1.0],
+                        "xAxis": [1.0, 0.0, 0.0],
+                    },
+                    "curves": [
+                        dict(curve.to_data(), name=name) for name, curve in curves
+                    ],
+                }
+            )
+        names = [curve["name"] for curve in sections[indices[0]]["curves"]]
+        if any(
+            [curve["name"] for curve in sections[i]["curves"]] != names for i in indices
+        ):
+            raise ValueError("Hot-wall curve order changes within a loft span")
+        runs.append({"sectionIndices": indices, "curveNames": names})
+    wall = {
         "trimFraction": trim_fraction,
-        "transitionIntervals_mm": (
-            np.asarray(intervals).reshape(-1, 2) * 1000
+        "interleaveGapFraction": float(transition_fraction),
+        "excludedInterleaveIntervals_mm": (
+            np.asarray(exclusions).reshape(-1, 2) * 1000
         ).tolist(),
         "uncoveredLengthFraction": uncovered,
+        "fullContourAllowed": bool(all(squared)),
+        "revolves": revolves,
         "sections": sections,
         "runs": runs,
-        "bridges": bridges,
     }
+    if wall["fullContourAllowed"]:
+        wall["fullContour"] = hot_wall_revolve(chamber.contour, xs[0], xs[-1])
+    return wall

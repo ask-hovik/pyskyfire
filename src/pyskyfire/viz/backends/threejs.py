@@ -9,8 +9,9 @@ from importlib.resources import files
 
 import numpy as np
 import pyvista as pv
+from scipy.spatial.transform import Rotation
 
-from .common import field_style
+from .common import field_style, field_styles
 
 
 def scene_payload(scene):
@@ -37,10 +38,23 @@ def scene_payload(scene):
                 "children": [node_data(child) for child in node.children]}
 
     style = field_style(scene)
-    nodes = [node_data(node) for node in scene.nodes]
+    nodes = []
+    for node in scene.nodes:
+        data = node_data(node)
+        # Only top-level nodes are selectable, and their local transform is the
+        # one Scene.add() placed, so these are literally the arguments that
+        # reproduce the placement. Extrinsic xyz matches Transform's convention.
+        matrix = node.transform.matrix
+        data["placement"] = {
+            "position": matrix[:3, 3].tolist(),
+            "rotation": Rotation.from_matrix(matrix[:3, :3]).as_euler("xyz").tolist(),
+        }
+        nodes.append(data)
     lut = pv.LookupTable(cmap="viridis", n_values=256)
     return {"version": 1, "title": scene.title, "meshes": meshes, "nodes": nodes,
-            "style": style, "color_table": np.asarray(lut.values)[:, :3].tolist()}
+            "style": style, "styles": field_styles(scene),
+            "show_axes": bool(getattr(scene, "show_axes", False)),
+            "color_table": np.asarray(lut.values)[:, :3].tolist()}
 
 
 def to_html(scene):
@@ -54,13 +68,17 @@ def to_html(scene):
 <title>{title}</title><style>
 html,body{{height:100%;margin:0;background:white;overflow:hidden}}
 canvas{{display:block;width:100%;height:100%}}
-#hud,#legend{{position:absolute;padding:8px;background:#ffffffe0;border-radius:5px;font:13px system-ui;z-index:1}}
+#hud,#legend,#info{{position:absolute;padding:8px;background:#ffffffe0;border-radius:5px;font:13px system-ui;z-index:1}}
 #hud{{top:10px;left:10px}} #legend{{bottom:12px;left:12px;min-width:240px}}
 #gradient{{height:14px;margin-top:5px}} #limits{{display:flex;justify-content:space-between}}
+#field{{display:block;width:100%;margin-bottom:5px;font:13px system-ui}}
+#info{{z-index:2;max-width:340px;box-shadow:0 2px 8px #00000030;padding-right:22px}}
+#info #title{{font-weight:600}} #info .mono{{font-family:ui-monospace,monospace;font-size:12px;white-space:nowrap}}
+#close{{position:absolute;top:4px;right:6px;border:0;background:none;font:16px system-ui;cursor:pointer;color:#555}}
 </style></head><body>
-<div id="hud">Loading scene…</div><div id="legend" hidden></div><canvas id="c"></canvas>
+<div id="hud">Loading scene…</div><div id="legend" hidden></div><div id="info" hidden></div><canvas id="c"></canvas>
 <script id="psf-scene" type="application/json">{payload}</script>
 <script>{script("three.min.js")}</script>
-<script>{script("OrbitControls.js")}</script>
+<script>{script("TrackballControls.js")}</script>
 <script>{script("scene_viewer.js")}</script>
 </body></html>'''

@@ -235,6 +235,8 @@ class CoolingCircuit:
 
 
         self.enable_fin = bool(enable_fin)
+        if self.enable_fin and hasattr(cross_section, "validate_fin"):
+            cross_section.validate_fin()
         self.rib_material = rib_material
 
         if span[0] > span[1]:
@@ -641,7 +643,7 @@ class CoolingCircuit:
 
         # Cross-section provides R per unit channel length
         R_s = float(
-            self.cross_section.R_coolant_per_len(prof_x, np.array([h_c]), k_rib)[0]
+            self.cross_section.R_coolant_per_len(prof_x, np.array([h_c]), k_rib, enable_fin=True)[0]
         )
 
         # Convert to per unit axial length using ds/dx from your already-defined geometry
@@ -828,6 +830,20 @@ class ThrustChamber:
     # ------------------------------------------------------------------
     # Domain → nominal winding → physical sections → coolant centroid
     # ------------------------------------------------------------------
+    def install_heat_exchanger(self, exchanger, *, position=(0., 0., 0.), rotation=None, coefficient=None):
+        """Place an exchanger against the prescribed gas and report its volume.
+
+        Returns a ChamberInstallation with ``solve`` and ``volume_change``.
+        The chamber temperature, chemistry, contour and gas flow remain prescribed.
+        """
+        from pyskyfire.heat_exchanger import ChamberInstallation
+        installation = ChamberInstallation(self, exchanger, position=position,
+            rotation=rotation, coefficient=coefficient)
+        if not hasattr(self, "heat_exchangers"):
+            self.heat_exchangers = []
+        self.heat_exchangers.append(installation)
+        return installation
+
     def build_circuit_x_domain(self):
         """
         Convert each circuit's fractional span into an x-grid whose size

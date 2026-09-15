@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from pyskyfire import ducts
-from pyskyfire.ducts import friction
+from pyskyfire.common import friction
 
 
 def _transition_weight(reynolds, critical):

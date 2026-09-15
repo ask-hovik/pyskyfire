@@ -28,7 +28,10 @@ def make_plotter(scene, *, off_screen=False):
                               scalar_bar_args={"title": f'{style["label"]} [{style["units"]}]'})
             plotter.add_mesh(mesh, name=node.id, opacity=node.opacity,
                              smooth_shading=True, show_edges=False, **kwargs)
-        plotter.hide_axes()
+        if getattr(scene, "show_axes", False):
+            plotter.add_axes()
+        else:
+            plotter.hide_axes()
         plotter.view_isometric()
         plotter.reset_camera()
         return plotter

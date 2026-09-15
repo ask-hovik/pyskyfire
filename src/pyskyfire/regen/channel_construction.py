@@ -11,8 +11,8 @@ from dataclasses import dataclass
 import numpy as np
 
 from .channel_helpers import SectionPlanes, build_axis_normal_section_planes
-from .cross_section import CrossSectionRounded, CrossSectionRoundedInternal, SectionProfiles
-from .section_geometry import SectionArc, rounded_center_distance, rounded_gas_sector_area, squared_boundary
+from .cross_section import CrossSectionRounded, SectionProfiles
+from pyskyfire.common.section_geometry import SectionArc, SectionLine, rounded_center_distance, rounded_gas_sector_area, squared_boundary
 
 __all__ = ["ConstructionArc", "ChannelConstruction", "build_channel_construction"]
 ConstructionArc = SectionArc
@@ -35,14 +35,14 @@ class ChannelConstruction:
     planes: SectionPlanes
     flow_planes: SectionPlanes
     profiles: SectionProfiles
-    inner_arc: SectionArc
-    outer_arc: SectionArc
+    inner_arc: SectionArc | SectionLine
+    outer_arc: SectionArc | SectionLine
     circular: np.ndarray
     alpha: np.ndarray
     gamma: np.ndarray
     pitch: np.ndarray
     gas_area: np.ndarray
-    rib_width: np.ndarray | None = None
+    sidewall_half_thickness: np.ndarray | None = None
 
     def polygon(self, index, n_arc_points=8):
         if n_arc_points < 2:
@@ -141,7 +141,7 @@ def build_channel_construction(circuit, reference_path=None):
     normals = ca[:, None]*cg[:, None]*axial + sa[:, None]*cg[:, None]*e_r + sg[:, None]*e_phi
     u_axis = -sa[:, None]*axial + ca[:, None]*e_r
     v_axis = np.cross(normals, u_axis)
-    rounded = isinstance(circuit.cross_section, (CrossSectionRounded, CrossSectionRoundedInternal))
+    rounded = isinstance(circuit.cross_section, (CrossSectionRounded))
     gas_area = pitch*radius**2/2
     sector_radius = None
     if rounded:
@@ -178,19 +178,21 @@ def build_channel_construction(circuit, reference_path=None):
         **context,
     )
     cs = circuit.cross_section
+    if getattr(circuit, "enable_fin", False) and hasattr(cs, "validate_fin"):
+        cs.validate_fin(profiles)
     if rounded:
         inner, outer = cs.boundary(profiles)
         circular = cs.base_height(profiles) == 0
         planes = flow_planes
-        rib_width = None
+        sidewall_half_thickness = None
     else:
         if np.any(height <= 0):
             raise ValueError("Squared channel heights must be positive")
-        rib_width = cs.rib_width(profiles) if hasattr(cs, "rib_width") else np.zeros(n)
-        inner, outer = squared_boundary(profiles, rib_width)
+        sidewall_half_thickness = cs.sidewall_half_thickness(profiles) if hasattr(cs, "sidewall_half_thickness") else np.zeros(n)
+        inner, outer = cs.boundary(profiles) if hasattr(cs, "boundary") else squared_boundary(profiles, sidewall_half_thickness)
         circular = np.zeros(n, dtype=bool)
         planes = build_axis_normal_section_planes(base_path)
     return ChannelConstruction(
         "rounded" if rounded else "squared", reference_path.copy(), planes,
-        flow_planes, profiles, inner, outer, circular, alpha, gamma, pitch, gas_area, rib_width,
+        flow_planes, profiles, inner, outer, circular, alpha, gamma, pitch, gas_area, sidewall_half_thickness,
     )

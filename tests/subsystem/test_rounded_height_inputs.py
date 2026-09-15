@@ -75,7 +75,7 @@ def _equivalent_pair(section_type=psf.regen.CrossSectionRounded):
     return base, full_chamber, full
 
 
-@pytest.mark.parametrize("section_type", [psf.regen.CrossSectionRounded, psf.regen.CrossSectionRoundedInternal])
+@pytest.mark.parametrize("section_type", [psf.regen.CrossSectionRounded])
 def test_equivalent_inputs_produce_identical_solver_paths_and_construction(section_type):
     base, _, full = _equivalent_pair(section_type)
     np.testing.assert_allclose(base.channel_full_heights, _expected_full_height(base))

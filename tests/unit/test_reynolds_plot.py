@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from pyskyfire.regen import physics
+from pyskyfire.common import physics
 from pyskyfire.viz.plot_regen import PlotReynoldsNumber
 
 

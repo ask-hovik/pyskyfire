@@ -42,7 +42,7 @@ def test_engine_visualizer_defaults_to_numerical_layout():
 def test_squared_visualization_draws_the_wall_stack_and_the_rib():
     x = np.linspace(0.0, 0.02, 5)
     circuit = SimpleNamespace(
-        cross_section=CrossSectionSquared(rib_width=lambda pitch_mid: 0.25 * pitch_mid),
+        cross_section=CrossSectionSquared(sidewall_half_thickness=lambda pitch_mid: (0.25 * pitch_mid) / 2),
         reference_path=np.column_stack((x, np.full_like(x, 0.1), np.zeros_like(x))),
         x_domain=x,
         channel_heights=np.full_like(x, 0.004),

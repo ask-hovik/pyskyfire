@@ -76,21 +76,21 @@ def _context(x=0.5, **overrides):
 
 
 def test_a_constant_needs_no_context() -> None:
-    assert evaluate(2.5, _context(), slot="rib_width", label="test") == 2.5
+    assert evaluate(2.5, _context(), slot="sidewall_half_thickness", label="test") == 2.5
 
 
 def test_a_function_of_nothing_is_called_with_nothing() -> None:
-    assert evaluate(lambda: 1e-3, _context(), slot="rib_width", label="test") == 1e-3
+    assert evaluate(lambda: 1e-3, _context(), slot="sidewall_half_thickness", label="test") == 1e-3
 
 
 def test_a_function_receives_only_the_quantities_it_names() -> None:
     seen = {}
 
-    def rib_width(pitch_mid, h):
+    def sidewall_half_thickness(pitch_mid, h):
         seen.update(pitch_mid=pitch_mid, h=h)
         return 0.25 * pitch_mid
 
-    result = evaluate(rib_width, _context(), slot="rib_width", label="test")
+    result = evaluate(sidewall_half_thickness, _context(), slot="sidewall_half_thickness", label="test")
 
     assert set(seen) == {"pitch_mid", "h"}
     assert result == pytest.approx(0.25 * seen["pitch_mid"])
@@ -98,8 +98,8 @@ def test_a_function_receives_only_the_quantities_it_names() -> None:
 
 def test_parameter_order_does_not_matter() -> None:
     context = _context()
-    forwards = evaluate(lambda x, r: r - x, context, slot="rib_width", label="t")
-    backwards = evaluate(lambda r, x: r - x, context, slot="rib_width", label="t")
+    forwards = evaluate(lambda x, r: r - x, context, slot="sidewall_half_thickness", label="t")
+    backwards = evaluate(lambda r, x: r - x, context, slot="sidewall_half_thickness", label="t")
 
     assert forwards == backwards
 
@@ -107,18 +107,18 @@ def test_parameter_order_does_not_matter() -> None:
 def test_a_kwargs_catch_all_receives_everything_available() -> None:
     captured = {}
 
-    def rib_width(**quantities):
+    def sidewall_half_thickness(**quantities):
         captured.update(quantities)
         return 1e-3
 
-    evaluate(rib_width, _context(), slot="rib_width", label="test")
+    evaluate(sidewall_half_thickness, _context(), slot="sidewall_half_thickness", label="test")
 
     assert {"x", "r", "pitch_mid", "n_channels", "t_wall"} <= set(captured)
 
 
 def test_evaluate_profile_walks_every_station() -> None:
     contexts = [_context(x) for x in (-0.5, 0.0, 0.5)]
-    values = evaluate_profile(lambda x: 2.0 * x, contexts, slot="rib_width", label="t")
+    values = evaluate_profile(lambda x: 2.0 * x, contexts, slot="sidewall_half_thickness", label="t")
 
     np.testing.assert_allclose(values, [-1.0, 0.0, 1.0])
 
@@ -152,14 +152,14 @@ def test_a_helix_angle_cannot_depend_on_the_pitch_its_own_angle_sets() -> None:
     )
 
 
-def test_a_rib_width_may_ask_for_anything() -> None:
+def test_a_sidewall_half_thickness_may_ask_for_anything() -> None:
     for name in VOCABULARY:
-        assert name in SLOT_KEYS["rib_width"]
+        assert name in SLOT_KEYS["sidewall_half_thickness"]
 
 
 def test_an_unknown_quantity_is_reported_with_the_legal_ones() -> None:
     with pytest.raises(DesignInputError) as excinfo:
-        make_evaluator(lambda radius: 1.0, slot="rib_width", label="mine")
+        make_evaluator(lambda radius: 1.0, slot="sidewall_half_thickness", label="mine")
 
     message = str(excinfo.value)
     assert "mine" in message
@@ -189,16 +189,16 @@ def test_star_args_is_rejected_with_an_explanation() -> None:
 
 
 def test_positional_only_parameters_are_rejected() -> None:
-    def rib_width(x, /):
+    def sidewall_half_thickness(x, /):
         return x
 
     with pytest.raises(DesignInputError, match="positional-only"):
-        make_evaluator(rib_width, slot="rib_width", label="t")
+        make_evaluator(sidewall_half_thickness, slot="sidewall_half_thickness", label="t")
 
 
 def test_returning_an_array_is_rejected() -> None:
     evaluator = make_evaluator(
-        lambda: np.zeros(3), slot="rib_width", label="t"
+        lambda: np.zeros(3), slot="sidewall_half_thickness", label="t"
     )
     with pytest.raises(DesignInputError, match="must return a scalar"):
         evaluator(_context())

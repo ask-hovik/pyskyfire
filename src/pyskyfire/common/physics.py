@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import brentq, fsolve
 
-from pyskyfire.ducts import friction as ducts_friction
+from pyskyfire.common import friction as ducts_friction
 
 
 def kader_temperature_plus(y_plus, prandtl, eta):
@@ -408,7 +408,7 @@ def phi_curv_friction(Re_c, D_c, R_curv):
         Re_c, D_c, R_curv, model="native"
     )
 
-#: Re-exported from :mod:`pyskyfire.ducts.friction`, which owns these bounds.
+#: Re-exported from :mod:`pyskyfire.common.friction`, which owns these bounds.
 ReDh_laminar = ducts_friction.ReDh_laminar
 ReDh_turbulent = ducts_friction.ReDh_turbulent
 
@@ -515,3 +515,40 @@ def T_aw(gamma, M_inf, T_inf, Pr):
     
     r = Pr**(1/3) # Recovery factor. Differs between turbulent and laminar
     return T_inf*(1 + r*((gamma -1)/2)*M_inf**2)
+
+
+def nusselt_gnielinski(Re, Pr, darcy_factor):
+    """Gnielinski turbulent internal-flow Nusselt number (Darcy convention).
+
+    Validity: 2300 <= Re <= 5e6, 0.5 <= Pr <= 2000. Values outside these
+    ranges raise. For transition/laminar handling use ``h_internal``.
+    Reference: Gnielinski (1976);
+    equation and example: https://ht.readthedocs.io/en/release/ht.conv_internal.html
+    """
+    if not np.isfinite([Re, Pr, darcy_factor]).all() or darcy_factor <= 0:
+        raise ValueError("Gnielinski requires finite inputs and positive Darcy factor")
+    if not 2300 <= Re <= 5e6 or not 0.5 <= Pr <= 2000:
+        raise ValueError("Gnielinski requires 2300 <= Re <= 5e6 and 0.5 <= Pr <= 2000")
+    f8 = darcy_factor/8
+    return f8*(Re-1000)*Pr/(1+12.7*np.sqrt(f8)*(Pr**(2/3)-1))
+
+
+def h_internal(Re, Pr, k, Dh, darcy_factor, *, laminar_nusselt=3.66):
+    """Internal coefficient [W/m²/K], with an explicit laminar approximation.
+
+    Uses the supplied laminar Nu below Re=2300 and linearly blends to
+    Gnielinski at Re=4000. The default 3.66 represents a fully developed
+    circular tube at constant wall temperature. For noncircular or partially
+    heated passages supply a suitable laminar_nusselt or coefficient model.
+    Hydraulic-diameter turbulent use in noncircular passages is an engineering
+    approximation. Curvature enhancement is not added to heat transfer.
+    """
+    if not np.isfinite([Re, Pr, k, Dh, darcy_factor, laminar_nusselt]).all() or min(Re,Pr,k,Dh,darcy_factor,laminar_nusselt) <= 0:
+        raise ValueError("internal convection inputs must be finite and positive")
+    if Re <= 2300:
+        Nu = laminar_nusselt
+    else:
+        Nu_t = nusselt_gnielinski(max(Re,4000), Pr, darcy_factor)
+        w = min(1., (Re-2300)/1700)
+        Nu = (1-w)*laminar_nusselt+w*Nu_t
+    return Nu*k/Dh

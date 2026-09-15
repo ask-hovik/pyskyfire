@@ -52,6 +52,9 @@ include = [
 ]
 
 [project.optional-dependencies]
+impeller = [
+  "pyturbo-aero==1.3.8",
+]
 viz = [
   "markdown-it-py>=4.0",
   "plotly>=6.3",

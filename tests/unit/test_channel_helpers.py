@@ -75,7 +75,7 @@ def _built_circuit(*, radius=0.1, thickness=0.001, height=0.004, helix_angle=0.0
     circuit = CoolingCircuit(
         name="planes",
         contour=contour,
-        cross_section=CrossSectionSquared(0.001),
+        cross_section=CrossSectionSquared((0.001) / 2),
         span=[0.0, 1.0],
         placement=SurfacePlacement(n_channel_positions=60, helix_angle=helix_angle),
         channel_height=lambda x: height,

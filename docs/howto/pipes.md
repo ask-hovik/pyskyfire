@@ -1,12 +1,12 @@
 # Define and solve a pipe
 
-A `Pipe` is an ordered set of public `PipeStation` objects with one explicit
+A `Pipe` holds a shared `Path` plus its diameter profile. The path contains public `PathStation` objects with one explicit
 connection between every adjacent pair. The solver uses these objects directly;
 it does not infer whether a corner is a continuous curve or a lumped bend.
 
 ## Generate stations from human-friendly corner nodes
 
-`generate_pipe_stations()` turns control vertices into tangent points. Here the
+`generate_path_stations()` turns control vertices into tangent points. Here the
 middle node is the intersection of the two straight control legs, not a
 physical fluid station:
 
@@ -14,17 +14,16 @@ physical fluid station:
 import pyskyfire as psf
 
 nodes = [
-    psf.ducts.PathNode((0.0, 0.0, 0.0), diameter=0.010),
+    psf.ducts.PathNode((0.0, 0.0, 0.0)),
     psf.ducts.PathNode(
         (0.0, 0.0, 0.5),
-        diameter=0.010,
         bend=psf.ducts.RoundedBend(radius=0.050),
     ),
-    psf.ducts.PathNode((0.0, 0.5, 0.75), diameter=0.010),
+    psf.ducts.PathNode((0.0, 0.5, 0.75)),
 ]
 
-stations, connections = psf.ducts.generate_pipe_stations(nodes)
-pipe = psf.ducts.Pipe(stations, connections, roughness=15e-6)
+path = psf.ducts.Path.from_nodes(nodes)
+pipe = psf.ducts.Pipe(path, diameter=0.010, roughness=15e-6)
 ```
 
 The generated `RoundedBend` is one complete lumped loss evaluated with
@@ -51,11 +50,12 @@ The generator is optional:
 
 ```python
 stations = [
-    psf.ducts.PipeStation((0.0, 0.0, 0.0), diameter=0.010),
-    psf.ducts.PipeStation((0.0, 0.0, 0.5), diameter=0.012),
+    psf.ducts.PathStation((0.0, 0.0, 0.0)),
+    psf.ducts.PathStation((0.0, 0.0, 0.5)),
 ]
 connections = [psf.ducts.Straight()]
-pipe = psf.ducts.Pipe(stations, connections, roughness=15e-6)
+path = psf.ducts.Path(stations, connections)
+pipe = psf.ducts.Pipe(path, diameter=[0.010, 0.012], roughness=15e-6)
 ```
 
 Use `Continuous(radius=...)` when the curvature is known. If its radius is
@@ -65,7 +65,8 @@ selected `Continuous`; the solver never switches connection models itself.
 
 Lumped rounded-bend correlations currently require equal diameters at their two
 tangent stations. Distributed straight and continuous connections support
-changing station diameter.
+changing diameter. Supply a scalar, a function of path distance `s`, or one value
+per resolved station on `Pipe(diameter=...)`. Nodes and stations carry geometry only.
 
 ## Solve independently
 
@@ -87,7 +88,7 @@ print(result.states[-1])
 ```
 
 `result` contains pressure, temperature, density, velocity, and fluid state at
-every `PipeStation`, plus loss, Reynolds number, Darcy factor, and loss
+every `PathStation`, plus loss, Reynolds number, Darcy factor, and loss
 coefficient for every connection.
 
 This first pipe solver is adiabatic and loss-only. Temperature remains constant,
@@ -99,7 +100,7 @@ solution.
 ## Use the same pipe in an engine network
 
 ```python
-block = psf.common.PipeBlock(
+block = psf.network.PipeBlock(
     "fuel_feed",
     "tank_out",
     "pump_in",
@@ -127,11 +128,16 @@ placement against a chamber or a pump.
 
 ## A worked duct
 
-`examples/rl10_duct/rl10_duct.py` builds the RL10 turbine-discharge duct from
-a real tube-bending table: straight lengths, bend angles, bend radii, and the
-dihedral rotation between consecutive bend planes. It is a useful reference
-for three things: converting a bending table into `PathNode` control vertices,
-where each corner must absorb the tangent distance `R * tan(angle / 2)`;
-carrying bend planes correctly by rolling the bend binormal about the
-intervening straight; and seeing the lumped `RoundedBend` and distributed
-`Continuous` models run over identical geometry.
+`validation/RL10/plumbing/` builds real RL10 tubing from the fabrication
+drawings, one module per component. `bending_table.py` is the reusable part:
+it converts a tube-bending table -- straight lengths, bend angles, bend radii,
+and the dihedral rotation between consecutive bend planes -- into `PathNode`
+control vertices, absorbing the tangent distance `R * tan(angle / 2)` into
+both legs at each corner and carrying bend planes by rolling the bend binormal
+about the intervening straight. `turbine_discharge_duct.py` is one such table,
+with the bore taken from the drawing's OD and wall callouts.
+
+Those pipes are built but not yet wired into the cycle in `sizer_sim.py`,
+which still represents each duct as a `SimpleDuctBlock` on a calibrated
+pressure ratio. A ratio covers a whole network leg, so it can only be replaced
+once every component along that leg exists.

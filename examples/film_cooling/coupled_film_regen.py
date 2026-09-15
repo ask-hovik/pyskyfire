@@ -58,7 +58,7 @@ params = dict(
     material = psf.common.solids.StainlessSteel304,
     wall_thickness = 0.5e-3,
     n_channels = 60,
-    rib_width = 0.0,
+    sidewall_half_thickness = 0.0,
     roughness_height = 10e-6,
 
     # Film cooling inputs.
@@ -102,7 +102,7 @@ xs, rs = psf.regen.contour.generate_contour(
 contour = psf.regen.Contour(xs, rs, name="Minimal Contour")
 
 wall = psf.regen.Wall(material=params["material"], thickness=params["wall_thickness"])
-cross_section_squared = psf.regen.CrossSectionSquared(rib_width=params["rib_width"])
+cross_section_squared = psf.regen.CrossSectionSquared(sidewall_half_thickness=params["sidewall_half_thickness"])
 
 def channel_height_function():
     return 2e-3

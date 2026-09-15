@@ -6,7 +6,7 @@ from typing import Any, Optional, Sequence
 
 from scipy.optimize import brentq
 
-from . import physics
+from pyskyfire.common import physics
 
 try:
     from CoolProp.CoolProp import PropsSI

@@ -28,17 +28,16 @@ params = dict(
     helix_angle_deg=15.0,  # Helix angle [degrees]
     channel_height=2e-3,  # Height [m]; see rounded_height_input
     rounded_height_input="base",  # "base" excludes lobes; "full" includes them
-    rib_width=0.3e-3,  # Squared channel rib width [m]
+    sidewall_half_thickness=0.15e-3,  # One sidewall; half the shared rib [m]
     wall_thickness=0.3e-3,  # Main wall thickness [m]
     material=psf.common.solids.StainlessSteel304,
     circuit_span=[-1.0, 1.0],  # Signed contour fractions; 0 = throat
     contour_xs=np.array([-90, -60, -30, 0, 30, 60, 90]) * 1e-3,  # Axial positions [m]
-    contour_rs=np.array([30, 30, 24, 18, 22, 29, 36]) * 1e-3,  # Radii [m] contour_rs=np.full(7, 30e-3),#
+    contour_rs=np.array([30, 30, 24, 18, 22, 29, 36]) * 1e-3,  # Radii [m]
     chamber_angle_deg=0.0,  # Chamber-side slope angle at throat
     nozzle_angle_deg=0.0,  # Nozzle-side slope angle at throat
     trim_fraction=0.3,  # Trim per blended side of hot-wall arc
-    transition_fraction=0.02,  # Fraction of full contour axial length
-    transition_length_m=None,  # Optional length [m], overrides fraction
+    transition_fraction=0.02,  # Empty interleave-zone width / full contour length
     output_dir=EXAMPLE_DIR,
     output_name=None,  # None -> hot-wall-{section}.json
 )
@@ -77,10 +76,11 @@ def build_engine(**overrides):
     circuits = []
     for family in families:
         cross_section = (
-            psf.regen.CrossSectionSquared(rib_width=settings["rib_width"])
+            psf.regen.CrossSectionSquared(sidewall_half_thickness=settings["sidewall_half_thickness"])
             if family == "squared"
             else psf.regen.CrossSectionRounded(
-                height_input=settings["rounded_height_input"]
+                height_input=settings["rounded_height_input"],
+                exposure_angles={"floor": 112 * np.pi / 180},
             )
         )
         # Base-height input keeps the rounded construction valid with very few
@@ -129,10 +129,8 @@ def export_example(**overrides):
     engine = build_engine(**settings)
     data = exporter.build_onshape_data(
         engine,
-        include_hot_wall=True,
         hot_wall_trim_fraction=settings["trim_fraction"],
         hot_wall_transition_fraction=settings["transition_fraction"],
-        hot_wall_transition_length_m=settings["transition_length_m"],
     )
     output_dir = Path(settings["output_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -147,7 +145,7 @@ def export_example(**overrides):
         f"{n_stations} profiles per seed"
     )
     print(
-        f"Hot wall: {len(wall)} profiles, "
+        f"Hot wall: {len(data['hotWall']['revolves'])} revolves; {len(wall)} loft profiles, "
         f"{sum(len(s['curves']) for s in wall)} total sketch curves"
     )
     print(
@@ -173,6 +171,7 @@ def main():
     )
     parser.add_argument("--helix-angle-deg", type=float)
     parser.add_argument("--trim-fraction", type=float)
+    parser.add_argument("--transition-fraction", type=float)
     export_example(**vars(parser.parse_args()))
 
 

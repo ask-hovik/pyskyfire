@@ -12,7 +12,7 @@ PACKAGED_RESOURCES = (
     "regen/data/theta_e.json",
     "regen/data/theta_n.json",
     "viz/assets/GLTFLoader.js",
-    "viz/assets/OrbitControls.js",
+    "viz/assets/TrackballControls.js",
     "viz/assets/three.min.js",
     "viz/assets/x6.min.js",
 )

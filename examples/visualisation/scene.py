@@ -8,23 +8,23 @@ from pathlib import Path
 
 import numpy as np
 import pyskyfire as psf
-from pyskyfire.pump.impeller_new import Impeller
+from pyskyfire.pump import Impeller
 
 
 def build_feed_pipe():
     """A short bent feed line, resolved and pressure-loss marched.
 
-    The route is stated as control vertices; `generate_pipe_stations` turns
+    The route is stated as control vertices; `generate_path_stations` turns
     each corner into its two tangent stations and one lumped bend loss.
     """
     nodes = [
-        psf.ducts.PathNode((0.0, 0.0, 0.0), diameter=0.012),
-        psf.ducts.PathNode((0.09, 0.0, 0.0), diameter=0.012,
+        psf.ducts.PathNode((0.0, 0.0, 0.0)),
+        psf.ducts.PathNode((0.09, 0.0, 0.0),
                            bend=psf.ducts.RoundedBend(radius=0.030)),
-        psf.ducts.PathNode((0.16, 0.06, 0.0), diameter=0.012),
+        psf.ducts.PathNode((0.16, 0.06, 0.0)),
     ]
-    stations, connections = psf.ducts.generate_pipe_stations(nodes)
-    return psf.ducts.Pipe(stations, connections, roughness=15e-6)
+    stations, connections = psf.ducts.generate_path_stations(nodes)
+    return psf.ducts.Pipe(stations, connections, roughness=15e-6, diameter=0.012)
 
 
 def solve_feed_pipe(pipe):
@@ -46,7 +46,10 @@ def build_scene(thrust_chamber, cooling_data):
                                       layout="analytical", stride=3),
         name="chamber",
     )
-    impeller = Impeller(Q=0.01, H=100, n=10000)
+    impeller = Impeller(Q=0.01, H=100, n=10000, shaft_diameter=0.02,
+                        inlet_hub_diameter=0.03, blade_count=6, beta2_deg=25,
+                        blade_thickness=0.0015)
+    impeller.build_geometry()
     scene.add(
         psf.viz.ImpellerComponent(impeller), name="fuel_pump",
         transform=psf.viz.Transform(translation=(-0.3, 0.15, 0), rotation=(0, np.pi/2, 0)),

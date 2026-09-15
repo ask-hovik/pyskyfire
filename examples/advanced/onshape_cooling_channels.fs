@@ -1,24 +1,19 @@
 FeatureScript 3070;
 import(path : "onshape/std/common.fs", version : "3070.0");
 
-// Schema v6: Python resolves transverse coolant arcs and optional complete
-// hot-wall profiles. No thermal geometry is calculated in FeatureScript.
-//
-// A hot-wall profile is one curve per channel (squared) or an arc and a
-// tangent blend per channel (rounded), so a fine engine reaches a hundred
-// curves per profile, all alike and evenly spaced around the axis. Asking
-// opLoft to match those by proximity fails outright past roughly ninety
-// curves, and a helix that advances more than half a channel pitch between
-// stations matches onto the neighbouring channel, twisting the wall the wrong
-// way. Python therefore emits `runs` of sections whose curves are the same
-// channels in the same order, and each curve is lofted along its run on its
-// own. Correspondence is then given, not guessed, at any channel count or
-// helix angle. Where a circuit hand-off ends one run and starts the next,
-// Python re-cuts both bounding profiles onto one set of azimuths so those,
-// too, arrive already paired.
+// Schema v8: plain hot-wall spans revolve a spline fitted through the chamber
+// contour, one per smooth run of it. Rounded and mixed spans loft one curve
+// per channel/blend along independent profile runs.
+// Uncovered gaps and margins around interleave boundaries remain open.
+// Geometry is resolved in Python; this feature only constructs the export.
 
 function arcPoint(arc is map, fraction is number)
 {
+    if (arc.kind == "line")
+    {
+        return ((1 - fraction) * vector(arc.start_uv_mm[0], arc.start_uv_mm[1]) +
+                fraction * vector(arc.end_uv_mm[0], arc.end_uv_mm[1])) * millimeter;
+    }
     const angle = (arc.startAngle_deg + fraction * (arc.endAngle_deg - arc.startAngle_deg)) * degree;
     return (vector(arc.center_uv_mm[0], arc.center_uv_mm[1]) +
             cos(angle) * vector(arc.axisA_uv_mm[0], arc.axisA_uv_mm[1]) +
@@ -27,7 +22,11 @@ function arcPoint(arc is map, fraction is number)
 
 function addArc(sketch is Sketch, arcId is string, arc is map)
 {
-    if (arc.kind == "ellipse")
+    if (arc.kind == "line")
+    {
+        skLineSegment(sketch, arcId, { "start" : arcPoint(arc, 0), "end" : arcPoint(arc, 1) });
+    }
+    else if (arc.kind == "ellipse")
     {
         skEllipticalArc(sketch, arcId, {
             "center" : vector(arc.center_uv_mm[0], arc.center_uv_mm[1]) * millimeter,
@@ -54,7 +53,18 @@ function addArc(sketch is Sketch, arcId is string, arc is map)
 
 function addHotWallCurve(sketch is Sketch, curveId is string, curve is map)
 {
-    if (curve.kind == "bezier")
+    if (curve.kind == "spline")
+    {
+        // One interpolated spline per smooth contour run, so the revolved
+        // wall is a single smooth face rather than a chain of segments.
+        var points = [];
+        for (var point in curve.points_uv_mm)
+        {
+            points = append(points, vector(point[0], point[1]) * millimeter);
+        }
+        skFitSpline(sketch, curveId, { "points" : points });
+    }
+    else if (curve.kind == "bezier")
     {
         var points = [];
         for (var point in curve.controlPoints_uv_mm)
@@ -150,123 +160,8 @@ function loftHotWallStrip(
     }
 }
 
-// A hand-off replaces one channel pattern with another, so its two bounding
-// profiles share no curves. Python re-cuts both onto one set of azimuths, so
-// they arrive here with equal curve counts spanning equal angular intervals.
-// Paired spans then sit at the same azimuth, which makes matching them in
-// order the closest matching as well, so several spans can share one loft.
-function loftHotWallBridge(context is Context, bridgeId is Id, bridge is map)
+function knitHotWall(context is Context, id is Id, surfaces is array, knit is boolean)
 {
-    const spansPerLoft = 24;
-    var sketchIds = [];
-    for (var s = 0; s < size(bridge.sections); s += 1)
-    {
-        const sketchId = bridgeId + ("profile" ~ s);
-        hotWallSectionSketch(context, sketchId, bridge.sections[s]);
-        sketchIds = append(sketchIds, sketchId);
-    }
-    const count = size(bridge.curveNames);
-    var surfaces = [];
-    for (var start = 0; start < count; start += spansPerLoft)
-    {
-        var stop = start + spansPerLoft;
-        if (stop > count)
-        {
-            stop = count;
-        }
-        var profiles = [];
-        for (var s = 0; s < size(sketchIds); s += 1)
-        {
-            var edges = [];
-            for (var j = start; j < stop; j += 1)
-            {
-                edges = append(edges, hotWallCurveEdge(
-                    context, sketchIds[s], j,
-                    "Hot-wall bridge span " ~ (j + 1) ~ " on profile " ~ (s + 1)
-                ));
-            }
-            profiles = append(profiles, qUnion(edges));
-        }
-        const loftId = bridgeId + ("spans" ~ start);
-        try
-        {
-            opLoft(context, loftId, {
-                "profileSubqueries" : profiles,
-                "bodyType" : ToolBodyType.SURFACE
-            });
-        }
-        catch (error)
-        {
-            println("PySkyFire hot-wall transition loft failed on spans " ~
-                    (start + 1) ~ " to " ~ stop ~ " of " ~ count ~ ":");
-            println(error);
-            throw regenError("Hot-wall transition loft failed between sections " ~
-                             (bridge.beforeSection + 1) ~ " and " ~
-                             (bridge.afterSection + 1) ~ ", on spans " ~
-                             (start + 1) ~ " to " ~ stop ~
-                             ". See FeatureScript notices for the kernel error.");
-        }
-        surfaces = append(surfaces, qCreatedBy(loftId, EntityType.BODY));
-    }
-    return surfaces;
-}
-
-function createHotWall(context is Context, id is Id, wall is map, knit is boolean)
-{
-    if (size(wall.sections) < 2)
-    {
-        throw regenError("A hot-wall loft needs at least two profiles");
-    }
-    if (wall.runs == undefined || wall.bridges == undefined)
-    {
-        throw regenError("Hot-wall data has no profile runs; regenerate using export_onshape.py");
-    }
-
-    var sketchIds = [];
-    for (var i = 0; i < size(wall.sections); i += 1)
-    {
-        const sketchId = id + ("section" ~ i);
-        hotWallSectionSketch(context, sketchId, wall.sections[i]);
-        // A profile that fails to close is a Python export bug worth catching
-        // before any surface work starts.
-        checkedSketchRegion(context, sketchId, "Hot-wall section " ~ (i + 1));
-        sketchIds = append(sketchIds, sketchId);
-    }
-
-    var surfaces = [];
-    for (var r = 0; r < size(wall.runs); r += 1)
-    {
-        const run = wall.runs[r];
-        // A lone section carries no strip of its own; the bridges on either
-        // side of it cover that part of the wall.
-        if (size(run.sectionIndices) < 2)
-        {
-            continue;
-        }
-        for (var j = 0; j < size(run.curveNames); j += 1)
-        {
-            const stripId = id + ("run" ~ r ~ "strip" ~ j);
-            loftHotWallStrip(context, stripId, sketchIds, run.sectionIndices, j,
-                             run.curveNames[j]);
-            surfaces = append(surfaces, qCreatedBy(stripId, EntityType.BODY));
-        }
-    }
-    for (var b = 0; b < size(wall.bridges); b += 1)
-    {
-        const bridged = loftHotWallBridge(context, id + ("bridge" ~ b), wall.bridges[b]);
-        for (var k = 0; k < size(bridged); k += 1)
-        {
-            surfaces = append(surfaces, bridged[k]);
-        }
-    }
-    if (size(surfaces) == 0)
-    {
-        throw regenError("Hot-wall data produced no loftable spans");
-    }
-
-    // Neighbouring strips share exported endpoints exactly, so the union
-    // knits them. It is the one step here that depends on the kernel matching
-    // surface edges, so keep the strips rather than fail the whole feature.
     if (knit && size(surfaces) > 1)
     {
         try
@@ -279,11 +174,81 @@ function createHotWall(context is Context, id is Id, wall is map, knit is boolea
         }
         catch (error)
         {
-            println("PySkyFire could not knit the hot-wall strips into one surface:");
+            println("PySkyFire could not knit this hot-wall span:");
             println(error);
-            reportFeatureInfo(context, id, "Hot wall built as " ~ size(surfaces) ~
-                              " separate surfaces; knitting them failed.");
+            reportFeatureInfo(context, id, "Hot-wall span built as separate surfaces; knitting failed.");
         }
+    }
+}
+
+function revolveHotWall(context is Context, id is Id, profile is map)
+{
+    const sketchId = id + "profile";
+    // Sketch u = radius (world X), v = axial (world Z).
+    var sketch = newSketchOnPlane(context, sketchId, {
+        "sketchPlane" : plane(vector(0, 0, 0) * millimeter,
+                              vector(0, -1, 0), vector(1, 0, 0))
+    });
+    var edges = [];
+    for (var j = 0; j < size(profile.curves); j += 1)
+    {
+        addHotWallCurve(sketch, "curve" ~ j, profile.curves[j]);
+        edges = append(edges, sketchEntityQuery(sketchId, EntityType.EDGE, "curve" ~ j));
+    }
+    skSolve(sketch);
+    opRevolve(context, id + "revolve", {
+        "entities" : qUnion(edges),
+        "axis" : line(vector(0, 0, 0) * millimeter, vector(0, 0, 1)),
+        "angleForward" : 360 * degree
+    });
+}
+
+function createHotWall(context is Context, id is Id, wall is map,
+                       knit is boolean, fullContour is boolean)
+{
+    if (fullContour)
+    {
+        if (wall.fullContourAllowed != true || wall.fullContour == undefined)
+        {
+            throw regenError("Full-contour hot wall requires squared channels only");
+        }
+        revolveHotWall(context, id + "fullContour", wall.fullContour);
+        return;
+    }
+    for (var r = 0; r < size(wall.revolves); r += 1)
+    {
+        revolveHotWall(context, id + ("plain" ~ r), wall.revolves[r]);
+    }
+    var sketchIds = [];
+    for (var i = 0; i < size(wall.sections); i += 1)
+    {
+        const sketchId = id + ("section" ~ i);
+        hotWallSectionSketch(context, sketchId, wall.sections[i]);
+        checkedSketchRegion(context, sketchId, "Hot-wall section " ~ (i + 1));
+        sketchIds = append(sketchIds, sketchId);
+    }
+    for (var r = 0; r < size(wall.runs); r += 1)
+    {
+        const run = wall.runs[r];
+        if (size(run.sectionIndices) < 2)
+        {
+            throw regenError("A hot-wall loft span needs at least two profiles");
+        }
+        var surfaces = [];
+        const runId = id + ("run" ~ r);
+        for (var j = 0; j < size(run.curveNames); j += 1)
+        {
+            const stripId = runId + ("strip" ~ j);
+            loftHotWallStrip(context, stripId, sketchIds, run.sectionIndices, j,
+                             run.curveNames[j]);
+            surfaces = append(surfaces, qCreatedBy(stripId, EntityType.BODY));
+        }
+        // Knit each continuous span independently; never connect across gaps.
+        knitHotWall(context, runId, surfaces, knit);
+    }
+    if (size(wall.revolves) == 0 && size(wall.runs) == 0)
+    {
+        reportFeatureInfo(context, id, "No hot-wall spans remain outside the interleave gaps.");
     }
 }
 
@@ -378,8 +343,31 @@ function patternSeedBody(
 }
 
 
+// Conditional UI must depend on a boolean parameter, so editing logic reads
+// JSON eligibility into hidden state. Regeneration checks the JSON again.
+// https://cad.onshape.com/FsDoc/uispec.html#conditional-visibility
+export function hotWallEditLogic(context is Context, id is Id, oldDefinition is map,
+                                 definition is map, isCreating is boolean) returns map
+{
+    definition.fullContourAvailable = false;
+    if (definition.channelData is JSONData)
+    {
+        const data = definition.channelData.jsonData;
+        if (data.schemaVersion == 8 && data.hotWall != undefined)
+        {
+            definition.fullContourAvailable = data.hotWall.fullContourAllowed == true;
+        }
+    }
+    if (!definition.fullContourAvailable)
+    {
+        definition.coverEntireHotWall = false;
+    }
+    return definition;
+}
+
 annotation {
-    "Feature Type Name" : "PySkyFire cooling channels"
+    "Feature Type Name" : "PySkyFire cooling channels",
+    "Editing Logic Function" : "hotWallEditLogic"
 }
 export const pyskyfireCoolingChannels = defineFeature(
     function(context is Context, id is Id, definition is map)
@@ -397,9 +385,18 @@ export const pyskyfireCoolingChannels = defineFeature(
         annotation { "Name" : "Construct hot wall", "Default" : false }
         definition.constructHotWall is boolean;
 
+        annotation { "Name" : "Full contour available", "Default" : false,
+                     "UIHint" : UIHint.ALWAYS_HIDDEN }
+        definition.fullContourAvailable is boolean;
+
         if (definition.constructHotWall)
         {
-            annotation { "Name" : "Knit hot wall into one surface", "Default" : true }
+            if (definition.fullContourAvailable)
+            {
+                annotation { "Name" : "Cover entire hot wall", "Default" : false }
+                definition.coverEntireHotWall is boolean;
+            }
+            annotation { "Name" : "Knit each hot-wall span", "Default" : true }
             definition.knitHotWall is boolean;
         }
     }
@@ -409,7 +406,7 @@ export const pyskyfireCoolingChannels = defineFeature(
         {
             throw regenError("Unsupported cooling-channel JSON schema");
         }
-        if (data.schemaVersion != 6)
+        if (data.schemaVersion != 8)
         {
             throw regenError("Unsupported cooling-channel JSON version; regenerate using export_onshape.py");
         }
@@ -510,7 +507,9 @@ export const pyskyfireCoolingChannels = defineFeature(
         }
         if (definition.constructHotWall)
         {
-            createHotWall(context, id + "hotWall", data.hotWall, definition.knitHotWall != false);
+            createHotWall(context, id + "hotWall", data.hotWall,
+                          definition.knitHotWall != false,
+                          data.hotWall.fullContourAllowed == true && definition.coverEntireHotWall == true);
         }
     }
 );

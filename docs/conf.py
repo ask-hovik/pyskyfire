@@ -52,8 +52,8 @@ numpydoc_attributes_as_param_list = True
 numpydoc_xref_param_type = True
 # Optional: help short names link
 numpydoc_xref_aliases = {
-    "Station": "pyskyfire.common.engine_network.Station",
-    "SignalBlock": "pyskyfire.common.blocks.SignalBlock",
+    "Station": "pyskyfire.network.engine_network.Station",
+    "SignalBlock": "pyskyfire.network.blocks.SignalBlock",
 }
 
 autosummary_generate = False

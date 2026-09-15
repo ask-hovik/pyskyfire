@@ -303,8 +303,8 @@ owns the JSON schema and coordinate mapping expected by
 `onshape_cooling_channels.fs`.
 
 The exporter loads `results.pkl` and writes
-`onshape-cooling-channels.json`. Its default analytical layout preserves each
-nominal channel exactly and applies constant phase offsets to compatible,
+`onshape-cooling-channels.json`, always including the hot wall. Its default
+analytical layout preserves each nominal channel exactly and applies constant phase offsets to compatible,
 equal-count interleaves. Invalid analytical combinations raise an error rather
 than silently deforming CAD geometry. The numerical layout remains available
 for cases where approximate redistribution is useful:
@@ -330,8 +330,8 @@ nominal reference path or the coolant centroid. Schema version 3 supplies a
 `sectionType` per channel
 and the two construction arcs in local sketch coordinates.
 `CrossSectionSquared` uses planes perpendicular to the engine axis, with
-projected height, pitch, and rib faces. `CrossSectionRounded` and
-`CrossSectionRoundedInternal` place their lobes in planes perpendicular to the
+projected height, pitch, and rib faces. `CrossSectionRounded`
+places its lobes in planes perpendicular to the
 nominal winding. A document can contain both squared and rounded circuits. The native viewer samples the same arcs.
 
 Regenerate older JSON files when installing the updated FeatureScript; the

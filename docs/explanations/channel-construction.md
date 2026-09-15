@@ -160,10 +160,10 @@ angular rate `dtheta/dx` is a steeper helix further out. A rib is therefore
 thinnest at the channel roof, and
 
 ```text
-d = rib_width/2 * sqrt(1 + (r_roof * dtheta/dx)**2)
+d = sidewall_half_thickness * sqrt(1 + (r_roof * dtheta/dx)**2)
 ```
 
-puts that thinnest point at exactly `rib_width`, leaving the floor a little
+puts that thinnest full rib width at exactly `2 * sidewall_half_thickness`, leaving the floor a little
 thicker. The rate belongs to the reference path, where the helix angle is
 measured: `dtheta/dx = tan(gamma) / (r_ref cos(alpha))`. With no helix this
 reduces to the usual constant-width rib between annular channels.
@@ -194,7 +194,6 @@ its older base-height parameter, set the option on the cross section:
 
 ```python
 cross_section = psf.regen.CrossSectionRounded(height_input="base")
-# The same option is available on CrossSectionRoundedInternal.
 ```
 
 Then `CoolingCircuit(channel_height=...)` supplies the base parameter. This
@@ -251,7 +250,7 @@ the selected convention and may require a corresponding change to that law.
 
 ## Rounded channels and Onshape
 
-`CrossSectionRounded` and `CrossSectionRoundedInternal` build their lobes in
+`CrossSectionRounded` builds its lobes in
 planes normal to the nominal winding, and both lobes are tangent to the two
 rays that separate a channel from its neighbours. The lobes are therefore sized
 at the radius they end up at: there is no outward translation afterwards, which
@@ -309,96 +308,95 @@ the selected stations; the final station is always retained. Onshape retains
 analytic arcs and uses all exported coolant stations. Neither Python tests nor
 the native mesh renderer execute Onshape's loft kernel.
 
-## Optional continuous hot-wall export
+## Hot-wall export
 
-The advanced and RL10 export entry points share one exporter. To include the
-hot wall in the same JSON:
+The advanced and RL10 entry points share the same exporter and version 8 JSON
+contract. Every export includes the hot wall:
 
 ```bash
-python examples/advanced/export_onshape.py --hot-wall \
-    --hot-wall-trim-fraction 0.1 --hot-wall-transition-fraction 0.02
-
-python validation/RL10/export_onshape.py --hot-wall \
-    --hot-wall-transition-length-m 0.01
+python examples/advanced/export_onshape.py
+python validation/RL10/export_onshape.py --hot-wall-transition-fraction 0.02
 ```
 
-Enable **Construct hot wall** in the included Onshape cooling-channel feature.
-The optional `hotWall` block supplies a complete closed circumferential sketch
-at each hot-wall station. The surface is open at its axial ends; it is not a
-closed solid or a material-volume model. The native viewer currently shows the
-transverse coolant geometry, not this additional hot-wall surface.
+Enable **Construct hot wall** in the shared Onshape FeatureScript. The result
+is a surface open at its axial ends, not a wall solid with thickness.
 
-A hot-wall profile holds one curve per squared channel, or an arc and a blend
-per rounded channel, so a finely divided engine reaches hundreds of similar,
-evenly spaced curves. Left to pair those profiles by proximity, a loft fails
-outright past roughly ninety curves, and once a helix advances more than half a
-channel pitch between stations it pairs each curve with its neighbour, twisting
-the wall against the channels. The export therefore also carries `runs`: spans
-of consecutive sections whose curves are the same channels in the same order,
-which `join_hot_wall` guarantees by pinning the profile seam to a stable
-channel. FeatureScript lofts each curve along its run on its own, so every
-profile is a single edge and correspondence is given rather than inferred, at
-any channel count or helix angle.
+### Plain walls and full-contour coverage
 
-A circuit hand-off replaces one channel pattern with another and starts a new
-run, so the two profiles bounding it share no curves at all. Both still wind
-once about the axis, so azimuth pairs them: the export cuts each at every curve
-start of either profile, in `hotWall.bridges`, and the two then carry the same
-number of curves spanning the same angular intervals in the same order.
-Splitting is exact — circular arcs by parameter, Béziers by de Casteljau — and
-a profile keeps its own curve starts wherever the two nearly coincide, so
-neither side gains a sliver the other's cut would have made. Paired spans sit
-at the same azimuth, which makes pairing them in order the nearest pairing too,
-so a hand-off is lofted a couple of dozen spans at a time rather than one.
+Where all active channels are squared, `hotWall.revolves` supplies the
+meridional chamber contour for a full revolution about the thrust-chamber
+axis. Straight and helical squared channels use the same surface. Each smooth
+run of the contour is exported as one spline through the contour's own knots,
+which Onshape fits with `skFitSpline`, so the revolved wall is a single smooth
+face rather than a chain of short segments. Runs are cut wherever the meridian's
+tangent jumps, keeping the independent slopes on either side of the throat, and
+a run left with a single interval falls back to the cubic Bézier that
+reproduces that interval exactly.
 
-The resulting surface strips are knitted into one surface body, and are left
-separate with a notice if the kernel declines to knit them. A hand-off is the
-place that is most likely to decline: the run and the bridge meet on the same
-curve, but the bridge has split it, so knitting there depends on the kernel
-imprinting the extra vertices rather than on edges that already match.
+By default, these surfaces cover the union of the selected circuit spans.
+Overlapping or touching squared spans share a revolve; uncovered gaps remain
+open. If **all exported circuits are squared**, **Cover entire hot wall**
+appears in Onshape. It defaults off. Enabling it replaces the covered-span
+revolves with one revolution of the full chamber contour, including uncovered
+ends and internal gaps. The option is hidden when any exported channel is
+rounded. A circuit subset is evaluated on the channels included in its JSON.
 
-One strip is one loft, so a hot wall covering several hundred channels is
-several hundred operations and regenerates slowly. Exporting one circuit at a
-time with `--circuit` is the lever that reduces it; station count does not.
+### Rounded and mixed spans
 
-Hot-wall geometry is resolved in Python, not reconstructed from coolant
-boundaries in FeatureScript. Squared gas-facing pieces on the same contour
-join directly, including the wall over cooling ribs. Squared/rounded and
-rounded/rounded neighbors are trimmed and joined with cubic Bézier curves.
-The endpoint handles follow the adjoining tangents and have length one third
-of the endpoint separation. `--hot-wall-trim-fraction` is the fraction of the
-original arc's parameter span removed from **each blended side**, in `(0, 0.5)`;
-its default is 0.1. It is not a fraction of physical elliptical arc length.
-Profiles are checked for closure and sampled angular folds. Tangency is exact
-within each section, but a free loft does not guarantee 3D tangency or clearance
-between stations; inspect the generated CAD before relying on wall thickness.
+A span containing rounded channels uses `hotWall.sections` and `hotWall.runs`.
+Each run names the same channels in the same order at every section, and
+FeatureScript lofts each curve along its run separately. This retains the
+helical correspondence, including the squared pieces in mixed profiles.
+Squared-only spans elsewhere in the same chamber still use revolves.
 
-The hot wall starts at the first selected circuit and ends at the furthest
-selected circuit, rather than extending to the contour ends. Internal gaps
-are bridged by continuing the same loft onto the next circuit's profiles.
-The coverage diagnostic uses the union of selected circuit **axial** spans,
-including missing coverage at either contour end. It warns if more than 10%
-of the full contour's axial length is uncovered; interleaving spans are not
-counted twice. This is an axial coverage diagnostic, not angular coverage.
+Within each circumferential profile, squared pieces on the same contour join
+directly over the ribs. Squared/rounded and rounded/rounded neighbours are
+trimmed and joined by tangent cubic Bézier curves. The endpoint handles follow
+the adjoining tangents and have length one third of their separation.
+`--hot-wall-trim-fraction` controls how much of each arc's parameter span is
+removed from **each blended side**, in `(0, 0.5)` (default 0.1). It is not a
+fraction of physical elliptical arc length. Closure and angular folds are
+checked before export.
 
-Hot-wall transitions have their own stations, independent of simulation
-resolution. `--hot-wall-transition-fraction` defaults to 0.02 of the full
-contour's axial length (`contour.xs[-1] - contour.xs[0]`). Alternatively,
-`--hot-wall-transition-length-m` sets an absolute length in metres. The CLI
-accepts one or the other; the Python API gives an explicit metre value precedence.
-A transition is centered on each internal circuit hand-off. An uncovered gap
-is one hand-off centered on that gap, with width at least the gap length.
-The export inserts profiles at both transition limits and removes interior
-hot-wall profiles. Coolant loft sampling is unchanged. Overlapping intervals
-or intervals extending outside the overall circuit extent raise an error;
-reduce the requested transition length instead of silently clipping it.
+**Knit each hot-wall span** joins the strips within each continuous loft span.
+If the kernel cannot knit them, the separate surfaces remain with a notice.
+The feature never attempts to connect separate spans across gaps.
 
-Python callers can pass `include_hot_wall=True`, `hot_wall_trim_fraction`,
-`hot_wall_transition_fraction`, and `hot_wall_transition_length_m` to
-`build_onshape_data` or `export_onshape_json` in the example exporter.
+### Open interleave boundaries
+
+When rounded channels are present, an internal boundary where circuits enter
+or leave a shared span is an interleave site. The wall is omitted on both
+sides of that boundary. The steady shared span between boundaries retains its
+rounded/mixed wall; the transition itself is left for manual CAD work.
+
+`--hot-wall-transition-fraction` sets the **total width** of each empty zone as
+a fraction of the full contour axial length. This is the same convention the
+former blend zone used. The default `0.02` makes each gap 2% of the contour
+length, centered on its interleave boundary: 1% lies on each side. Python
+inserts exact profiles at the cut positions, independent of coolant sampling.
+Overlapping zones merge, and zones reaching a contour end are clipped. A span
+fully consumed by zones produces no hot wall. Squared-only exports need no
+interleave cuts because their plain contour is continuous.
+
+Uncovered axial gaps are always left open in the default mode, regardless of
+channel type or gap width. Automatic axial transition bridges and the old
+absolute `--hot-wall-transition-length-m` control have been removed. The
+percentage transition control now sizes the empty interleave zone instead of
+a lofted bridge. Earlier hot-wall JSON must be regenerated for version 8.
+
+The coverage diagnostic uses the union of selected circuit axial spans and
+warns if more than 10% of the full contour length has no circuit. It includes
+uncovered ends, counts overlaps once, and excludes the additional manual
+interleave gaps from that diagnostic.
+
+Python callers can pass `hot_wall_trim_fraction` and
+`hot_wall_transition_fraction` to `build_onshape_data` or
+`export_onshape_json` in the example exporter.
 
 The simulation's flow areas, centroids, wall conduction, and effective hot-gas
-area multiplier remain unchanged. CAD blending can change the actual gas area;
-it does not reposition tubes or feed that change back into the solver. This
-initial export follows the existing gas-facing section/liner geometry. Hot-side
-ribs and an explicitly smooth silver-insert region are future extensions.
+area multiplier remain unchanged. The native viewer displays transverse
+coolant geometry, not this additional hot-wall surface. Tangency is exact
+within each profile; free lofts do not guarantee 3D tangency or clearance
+between stations. Inspect the resulting CAD before relying on wall thickness.
+Hot-side ribs and an explicitly smooth silver-insert region remain outside
+this export's scope.

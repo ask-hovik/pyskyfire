@@ -9,9 +9,9 @@ A function used this way is called a **design input**. It declares the
 quantities it needs *by parameter name*, and Pyskyfire supplies exactly those:
 
 ```python
-rib_width = lambda: 1.0e-3                       # constant
-rib_width = lambda x: 1.0e-3 + 1.0e-5 * x        # grows downstream
-rib_width = lambda pitch_mid: 0.2 * pitch_mid    # a fifth of the local pitch
+sidewall_half_thickness = lambda: 0.5e-3                    # a 1 mm shared rib
+sidewall_half_thickness = lambda x: 0.5e-3 + 0.5e-5 * x     # grows downstream
+sidewall_half_thickness = lambda pitch_mid: 0.1 * pitch_mid # shared rib takes 20% of pitch
 ```
 
 The parameter names are the interface. Order does not matter, and a design
@@ -26,12 +26,20 @@ an ignored `x`.
 | `channel_height` | {py:class}`~pyskyfire.regen.thrust_chamber.CoolingCircuit` | A, B |
 | `helix_angle` | {py:class}`~pyskyfire.regen.channel_placement.SurfacePlacement`, {py:class}`~pyskyfire.regen.channel_placement.InternalPlacement` | A, B, and `h` from C |
 | `channel_angular_width` | {py:class}`~pyskyfire.regen.channel_placement.InternalPlacement` | A, B, and `h` and `gamma` from C |
-| `rib_width` | {py:class}`~pyskyfire.regen.cross_section.CrossSectionSquared` | A, B, C |
+| `sidewall_half_thickness` | {py:class}`~pyskyfire.regen.cross_section.CrossSectionSquared` | A, B, C |
+| `roof_thickness` (`section_thickness` slot) | {py:class}`~pyskyfire.regen.cross_section.CrossSectionSquared` | A, B, C |
+| `exposure`, `exposure_angles` values (`surface_exposure` slot) | Cross sections; angle inputs only on rounded floor/roof | A, B, C |
 | `roughness` | {py:class}`~pyskyfire.regen.thrust_chamber.CoolingCircuit` | A, B, C |
 | `hot_gas_surface_area_multiplier` | {py:class}`~pyskyfire.regen.thrust_chamber.CoolingCircuit` | A, B, C |
 
 Every one of these also accepts a plain `float`, which is the same as a
 function that takes no parameters and returns that number.
+
+`sidewall_half_thickness` means one complete sidewall of an isolated tube, or
+half of the shared rib between neighbouring chamber channels. Two 0.5 mm
+sidewalls form a 1 mm shared rib. Exposure fractions range from 0 to 1;
+exposure angles use radians. Local exchanger profiles expose their path
+coordinate as `x`; chamber-only quantities require a chamber context.
 
 ## Why the tiers exist
 
@@ -61,7 +69,7 @@ place.
 
 **Tier C — the resolved section.** The channel's height, helix angle, pitch and
 radii. Known only after heights, centrelines and angular widths have been
-built, so it is available to `rib_width`, `roughness` and
+built, so it is available to `sidewall_half_thickness`, `roughness` and
 `hot_gas_surface_area_multiplier`. The two slots evaluated part of the way
 through see part of it: `helix_angle` gets `h`, because heights are built
 first, and `channel_angular_width` gets `h` and `gamma`. Neither can see the
@@ -91,19 +99,19 @@ around — the rib keeps this width from the channel floor to the channel roof,
 so the channel itself widens with radius while the rib does not:
 
 ```python
-psf.regen.CrossSectionSquared(rib_width=1.0e-3)
+psf.regen.CrossSectionSquared(sidewall_half_thickness=0.5e-3)
 ```
 
 A rib that instead always takes a fixed share of the pitch, so that the channel
 and the rib scale together as the chamber radius changes:
 
 ```python
-psf.regen.CrossSectionSquared(rib_width=lambda pitch_mid: 0.1 * pitch_mid)
+psf.regen.CrossSectionSquared(sidewall_half_thickness=lambda pitch_mid: 0.05 * pitch_mid)
 ```
 
-This last form is the exact equivalent of a constant 10 % blockage: measuring
-the share at mid channel height removes exactly a tenth of the coolant area at
-every station.
+This last form gives a shared rib occupying 10 % of the mid-height pitch.
+It removes approximately a tenth of the coolant area; the section integrates
+the actual curved boundary rather than approximating it as a sector minus a rectangle.
 
 A rib sized from the raw circumference and the total channel count instead,
 which gives the same answer for a non-helical channel and a slightly different
@@ -112,8 +120,8 @@ while `circumference` is not:
 
 ```python
 psf.regen.CrossSectionSquared(
-    rib_width=lambda circumference, n_channels_all_circuits: (
-        0.2 * circumference / n_channels_all_circuits
+    sidewall_half_thickness=lambda circumference, n_channels_all_circuits: (
+        0.1 * circumference / n_channels_all_circuits
     ),
 )
 ```
@@ -139,7 +147,7 @@ psf.regen.SurfacePlacement(
 An **area-preserving helix**. A squared section holds
 
 ```
-A = h * [(pi * cos(gamma) / n) * (2 * r_base + h) - rib_width]
+A ≈ h * [(pi * cos(gamma) / n) * (2 * r_base + h) - 2 * sidewall_half_thickness]
 ```
 
 so with the channel height, rib width and channel count fixed, the coolant area
@@ -177,7 +185,7 @@ the owning object is constructed. The message names the offending parameter,
 says why it was refused, and lists what is legal there:
 
 ```text
-CrossSectionSquared.rib_width: 'radius' is not a design-input quantity.
+CrossSectionSquared.sidewall_half_thickness: 'radius' is not a design-input quantity.
 Available here: area_ratio, circumference, contour, dr_dx, gamma, h, ...
 ```
 

@@ -8,7 +8,6 @@ import pytest
 from pyskyfire.regen.channel_placement import InternalPlacement, SurfacePlacement
 from pyskyfire.regen.cross_section import (
     CrossSectionRounded,
-    CrossSectionRoundedInternal,
     CrossSectionSquared,
     SectionProfiles,
 )
@@ -36,7 +35,7 @@ def test_section_profiles_require_consistent_station_shapes() -> None:
 def test_squared_section_removes_a_constant_width_rib_from_the_pitch() -> None:
     profiles = _profiles(height=0.004)
     rib = 0.0015
-    section = CrossSectionSquared(rib_width=rib)
+    section = CrossSectionSquared(sidewall_half_thickness=rib / 2)
     # The base point is the channel floor, so the hot wall lies t_wall inside it.
     inner = 0.1
     outer = inner + 0.004
@@ -56,7 +55,7 @@ def test_squared_section_removes_a_constant_width_rib_from_the_pitch() -> None:
 def test_squared_section_rib_keeps_its_width_at_every_radius() -> None:
     """A taller channel adds sector area but no extra rib blockage."""
     rib = 0.0015
-    section = CrossSectionSquared(rib_width=rib)
+    section = CrossSectionSquared(sidewall_half_thickness=rib / 2)
     inner = 0.1
 
     short = section.A_coolant(_profiles(height=0.004))[0]
@@ -66,10 +65,10 @@ def test_squared_section_rib_keeps_its_width_at_every_radius() -> None:
     assert tall - short == pytest.approx(added_sector - rib * 0.004, rel=1e-5)
 
 
-def test_squared_section_rib_width_may_be_a_design_input_function() -> None:
+def test_squared_section_sidewall_half_thickness_may_be_a_design_input_function() -> None:
     profiles = _profiles(height=0.004)
-    constant = CrossSectionSquared(rib_width=0.1 * (0.1 + 0.002) * 0.2)
-    proportional = CrossSectionSquared(rib_width=lambda pitch_mid: 0.1 * pitch_mid)
+    constant = CrossSectionSquared(sidewall_half_thickness=(0.1 * (0.1 + 0.002) * 0.2) / 2)
+    proportional = CrossSectionSquared(sidewall_half_thickness=lambda pitch_mid: (0.1 * pitch_mid) / 2)
 
     assert proportional.A_coolant(profiles)[0] == pytest.approx(
         constant.A_coolant(profiles)[0]
@@ -77,14 +76,14 @@ def test_squared_section_rib_width_may_be_a_design_input_function() -> None:
 
 
 def test_squared_section_rejects_a_rib_wider_than_the_pitch() -> None:
-    section = CrossSectionSquared(rib_width=1.0)
+    section = CrossSectionSquared(sidewall_half_thickness=(1.0) / 2)
     with pytest.raises(ValueError, match="leaves no room"):
         section.A_coolant(_profiles(height=0.004))
 
 
 def test_squared_equivalent_wedge_encloses_the_same_area() -> None:
     profiles = _profiles(height=0.004)
-    section = CrossSectionSquared(rib_width=0.0015)
+    section = CrossSectionSquared(sidewall_half_thickness=(0.0015) / 2)
 
     wedge = section.equivalent_angular_width(profiles)[0]
     inner = 0.1
@@ -105,17 +104,6 @@ def test_more_coolant_side_convection_reduces_section_resistance() -> None:
 
     assert high_h[0] < low_h[0]
     assert np.all(np.isfinite([low_h[0], high_h[0]]))
-
-
-def test_internal_rounded_section_doubles_contact_perimeters() -> None:
-    profiles = _profiles()
-    external = CrossSectionRounded()
-    internal = CrossSectionRoundedInternal()
-
-    np.testing.assert_allclose(internal.A_coolant(profiles), external.A_coolant(profiles))
-    np.testing.assert_allclose(internal.Dh_coolant(profiles), external.Dh_coolant(profiles))
-    np.testing.assert_allclose(internal.P_thermal(profiles), 2.0 * external.P_thermal(profiles))
-    np.testing.assert_allclose(internal.P_coolant(profiles), 2.0 * external.P_coolant(profiles))
 
 
 def test_surface_placement_winds_the_reference_path_at_the_requested_helix_angle() -> None:

@@ -31,7 +31,7 @@ def _circuit(name, count, span, radius, *, cross_section=None):
     )
     if cross_section is None:
         cross_section = CrossSectionSquared(
-            rib_width=lambda pitch_mid: 0.25 * pitch_mid
+            sidewall_half_thickness=lambda pitch_mid: (0.25 * pitch_mid) / 2
         )
 
     class Placement:
@@ -58,13 +58,21 @@ def _circuit(name, count, span, radius, *, cross_section=None):
     )
 
 
+def _contour():
+    """The exporter always builds a hot wall, so chambers need a contour."""
+    return SimpleNamespace(
+        xs=np.array([0.0, 1.0]),
+        r=lambda x: np.full_like(np.asarray(x, dtype=float), 0.1),
+    )
+
+
 def _chamber():
     return SimpleNamespace(
         cooling_circuits=[
             _circuit("Primary", 8, (0.0, 1.0), 0.10),
             _circuit("Return Pass", 8, (0.2, 0.8), 0.12),
         ],
-        contour=SimpleNamespace(),
+        contour=_contour(),
     )
 
 
@@ -129,7 +137,7 @@ def test_exporter_writes_valid_json(tmp_path: Path, monkeypatch) -> None:
 
     document = json.loads(output_path.read_text(encoding="utf-8"))
     assert document["schema"] == "pyskyfire.onshape.cooling-channels"
-    assert document["schemaVersion"] == 6
+    assert document["schemaVersion"] == 8
 
 
 def test_exporter_rejects_cross_sections_the_feature_script_cannot_build() -> None:
@@ -143,7 +151,7 @@ def test_exporter_rejects_cross_sections_the_feature_script_cannot_build() -> No
                 cross_section=object(),
             )
         ],
-        contour=SimpleNamespace(),
+        contour=_contour(),
     )
 
     with pytest.raises(TypeError, match="Unsupported channel cross section"):
@@ -155,7 +163,7 @@ FEATURE_SCRIPT_PATH = (
 )
 
 
-def _sketched_area(inner_radius, height, pitch, rib_width):
+def _sketched_area(inner_radius, height, pitch, sidewall_half_thickness):
     """Area the FeatureScript's sketch encloses, by Green's theorem.
 
     Mirrors ``createSectorSketch``: an arc at the inner radius, a straight rib
@@ -163,8 +171,8 @@ def _sketched_area(inner_radius, height, pitch, rib_width):
     half-angle differs between the two radii because the rib keeps its width.
     """
     outer_radius = inner_radius + height
-    inner_half = pitch / 2.0 - np.arcsin(rib_width / (2.0 * inner_radius))
-    outer_half = pitch / 2.0 - np.arcsin(rib_width / (2.0 * outer_radius))
+    inner_half = pitch / 2.0 - np.arcsin(sidewall_half_thickness / inner_radius)
+    outer_half = pitch / 2.0 - np.arcsin(sidewall_half_thickness / outer_radius)
 
     return abs(
         inner_radius**2 * inner_half
@@ -180,10 +188,10 @@ def test_the_exported_section_encloses_the_area_the_solver_used() -> None:
         8,
         (0.0, 1.0),
         0.10,
-        cross_section=CrossSectionSquared(rib_width=1.0e-3),
+        cross_section=CrossSectionSquared(sidewall_half_thickness=(1.0e-3) / 2),
     )
     data = exporter.build_onshape_data(
-        SimpleNamespace(cooling_circuits=[circuit], contour=SimpleNamespace())
+        SimpleNamespace(cooling_circuits=[circuit], contour=_contour())
     )
     section = data["channels"][0]["sections"][0]
 
@@ -191,10 +199,10 @@ def test_the_exported_section_encloses_the_area_the_solver_used() -> None:
     height = (
         section["outerArc"]["radius_mm"] - section["innerArc"]["radius_mm"]
     ) / 1000.0
-    rib_width = 1.0e-3
+    sidewall_half_thickness = 0.5e-3
     pitch = circuit.channel_local_sector[0]
     assert np.radians(section["innerArc"]["endAngle_deg"]) == pytest.approx(
-        pitch / 2 - np.arcsin(rib_width / (2 * inner_radius))
+        pitch / 2 - np.arcsin(sidewall_half_thickness / inner_radius)
     )
 
     profiles = SectionProfiles(
@@ -204,7 +212,7 @@ def test_the_exported_section_encloses_the_area_the_solver_used() -> None:
         cross_section_base_point_path=np.array([[0.0, inner_radius, 0.0]]),
     )
 
-    assert _sketched_area(inner_radius, height, pitch, rib_width) == pytest.approx(
+    assert _sketched_area(inner_radius, height, pitch, sidewall_half_thickness) == pytest.approx(
         circuit.cross_section.A_coolant(profiles)[0], rel=1e-6
     )
 
@@ -212,22 +220,22 @@ def test_the_exported_section_encloses_the_area_the_solver_used() -> None:
 def test_the_sketch_and_the_analytics_diverge_only_at_third_order() -> None:
     """The section analytics treat the rib as a chord; the sketch does not.
 
-    The gap between them grows as ``(rib_width / radius)**3``, so it is
+    The gap between them grows as ``(sidewall_half_thickness / radius)**3``, so it is
     negligible for a real rib and only becomes visible for one comparable to
     the chamber radius.
     """
     inner_radius, height, pitch = 0.101, 0.004, np.radians(22.5)
 
-    def relative_gap(rib_width):
-        sketched = _sketched_area(inner_radius, height, pitch, rib_width)
+    def relative_gap(sidewall_half_thickness):
+        sketched = _sketched_area(inner_radius, height, pitch, sidewall_half_thickness)
         modelled = (
             0.5 * pitch * ((inner_radius + height) ** 2 - inner_radius**2)
-            - rib_width * height
+            - 2 * sidewall_half_thickness * height
         )
         return abs(sketched - modelled) / modelled
 
-    assert relative_gap(1.0e-3) < 1.0e-6
-    assert relative_gap(2.0e-3) / relative_gap(1.0e-3) == pytest.approx(8.0, rel=0.05)
+    assert relative_gap(0.5e-3) < 1.0e-6
+    assert relative_gap(1.0e-3) / relative_gap(0.5e-3) == pytest.approx(8.0, rel=0.05)
 
 
 def test_the_sketched_channel_widens_with_radius_while_the_rib_does_not() -> None:
@@ -256,14 +264,21 @@ def test_the_feature_script_and_the_exporter_agree_on_the_contract() -> None:
     assert 'sectionType == "squared"' in script
     assert 'sectionType == "rounded"' in script
     assert "!section.circular" in script
-    assert "data.schemaVersion != 6" in script
+    assert "data.schemaVersion != 8" in script
     assert "pitchAngle_deg" not in script
     # The hot wall is lofted curve by curve along each run of constant
     # topology, so the kernel is never left to pair profiles by proximity.
     assert "wall.runs" in script
     assert "run.curveNames" in script
-    assert "wall.bridges" in script
-    assert "bridge.curveNames" in script
+    assert "wall.bridges" not in script
+    assert "opRevolve" in script
+    assert "wall.revolves" in script
+    assert '"Editing Logic Function" : "hotWallEditLogic"' in script
+    assert "if (definition.fullContourAvailable)" in script
+    assert (
+        "data.hotWall.fullContourAllowed == true && definition.coverEntireHotWall == true"
+        in script
+    )
     assert "sketchEntityQuery" in script
 
 
@@ -281,9 +296,7 @@ def test_mixed_helical_round_and_square_export_matches_native_polygons():
         circuit.channel_local_sector *= np.cos(circuit.helix_angle_vals)
         circuit.placement.dtheta_dx = lambda x, contour, circuit=None: 0.3
     rounded.channel_heights[:] = 0.05
-    chamber = SimpleNamespace(
-        cooling_circuits=[square, rounded], contour=SimpleNamespace()
-    )
+    chamber = SimpleNamespace(cooling_circuits=[square, rounded], contour=_contour())
     data = exporter.build_onshape_data(chamber)
     seeds = resolve_analytical_layout(chamber).channels
     polygons = build_sections_for_centerlines(
@@ -345,7 +358,7 @@ def test_rounded_base_and_full_height_inputs_export_the_same_arcs(base_height):
     ) + base_height * (1 + np.sin(half_theta))
     documents = [
         exporter.build_onshape_data(
-            SimpleNamespace(cooling_circuits=[circuit], contour=SimpleNamespace())
+            SimpleNamespace(cooling_circuits=[circuit], contour=_contour())
         )
         for circuit in (base, full)
     ]
@@ -368,32 +381,45 @@ def test_rounded_base_and_full_height_inputs_export_the_same_arcs(base_height):
                 )
 
 
-def test_export_optional_hot_wall_and_feature_toggle():
+def test_export_always_includes_hot_wall_and_feature_toggle():
     chamber = _chamber()
     chamber.contour.xs = np.array([0.0, 1.0])
     for circuit in chamber.cooling_circuits:
         circuit.reference_path[:, 1] = 0.1
-    assert "hotWall" not in exporter.build_onshape_data(chamber)
-    data = exporter.build_onshape_data(
-        chamber, include_hot_wall=True, hot_wall_transition_fraction=0.1
-    )
-    assert data["schemaVersion"] == 6
-    np.testing.assert_allclose(
-        data["hotWall"]["transitionIntervals_mm"], [[150, 250], [750, 850]]
-    )
-    assert all(
-        curve["kind"] == "circle"
-        for s in data["hotWall"]["sections"]
-        for curve in s["curves"]
-    )
-    # The return pass starts and ends inside the chamber pass, so the wall is
-    # three runs of constant topology with a hand-off bridging each seam.
-    assert [run["sectionIndices"] for run in data["hotWall"]["runs"]] == [
-        [0, 1],
-        [2, 3, 4],
-        [5, 6],
-    ]
+    chamber.contour.r = lambda x: np.full_like(np.asarray(x), 0.1)
+    data = exporter.build_onshape_data(chamber)
+    assert data["schemaVersion"] == 8
+    wall = data["hotWall"]
+    assert wall["excludedInterleaveIntervals_mm"] == []
+    assert wall["sections"] == wall["runs"] == []
+    assert wall["revolves"][0]["span_mm"] == [0, 1000]
+    assert wall["fullContourAllowed"]
     script = FEATURE_SCRIPT_PATH.read_text()
     assert "definition.constructHotWall is boolean" in script
     assert "ToolBodyType.SURFACE" in script
     assert "skEllipticalArc" in script and "skBezier" in script
+    assert "skFitSpline" in script
+
+
+@pytest.mark.parametrize(
+    "rounded_type", [CrossSectionRounded]
+)
+def test_rounded_json_disables_full_contour_and_wires_margin(rounded_type):
+    chamber = _chamber()
+    chamber.contour = SimpleNamespace(
+        xs=np.array([0.0, 1.0]), r=lambda x: np.full_like(np.asarray(x), 0.1)
+    )
+    for c in chamber.cooling_circuits:
+        c.reference_path[:, 1] = 0.1
+        c.channel_heights[:] = 0.05
+    chamber.cooling_circuits[1].cross_section = rounded_type()
+    data = exporter.build_onshape_data(chamber, hot_wall_transition_fraction=0.02)
+    wall = data["hotWall"]
+    assert not wall["fullContourAllowed"] and "fullContour" not in wall
+    assert wall["interleaveGapFraction"] == 0.02
+    np.testing.assert_allclose(
+        wall["excludedInterleaveIntervals_mm"], [[190, 210], [790, 810]]
+    )
+    assert len(wall["runs"]) == 1 and len(wall["revolves"]) == 2
+    selected = exporter.build_onshape_data(chamber, circuit_selectors=["0"])
+    assert selected["hotWall"]["fullContourAllowed"]

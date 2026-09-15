@@ -1,6 +1,6 @@
 {
   "schema": "pyskyfire.onshape.cooling-channels",
-  "schemaVersion": 6,
+  "schemaVersion": 8,
   "units": {
     "length": "millimeter",
     "angle": "degree"
@@ -553,8 +553,11 @@
   ],
   "hotWall": {
     "trimFraction": 0.3,
-    "transitionIntervals_mm": [],
+    "interleaveGapFraction": 0.02,
+    "excludedInterleaveIntervals_mm": [],
     "uncoveredLengthFraction": 0.0,
+    "fullContourAllowed": false,
+    "revolves": [],
     "sections": [
       {
         "name": "hot_wall_0",
@@ -16250,7 +16253,6 @@
           "Rounded channels_seed_0_44_blend"
         ]
       }
-    ],
-    "bridges": []
+    ]
   }
 }

@@ -42,7 +42,7 @@ class _Material:
 
 def _chamber(
     *,
-    rib_width=5.0e-4,
+    sidewall_half_thickness=2.5e-4,
     channel_height=0.004,
     helix_angle=0.0,
     wall_thickness=0.001,
@@ -54,7 +54,7 @@ def _chamber(
     circuit = psf.regen.CoolingCircuit(
         name="test",
         contour=contour,
-        cross_section=psf.regen.CrossSectionSquared(rib_width=rib_width),
+        cross_section=psf.regen.CrossSectionSquared(sidewall_half_thickness=sidewall_half_thickness),
         span=[0.0, 1.0],
         placement=psf.regen.SurfacePlacement(
             n_channel_positions=n_channel_positions,
@@ -113,16 +113,16 @@ def test_a_channel_height_can_depend_on_the_wall_stack_and_channel_count() -> No
     np.testing.assert_allclose(circuit.channel_heights, 0.002 + 60.0e-6)
 
 
-def test_a_rib_width_can_depend_on_the_cross_circuit_channel_count() -> None:
+def test_a_sidewall_half_thickness_can_depend_on_the_cross_circuit_channel_count() -> None:
     _, circuit = _chamber(
-        rib_width=lambda circumference, n_channels_all_circuits: (
-            0.2 * circumference / n_channels_all_circuits
+        sidewall_half_thickness=lambda circumference, n_channels_all_circuits: (
+            0.1 * circumference / n_channels_all_circuits
         ),
         n_channel_positions=60,
     )
 
-    expected = 0.2 * 2.0 * np.pi * 0.1 / 60.0
-    widths = circuit.cross_section.rib_width(
+    expected = 0.1 * 2.0 * np.pi * 0.1 / 60.0
+    widths = circuit.cross_section.sidewall_half_thickness(
         circuit._prof(circuit.cross_section_base_point_path)
     )
     np.testing.assert_allclose(widths, expected, rtol=1e-12)
@@ -132,7 +132,7 @@ def test_a_cross_circuit_count_needs_a_chamber() -> None:
     circuit = psf.regen.CoolingCircuit(
         name="orphan",
         contour=_Cylinder(),
-        cross_section=psf.regen.CrossSectionSquared(rib_width=1e-4),
+        cross_section=psf.regen.CrossSectionSquared(sidewall_half_thickness=(1e-4) / 2),
         span=[0.0, 1.0],
         placement=psf.regen.SurfacePlacement(n_channel_positions=60),
         channel_height=lambda n_channels_all_circuits: 1e-3,
@@ -148,11 +148,11 @@ def test_a_cross_circuit_count_needs_a_chamber() -> None:
 # --- tier C -----------------------------------------------------------------
 
 
-def test_a_rib_width_proportional_to_pitch_reproduces_constant_blockage() -> None:
+def test_a_sidewall_half_thickness_proportional_to_pitch_reproduces_constant_blockage() -> None:
     """The migration path off the old ``blockage_ratio`` is exact."""
     fraction = 0.1
-    _, circuit = _chamber(rib_width=lambda pitch_mid: fraction * pitch_mid)
-    _, open_channel = _chamber(rib_width=0.0)
+    _, circuit = _chamber(sidewall_half_thickness=lambda pitch_mid: fraction * pitch_mid / 2)
+    _, open_channel = _chamber(sidewall_half_thickness=0.0)
 
     # Not bit-exact: the section metrics integrate the real straight rib faces
     # rather than treating the rib as a wedge of the same angular width.
@@ -165,8 +165,8 @@ def test_a_rib_width_proportional_to_pitch_reproduces_constant_blockage() -> Non
 
 def test_a_constant_rib_leaves_a_channel_that_widens_with_radius() -> None:
     rib = 5.0e-4
-    _, circuit = _chamber(rib_width=rib, channel_height=0.004)
-    _, open_channel = _chamber(rib_width=0.0, channel_height=0.004)
+    _, circuit = _chamber(sidewall_half_thickness=rib / 2, channel_height=0.004)
+    _, open_channel = _chamber(sidewall_half_thickness=0.0, channel_height=0.004)
 
     np.testing.assert_allclose(
         open_channel.A_coolant_vals - circuit.A_coolant_vals,
@@ -181,10 +181,10 @@ def test_a_roughness_can_depend_on_the_resolved_section() -> None:
     assert circuit.roughness(0.5) == pytest.approx(0.01 * 0.004)
 
 
-def test_the_helix_angle_narrows_the_pitch_a_rib_width_sees() -> None:
-    _, axial = _chamber(rib_width=lambda pitch: pitch * 0.0 + 1.0e-4)
+def test_the_helix_angle_narrows_the_pitch_a_sidewall_half_thickness_sees() -> None:
+    _, axial = _chamber(sidewall_half_thickness=lambda pitch: pitch * 0.0 + 0.5e-4)
     _, helical = _chamber(
-        rib_width=lambda pitch: pitch * 0.0 + 1.0e-4,
+        sidewall_half_thickness=lambda pitch: pitch * 0.0 + 0.5e-4,
         helix_angle=np.radians(45.0),
     )
 
@@ -229,7 +229,7 @@ def test_a_shared_placement_evaluates_against_each_circuit_in_turn() -> None:
         return psf.regen.CoolingCircuit(
             name=name,
             contour=contour,
-            cross_section=psf.regen.CrossSectionSquared(rib_width=2.0e-4),
+            cross_section=psf.regen.CrossSectionSquared(sidewall_half_thickness=(2.0e-4) / 2),
             span=[0.0, 1.0],
             placement=placement,
             channel_height=height,
@@ -274,11 +274,11 @@ def test_an_area_preserving_helix_holds_the_section_constant() -> None:
     scale = np.sqrt(1.0 + 0.15**2)
     reference = np.cos(np.radians(20.0)) * 2.0 * (0.05 + (wall + height / 2) * scale)
 
-    def _cone_circuit(rib_width):
+    def _cone_circuit(sidewall_half_thickness):
         circuit = psf.regen.CoolingCircuit(
             name="cone",
             contour=contour,
-            cross_section=psf.regen.CrossSectionSquared(rib_width=rib_width),
+            cross_section=psf.regen.CrossSectionSquared(sidewall_half_thickness=sidewall_half_thickness),
             span=[0.0, 1.0],
             placement=psf.regen.SurfacePlacement(
                 n_channel_positions=60,
@@ -305,7 +305,7 @@ def test_an_area_preserving_helix_holds_the_section_constant() -> None:
         )
         return circuit
 
-    circuit = _cone_circuit(2.0e-4)
+    circuit = _cone_circuit(1.0e-4)
     open_channel = _cone_circuit(0.0)
 
     assert np.degrees(circuit.helix_angle_vals[0]) == pytest.approx(20.0)
@@ -330,9 +330,9 @@ def test_construction_preserves_full_rib_context_on_a_resampled_grid() -> None:
         assert n_channels_all_circuits == pytest.approx(60)
         assert t_wall_total == pytest.approx(0.001)
         assert t_hot_layer == pytest.approx(0.0)
-        return 0.0005
+        return 0.00025
 
-    _, circuit = _chamber(rib_width=rib, helix_angle=0.5)
+    _, circuit = _chamber(sidewall_half_thickness=rib, helix_angle=0.5)
     before_area = circuit.cross_section.A_coolant(circuit._prof(circuit.reference_path)).copy()
     before_height = circuit.channel_heights.copy()
     x = np.linspace(0.1, 0.9, 7)
@@ -344,7 +344,7 @@ def test_construction_preserves_full_rib_context_on_a_resampled_grid() -> None:
     ))
     construction = psf.regen.build_channel_construction(circuit, centerline)
     assert len(construction.planes) == 7
-    np.testing.assert_allclose(construction.rib_width, 0.0005)
+    np.testing.assert_allclose(construction.sidewall_half_thickness, 0.00025)
     np.testing.assert_array_equal(circuit.channel_heights, before_height)
     np.testing.assert_array_equal(
         circuit.cross_section.A_coolant(circuit._prof(circuit.reference_path)), before_area,

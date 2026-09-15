@@ -11,8 +11,8 @@ tests below pin both the energy bookkeeping and the real-gas path.
 import CoolProp.CoolProp as CP
 import pytest
 
-from pyskyfire.common.blocks import TurbineBlock
-from pyskyfire.common.engine_network import Station
+from pyskyfire.network.blocks import TurbineBlock
+from pyskyfire.network.engine_network import Station
 
 
 FLUID = "hydrogen"

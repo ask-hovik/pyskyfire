@@ -8,6 +8,6 @@ from .contour import *
 from .coolant_properties import *
 from .coupled_solver import *
 from .film_solver import *
-from .physics import *
+from pyskyfire.common.physics import *
 from .thrust_chamber import *
 from .cross_section import *

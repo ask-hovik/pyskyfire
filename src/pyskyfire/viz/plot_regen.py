@@ -3,7 +3,7 @@ from typing import Sequence, Optional, Any, Iterable, Union
 import warnings
 import numpy as np
 import plotly.graph_objects as go
-from pyskyfire.regen import physics as regen_physics
+from pyskyfire.common import physics as regen_physics
 from .core import PlotBase
 from .plot_thermo import _visualization_x
 
@@ -505,7 +505,7 @@ class PlotReynoldsNumber(PlotBase):
 
     Coolant profiles are evaluated on each result's coolant grid using the
     same bulk-state convention as the regenerative solver.  The laminar and
-    turbulent limits from :mod:`pyskyfire.regen.physics` are drawn only when
+    turbulent limits from :mod:`pyskyfire.common.physics` are drawn only when
     an individual profile spans the corresponding limit.
 
     Parameters

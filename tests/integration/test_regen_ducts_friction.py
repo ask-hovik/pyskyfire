@@ -7,7 +7,8 @@ import fluids
 import numpy as np
 import pytest
 
-from pyskyfire.regen import coupled_solver, physics
+from pyskyfire.regen import coupled_solver
+from pyskyfire.common import physics
 from pyskyfire.regen.coupled_solver import CoupledHeatExchangerPhysics
 
 

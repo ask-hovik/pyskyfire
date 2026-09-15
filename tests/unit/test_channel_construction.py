@@ -7,7 +7,6 @@ import pytest
 
 from pyskyfire.regen import (
     CrossSectionRounded,
-    CrossSectionRoundedInternal,
     CrossSectionSquared,
     build_channel_construction,
 )
@@ -25,7 +24,7 @@ def circuit_geometry(*, slope=0.0, gamma=0.0, section=None, hot_layer=0.0, n_sta
              else rate * x / radius[0])
     reference = np.column_stack((x, radius, angle))
     return SimpleNamespace(
-        cross_section=CrossSectionSquared(0.001) if section is None else section,
+        cross_section=CrossSectionSquared((0.001) / 2) if section is None else section,
         reference_path=reference,
         x_domain=x,
         channel_heights=np.full_like(x, 0.012),
@@ -80,7 +79,7 @@ def test_neighbouring_channels_leave_the_requested_material_between_them(slope, 
 
     Both faces of a rib are helicoids, so their closest approach is reached at
     a different station, and at the channel roof, where the same angular rate
-    is a steeper helix. That thinnest point is what ``rib_width`` names.
+    is a steeper helix. That full width is twice ``sidewall_half_thickness``.
     """
     circuit = circuit_geometry(slope=slope, gamma=gamma, n_stations=801)
     first = build_channel_construction(circuit)
@@ -138,7 +137,7 @@ def ray_offsets(construction, index, side):
     ])
 
 
-@pytest.mark.parametrize("section_type", [CrossSectionRounded, CrossSectionRoundedInternal])
+@pytest.mark.parametrize("section_type", [CrossSectionRounded])
 def test_rounded_lobes_keep_the_gas_area_of_the_sector_they_replace(section_type):
     circuit = circuit_geometry(slope=0.3, gamma=0.5, section=section_type())
     construction = build_channel_construction(circuit)
@@ -208,7 +207,7 @@ def test_construction_does_not_mutate_simulation_dimensions_or_rib_law_inputs():
         assert gamma == pytest.approx(0.5)
         assert t_wall_total == pytest.approx(0.003)
         assert t_hot_layer == pytest.approx(0.002)
-        return 0.1 * pitch_mid
+        return 0.05 * pitch_mid
 
     circuit = circuit_geometry(slope=0.6, gamma=0.5, hot_layer=0.002, section=CrossSectionSquared(rib))
     before = {key: value.copy() for key, value in vars(circuit).items() if isinstance(value, np.ndarray)}
@@ -222,7 +221,7 @@ def test_construction_does_not_mutate_simulation_dimensions_or_rib_law_inputs():
 
 
 def test_transverse_rib_overlap_is_rejected_even_if_analytic_pitch_is_open():
-    circuit = circuit_geometry(section=CrossSectionSquared(0.010098))
+    circuit = circuit_geometry(section=CrossSectionSquared((0.010098) / 2))
     # 0.010098 < analytic floor pitch 0.0101, but exceeds the chord available.
     with pytest.raises(ValueError, match="no open channel"):
         build_channel_construction(circuit)

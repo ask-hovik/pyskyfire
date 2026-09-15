@@ -124,14 +124,14 @@ from typing import Callable, Optional, Sequence, Union
 import numpy as np
 from scipy.optimize import least_squares
 
-from pyskyfire.ducts import friction as ducts_friction
+from pyskyfire.common import friction as ducts_friction
 from pyskyfire.thermo.state import (
     PHASE_SUPERCRITICAL,
     PHASE_TWO_PHASE,
     FluidStateResolver,
 )
 
-from . import physics
+from pyskyfire.common import physics
 from .coolant_properties import _SATURATION_NUDGE, _off_saturation, film_properties
 from .film_solver import (
     GaseousFilmResults,
@@ -463,7 +463,7 @@ class CoupledHeatExchangerPhysics:
         Apply the selected backend's curvature multiplier to Darcy pressure loss.
     friction_model : {'native', 'fluids'}, optional
         Backend for the coolant Darcy friction factor and its curvature
-        multiplier. See :mod:`pyskyfire.ducts.friction`.
+        multiplier. See :mod:`pyskyfire.common.friction`.
     """
 
     def __init__(
@@ -1084,27 +1084,9 @@ def _interp_axial(x_query, x, values):
     return np.interp(x_query, x[order], values[order])
 
 
-def _acceleration_pressure_drop(rho_up, velocity_up, rho_down, velocity_down):
-    """Static-pressure drop across one segment from :math:`\\int\\rho u\\,du` [Pa].
-
-    Trapezoidal in the mass flux :math:`G=\\rho u`, which makes the discrete
-    form exact in both limits the term has to span in a heated, tapering
-    channel: Bernoulli :math:`\\tfrac{1}{2}\\rho(u_2^2-u_1^2)` at constant
-    density, and :math:`G^2(1/\\rho_2-1/\\rho_1)` at constant area.
-
-    Note that at constant area this is twice the change in dynamic head, so
-    reconstructing static pressure as :math:`p_0-\\tfrac{1}{2}\\rho u^2` from a
-    friction-only stagnation march counts the heating-driven acceleration at
-    half strength.
-    """
-    return (
-        0.5
-        * (rho_up * velocity_up + rho_down * velocity_down)
-        * (velocity_down - velocity_up)
-    )
+from pyskyfire.common.momentum import acceleration_pressure_drop as _acceleration_pressure_drop
 
 
-@_clear_gas_cache_after
 def solve_coupled_heat_exchanger(
     thrust_chamber,
     boundary_conditions,
@@ -1650,7 +1632,7 @@ def coupled_steady_heating_analysis(
         laminar and turbulent Schmidt curved-duct branches. Both use the same
         smooth transition policy, starting at ``Re=2040`` for a straight duct
         and Schmidt's geometry-dependent critical Reynolds number for a curved
-        duct. See :mod:`pyskyfire.ducts.friction` for details and applicability
+        duct. See :mod:`pyskyfire.common.friction` for details and applicability
         warnings.
 
     Returns

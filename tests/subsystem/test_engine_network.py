@@ -4,8 +4,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from pyskyfire.common import EngineNetwork, PipeBlock, Station
-from pyskyfire.ducts import Pipe, PipeStation, Straight
+from pyskyfire.network import EngineNetwork, PipeBlock, Station
+from pyskyfire.ducts import Pipe, PathStation, Straight
 
 
 class _ConstantBlock:
@@ -57,9 +57,9 @@ def test_network_collects_detailed_pipe_result(capsys) -> None:
             return 1.0e-3
 
     pipe = Pipe(
-        [PipeStation((0, 0, 0), 0.02), PipeStation((1, 0, 0), 0.02)],
+        [PathStation((0, 0, 0)), PathStation((1, 0, 0))],
         [Straight()],
-    )
+    diameter=0.02)
     block = PipeBlock("feed", "in", "out", pipe, Transport())
     network = EngineNetwork(
         stations={"in": Station(2.0e6, 300.0, 0.1)},

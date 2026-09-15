@@ -1,6 +1,7 @@
 """Scene contracts: placement, result mapping, reusable seeds, and both outputs."""
 import base64
 import json
+from importlib.resources import files
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -12,7 +13,8 @@ from pyskyfire.regen.channel_layout import ChannelLayout, ResolvedChannel
 from pyskyfire.regen.cross_section import CrossSectionSquared, CrossSectionRounded
 from pyskyfire.viz import (
     Anchor, FieldData, ImpellerComponent, MeshData, PipeComponent, Scene,
-    SceneNode, ThrustChamberComponent, Transform, pipe_fields,
+    SceneNode, ThrustChamberComponent, Transform, VoluteComponent, pipe_fields,
+    volute_fields,
 )
 from pyskyfire.viz.backends.threejs import scene_payload
 
@@ -22,7 +24,7 @@ def chamber_case(section=None):
     path = np.column_stack((x, 0.1+0.2*x, 2*x))
     circuit = SimpleNamespace(
         name="Fuel", direction=-1, reference_path=path, x_domain=x,
-        cross_section=section or CrossSectionSquared(0.001),
+        cross_section=section or CrossSectionSquared((0.001) / 2),
         channel_heights=np.full_like(x, 0.012),
         channel_local_sector=np.full_like(x, 0.1),
         channel_wall_thickness=lambda v: np.full_like(v, 0.001),
@@ -46,7 +48,7 @@ def pipe():
     return SimpleNamespace(centerline=np.array([[0., 0, 0], [1., 0, 0], [1., 1., 0]]), radius=0.01)
 
 
-@pytest.mark.parametrize("section", [CrossSectionSquared(0.001), CrossSectionRounded()])
+@pytest.mark.parametrize("section", [CrossSectionSquared((0.001) / 2), CrossSectionRounded()])
 def test_each_seed_is_built_once_and_rotations_match_legacy(monkeypatch, section):
     from pyskyfire.viz import components
     from pyskyfire.viz.engine_viz import build_sections_for_centerlines
@@ -178,12 +180,12 @@ def test_pipe_uses_only_supplied_route_and_station_fields():
 
 def bent_pipe(radius=0.05, diameter=0.01):
     """A solver pipe whose single corner is one lumped bend between tangents."""
-    stations, connections = ducts.generate_pipe_stations([
-        ducts.PathNode((0, 0, 0), diameter),
-        ducts.PathNode((1, 0, 0), diameter, bend=ducts.RoundedBend(radius=radius)),
-        ducts.PathNode((1, 1, 0), diameter),
+    stations, connections = ducts.generate_path_stations([
+        ducts.PathNode((0, 0, 0)),
+        ducts.PathNode((1, 0, 0), bend=ducts.RoundedBend(radius=radius)),
+        ducts.PathNode((1, 1, 0)),
     ])
-    return ducts.Pipe(stations, connections)
+    return ducts.Pipe(stations, connections, diameter=diameter)
 
 
 class ConstantTransport:
@@ -266,8 +268,12 @@ def test_solver_pipe_shares_a_color_field_with_a_chamber():
 
 
 def test_impeller_can_share_scene_with_channels_and_pipe():
-    from pyskyfire.pump.impeller_new import Impeller
-    imp = Impeller(Q=0.01, H=100, n=10000)
+    pytest.importorskip("pyturbo")
+    from pyskyfire.pump import Impeller
+    imp = Impeller(Q=0.01, H=100, n=10000, shaft_diameter=0.02,
+                   inlet_hub_diameter=0.03, blade_count=6, beta2_deg=25,
+                   blade_thickness=0.0015)
+    imp.build_geometry(span_points=5, chord_points=33)
     scene = Scene()
     pump = scene.add(ImpellerComponent(imp, n_theta=12), position=(1, 2, 3))
     assert {"hub", "shroud", "blade_0"} <= {c.name for c in pump.children}
@@ -277,7 +283,7 @@ def test_impeller_can_share_scene_with_channels_and_pipe():
     scene.add(PipeComponent(pipe()))
     payload = scene_payload(scene)
     assert len(payload["nodes"]) == 3
-    assert len(payload["meshes"]) == len(pump.children)+2
+    assert len(payload["meshes"]) == 5  # hub, shroud, shared blade, chamber, pipe
 
 
 def test_html_contains_fields_transform_hierarchy_and_safe_text(tmp_path):
@@ -335,3 +341,126 @@ def test_legacy_wrapper_warns_and_uses_scene(monkeypatch):
     plotter.show.assert_called_once_with(auto_close=False)
     assert "psf-scene" in base64.b64decode(viewer.data_url.split(",", 1)[1]).decode()
     viewer.close()
+
+
+def test_axes_triad_is_opt_in_for_both_backends():
+    assert scene_payload(Scene())["show_axes"] is False
+    scene = Scene(show_axes=True)
+    scene.add(PipeComponent(pipe()))
+    assert scene_payload(scene)["show_axes"] is True
+    assert "data.show_axes" in files("pyskyfire.viz").joinpath("assets/scene_viewer.js").read_text()
+    pl = scene.to_plotter(off_screen=True)
+    try:
+        assert pl.renderer.axes_widget.GetEnabled()
+    finally:
+        pl.close()
+        pl.deep_clean()
+
+
+def test_payload_offers_every_field_and_the_placement_arguments():
+    scene = Scene(color_by="p_static", clim=(0, 5e6))
+    fields = {"p_static": FieldData([1e6, 2e6, 3e6], "Pa", "Static pressure"),
+              "T_static": FieldData([120., 200., 300.], "K", "Static temperature")}
+    scene.add(PipeComponent(pipe(), fields), name="duct", position=(1, 2, 3), rotation=(0, 0.5, 0))
+    payload = scene_payload(scene)
+    # clim pins the selected field only; the rest range over their own values.
+    assert payload["styles"]["p_static"]["limits"] == [0, 5e6]
+    assert payload["styles"]["T_static"]["limits"] == [120, 300]
+    assert payload["styles"]["T_static"]["units"] == "K"
+    placement = payload["nodes"][0]["placement"]
+    np.testing.assert_allclose(placement["position"], [1, 2, 3])
+    np.testing.assert_allclose(placement["rotation"], [0, 0.5, 0], atol=1e-12)
+
+
+def test_placement_arguments_reproduce_an_anchored_transform():
+    scene = Scene()
+    first = scene.add(PipeComponent(pipe()), name="first")
+    second = scene.add(PipeComponent(pipe()), name="second", anchor="inlet",
+                       attach_to=first.anchor("outlet"))
+    placement = scene_payload(scene)["nodes"][1]["placement"]
+    rebuilt = Transform(placement["position"], placement["rotation"])
+    np.testing.assert_allclose(rebuilt.matrix, second.transform.matrix, atol=1e-12)
+
+
+def test_a_field_with_inconsistent_units_is_not_offered():
+    scene = Scene()
+    scene.add(PipeComponent(pipe(), {"q": FieldData([1., 2., 3.], "Pa", "Quantity")}), name="first")
+    scene.add(PipeComponent(pipe(), {"q": FieldData([1., 2., 3.], "K", "Quantity")}), name="second")
+    assert scene_payload(scene)["styles"] == {}
+    scene.color_by = "q"
+    with pytest.raises(ValueError, match="consistent SI units"):
+        scene_payload(scene)
+
+
+def volute_case(tilt=0.0):
+    section = ducts.EllipticalSlottedSection(0.012, 0.003, throat_length=0.002)
+    inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
+    return ducts.Volute(section, inlet, tilt=tilt, n_stations=25)
+
+
+def _mesh_area(mesh):
+    corners = mesh.points[mesh.triangles]
+    return 0.5*np.linalg.norm(np.cross(corners[:, 1]-corners[:, 0],
+                                       corners[:, 2]-corners[:, 0]), axis=1).sum()
+
+
+def test_volute_component_separates_its_openings_from_its_walls():
+    """Walls, slot mouth and flange come back as three nodes, not one mesh."""
+    volute = volute_case()
+    node = VoluteComponent(volute, n_points=8).build()
+    assert node.metadata["kind"] == "volute"
+    assert set(node.anchors) == {"inlet", "outlet"}
+    assert node.mesh is None
+    assert [child.name for child in node.children] == ["passage", "inlet", "outlet"]
+
+    passage, inlet, outlet = node.children
+    # The openings carry no fields, which is what keeps them their own colour
+    # whichever field the scene is coloured by.
+    assert not inlet.fields and not outlet.fields
+    assert inlet.color == outlet.color == "red"
+    assert passage.color != "red"
+
+    # The slot mouth is the strip of inlet-radius wall the flow enters through.
+    section = volute.section
+    expected = section.inlet_width * 2*np.pi*volute.inlet.radius
+    assert _mesh_area(inlet.mesh) == pytest.approx(expected, rel=1e-3)
+
+
+def test_volute_opening_colour_is_configurable():
+    node = VoluteComponent(volute_case(), n_points=8, opening_color="#00ff00").build()
+    assert [child.color for child in node.children[1:]] == ["#00ff00", "#00ff00"]
+
+
+def test_volute_fields_are_repeated_around_each_section_ring():
+    volute = volute_case()
+
+    class Transport:
+        def get_rho(self, T, p):
+            return 1000.0
+
+        def get_mu(self, T, p):
+            return 1.0e-3
+
+    state = ducts.pipe._state(300.0, 8.0e6, 1000.0)
+    result = volute.solve(inlet_state=state, mass_flow=27.14,
+                          transport=Transport(), exit_diameter=0.05)
+    fields = volute_fields(result)
+    assert fields["area"].values == pytest.approx(volute.geometry.area)
+    assert fields["collected"].values[-1] == pytest.approx(1.0)
+    # Section geometry that says nothing about the flow is off the dropdown.
+    assert "passage_radius" not in fields and "centroid_radius" not in fields
+    assert {"p_static", "p_stagnation", "velocity"} <= set(fields)
+
+    passage = VoluteComponent(volute, result, n_points=8).build().children[0]
+    for field in passage.fields.values():
+        assert len(field.values) == len(passage.mesh.points)
+    scene = Scene()
+    scene.add(VoluteComponent(volute, result, n_points=8), name="volute")
+    assert scene_payload(scene)["nodes"]
+
+
+def test_volute_component_rejects_mismatched_field_lengths():
+    volute = volute_case()
+    bad = {"junk": FieldData(np.zeros(3), "1", "Junk")}
+    with pytest.raises(ValueError, match="one value per station"):
+        VoluteComponent(volute, bad, n_points=8).build()

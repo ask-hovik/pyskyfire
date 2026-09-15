@@ -29,3 +29,4 @@ from .network_viz import *
 from .sankey import *
 from .scene import *
 from .components import *
+from .heat_exchanger import *

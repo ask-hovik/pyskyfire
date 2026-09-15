@@ -578,8 +578,8 @@ channel_height_fn = channel_height_from_json(
 def helix_fn():
     return 0#45*3.14*180
 
-cross_section = psf.regen.CrossSectionRounded()
-#cross_section_squared = psf.regen.CrossSectionSquared(rib_width=lambda pitch_mid: 0.1 * pitch_mid)
+cross_section = psf.regen.CrossSectionRounded(exposure_angles={"floor": 112 * np.pi / 180})
+#cross_section_squared = psf.regen.CrossSectionSquared(sidewall_half_thickness=lambda pitch_mid: 0.05 * pitch_mid)
 LH2_transport = psf.thermo.FluidTransport(params["coolant_fu"])
 
 def build_thrust_chamber(channel_height=channel_height_fn, *, compute_gas=False):

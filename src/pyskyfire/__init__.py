@@ -2,7 +2,8 @@
 pyskyfire - A Python library for rocket engine simulation and design.
 
 Subpackages:
-    common  - Functionality combining other subpackages. 
+    common  - Shared primitives used by other subpackages (solids, results, geometry).
+    network - Engine-cycle blocks and the network that connects them.
     regen   - Regenerative cooling analysis.
     pump    - Pump design and performance calculations.
     turbine - Turbine design and analysis.
@@ -26,9 +27,11 @@ from . import regen
 from . import pump
 from . import turbine
 from . import common
+from . import network
+from . import heat_exchanger
 
 
-__all__ = ["regen", "pump", "turbine", "common", "thermo", "ducts"]
+__all__ = ["regen", "pump", "turbine", "common", "network", "thermo", "ducts", "heat_exchanger"]
 
 
 def __getattr__(name: str):

@@ -6,9 +6,9 @@ take exactly one positional argument ``x``, even when the value did not depend
 on it.  This module replaces that convention: a design-input function declares
 the quantities it needs *by parameter name*, and only those are supplied.
 
-    rib_width = lambda: 1.0e-3                       # constant
-    rib_width = lambda x: 1.0e-3 + 1.0e-5 * x        # grows downstream
-    rib_width = lambda pitch_mid: 0.1 * pitch_mid    # 10 % of the local pitch
+    sidewall_half_thickness = lambda: 0.5e-3                    # 1 mm full rib
+    sidewall_half_thickness = lambda x: 0.5e-3 + 0.5e-5 * x     # grows downstream
+    sidewall_half_thickness = lambda pitch_mid: 0.05 * pitch_mid # 10% full-rib blockage
 
 Which names are legal depends on where the function is plugged in.  The
 geometry build order forms a dependency chain, so a function may only ask for
@@ -143,7 +143,9 @@ SLOT_KEYS: dict[str, frozenset[str]] = {
     # angular widths are.
     "channel_angular_width": _A | _B | frozenset({"h", "gamma"}),
     # Evaluated against a fully resolved section: everything is available.
-    "rib_width": _A | _B | _C,
+    "sidewall_half_thickness": _A | _B | _C,
+    "section_thickness": _A | _B | _C,
+    "surface_exposure": _A | _B | _C,
     "roughness": _A | _B | _C,
     "hot_gas_surface_area_multiplier": _A | _B | _C,
 }

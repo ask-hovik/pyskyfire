@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing      import TYPE_CHECKING, Dict, List, Iterable, Any
 
 if TYPE_CHECKING:
-    from pyskyfire.common.blocks import Block
+    from pyskyfire.network.blocks import Block
 
 @dataclass
 class Station:

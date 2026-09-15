@@ -145,7 +145,7 @@ def main(output_dir: Path | None = None) -> None:
 
     # tutorial:start:cooling-circuit
     cross_section = psf.regen.CrossSectionSquared(
-        rib_width=lambda pitch_mid: params["rib_blockage"] * pitch_mid
+        sidewall_half_thickness=lambda pitch_mid: (params["rib_blockage"] * pitch_mid) / 2
     )
 
     def channel_height_function():

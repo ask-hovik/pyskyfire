@@ -43,11 +43,32 @@ can contain several instances of the same component, including overlapping
 components at the origin. No fluid-network connectivity is checked.
 
 The scene uses renderer-independent NumPy meshes. Desktop output uses PyVista;
-standalone HTML uses bundled Three.js and OrbitControls with no network assets
+standalone HTML uses bundled Three.js and TrackballControls with no network assets
 or Python server. HTML carries geometry, hierarchy, transforms, and original
 field values directly, rather than converting a VTK rendering window to glTF.
-The HTML viewer currently supports orbit, pan, and zoom, with a fixed color
-field chosen in Python. It has no picking or field-selection UI yet.
+The HTML viewer supports unconstrained trackball rotation, pan, zoom, and an
+`R` key that restores the initial view.
+
+Clicking a part selects the top-level node that `scene.add()` created, so a
+click on one cooling channel identifies its whole thrust chamber. A box appears
+beside the click showing the node's name, its `kind` metadata, the `position=`
+and `rotation=` arguments that reproduce its placement, the fields it carries,
+and its anchors in scene coordinates. The angles use the same extrinsic xyz
+convention as `Transform`, so they can be pasted back into `scene.add()`
+verbatim. Click empty space or press `Esc` to dismiss the box. Selection is
+HTML-only; the desktop PyVista output has no picking.
+
+The legend carries a dropdown that recolors the scene by any field its
+components provide, plus a "None" entry that restores component colors. Every
+field travels in the HTML already, so switching costs no extra payload and
+needs no rerun. `color_by` chooses the field shown first, and `clim` pins that
+field's range while the others range over their own values. A field whose units
+disagree between components is left out of the dropdown.
+
+`Scene(show_axes=True)` adds a corner orientation triad, labelled x, y, and z
+and colored red, green, and blue, to both outputs. It is an orientation cue
+that rotates with the view; it is not a measuring grid, and marks neither the
+origin nor the scale.
 
 `show()` owns and closes its desktop window. For custom desktop integration,
 `scene.to_plotter()` returns a PyVista plotter whose resources the caller must

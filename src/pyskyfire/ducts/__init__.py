@@ -1,10 +1,17 @@
 """Duct hydraulics shared by cooling channels, piping and manifolds.
 
-This subpackage contains reusable friction physics and explicit pipe geometry.
-It does not import from :mod:`pyskyfire.regen` or :mod:`pyskyfire.common`, so
-cooling channels and engine-network adapters can both depend on it without a
-cycle. Pipe state records use the lower-level :mod:`pyskyfire.thermo` package.
+This subpackage contains shared path geometry, explicit pipe hydraulics, and
+volute and collector manifolds. It depends only on :mod:`pyskyfire.common` for
+planar section primitives and friction correlations and :mod:`pyskyfire.thermo` for fluid state records,
+and it does not import from :mod:`pyskyfire.regen` or :mod:`pyskyfire.network`,
+so cooling channels, turbopump hardware and engine-network adapters can all
+depend on it without a cycle.
 """
 
-from .friction import *
+from pyskyfire.common.friction import *
+from .path import *
 from .pipe import *
+from .volute_section import *
+from .area_law import *
+from .exit_cone import *
+from .volute import *

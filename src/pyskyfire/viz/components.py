@@ -12,7 +12,8 @@ from pyskyfire.regen.cad_geometry import transverse_construction
 from pyskyfire.regen.channel_layout import ChannelLayout, resolve_analytical_layout, resolve_numerical_layout
 from .scene import Anchor, FieldData, MeshData, SceneNode, Transform
 
-__all__ = ["ThrustChamberComponent", "ImpellerComponent", "PipeComponent", "pipe_fields"]
+__all__ = ["ThrustChamberComponent", "ImpellerComponent", "PipeComponent", "pipe_fields",
+           "VoluteComponent", "volute_fields"]
 
 _COLORS = ("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
            "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf")
@@ -193,10 +194,11 @@ class ImpellerComponent:
     n_theta: int = 160
 
     def build(self):
-        from pyskyfire.pump.impeller_new import cylindrical_to_cartesian
         if not isinstance(self.n_theta, int) or self.n_theta < 3:
             raise ValueError("n_theta must be an integer of at least 3")
         g = self.impeller.geometry
+        if g is None:
+            raise ValueError("Call impeller.build_geometry() before adding it to a scene")
         root = SceneNode("impeller", metadata={"kind": "impeller"})
         for name, curve in (("hub", g.hub_curve), ("shroud", g.shroud_curve)):
             theta = np.linspace(0, 2*np.pi, self.n_theta)
@@ -204,8 +206,17 @@ class ImpellerComponent:
             radius = np.asarray(curve)[:, 1, None]
             xyz = np.stack((x, radius*np.cos(angle), radius*np.sin(angle)), axis=-1)
             root.children.append(SceneNode(name, mesh=_surface(xyz), opacity=0.22))
-        for i, blade in enumerate(g.blade_surfaces):
-            root.children.append(SceneNode(f"blade_{i}", mesh=_surface(cylindrical_to_cartesian(blade)), color="tomato", opacity=0.75))
+        for family, blade, phase, color in (("blade", g.main_blade, 0., "tomato"),
+                                             ("splitter", g.splitter, g.splitter_pitch_fraction, "goldenrod")):
+            if blade is None:
+                continue
+            mesh = _impeller_blade_mesh(blade)
+            for i in range(g.blade_count):
+                root.children.append(SceneNode(
+                    f"{family}_{i}", mesh=mesh, color=color,
+                    transform=Transform(rotation=((i+phase)*2*np.pi/g.blade_count, 0, 0)),
+                    metadata={"kind": family, "instance_index": i},
+                ))
         if self.results is not None:
             known = {node.name: node for node in root.children}
             for name, fields in self.results.items():
@@ -218,8 +229,42 @@ class ImpellerComponent:
         return root
 
 
+def _impeller_blade_mesh(blade):
+    """Join closed-edge sides with shared vertices and cap the hub and tip.
+
+    Caps bridge corresponding pressure/suction stations, avoiding a fan across
+    the concave planform of a wrapped blade. These are blade solids for viewing;
+    endwalls remain flow-path surfaces, not a manufacturing model of the wheel.
+    """
+    from pyskyfire.pump.geometry import cylindrical_to_cartesian
+    ss = cylindrical_to_cartesian(blade.suction)
+    ps = cylindrical_to_cartesian(blade.pressure)
+    ring = np.concatenate((ss, ps[:, -2:0:-1]), axis=1)
+    surface = _surface(ring, closed=True)
+    faces = surface.triangles.tolist()
+    n = ss.shape[1]
+    nr = ring.shape[1]
+
+    def pressure_index(j):
+        return j if j in (0, n-1) else nr-j
+
+    for span, reverse in ((0, False), (len(ring)-1, True)):
+        offset = span*nr
+        for j in range(n-1):
+            a, b, c, d = j, j+1, pressure_index(j+1), pressure_index(j)
+            for tri in ((b, a, d), (b, d, c)):
+                if len(set(tri)) == 3:
+                    faces.append([offset+k for k in (tri[::-1] if reverse else tri)])
+    faces = np.asarray(faces, dtype=np.int64)
+    p = surface.points
+    volume6 = np.einsum("ij,ij->i", p[faces[:,0]], np.cross(p[faces[:,1]],p[faces[:,2]])).sum()
+    if volume6 < 0:
+        faces = faces[:, ::-1]
+    return MeshData(p, faces)
+
+
 # PipeResult attribute, field name, base SI units, label. Station arrays carry
-# one value per PipeStation; connection arrays one per connection. Names match
+# one value per PathStation; connection arrays one per connection. Names match
 # the thrust chamber's where the quantity is the same, so one ``color_by`` can
 # span a duct and a chamber. No unit conversion is performed.
 _PIPE_STATION_FIELDS = {
@@ -344,3 +389,244 @@ class PipeComponent:
                 fields[name] = _mapped_pipe_field(f, path, self.n_theta)
         return SceneNode("pipe", mesh=_surface(rings, closed=True), fields=fields,
                          anchors=_end_anchors(p), metadata={"kind": "pipe"})
+
+
+# Per-station quantities a volute passage can be coloured by. Bore radius and
+# centroid radius are deliberately absent: they describe the section rather
+# than the flow through it, and the design tables already carry them.
+_VOLUTE_GEOMETRY_FIELDS = {
+    "area": ("area", "m²", "Passage area"),
+}
+
+
+def volute_fields(result, exit_stations=0):
+    """Adapt a :class:`~pyskyfire.ducts.VoluteResult` into scene fields.
+
+    Every quantity carries one value per azimuthal station, so all are
+    point-associated and :class:`VoluteComponent` repeats each around its
+    station's section ring. Units are the base SI units the solver works in.
+
+    ``collected`` marks the fraction of the mass flow gathered so far, and
+    ``clipped`` flags the stations near the tongue where the area law asked for
+    a section smaller than the family admits.
+
+    ``exit_stations`` appends that many further values covering the exit-cone
+    duct, so a component sweeping the duct can colour it too. Pressure and
+    velocity carry their real variation along it; the rest hold their
+    collection-plane value, since the duct has no azimuth left to vary with.
+
+    The two pressures are worth reading with their model in mind. Aungier
+    charges one lumped coefficient per mechanism across the whole passage, so
+    how the loss is spread round the volute is an assumption made for display
+    -- see :meth:`~pyskyfire.ducts.VoluteResult.stagnation_pressure`. The
+    endpoints are what the analysis actually fixes.
+    """
+    from pyskyfire.ducts import VoluteResult
+
+    if not isinstance(result, VoluteResult):
+        raise TypeError("volute_fields expects a ducts.VoluteResult")
+    geometry = result.geometry
+    stagnation, static = result.stagnation_pressure(), result.static_pressure()
+    velocity = result.collected_velocity()
+    values = {
+        "velocity": (velocity, "m/s", "Collected through-flow velocity"),
+        "p_stagnation": (stagnation, "Pa", "Stagnation pressure"),
+        "p_static": (static, "Pa", "Static pressure"),
+        "collected": (geometry.theta / (2*np.pi), "1", "Mass flow collected"),
+        "clipped": (geometry.clipped.astype(float), "1", "Area law clipped at the tongue"),
+    }
+    for attribute, (name, units, label) in _VOLUTE_GEOMETRY_FIELDS.items():
+        values[name] = (np.asarray(getattr(geometry, attribute), dtype=float), units, label)
+
+    exit_stations = int(exit_stations)
+    if exit_stations > 0:
+        # The duct's own stations continue past the collection plane; drop the
+        # first, which is the collection plane the passage already covers.
+        duct_stagnation, duct_static = result.exit_cone_pressures(exit_stations + 1)
+        duct_velocity = np.linspace(0.0, 1.0, exit_stations + 1)
+        eased = duct_velocity**2 * (3.0 - 2.0*duct_velocity)
+        duct_velocity = (1.0 - eased)*result.C_6 + eased*result.C_7
+        along = {
+            "velocity": duct_velocity[1:],
+            "p_stagnation": duct_stagnation[1:],
+            "p_static": duct_static[1:],
+        }
+        values = {
+            name: (np.concatenate((data, along.get(name, np.full(exit_stations, data[-1])))),
+                   units, label)
+            for name, (data, units, label) in values.items()
+        }
+    return {name: FieldData(data, units, label)
+            for name, (data, units, label) in values.items()}
+
+
+def _fan(ring, origin, *, outward):
+    """Triangulate one end section as a fan about a point it is star-shaped about."""
+    count = len(ring)
+    points = np.vstack((ring, origin))
+    index = np.arange(count)
+    spokes = (index, (index + 1) % count)
+    if outward:
+        spokes = spokes[::-1]
+    return MeshData(points, np.column_stack((np.full(count, count), *spokes)))
+
+
+def _merge(meshes):
+    """Concatenate meshes, offsetting each one's triangle indices."""
+    points, triangles, offset = [], [], 0
+    for mesh in meshes:
+        points.append(mesh.points)
+        triangles.append(mesh.triangles + offset)
+        offset += len(mesh.points)
+    return MeshData(np.vstack(points), np.vstack(triangles))
+
+
+@dataclass
+class VoluteComponent:
+    """Display a resolved volute or collector passage.
+
+    The volute supplies its own geometry through ``sweep(n_points=...)``, which
+    places each station's cross-section in machine coordinates, already
+    inclined by the volute's tilt. The local frame is that frame: the machine
+    axis is +z, the tongue sits at azimuth zero, and no recentering is applied.
+
+    The passage is swept from the tongue through one revolution, and on through
+    its :class:`~pyskyfire.ducts.ExitCone` duct to the flange when it has one.
+    The face at the tongue is a wall -- the cutwater -- so the step visible
+    there is the passage meeting itself.
+
+    Three child nodes come back, so the openings can be told apart from the
+    walls at a glance:
+
+    ``passage``
+        Every wall, including the whole exit-cone duct and the cutwater face.
+        This is what carries the fields.
+    ``inlet``
+        The slot mouth, the strip at the inlet radius running the full
+        revolution, where the flow being collected enters.
+    ``outlet``
+        The flange face, or the collection plane itself without an exit cone.
+
+    ``opening_color`` paints both openings, red by default. They carry no
+    fields, so they keep that colour whichever field the scene is coloured by,
+    rather than disappearing into the scale.
+
+    ``results`` is a :class:`~pyskyfire.ducts.VoluteResult`, or a mapping of
+    field names to point-associated FieldData with one value per azimuthal
+    station. A supplied mapping holds its last value along the exit cone, which
+    a result does only for quantities that have no variation to carry there.
+
+    ``exit_points`` sets how finely the exit cone is swept along its length.
+
+    Anchors mark the inlet, on the axis pointing in along -z, and the outlet:
+    the flange face, oriented along its own normal, when there is an exit
+    cone; otherwise the full-collection plane, oriented tangentially into
+    where an exit cone would continue.
+    """
+
+    volute: object
+    results: object = None
+    n_points: int = 16
+    exit_points: int = 17
+    opening_color: str = "red"
+
+    def build(self):
+        if not isinstance(self.n_points, int) or self.n_points < 2:
+            raise ValueError("n_points must be an integer of at least 2")
+        volute = self.volute
+        # polygon() repeats its first point to close the loop; a swept mesh
+        # wraps that seam itself, so drop it rather than emit degenerate faces.
+        rings = np.asarray(volute.sweep(n_points=self.n_points), dtype=float)[:, :-1]
+        if rings.ndim != 3 or rings.shape[2] != 3 or not np.isfinite(rings).all():
+            raise ValueError("Volute sweep must be finite with shape (N,M,3)")
+        stations, width = rings.shape[:2]
+        origins = _volute_fan_origins(volute)
+        # The section's last boundary piece is the slot mouth, so its vertices
+        # are the ones tracing the inlet opening around the volute.
+        mouth = width - self.n_points
+
+        exit_rings = np.zeros((0, width, 3))
+        if volute.exit_geometry is not None:
+            # The duct's first ring is the volute's own last one, so it is
+            # dropped here and the two sweeps share that seam exactly.
+            exit_rings = np.asarray(
+                volute.sweep_exit_cone(n_points=self.n_points,
+                                       n_stations=self.exit_points),
+                dtype=float,
+            )[1:]
+
+        walls = [_surface(rings[:, :mouth], closed=False)]
+        if len(exit_rings):
+            # Every wall of the duct, mouth-side included: nothing enters it.
+            walls.append(_surface(np.concatenate((rings[-1:], exit_rings)), closed=True))
+            closing_ring, closing_origin = exit_rings[-1], volute.exit_geometry.end
+        else:
+            closing_ring, closing_origin = rings[-1], origins[-1]
+        walls.append(_fan(rings[0], origins[0], outward=True))
+
+        root = SceneNode("volute", anchors=_volute_anchors(volute),
+                         metadata={"kind": "volute"})
+        passage = SceneNode("passage", mesh=_merge(walls),
+                            fields=self._wall_fields(stations, mouth, len(exit_rings)),
+                            metadata={"kind": "volute-passage"})
+        inlet = SceneNode("inlet", mesh=_surface(rings[:, mouth:], closed=False),
+                          color=self.opening_color,
+                          metadata={"kind": "volute-inlet"})
+        outlet = SceneNode("outlet", mesh=_fan(closing_ring, closing_origin, outward=False),
+                           color=self.opening_color,
+                           metadata={"kind": "volute-outlet"})
+        root.children = [passage, inlet, outlet]
+        return root
+
+    def _wall_fields(self, stations, mouth, exit_stations):
+        """Field values laid out to match the merged wall mesh's vertices."""
+        results = self.results
+        if results is None:
+            return {}
+        if not isinstance(results, Mapping):
+            results = volute_fields(results, exit_stations=exit_stations)
+            expected = stations + exit_stations
+        else:
+            expected = stations
+        fields = {}
+        for name, field in results.items():
+            if field.association != "point" or len(field.values) != expected:
+                raise ValueError(
+                    "Volute fields must be point-associated, one value per station")
+            values = np.asarray(field.values, dtype=float)
+            if len(values) == stations and exit_stations:
+                values = np.concatenate((values, np.full(exit_stations, values[-1])))
+            parts = [np.repeat(values[:stations], mouth)]
+            if exit_stations:
+                # The duct mesh repeats the shared seam ring, then its own.
+                parts.append(np.repeat(values[stations - 1:], self.n_points * 6))
+            # The cutwater cap: its ring, then its fan origin.
+            parts.append(np.full(self.n_points * 6 + 1, values[0]))
+            fields[name] = FieldData(np.concatenate(parts), field.units, field.label)
+        return fields
+
+
+def _volute_fan_origins(volute):
+    """Star-shaped fan origins for the end sections, in machine coordinates."""
+    geometry = volute.geometry
+    local = volute.section.fan_origin(geometry.size)
+    theta = geometry.theta
+    radial = np.column_stack((np.cos(theta), np.sin(theta), np.zeros_like(theta)))
+    axial = np.zeros_like(radial)
+    axial[:, 2] = 1.0
+    u_hat = np.cos(volute.tilt)*radial + np.sin(volute.tilt)*axial
+    v_hat = -np.sin(volute.tilt)*radial + np.cos(volute.tilt)*axial
+    return (volute.inlet.radius*radial
+            + local[:, :1]*u_hat + local[:, 1:2]*v_hat)
+
+
+def _volute_anchors(volute):
+    """Inlet on the machine axis; outlet at the flange, or the collection plane."""
+    inlet = Anchor.from_direction(np.zeros(3), np.array([0.0, 0.0, -1.0]))
+    if volute.exit_geometry is not None:
+        cone = volute.exit_geometry
+        return {"inlet": inlet, "outlet": Anchor.from_direction(cone.end, cone.end_direction)}
+    geometry = volute.geometry
+    centre = _volute_fan_origins(volute)[-1]
+    tangential = np.array([-np.sin(geometry.theta[-1]), np.cos(geometry.theta[-1]), 0.0])
+    return {"inlet": inlet, "outlet": Anchor.from_direction(centre, tangential)}

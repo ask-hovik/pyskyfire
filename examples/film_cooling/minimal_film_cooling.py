@@ -42,7 +42,7 @@ params = dict(
     material = psf.common.solids.StainlessSteel304,
     wall_thickness = 0.5e-3,
     n_channels = 60,
-    rib_width = 0.0,
+    sidewall_half_thickness = 0.0,
     roughness_height = 10e-6,
 
     # Film cooling inputs
@@ -94,7 +94,7 @@ wall = psf.regen.Wall(
 
 # Channel cross-section
 cross_section_squared = psf.regen.CrossSectionSquared(
-    rib_width=params["rib_width"]
+    sidewall_half_thickness=params["sidewall_half_thickness"]
 )
 
 def channel_height_function():

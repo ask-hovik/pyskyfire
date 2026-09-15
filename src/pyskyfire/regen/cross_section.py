@@ -1,11 +1,11 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
-from abc import ABC, abstractmethod
+from dataclasses import dataclass, replace
 from typing import Any, Optional
 import numpy as np
 
-from pyskyfire.regen.section_geometry import (
-    arc_boundary_metrics, rounded_boundary, squared_boundary,
+from pyskyfire.common.section_geometry import (
+    SectionArc, SectionLine, arc_boundary_metrics, rounded_boundary, squared_boundary,
+    rounded_width_boundary, boundary_surfaces, surface_lengths,
 )
 
 from pyskyfire.regen.design_inputs import (
@@ -61,7 +61,7 @@ class SectionProfiles:
     contour, gamma, n_channel_positions, n_channels, n_channels_all, \
     t_wall_total, t_hot_layer : optional
         Context needed by design-input functions that are evaluated against a
-        resolved section, such as ``rib_width``. They are optional so that
+        resolved section, such as ``sidewall_half_thickness``. They are optional so that
         sections can still be built for pure geometry queries, but a design
         input that requests a quantity backed by a missing field raises
         :class:`~pyskyfire.regen.design_inputs.DesignInputError`.
@@ -89,6 +89,49 @@ class SectionProfiles:
     n_channels_all: Optional[np.ndarray] = None
     t_wall_total: Optional[np.ndarray] = None
     t_hot_layer: Optional[np.ndarray] = None
+    floor_width: Optional[np.ndarray] = None
+    roof_width: Optional[np.ndarray] = None
+    section_radius: Optional[np.ndarray] = None
+
+    @classmethod
+    def from_dimensions(cls, *, height, wall_thickness=0.0, floor_width=None,
+                        roof_width=None, radius=None, angle=None, stations=0.0):
+        """Build local section profiles without a chamber or placed path.
+
+        Supply both internal endpoint widths, or a finite radius and full
+        occupied sector angle (radians). With widths, radius only controls
+        squared-arc curvature; omit it for straight ends. Dimensions broadcast
+        over stations. ``stations`` is the local path coordinate in metres,
+        exposed as ``x`` to design-input callables; it is not a placement.
+        """
+        direct = floor_width is not None or roof_width is not None
+        if direct:
+            if floor_width is None or roof_width is None or angle is not None:
+                raise ValueError("Supply both floor_width and roof_width, without angle")
+        elif radius is None or angle is None:
+            raise ValueError("Supply both widths or radius and angle")
+        values = [height, wall_thickness, stations,
+                  np.inf if radius is None else radius,
+                  0.0 if angle is None else angle]
+        if direct:
+            values += [floor_width, roof_width]
+        arrays = [np.atleast_1d(a).astype(float) for a in np.broadcast_arrays(*values)]
+        if any(a.ndim != 1 for a in arrays):
+            raise ValueError("Section dimensions must be scalars or one-dimensional arrays")
+        h, wall, s, r, theta = arrays[:5]
+        if np.any(~np.isfinite(h + wall + s)) or np.any(h < 0) or np.any(wall < 0):
+            raise ValueError("Height and wall thickness must be finite and nonnegative; stations finite")
+        if np.any(np.isnan(r)) or np.any(r <= 0):
+            raise ValueError("Radius must be positive or infinity")
+        if not direct and (np.any(~np.isfinite(r + theta)) or np.any((theta <= 0) | (theta >= np.pi))):
+            raise ValueError("Sector inputs require finite radius and 0 < angle < pi; use widths for parallel walls")
+        if direct and (np.any(~np.isfinite(arrays[5] + arrays[6])) or
+                       np.any(arrays[5] <= 0) or np.any(arrays[6] <= 0)):
+            raise ValueError("Floor and roof widths must be finite and positive")
+        return cls(h=h, t_wall=wall, theta=theta,
+                   cross_section_base_point_path=np.column_stack((s, np.where(np.isfinite(r), r, 0), np.zeros_like(s))),
+                   section_radius=r, floor_width=arrays[5] if direct else None,
+                   roof_width=arrays[6] if direct else None)
 
     def __post_init__(self):
         N = self.cross_section_base_point_path.shape[0]
@@ -98,6 +141,14 @@ class SectionProfiles:
                 raise ValueError(f"{name} length {v.shape[0]} != N {N}")
         if self.cross_section_base_point_path.shape != (N, 3):
             raise ValueError("centerline must be (N,3)")
+        if np.any(~np.isfinite(self.t_wall)) or np.any(self.t_wall < 0):
+            raise ValueError("Wall thickness must be finite and nonnegative")
+        if (self.floor_width is None) != (self.roof_width is None):
+            raise ValueError("Supply both floor_width and roof_width")
+        for name in ("floor_width", "roof_width", "section_radius"):
+            value = getattr(self, name)
+            if value is not None and np.shape(value) != (N,):
+                raise ValueError(f"{name} must have shape (N,)")
         # Not a field, so ``dataclasses.replace`` starts a derived profile off
         # with an empty memo of its own. See :meth:`cached`.
         object.__setattr__(self, "_derived", {})
@@ -139,7 +190,7 @@ class SectionProfiles:
         """Return one :class:`DesignContext` per station.
 
         The contexts expose tier A, B and C quantities, so they are what
-        section-level design inputs such as ``rib_width`` are evaluated
+        section-level design inputs such as ``sidewall_half_thickness`` are evaluated
         against.
         """
         radius = self.cross_section_base_point_path[:, 1]
@@ -187,507 +238,431 @@ class SectionProfiles:
             contexts.append(DesignContext(providers))
         return contexts
 
-class ChannelSection(ABC):
-    """Abstract base class for cooling-channel cross-section definitions.
+class ChannelSection:
+    """A section with floor, roof, and two sidewalls.
 
-    Derived classes must provide analytical expressions for coolant area,
-    hydraulic diameter, wetted perimeters, and optionally geometry export.
+    exposure maps surface names to centred fractions in [0, 1], optionally
+    design-input callables. Unspecified surfaces are inactive; the default is
+    the complete floor. exposure_angles selects rounded-lobe spans in radians
+    instead. A surface cannot specify both forms.
 
-    Parameters
-    ----------
-    n_points : int, optional
-        Resolution hint for discretized representations. Default is 16.
+    enable_fin applies one symmetric rib model to both sidewalls, incompatible
+    with direct sidewall exposure. CoolingCircuit supplies its own fin switch;
+    independent sections use this switch. All surfaces count toward Dh.
     """
 
-    def __init__(self, n_points: int = 16):
+    surface_names = ("floor", "side_right", "roof", "side_left")
+
+    def __init__(self, n_points=16, *, exposure=None, exposure_angles=None, enable_fin=False):
         self.n_points = int(n_points)
+        if self.n_points < 2:
+            raise ValueError("n_points must be at least two")
+        self.enable_fin = bool(enable_fin)
+        angles = dict(exposure_angles or {})
+        fractions = dict(exposure) if exposure is not None else ({} if angles else {"floor": 1.0})
+        unknown = (fractions.keys() | angles.keys()) - set(self.surface_names)
+        if unknown:
+            raise ValueError(f"Unknown thermal surfaces: {sorted(unknown)}")
+        if fractions.keys() & angles.keys():
+            raise ValueError("A surface cannot specify both exposure fraction and angle")
+        if angles and not isinstance(self, CrossSectionRounded):
+            raise ValueError("Exposure angles are only supported for rounded floor and roof arcs")
+        if set(angles) - {"floor", "roof"}:
+            raise ValueError("Exposure angles are only supported for floor and roof")
+        self._exposure = fractions
+        self._exposure_angles = angles
+        self._surface_evaluators = {
+            name: make_evaluator(value, slot="surface_exposure", label=f"{type(self).__name__}.{name}.exposure")
+            for name, value in (fractions | angles).items()
+        }
+        for name, value in fractions.items():
+            if not callable(value) and (not np.isfinite(value) or not 0 <= value <= 1):
+                raise ValueError(f"{name} exposure must be a fraction in [0, 1]")
+        for name, value in angles.items():
+            if not callable(value) and (not np.isfinite(value) or not 0 <= value <= 2*np.pi):
+                raise ValueError(f"{name} exposure angle must be in [0, 2*pi] radians")
+        if self.enable_fin:
+            self.validate_fin()
 
-    def boundary_metrics(self, prof: SectionProfiles):
-        """Return ``(area, centroid, edge_lengths)`` for this section on ``prof``.
+    def validate_fin(self, prof=None):
+        """Reject direct sidewall transfer combined with the symmetric fin model."""
+        for name in ("side_left", "side_right"):
+            value = self._exposure.get(name, 0.0)
+            if callable(value):
+                if prof is None:
+                    continue
+                value = self.exposure_fractions(prof)[name]
+            if np.any(np.asarray(value) > 0):
+                raise ValueError("Sidewall exposure and the symmetric fin/rib model are mutually exclusive")
 
-        One numerical contour integral of :meth:`boundary` supplies the coolant
-        area, the centroid and every individual wetted edge, so it is computed
-        once per profile and shared between the accessors that read it.
-        """
-        return prof.cached(
-            (self, "boundary_metrics"),
-            lambda: self._compute_boundary_metrics(prof),
-        )
+    def __getstate__(self):
+        return {key: value for key, value in self.__dict__.items()
+                if key != "_surface_evaluators" and not key.endswith("_evaluator")}
 
-    def _compute_boundary_metrics(self, prof: SectionProfiles):
-        """Integrate this section's boundary; override to apply a transform."""
-        return arc_boundary_metrics(*self.boundary(prof))
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._exposure = state.get("_exposure", {"floor": 1.0})
+        self._exposure_angles = state.get("_exposure_angles", {})
+        self._surface_evaluators = {
+            name: make_evaluator(value, slot="surface_exposure", label=f"{type(self).__name__}.{name}.exposure")
+            for name, value in (self._exposure | self._exposure_angles).items()
+        }
+        if "_sidewall_value" in state:
+            self._sidewall_evaluator = make_evaluator(
+                self._sidewall_value, slot="sidewall_half_thickness", label="CrossSectionSquared.sidewall_half_thickness")
+            self._roof_evaluator = None if self._roof_value is None else make_evaluator(
+                self._roof_value, slot="section_thickness", label="CrossSectionSquared.roof_thickness")
 
-    def full_height(self, prof: SectionProfiles) -> np.ndarray:
-        """Return the full internal coolant height at each station [m]."""
-        return np.asarray(prof.h, dtype=float).copy()
+    def _evaluate(self, evaluator, prof):
+        constant = evaluator.constant_value
+        if constant is not None:
+            return np.full_like(prof.h, constant, dtype=float)
+        return np.array([evaluator(ctx) for ctx in prof.design_contexts()], dtype=float)
 
-    def base_height(self, prof: SectionProfiles) -> np.ndarray:
-        """Return the base height [m]; ordinary sections use their full height."""
-        return self.full_height(prof)
+    def _transform(self, prof):
+        return None
 
-    # ---- Required API (vectorized over stations) -----------------------------
-    @abstractmethod
-    def A_coolant(self, prof: SectionProfiles) -> np.ndarray: ...
-    @abstractmethod
-    def Dh_coolant(self, prof: SectionProfiles) -> np.ndarray: ...
-    @abstractmethod
-    def P_thermal(self, prof: SectionProfiles) -> np.ndarray: ...
-    @abstractmethod
-    def P_coolant(self, prof: SectionProfiles) -> np.ndarray: ...
-    def effective_hot_gas_perimeter(
-        self,
-        prof: SectionProfiles,
-        surface_area_multiplier: np.ndarray,
-    ) -> np.ndarray:
-        """Return hot-gas perimeter including a circuit-supplied area factor."""
-        return self.P_thermal(prof) * np.asarray(
-            surface_area_multiplier,
-            dtype=float,
-        )
+    def surfaces(self, prof, *, exterior=False):
+        """Named directed inner or outer curves, including both straight sides."""
+        ends = self.outer_boundary(prof) if exterior else self.boundary(prof)
+        return dict(zip(self.surface_names, boundary_surfaces(*ends)))
 
-    def R_coolant_per_len(
-        self,
-        prof: SectionProfiles,
-        h_c: np.ndarray,
-        k_wall: np.ndarray | float,
-        ) -> np.ndarray:
-        """
-        Effective coolant-side thermal resistance per unit axial length [K m / W].
-
-        This is where ribs/fin efficiency/spreading conduction can be embedded.
-
-        Default fallback (no rib model):
-            R' = 1 / (h_c * A'_cool)
-        where A'_cool is the geometric coolant thermal area per unit axial length.
-        """
-        raise NotImplementedError
-    def R_wall_per_len(
-        self,
-        prof: SectionProfiles,
-        walls: list,                 # or thickness/k arrays
-        T_rep: np.ndarray,
-        A_hot_per_len: np.ndarray,   # fallback reference
-        ) -> np.ndarray:
-        """
-        Effective wall-stack conduction resistance per unit axial length [K m / W].
-        """
-        raise NotImplementedError
-
-
-# ===================== Squared implementation ===============================
-class CrossSectionSquared(ChannelSection):
-    """Rectangular channel separated from its neighbours by constant-width ribs.
-
-    Each channel occupies an angular pitch ``theta`` of the wall. The rib
-    between two neighbouring channels has the same thickness ``rib_width`` at
-    every radius, from the channel floor to the channel roof, so the channel
-    itself widens with radius while the rib does not. Consequently the coolant
-    area is the full-pitch sector minus the rib rectangle::
-
-        A = theta * (r_top**2 - r_base**2) / 2 - rib_width * h
-
-    Parameters
-    ----------
-    rib_width : float or callable
-        Rib thickness [m], measured circumferentially in the plane normal to
-        the channel axis. May be a constant or a design-input function; see
-        :mod:`pyskyfire.regen.design_inputs` for the quantities such a
-        function may request. Tier A, B and C quantities are all available
-        here.
-    n_points : int, optional
-        Resolution hint for discretised representations.
-
-    Examples
-    --------
-    A constant one-millimetre rib::
-
-        CrossSectionSquared(rib_width=1.0e-3)
-
-    A rib that always takes up a tenth of the local channel pitch, which is
-    the constant-blockage behaviour::
-
-        CrossSectionSquared(rib_width=lambda pitch_mid: 0.1 * pitch_mid)
-    """
-
-    def __init__(self, rib_width, n_points: int = 8):
-        super().__init__(n_points=n_points)
-        self._rib_width = rib_width
-        self._rib_width_evaluator = make_evaluator(
-            rib_width,
-            slot="rib_width",
-            label="CrossSectionSquared.rib_width",
-        )
-
-    # ---- rib geometry ------------------------------------------------------
-    def rib_width(self, prof: SectionProfiles) -> np.ndarray:
-        """Return the rib thickness at every station of ``prof`` [m]."""
-        return prof.cached(
-            (self, "rib_width"),
-            lambda: self._compute_rib_width(prof),
-        ).copy()
-
-    def _compute_rib_width(self, prof: SectionProfiles) -> np.ndarray:
-        widths = np.array(
-            [self._rib_width_evaluator(ctx) for ctx in prof.design_contexts()],
-            dtype=float,
-        )
-        if np.any(~np.isfinite(widths)) or np.any(widths < 0.0):
-            index = int(np.flatnonzero(~np.isfinite(widths) | (widths < 0.0))[0])
-            raise ValueError(
-                "rib_width must be finite and non-negative; station "
-                f"{index} gives {widths[index]:.9g} m"
-            )
-
-        pitch_base = self._pitch_base(prof)
-        too_wide = widths >= pitch_base
-        if np.any(too_wide):
-            index = int(np.flatnonzero(too_wide)[0])
-            raise ValueError(
-                "rib_width leaves no room for the channel; station "
-                f"{index} has a rib of {widths[index]:.9g} m but a "
-                f"channel-floor pitch of only {pitch_base[index]:.9g} m"
-            )
-        return widths
-
-    def _pitch_base(self, prof: SectionProfiles) -> np.ndarray:
-        """Return the channel-to-channel pitch at the channel floor [m]."""
-        r_base = prof.cross_section_base_point_path[:, 1]
-        return r_base * prof.theta
-
-    def _radii(self, prof: SectionProfiles) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        r_base = prof.cross_section_base_point_path[:, 1]
-        return r_base - prof.t_wall, r_base, r_base + prof.h
-
-    def equivalent_angular_width(self, prof: SectionProfiles) -> np.ndarray:
-        """Return the wedge angle enclosing the same coolant area [rad].
-
-        A constant-width rib does not produce a wedge-shaped channel, so
-        consumers that need a scalar angular opening can use this
-        area-equivalent angle. Physical construction retains the rib faces.
-        """
-        _, r_base, r_top = self._radii(prof)
-        span = r_top**2 - r_base**2
-        equivalent = np.zeros_like(span, dtype=float)
-        np.divide(2.0 * self.A_coolant(prof), span, out=equivalent, where=span > 0.0)
-        return equivalent
-
-    def open_fraction(self, prof: SectionProfiles) -> np.ndarray:
-        """Return the fraction of the angular pitch left open by the ribs [-]."""
-        fraction = np.zeros_like(prof.theta, dtype=float)
-        np.divide(
-            self.equivalent_angular_width(prof),
-            prof.theta,
-            out=fraction,
-            where=prof.theta > 0.0,
-        )
-        return fraction
-
-    # ---- section analytics -------------------------------------------------
-    def boundary(self, prof):
-        return squared_boundary(prof, self.rib_width(prof))
+    def boundary_metrics(self, prof):
+        return prof.cached((self, "boundary_metrics"), lambda: self._compute_boundary_metrics(prof))
 
     def _compute_boundary_metrics(self, prof):
-        transform = None if prof.projection is None else np.linalg.inv(prof.projection)
-        return arc_boundary_metrics(*self.boundary(prof), transform=transform)
+        return arc_boundary_metrics(*self.boundary(prof), transform=self._transform(prof))
+
+    def exposure_fractions(self, prof):
+        """Resolved centred fractions, with angular requests converted per lobe."""
+        def compute():
+            surfaces = self.surfaces(prof)
+            result = {}
+            for name in self.surface_names:
+                if name not in self._surface_evaluators:
+                    result[name] = np.zeros_like(prof.h)
+                    continue
+                values = self._evaluate(self._surface_evaluators[name], prof)
+                if name in self._exposure_angles:
+                    curve = surfaces[name]
+                    span = np.abs(curve.end_angles-curve.start_angles)
+                    if np.any(values > span + 1e-12):
+                        raise ValueError(f"{name} exposure angle exceeds its available arc")
+                    values = values/span
+                if np.any(~np.isfinite(values)) or np.any((values < 0) | (values > 1+1e-12)):
+                    raise ValueError(f"{name} exposure must be a fraction in [0, 1]")
+                result[name] = np.clip(values, 0, 1)
+            return result
+        return {name: value.copy() for name, value in
+                prof.cached((self, "exposure"), compute).items()}
+
+    def thermal_perimeters(self, prof, *, exterior=False):
+        """Active length of each named surface [m], excluding fin enhancement."""
+        key = (self, "thermal_perimeters", exterior)
+        def compute():
+            fractions = self.exposure_fractions(prof)
+            if not exterior:
+                lengths = self.boundary_metrics(prof)[2]
+                if all(np.all((f == 0) | (f == 1)) for f in fractions.values()):
+                    return {name: lengths[:, i]*fractions[name]
+                            for i, name in enumerate(self.surface_names)}
+            return {name: surface_lengths(curve, fractions[name], self._transform(prof))
+                    for name, curve in self.surfaces(prof, exterior=exterior).items()}
+        return {name: value.copy() for name, value in prof.cached(key, compute).items()}
+
+    def widths(self, prof):
+        """Internal endpoint-to-endpoint floor and roof widths [m]."""
+        result = []
+        for curve in self.boundary(prof):
+            vector = curve.evaluate([1])[:, 0]-curve.evaluate([0])[:, 0]
+            transform = self._transform(prof)
+            if transform is not None:
+                vector = np.einsum("nij,nj->ni", transform, vector)
+            result.append(np.linalg.norm(vector, axis=1))
+        return tuple(result)
+
+    def full_height(self, prof):
+        return np.asarray(prof.h, float).copy()
+
+    def base_height(self, prof):
+        return self.full_height(prof)
 
     def centroid(self, prof):
-        """Coolant-area centroid in the normal section plane [u, v]."""
+        if type(self).boundary is ChannelSection.boundary:
+            return np.column_stack((prof.h/2, np.zeros_like(prof.h)))
         return self.boundary_metrics(prof)[1].copy()
 
-    def A_coolant(self, prof: SectionProfiles) -> np.ndarray:
+    def A_coolant(self, prof):
         return self.boundary_metrics(prof)[0].copy()
 
-    def P_wetted(self, prof: SectionProfiles) -> np.ndarray:
+    def P_wetted(self, prof):
         return self.boundary_metrics(prof)[2].sum(axis=1)
 
-    def Dh_coolant(self, prof: SectionProfiles) -> np.ndarray:
-        """Compute hydraulic diameter [m]."""
-        return 4.0 * self.A_coolant(prof) / self.P_wetted(prof)
+    def Dh_coolant(self, prof):
+        return 4*self.A_coolant(prof)/self.P_wetted(prof)
 
-    def P_thermal(self, prof: SectionProfiles) -> np.ndarray:
-        """Return geometric hot-gas thermal-contact perimeter [m].
+    def A_exterior(self, prof):
+        """Area enclosed by the outside of the tube, including the passage [m²]."""
+        return arc_boundary_metrics(*self.outer_boundary(prof), transform=self._transform(prof))[0]
 
-        The rib footprint is excluded because the heat entering it is carried
-        by the fin term in :meth:`R_coolant_per_len` rather than by the
-        channel floor.
-        """
-        r_hot, _, _ = self._radii(prof)
-        return np.maximum(r_hot * prof.theta - self.rib_width(prof), 0.0)
+    def P_coolant(self, prof):
+        return sum(self.thermal_perimeters(prof).values())
 
-    def P_coolant(self, prof: SectionProfiles) -> np.ndarray:
-        """Return the channel-floor perimeter wetted by coolant [m]."""
-        return self.boundary_metrics(prof)[2][:, 0].copy()
+    def P_thermal(self, prof):
+        return sum(self.thermal_perimeters(prof, exterior=True).values())
 
-    def R_coolant_per_len(
-        self,
-        prof: SectionProfiles,
-        h_c: np.ndarray,
-        k_wall: np.ndarray | float,
-    ) -> np.ndarray:
-        """
-        Coolant-side thermal resistance per unit *channel length* [K m / W],
-        including rib sidewalls as fins (first-order model).
+    def effective_hot_gas_perimeter(self, prof, surface_area_multiplier):
+        return self.P_thermal(prof)*np.asarray(surface_area_multiplier, float)
 
-        Model:
-        - Base perimeter = P_coolant(prof)  (the channel floor)
-        - Fin perimeter  = 2*h             (two side walls per channel)
-        - Effective perimeter = P_base + eta_f * P_fin
-        - R_s = 1 / (h_c * P_eff)
+    def R_coolant_per_len(self, prof, h_c, k_wall, *, enable_fin=None):
+        """Convection resistance per path length [K m/W], optionally with ribs."""
+        fin = self.enable_fin if enable_fin is None else bool(enable_fin)
+        h_c = np.broadcast_to(np.asarray(h_c, float), prof.h.shape)
+        if np.any(~np.isfinite(h_c)) or np.any(h_c <= 0):
+            raise ValueError("Heat-transfer coefficient must be finite and positive")
+        perimeter = self.P_coolant(prof)
+        if fin:
+            self.validate_fin(prof)
+            length, thickness, fin_perimeter = self._fin_dimensions(prof)
+            k = np.broadcast_to(np.asarray(k_wall, float), prof.h.shape)
+            if np.any(~np.isfinite(k)) or np.any(k <= 0):
+                raise ValueError("Fin conductivity must be finite and positive")
+            eta = np.zeros_like(length)
+            active = thickness > 0
+            mh = np.sqrt(2*h_c[active]/(k[active]*thickness[active]))*length[active]
+            efficiency = np.ones_like(mh)
+            np.divide(np.tanh(mh), mh, out=efficiency, where=mh != 0)
+            eta[active] = efficiency
+            perimeter = perimeter + eta*fin_perimeter
+        resistance = np.full_like(perimeter, np.inf)
+        np.divide(1.0, h_c*perimeter, out=resistance, where=perimeter > 0)
+        return resistance
 
-        Because the rib has a constant thickness, its fin-root thickness is
-        exactly ``rib_width`` rather than an estimate.
-        """
-        P_base = self.P_coolant(prof)
+    def boundary(self, prof):
+        """Default construction for analytical-only custom channel sections."""
+        return squared_boundary(prof, np.zeros_like(prof.h))
 
-        # Two sidewalls of height h contribute as "fin area": per unit channel
-        # length, area = 2*h, treated as an equivalent coolant-side perimeter.
-        h = prof.h
-        P_fin = 2.0 * h
-
-        t_rib = np.maximum(self.rib_width(prof), 1e-9)
-
-        # representative conductivity (allow scalar or array)
-        k = np.asarray(k_wall, dtype=float)
-        if k.ndim == 0:
-            k = np.full_like(h, float(k))
-
-        # Fin efficiency (adiabatic tip) for a rectangular fin:
-        # m = sqrt(2*h_c/(k*t_rib)), eta = tanh(m*h)/(m*h)
-        m = np.sqrt(2.0 * h_c / (k * t_rib))
-        mh = np.maximum(m * h, 1e-12)
-        eta = np.tanh(mh) / mh
-
-        P_eff = np.maximum(P_base + eta * P_fin, 1e-30)
-
-        return 1.0 / (h_c * P_eff)
+    def outer_boundary(self, prof):
+        raise NotImplementedError("This section does not define an exterior boundary")
 
 
-# ===================== Rounded implementation ===============================
-class _RoundedGeometryMixin:
-    """Shared interpretation of full or legacy base-height inputs."""
+class CrossSectionSquared(ChannelSection):
+    """Squared passages with independently straight or curved floor and roof.
 
-    def __init__(self, n_points: int = 16, *, height_input: str = "full"):
+    sidewall_half_thickness [m] is ONE tube sidewall's normal thickness,
+    equivalent to HALF the shared rib between adjacent chamber channels. A
+    constant or design-input callable is accepted. A former 1 mm full rib is
+    therefore specified as 0.5 mm here.
+
+    Floor thickness comes from SectionProfiles.t_wall. roof_thickness defaults
+    to that thickness and may instead be a constant or callable. floor and roof
+    independently accept "arc" or "line". Direct width profiles use the
+    distance between internal sidewall endpoints. With sector profiles, the
+    existing constant-material-width rib construction determines those
+    endpoints; choosing a line joins the same endpoints with a chord.
+    """
+
+    def __init__(self, sidewall_half_thickness, n_points=8, *, roof_thickness=None,
+                 floor="arc", roof="arc", exposure=None, enable_fin=False):
+        super().__init__(n_points, exposure=exposure, enable_fin=enable_fin)
+        if floor not in ("arc", "line") or roof not in ("arc", "line"):
+            raise ValueError("floor and roof must be 'arc' or 'line'")
+        self.floor, self.roof = floor, roof
+        self._sidewall_value = sidewall_half_thickness
+        self._roof_value = roof_thickness
+        self._sidewall_evaluator = make_evaluator(
+            sidewall_half_thickness, slot="sidewall_half_thickness",
+            label="CrossSectionSquared.sidewall_half_thickness")
+        self._roof_evaluator = None if roof_thickness is None else make_evaluator(
+            roof_thickness, slot="section_thickness", label="CrossSectionSquared.roof_thickness")
+
+    def sidewall_half_thickness(self, prof):
+        def compute():
+            values = self._evaluate(self._sidewall_evaluator, prof)
+            if np.any(~np.isfinite(values)) or np.any(values < 0):
+                raise ValueError("sidewall_half_thickness must be finite and non-negative")
+            if prof.floor_width is None and np.any(2*values >= self._pitch_base(prof)):
+                raise ValueError("sidewall_half_thickness leaves no room for the channel")
+            return values
+        return prof.cached((self, "sidewall_half_thickness"), compute).copy()
+
+    def roof_thickness(self, prof):
+        values = prof.t_wall.copy() if self._roof_evaluator is None else self._evaluate(self._roof_evaluator, prof)
+        if np.any(~np.isfinite(values)) or np.any(values < 0):
+            raise ValueError("roof_thickness must be finite and nonnegative")
+        return values
+
+    def surface_thicknesses(self, prof):
+        side = self.sidewall_half_thickness(prof)
+        return {"floor": prof.t_wall.copy(), "roof": self.roof_thickness(prof),
+                "side_left": side.copy(), "side_right": side.copy()}
+
+    def _pitch_base(self, prof):
+        return prof.cross_section_base_point_path[:, 1]*prof.theta
+
+    def _radii(self, prof):
+        base = prof.cross_section_base_point_path[:, 1]
+        return base-prof.t_wall, base, base+prof.h
+
+    def _transform(self, prof):
+        return None if prof.projection is None else np.linalg.inv(prof.projection)
+
+    def full_height(self, prof):
+        if self.floor == self.roof == "arc":
+            return prof.h.copy()
+        floor, roof = self.boundary(prof)
+        vector = roof.evaluate([0.5])[:, 0]-floor.evaluate([0.5])[:, 0]
+        transform = self._transform(prof)
+        if transform is not None:
+            vector = np.einsum("nij,nj->ni", transform, vector)
+        return vector[:, 0]
+
+    def boundary(self, prof):
+        def compute():
+            if prof.floor_width is not None:
+                from pyskyfire.common.section_geometry import squared_width_boundary
+                if prof.projection is not None:
+                    raise ValueError("Direct widths are measured in the local section plane; omit projection")
+                radius = np.inf if prof.section_radius is None else prof.section_radius
+                return squared_width_boundary(prof.floor_width, prof.roof_width, prof.h,
+                                              radius, self.floor, self.roof)
+            ends = squared_boundary(prof, self.sidewall_half_thickness(prof))
+            return tuple(SectionLine(curve.evaluate([0])[:, 0], curve.evaluate([1])[:, 0])
+                         if kind == "line" else curve
+                         for kind, curve in zip((self.floor, self.roof), ends))
+        return prof.cached((self, "boundary"), compute)
+
+    def outer_boundary(self, prof):
+        from pyskyfire.common.section_geometry import offset_squared_boundary
+        return prof.cached((self, "outer_boundary"), lambda: offset_squared_boundary(
+            *self.boundary(prof), prof.t_wall, self.roof_thickness(prof),
+            self.sidewall_half_thickness(prof)))
+
+    def thermal_perimeters(self, prof, *, exterior=False):
+        # Keep the chamber's established floor-area approximation. Direct
+        # dimensions use the actual offset boundary on every surface.
+        fractions = self.exposure_fractions(prof)
+        if exterior and prof.floor_width is None and self.floor == "arc":
+            hot, _, _ = self._radii(prof)
+            floor = np.maximum(hot*prof.theta-2*self.sidewall_half_thickness(prof), 0)
+            if all(np.all(fractions[name] == 0) for name in ("roof", "side_left", "side_right")):
+                result = {name: np.zeros_like(floor) for name in self.surface_names}
+            else:
+                result = super().thermal_perimeters(prof, exterior=True)
+            result["floor"] = floor*fractions["floor"]
+            return result
+        return super().thermal_perimeters(prof, exterior=exterior)
+
+    def equivalent_angular_width(self, prof):
+        _, base, top = self._radii(prof)
+        span = top**2-base**2
+        result = np.zeros_like(span)
+        np.divide(2*self.A_coolant(prof), span, out=result, where=span > 0)
+        return result
+
+    def open_fraction(self, prof):
+        result = np.zeros_like(prof.theta)
+        np.divide(self.equivalent_angular_width(prof), prof.theta, out=result, where=prof.theta > 0)
+        return result
+
+    def _fin_dimensions(self, prof):
+        # Retain the chamber's first-order axial-height rib model.
+        length = prof.h
+        return length, 2*self.sidewall_half_thickness(prof), 2*length
+
+
+class CrossSectionRounded(ChannelSection):
+    """Two circular lobes connected by straight tangent sidewalls.
+
+    Both input routes build the same boundary: sector radius/angle/wall
+    thickness, or internal floor and roof endpoint widths and height. Equal
+    widths give parallel sides; equal widths with full height equal to width
+    give a circle. A single wall thickness offsets all four surfaces.
+
+    height_input="full" measures bottom-to-top passage height; "base" measures
+    separation of lobe centres. For unequal endpoint widths and full height,
+    the less steep of the two possible tangent constructions is selected.
+    Invalid combinations raise rather than distorting the lobes. Angular
+    input retains its exact prescribed sidewall angle.
+    """
+
+    def __init__(self, n_points=16, *, height_input="full", exposure=None,
+                 exposure_angles=None, enable_fin=False):
         if height_input not in ("full", "base"):
             raise ValueError("height_input must be 'full' or 'base'")
-        super().__init__(n_points=n_points)
+        super().__init__(n_points, exposure=exposure, exposure_angles=exposure_angles,
+                         enable_fin=enable_fin)
         self._height_input = height_input
 
     @property
-    def height_input(self) -> str:
-        """Interpretation of ``SectionProfiles.h`` (defaults for older pickles)."""
+    def height_input(self):
         return getattr(self, "_height_input", "full")
 
-    def _beta_alpha(self, theta: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        """Return the inner (β) and outer (α) complementary angles."""
-        beta = (np.pi - theta) * 0.5
-        alpha = np.pi - beta
-        return beta, alpha
+    def _sector_inner_radius(self, prof):
+        radius = prof.sector_radius
+        if radius is None:
+            radius = prof.cross_section_base_point_path[:, 1]
+        q = radius*np.sin(prof.theta/2)-prof.t_wall
+        if np.any(~np.isfinite(q)) or np.any(q <= 0):
+            raise ValueError("Rounded inner arc radius must be finite and positive")
+        return q
 
-    def minimum_channel_height(self, prof: SectionProfiles) -> np.ndarray:
-        """Return the smallest full height at each station [m].
+    def minimum_channel_height(self, prof):
+        if prof.floor_width is not None:
+            from scipy.optimize import brentq
+            lower, upper = prof.floor_width, prof.roof_width
+            mean, delta = (lower+upper)/2, np.abs(upper-lower)/2
+            result = mean.copy()
+            for i in range(len(result)):
+                if delta[i] == 0:
+                    continue
+                ratio = delta[i]/mean[i]
+                sine = brentq(lambda z: z**3+2*ratio*z*z-ratio, 0, 1/np.sqrt(2), xtol=1e-15)
+                result[i] = (mean[i]+delta[i]/sine)/np.sqrt(1-sine*sine)
+            return result
+        return 2*self._sector_inner_radius(prof)
 
-        At zero base height the inner and outer lobes form a circle whose
-        radius is ``r*sin(theta/2) - t_wall``. The measurable height is then
-        that circle's diameter.
-        """
-        r = prof.sector_radius
-        if r is None:
-            r = prof.cross_section_base_point_path[:, 1]
-        inner_arc_radius = r * np.sin(prof.theta / 2.0) - prof.t_wall
-        return 2.0 * inner_arc_radius
-
-    def base_height(self, prof: SectionProfiles) -> np.ndarray:
-        """Return the rounded model's base height for the selected input mode.
-
-        If ``h_b`` is the old/base height and ``H`` is the measurable height,
-        the arc radii and straight-side length are::
-
-            q_inner = r sin(theta/2) - t_wall
-            q_outer = q_inner + h_b sin(theta/2)
-            L_side  = h_b cos(theta/2)
-
-        Hence ``H = q_inner + h_b + q_outer`` and this method evaluates
-        the exact inverse. A base height of zero is retained as the valid,
-        completely round limiting case.
-        """
+    def base_height(self, prof):
+        if prof.floor_width is not None:
+            lower, upper = self.boundary(prof)
+            return (upper.centers[:, 0]-lower.centers[:, 0]).copy()
         minimum = self.minimum_channel_height(prof)
-        invalid_radius = ~np.isfinite(minimum) | (minimum <= 0.0)
-        if np.any(invalid_radius):
-            i = int(np.flatnonzero(invalid_radius)[0])
-            raise ValueError(
-                "rounded channel inner arc radius must be positive; "
-                f"station {i} gives a minimum measurable height of {minimum[i]:.9g} m"
-            )
-
-        measured = np.asarray(prof.h, dtype=float)
+        measured = np.asarray(prof.h, float)
         if np.any(~np.isfinite(measured)):
-            raise ValueError("rounded channel height must be finite")
+            raise ValueError("Rounded channel height must be finite")
         if self.height_input == "base":
-            if np.any(measured < 0.0):
-                raise ValueError("rounded channel base height must be non-negative")
+            if np.any(measured < 0):
+                raise ValueError("Rounded channel base height must be non-negative")
             return measured.copy()
+        tolerance = 16*np.finfo(float).eps*np.maximum(minimum, 1)
+        if np.any(measured < minimum-tolerance):
+            raise ValueError("Rounded channel height is below the geometric minimum")
+        return np.maximum((measured-minimum)/(1+np.sin(prof.theta/2)), 0)
 
-        tolerance = 16.0 * np.finfo(float).eps * np.maximum(minimum, 1.0)
-        invalid_height = measured < minimum - tolerance
-        if np.any(invalid_height):
-            i = int(np.flatnonzero(invalid_height)[0])
-            raise ValueError(
-                "rounded channel height is below the geometric minimum; "
-                f"station {i} has {measured[i]:.9g} m but requires at least "
-                f"{minimum[i]:.9g} m"
-            )
-
-        half_theta = prof.theta / 2.0
-        denominator = 1.0 + np.sin(half_theta)
-        return np.maximum((measured - minimum) / denominator, 0.0)
-
-    def full_height(self, prof: SectionProfiles) -> np.ndarray:
-        """Return full internal height, independent of the input convention.
-
-        Uses the rounded model's existing relation
-        ``H = 2*q_inner + h_base*(1 + sin(theta/2))``.
-        The base parameter is distinct from the straight-side length
-        ``h_base*cos(theta/2)`` and excludes the rounded end lobes.
-        """
+    def full_height(self, prof):
+        if prof.floor_width is not None:
+            lower, upper = self.boundary(prof)
+            return upper.centers[:, 0]-lower.centers[:, 0]+lower.radii+upper.radii
         base = self.base_height(prof)
-        if self.height_input == "full":
-            return np.asarray(prof.h, dtype=float).copy()
-        half_theta = prof.theta / 2.0
-        return self.minimum_channel_height(prof) + base * (
-            1.0 + np.sin(half_theta)
-        )
-
-
-class CrossSectionRounded(_RoundedGeometryMixin, ChannelSection):
-    """Rounded cooling channel with a selectable input-height convention.
-
-    Parameters
-    ----------
-    n_points : int, optional
-        Resolution hint for discretized geometry. Default is 16.
-    height_input : {"full", "base"}, optional
-        Interpret the supplied height as full internal coolant height
-        (default), or as the legacy base-height parameter, excluding the
-        rounded lobes. Reports still default to :meth:`full_height`.
-
-    Examples
-    --------
-    Use the legacy base-height input::
-
-        CrossSectionRounded(height_input="base")
-    """
+        return self.minimum_channel_height(prof)+base*(1+np.sin(prof.theta/2))
 
     def boundary(self, prof):
-        return rounded_boundary(prof, self.base_height(prof))
+        def compute():
+            if prof.floor_width is not None:
+                return rounded_width_boundary(prof.floor_width, prof.roof_width, prof.h,
+                                              height_input=self.height_input)
+            return rounded_boundary(prof, self.base_height(prof))
+        return prof.cached((self, "boundary"), compute)
 
-    def centroid(self, prof):
-        """Coolant-area centroid relative to the inner-lobe center [u, v]."""
-        return self.boundary_metrics(prof)[1].copy()
+    def outer_boundary(self, prof):
+        return prof.cached((self, "outer_boundary"), lambda: tuple(
+            replace(curve, radii=curve.radii+prof.t_wall) for curve in self.boundary(prof)))
 
-    def A_coolant(self, prof: SectionProfiles) -> np.ndarray:
-        return self.boundary_metrics(prof)[0].copy()
+    def surface_thicknesses(self, prof):
+        return {name: prof.t_wall.copy() for name in self.surface_names}
 
-    def Dh_coolant(self, prof: SectionProfiles) -> np.ndarray:
-        area, _, lengths = self.boundary_metrics(prof)
-        return 4 * area / lengths.sum(axis=1)
-
-    def P_thermal(self, prof: SectionProfiles) -> np.ndarray:
-        """Compute thermal-contact perimeter [m]."""
-        r = prof.sector_radius
-        if r is None:
-            r = prof.cross_section_base_point_path[:, 1]
-        r1 = r * np.sin(prof.theta/2)
-        angle = np.radians(112.0)     # your chosen effective contact angle
-        return r1 * angle
-
-    def P_coolant(self, prof: SectionProfiles) -> np.ndarray:
-        """Compute coolant-wetted perimeter [m]."""
-        r = prof.sector_radius
-        if r is None:
-            r = prof.cross_section_base_point_path[:, 1]
-        r1 = r * np.sin(prof.theta/2)
-        angle = np.radians(112.0)
-        return (r1 - prof.t_wall) * angle
-    
-    def R_coolant_per_len(
-        self,
-        prof: SectionProfiles,
-        h_c: np.ndarray,
-        k_wall: np.ndarray | float,
-    ) -> np.ndarray:
-        """
-        Coolant-side thermal resistance per unit channel length [K m / W]. 
-        In this function I included a rib on the backside of the cooling channel, 
-        basically the same way as standard rib calculations with rib efficiency. 
-        Unsure if this is completely appropriate. But it had only a minor effect
-        on the RL10 validation case, which use low conductivity stainless. For 
-        thin copper walls adding the rib has a large effect. 
-        """
-        P_base = self.P_coolant(prof)
-        h = self.base_height(prof)
-
-        # Fin "perimeter contribution" from two side walls
-        P_fin = 2.0 * h * np.cos(prof.theta/2)
-
-        # Rib thickness is 2x wall thickness
-        t_rib = 2.0 * prof.t_wall
-
-        # Conductivity array
-        k = np.asarray(k_wall, dtype=float)
-        if k.ndim == 0:
-            k = np.full_like(h, float(k))
-
-        # Fin efficiency (adiabatic tip rectangular fin)
-        m = np.sqrt(2.0 * h_c / (k * t_rib))
-        mh = m * h
-        eta = np.ones_like(mh)
-        np.divide(np.tanh(mh), mh, out=eta, where=mh != 0.0)
-
-        P_eff = P_base + eta * P_fin
-
-        return 1.0 / (h_c * P_eff)
-
-    
-
-# ===================== Rounded internal implementation ===============================
-# TODO: not changed from normal rounded!!!!
-class CrossSectionRoundedInternal(_RoundedGeometryMixin, ChannelSection):
-    """Internal rounded channel with the same height options as
-    :class:`CrossSectionRounded`.
-
-    ``height_input="full"`` is the default; ``height_input="base"`` accepts
-    the legacy base-height parameter. ``n_points`` defaults to 16.
-    """
-
-    def boundary(self, prof):
-        return rounded_boundary(prof, self.base_height(prof))
-
-    def centroid(self, prof):
-        """Coolant-area centroid relative to the inner-lobe center [u, v]."""
-        return self.boundary_metrics(prof)[1].copy()
-
-    def A_coolant(self, prof: SectionProfiles) -> np.ndarray:
-        return self.boundary_metrics(prof)[0].copy()
-
-    def Dh_coolant(self, prof: SectionProfiles) -> np.ndarray:
-        area, _, lengths = self.boundary_metrics(prof)
-        return 4 * area / lengths.sum(axis=1)
-
-    def P_thermal(self, prof: SectionProfiles) -> np.ndarray:
-        """Compute thermal-contact perimeter [m]."""
-        r = prof.sector_radius
-        if r is None:
-            r = prof.cross_section_base_point_path[:, 1]
-        r1 = r * np.sin(prof.theta/2)
-        angle = np.radians(112.0)     # your chosen effective contact angle
-        return (r1 * angle)*2
-
-    def P_coolant(self, prof: SectionProfiles) -> np.ndarray:
-        """Compute coolant-wetted perimeter [m]."""
-        r = prof.sector_radius
-        if r is None:
-            r = prof.cross_section_base_point_path[:, 1]
-        r1 = r * np.sin(prof.theta/2)
-        angle = np.radians(112.0)
-        return ((r1 - prof.t_wall) * angle)*2
+    def _fin_dimensions(self, prof):
+        lower, _ = self.boundary(prof)
+        angle = lower.start_angles-np.pi/2
+        length = self.base_height(prof)
+        return length, 2*prof.t_wall, 2*length*np.cos(angle)

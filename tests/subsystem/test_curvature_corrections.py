@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from pyskyfire.regen import physics
+from pyskyfire.common import physics
 from pyskyfire.regen import coupled_solver
 from pyskyfire.regen.channel_placement import SurfacePlacement
 from pyskyfire.regen.channel_layout import resolve_analytical_layout

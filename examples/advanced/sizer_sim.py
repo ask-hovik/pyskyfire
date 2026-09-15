@@ -188,10 +188,10 @@ def setup_thrust_chamber(params):
         return params["ox_channel_height"]
 
     cross_section_squared = psf.regen.CrossSectionSquared(
-        rib_width=1e-3,
+        sidewall_half_thickness=(1e-3) / 2,
     )
 
-    cross_section_rounded = psf.regen.CrossSectionRounded(height_input="base")
+    cross_section_rounded = psf.regen.CrossSectionRounded(height_input="base", exposure_angles={"floor": 112 * np.pi / 180})
     fuel_transport = psf.thermo.FluidTransport(params["coolprop_fu"])
     ox_transport = psf.thermo.FluidTransport(params["coolprop_ox"])
 
@@ -232,7 +232,7 @@ def setup_thrust_chamber(params):
         name="Fuel Chamber Pass",
         contour=contour,
         coolant_transport=fuel_transport,
-        cross_section=cross_section_rounded,
+        cross_section=cross_section_squared,
         span=[0.1, -1.0],
         placement=fuel_channel_placement,
         walls=[copper_wall],
@@ -247,7 +247,7 @@ def setup_thrust_chamber(params):
         name="Oxidizer Nozzle Pass Outbound",
         contour=contour,
         coolant_transport=ox_transport,
-        cross_section=cross_section_rounded,
+        cross_section=cross_section_squared,
         span=ox_outbound_span,
         placement=nozzle_channel_placement,
         walls=[copper_wall],
@@ -441,20 +441,20 @@ def setup_initial_stations(params, thrust_chamber):
 
     stations = {}
     mdot_fu_est = thrust_chamber.combustion_transport.mdot_fu
-    stations["fu_engine_in"]            = psf.common.Station(params["p_tank_fu"], params["T_tank_fu"], mdot_fu_est*0.6,)
-    stations["fu_pump_in"]              = psf.common.Station(stations["fu_engine_in"].p, stations["fu_engine_in"].T, mdot_fu_est*0.6,)
-    stations["fu_pump_out"]             = psf.common.Station(params["p_c"] * 1.4, params["T_tank_fu"] + 10, mdot_fu_est*0.6,)
-    stations["fu_shaft_recirc"]         = psf.common.Station(params["p_c"] * 1.4, params["T_tank_fu"] + 10, 0.1,)
-    stations["fu_regen_duct_in"]        = psf.common.Station(params["p_c"] * 1.4, params["T_tank_fu"] + 10, mdot_fu_est*0.6,)
-    stations["fu_regen_in"]             = psf.common.Station(params["p_c"] * 1.5, params["T_tank_fu"] + 10, mdot_fu_est*0.6,)
-    stations["fu_regen_out"]            = psf.common.Station(params["p_c"] * 1.4, params["T_tank_fu"] + 250, mdot_fu_est*0.6,)
-    stations["fu_turbine_inlet_split"]  = psf.common.Station(params["p_c"] * 1.3, params["T_tank_fu"] + 250, mdot_fu_est,)
-    stations["fu_bypass_valve"]         = psf.common.Station(params["p_c"] * 1.3, params["T_tank_fu"] + 250, mdot_fu_est,)
-    stations["fu_turbine_in"]           = psf.common.Station(params["p_c"] * 1.2, params["T_tank_fu"] + 250, mdot_fu_est,)
-    stations["fu_turbine_out"]          = psf.common.Station(params["p_c"] * 1.1, params["T_tank_fu"] + 200, mdot_fu_est,)
-    stations["fu_turbine_outlet_merge"] = psf.common.Station(params["p_c"] * 1.1, params["T_tank_fu"] + 200, mdot_fu_est,)
-    stations["fu_injector_plenum"]      = psf.common.Station(params["p_c"] * 1.1, params["T_tank_fu"] + 200, mdot_fu_est,)
-    stations["fu_chamber_in"]           = psf.common.Station(params["p_c"], params["T_tank_fu"] + 200, mdot_fu_est,)
+    stations["fu_engine_in"]            = psf.network.Station(params["p_tank_fu"], params["T_tank_fu"], mdot_fu_est*0.6,)
+    stations["fu_pump_in"]              = psf.network.Station(stations["fu_engine_in"].p, stations["fu_engine_in"].T, mdot_fu_est*0.6,)
+    stations["fu_pump_out"]             = psf.network.Station(params["p_c"] * 1.4, params["T_tank_fu"] + 10, mdot_fu_est*0.6,)
+    stations["fu_shaft_recirc"]         = psf.network.Station(params["p_c"] * 1.4, params["T_tank_fu"] + 10, 0.1,)
+    stations["fu_regen_duct_in"]        = psf.network.Station(params["p_c"] * 1.4, params["T_tank_fu"] + 10, mdot_fu_est*0.6,)
+    stations["fu_regen_in"]             = psf.network.Station(params["p_c"] * 1.5, params["T_tank_fu"] + 10, mdot_fu_est*0.6,)
+    stations["fu_regen_out"]            = psf.network.Station(params["p_c"] * 1.4, params["T_tank_fu"] + 250, mdot_fu_est*0.6,)
+    stations["fu_turbine_inlet_split"]  = psf.network.Station(params["p_c"] * 1.3, params["T_tank_fu"] + 250, mdot_fu_est,)
+    stations["fu_bypass_valve"]         = psf.network.Station(params["p_c"] * 1.3, params["T_tank_fu"] + 250, mdot_fu_est,)
+    stations["fu_turbine_in"]           = psf.network.Station(params["p_c"] * 1.2, params["T_tank_fu"] + 250, mdot_fu_est,)
+    stations["fu_turbine_out"]          = psf.network.Station(params["p_c"] * 1.1, params["T_tank_fu"] + 200, mdot_fu_est,)
+    stations["fu_turbine_outlet_merge"] = psf.network.Station(params["p_c"] * 1.1, params["T_tank_fu"] + 200, mdot_fu_est,)
+    stations["fu_injector_plenum"]      = psf.network.Station(params["p_c"] * 1.1, params["T_tank_fu"] + 200, mdot_fu_est,)
+    stations["fu_chamber_in"]           = psf.network.Station(params["p_c"], params["T_tank_fu"] + 200, mdot_fu_est,)
 
     ox_regen_flow_fraction = float(params["ox_regen_flow_fraction"])
     if not 0.0 < ox_regen_flow_fraction < 1.0:
@@ -466,25 +466,25 @@ def setup_initial_stations(params, thrust_chamber):
     mdot_ox_direct_est = mdot_ox_main_est - mdot_ox_regen_est
     mdot_ox_bypass_est = mdot_ox_regen_est * params["zeta_ox_turbine_bypass"]
     mdot_ox_turbine_est = mdot_ox_regen_est - mdot_ox_bypass_est
-    stations["ox_engine_in"]            = psf.common.Station(params["p_tank_ox"], params["T_tank_ox"], mdot_ox_est*0.8,)
-    stations["ox_pump_in"]              = psf.common.Station(stations["ox_engine_in"].p, stations["ox_engine_in"].T, mdot_ox_est*0.8,)
-    stations["ox_stage1_pump_out"]      = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, mdot_ox_est*0.8,)
-    stations["ox_shaft_recirc"]         = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, 0.1,)
-    stations["ox_main_flow"]            = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, mdot_ox_main_est,)
-    stations["ox_direct_branch"]        = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, mdot_ox_direct_est,)
-    stations["ox_stage2_pump_in"]       = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, mdot_ox_regen_est,)
-    stations["ox_regen_duct_in"]        = psf.common.Station(params["p_c"] * 1.8, params["T_tank_ox"] + 15, mdot_ox_regen_est,)
-    stations["ox_regen_in"]             = psf.common.Station(params["p_c"] * 1.7, params["T_tank_ox"] + 15, mdot=mdot_ox_regen_est,)
-    stations["ox_regen_interstage"]     = psf.common.Station(params["p_c"] * 1.7, params["T_tank_ox"] + 130, mdot_ox_regen_est,)
-    stations["ox_regen_out"]            = psf.common.Station(params["p_c"] * 1.7, params["T_tank_ox"] + 250, mdot_ox_regen_est,)
-    stations["ox_turbine_inlet_split"]  = psf.common.Station(params["p_c"] * 1.6, params["T_tank_ox"] + 250, mdot_ox_regen_est,)
-    stations["ox_bypass_valve"]         = psf.common.Station(params["p_c"] * 1.6, params["T_tank_ox"] + 250, mdot_ox_bypass_est,)
-    stations["ox_turbine_in"]           = psf.common.Station(params["p_c"] * 1.6, params["T_tank_ox"] + 250, mdot_ox_turbine_est,)
-    stations["ox_turbine_out"]          = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 200, mdot_ox_turbine_est,)
-    stations["ox_heated_branch"]        = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 200, mdot_ox_regen_est,)
-    stations["ox_main_flow_merge"]      = psf.common.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 100, mdot_ox_main_est,)
-    stations["ox_injector_plenum"]      = psf.common.Station(params["p_c"] * 1.1, params["T_tank_ox"] + 100, mdot_ox_main_est,)
-    stations["ox_chamber_in"]           = psf.common.Station(params["p_c"], params["T_tank_ox"] + 100, mdot_ox_main_est,)
+    stations["ox_engine_in"]            = psf.network.Station(params["p_tank_ox"], params["T_tank_ox"], mdot_ox_est*0.8,)
+    stations["ox_pump_in"]              = psf.network.Station(stations["ox_engine_in"].p, stations["ox_engine_in"].T, mdot_ox_est*0.8,)
+    stations["ox_stage1_pump_out"]      = psf.network.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, mdot_ox_est*0.8,)
+    stations["ox_shaft_recirc"]         = psf.network.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, 0.1,)
+    stations["ox_main_flow"]            = psf.network.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, mdot_ox_main_est,)
+    stations["ox_direct_branch"]        = psf.network.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, mdot_ox_direct_est,)
+    stations["ox_stage2_pump_in"]       = psf.network.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 10, mdot_ox_regen_est,)
+    stations["ox_regen_duct_in"]        = psf.network.Station(params["p_c"] * 1.8, params["T_tank_ox"] + 15, mdot_ox_regen_est,)
+    stations["ox_regen_in"]             = psf.network.Station(params["p_c"] * 1.7, params["T_tank_ox"] + 15, mdot=mdot_ox_regen_est,)
+    stations["ox_regen_interstage"]     = psf.network.Station(params["p_c"] * 1.7, params["T_tank_ox"] + 130, mdot_ox_regen_est,)
+    stations["ox_regen_out"]            = psf.network.Station(params["p_c"] * 1.7, params["T_tank_ox"] + 250, mdot_ox_regen_est,)
+    stations["ox_turbine_inlet_split"]  = psf.network.Station(params["p_c"] * 1.6, params["T_tank_ox"] + 250, mdot_ox_regen_est,)
+    stations["ox_bypass_valve"]         = psf.network.Station(params["p_c"] * 1.6, params["T_tank_ox"] + 250, mdot_ox_bypass_est,)
+    stations["ox_turbine_in"]           = psf.network.Station(params["p_c"] * 1.6, params["T_tank_ox"] + 250, mdot_ox_turbine_est,)
+    stations["ox_turbine_out"]          = psf.network.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 200, mdot_ox_turbine_est,)
+    stations["ox_heated_branch"]        = psf.network.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 200, mdot_ox_regen_est,)
+    stations["ox_main_flow_merge"]      = psf.network.Station(params["p_c"] * 1.3, params["T_tank_ox"] + 100, mdot_ox_main_est,)
+    stations["ox_injector_plenum"]      = psf.network.Station(params["p_c"] * 1.1, params["T_tank_ox"] + 100, mdot_ox_main_est,)
+    stations["ox_chamber_in"]           = psf.network.Station(params["p_c"], params["T_tank_ox"] + 100, mdot_ox_main_est,)
 
     return stations
 
@@ -523,7 +523,7 @@ def engine_sizer(params, thrust_chamber):
     # tutorial:start:fuel-side-blocks
     # Fuel-side blocks
     blocks.append(
-        psf.common.MassFlowMergerBlock(
+        psf.network.MassFlowMergerBlock(
             name="Fuel Inlet Merge",
             st_in=["fu_engine_in", "fu_shaft_recirc"],
             st_out="fu_pump_in",
@@ -531,7 +531,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.PumpBlock(
+        psf.network.PumpBlock(
             name="Fuel Pump",
             st_in="fu_pump_in",
             st_out="fu_pump_out",
@@ -552,7 +552,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.MassFlowSplitterBlock(
+        psf.network.MassFlowSplitterBlock(
             name="Fuel Recirc. Split",
             st_in="fu_pump_out",
             st_out=["fu_regen_duct_in", "fu_shaft_recirc"],
@@ -564,7 +564,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.SimpleDuctBlock(
+        psf.network.SimpleDuctBlock(
             name="Duct Pump-Regen Fuel",
             st_in="fu_regen_duct_in",
             st_out="fu_regen_in",
@@ -573,7 +573,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.RegenBlock(
+        psf.network.RegenBlock(
             name="Regen Fuel Chamber Pass",
             st_in="fu_regen_in",
             st_out="fu_regen_out",
@@ -586,7 +586,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.SimpleDuctBlock(
+        psf.network.SimpleDuctBlock(
             name="Duct Regen-Turbine Fuel",
             st_in="fu_regen_out",
             st_out="fu_turbine_inlet_split",
@@ -595,7 +595,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.MassFlowSplitterBlock(
+        psf.network.MassFlowSplitterBlock(
             name="Fuel Split Turbine Bypass",
             st_in="fu_turbine_inlet_split",
             st_out=["fu_turbine_in", "fu_bypass_valve"],
@@ -607,7 +607,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.TurbineBlock(
+        psf.network.TurbineBlock(
             name="Fuel Turbine",
             st_in="fu_turbine_in",
             st_out="fu_turbine_out",
@@ -617,7 +617,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.MassFlowMergerBlock(
+        psf.network.MassFlowMergerBlock(
             name="Merge Turbine Bypass",
             st_in=["fu_turbine_out", "fu_bypass_valve"],
             st_out="fu_turbine_outlet_merge",
@@ -625,7 +625,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.SimpleDuctBlock(
+        psf.network.SimpleDuctBlock(
             name="Duct Turbine-Injector Fuel",
             st_in="fu_turbine_outlet_merge",
             st_out="fu_injector_plenum",
@@ -634,7 +634,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.SimpleDuctBlock(
+        psf.network.SimpleDuctBlock(
             name="Fu Injector",
             st_in="fu_injector_plenum",
             st_out="fu_chamber_in",
@@ -643,7 +643,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.TransmissionBlock(
+        psf.network.TransmissionBlock(
             name="Fuel Shaft",
             sink_keys=["P_Fuel Pump"],
             source_keys=["P_fuel_turbine_required"],
@@ -655,7 +655,7 @@ def engine_sizer(params, thrust_chamber):
     # tutorial:start:oxidizer-side-blocks
     # Oxidizer-side blocks
     blocks.append(
-        psf.common.MassFlowMergerBlock(
+        psf.network.MassFlowMergerBlock(
             name="Merge Ox Recirc",
             st_in=["ox_engine_in", "ox_shaft_recirc"],
             st_out="ox_pump_in",
@@ -663,7 +663,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.PumpBlock(
+        psf.network.PumpBlock(
             name="Ox Pump Stage 1",
             st_in="ox_pump_in",
             st_out="ox_stage1_pump_out",
@@ -680,7 +680,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.MassFlowSplitterBlock(
+        psf.network.MassFlowSplitterBlock(
             name="Split Ox Recirc",
             st_in="ox_stage1_pump_out",
             st_out=["ox_main_flow", "ox_shaft_recirc"],
@@ -692,7 +692,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.MassFlowSplitterBlock(
+        psf.network.MassFlowSplitterBlock(
             name="Split Ox Main Flow",
             st_in="ox_main_flow",
             st_out=["ox_stage2_pump_in", "ox_direct_branch"],
@@ -704,7 +704,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.PumpBlock(
+        psf.network.PumpBlock(
             name="Ox Pump Stage 2",
             st_in="ox_stage2_pump_in",
             st_out="ox_regen_duct_in",
@@ -726,7 +726,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.SimpleDuctBlock(
+        psf.network.SimpleDuctBlock(
             name="Duct Pump-Regen Ox",
             st_in="ox_regen_duct_in",
             st_out="ox_regen_in",
@@ -736,7 +736,7 @@ def engine_sizer(params, thrust_chamber):
     )
 
     blocks.append(
-        psf.common.RegenBlock(
+        psf.network.RegenBlock(
             name="Regen Ox Nozzle Outbound",
             st_in="ox_regen_in",
             st_out="ox_regen_interstage",
@@ -749,7 +749,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.RegenBlock(
+        psf.network.RegenBlock(
             name="Regen Ox Nozzle Return",
             st_in="ox_regen_interstage",
             st_out="ox_regen_out",
@@ -762,7 +762,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.SimpleDuctBlock(
+        psf.network.SimpleDuctBlock(
             name="Duct Regen-Turbine Ox",
             st_in="ox_regen_out",
             st_out="ox_turbine_inlet_split",
@@ -771,7 +771,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.MassFlowSplitterBlock(
+        psf.network.MassFlowSplitterBlock(
             name="Ox Split Turbine Bypass",
             st_in="ox_turbine_inlet_split",
             st_out=["ox_turbine_in", "ox_bypass_valve"],
@@ -783,7 +783,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.TurbineBlock(
+        psf.network.TurbineBlock(
             name="Ox Turbine",
             st_in="ox_turbine_in",
             st_out="ox_turbine_out",
@@ -793,7 +793,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.MassFlowMergerBlock(
+        psf.network.MassFlowMergerBlock(
             name="Merge Ox Bypass",
             st_in=["ox_turbine_out", "ox_bypass_valve"],
             st_out="ox_heated_branch",
@@ -801,7 +801,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.MassFlowMergerBlock(
+        psf.network.MassFlowMergerBlock(
             name="Merge Ox Main Flow",
             st_in=["ox_direct_branch", "ox_heated_branch"],
             st_out="ox_main_flow_merge",
@@ -809,7 +809,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.SimpleDuctBlock(
+        psf.network.SimpleDuctBlock(
             name="Duct Turbine-Injector Ox",
             st_in="ox_main_flow_merge",
             st_out="ox_injector_plenum",
@@ -818,7 +818,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.SimpleDuctBlock(
+        psf.network.SimpleDuctBlock(
             name="Ox Injector",
             st_in="ox_injector_plenum",
             st_out="ox_chamber_in",
@@ -827,7 +827,7 @@ def engine_sizer(params, thrust_chamber):
         )
     )
     blocks.append(
-        psf.common.TransmissionBlock(
+        psf.network.TransmissionBlock(
             name="Ox Shaft",
             sink_keys=["P_Ox Pump Stage 1", "P_Ox Pump Stage 2"],
             source_keys=["P_ox_turbine_required"],
@@ -853,7 +853,7 @@ def engine_sizer(params, thrust_chamber):
     # tutorial:end:pressure-drop-signals
 
     # tutorial:start:network-solve
-    net = psf.common.EngineNetwork(stations, signals, blocks)
+    net = psf.network.EngineNetwork(stations, signals, blocks)
     net.run_fixed_point(tol=1e-3, max_iter=200)
 
     return {

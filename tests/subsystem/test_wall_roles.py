@@ -102,7 +102,7 @@ def test_unmarked_wall_stubs_are_main_and_absent_liners_return_shaped_zero():
 
 
 @pytest.mark.parametrize("section", [
-    psf.regen.CrossSectionSquared(0.001),
+    psf.regen.CrossSectionSquared((0.001) / 2),
     psf.regen.CrossSectionRounded(height_input="base"),
 ])
 def test_multiple_main_layers_match_one_combined_wall_in_simulation_and_cad(section):
@@ -172,7 +172,7 @@ class _RibMaterial:
 
 
 @pytest.mark.parametrize("section", [
-    psf.regen.CrossSectionSquared(0.001),
+    psf.regen.CrossSectionSquared((0.001) / 2),
     psf.regen.CrossSectionRounded(height_input="base"),
 ])
 def test_circuits_keep_independent_fin_settings_and_materials(section):

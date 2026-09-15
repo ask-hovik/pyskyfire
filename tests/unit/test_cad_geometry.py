@@ -9,10 +9,9 @@ from pyskyfire.regen.cad_geometry import (
     PlanarArc,
     TangentBezier,
     build_hot_wall,
-    hot_wall_stations,
-    hot_wall_bridge,
+    hot_wall_regions,
+    hot_wall_revolve,
     join_hot_wall,
-    topology_runs,
     transverse_construction,
 )
 from pyskyfire.regen.channel_construction import build_channel_construction
@@ -39,7 +38,7 @@ def circuit(
         channel_wall_thickness=lambda x: np.full_like(np.asarray(x), 0.001),
         cross_section=CrossSectionRounded()
         if rounded
-        else CrossSectionSquared(rib_width=0.001),
+        else CrossSectionSquared(sidewall_half_thickness=(0.001) / 2),
     )
 
 
@@ -52,7 +51,7 @@ def layout_chamber(circuits, count=32, phases=None, contour_span=(0.0, 1.0)):
         channels.append(
             ResolvedChannel(f"channel_{i}", i, 0, path, count, 2 * np.pi / count)
         )
-    contour = SimpleNamespace(xs=np.array(contour_span))
+    contour = SimpleNamespace(xs=np.array(contour_span), r=circuits[0].contour.r)
     return SimpleNamespace(cooling_circuits=circuits, contour=contour), ChannelLayout(
         "test", tuple(channels)
     )
@@ -101,74 +100,17 @@ def test_principal_ellipse_parameters_preserve_arc_geometry_and_direction():
     np.testing.assert_allclose(points, arc.point(np.linspace(1, 0, 31)), atol=1e-15)
 
 
-def test_transition_stations_do_not_shrink_with_resolution():
-    spans = [(0.0, 0.6), (0.4, 1.0)]
-    for n in (11, 10001):
-        stations, intervals, uncovered = hot_wall_stations(
-            spans, np.linspace(0, 1, n), (0, 1), transition_fraction=0.1
-        )
-        np.testing.assert_allclose(intervals, [[0.35, 0.45], [0.55, 0.65]])
-        for a, b in intervals:
-            assert a in stations and b in stations
-            assert not np.any((stations > a) & (stations < b))
-        assert uncovered == 0
-
-
-def test_gap_is_one_transition_and_extent_stops_at_circuits():
-    with pytest.warns(UserWarning, match="not covered"):
-        stations, intervals, uncovered = hot_wall_stations(
-            [(0.1, 0.45), (0.46, 0.8)],
-            np.linspace(0, 1, 101),
-            (0, 1),
-            transition_length_m=0.1,
-        )
-    np.testing.assert_allclose(intervals, [[0.405, 0.505]])
-    assert stations[0] == 0.1 and stations[-1] == 0.8
-    assert uncovered == pytest.approx(0.31)
-
-
-def test_long_gap_retains_both_circuit_endpoints():
-    with pytest.warns(UserWarning):
-        stations, intervals, _ = hot_wall_stations(
-            [(0, 0.3), (0.6, 1)], np.linspace(0, 1, 11), (0, 1)
-        )
-    assert intervals == [(0.3, 0.6)]
-    assert 0.3 in stations and 0.6 in stations
-    assert not np.any((stations > 0.3) & (stations < 0.6))
-
-
-def test_coverage_is_union_and_warning_is_strictly_more_than_ten_percent():
-    import warnings
-
-    with warnings.catch_warnings(record=True) as caught:
-        _, _, missing = hot_wall_stations(
-            [(0, 0.5), (0.3, 0.9)], np.linspace(0, 0.9, 30), (0, 1)
-        )
-    assert missing == pytest.approx(0.1)
-    assert not caught
-    with pytest.warns(UserWarning):
-        hot_wall_stations([(0, 0.899)], [0, 0.899], (0, 1))
-
-
-def test_overlapping_transitions_and_invalid_controls_fail():
-    with pytest.raises(ValueError, match="Overlapping"):
-        hot_wall_stations(
-            [(0, 0.51), (0.5, 1)], [0, 0.5, 1], (0, 1), transition_fraction=0.1
-        )
-    with pytest.raises(ValueError, match="beyond"):
-        hot_wall_stations(
-            [(0, 0.01), (0.01, 1)], [0, 0.01, 1], (0, 1), transition_fraction=0.1
-        )
-    for value in (0, -1, np.nan):
-        with pytest.raises(ValueError):
-            hot_wall_stations([(0, 1)], [0, 1], (0, 1), transition_length_m=value)
-
-
 @pytest.mark.parametrize("rounded", [False, True])
 def test_complete_wall_profiles_and_tangent_connectors(rounded):
     c = circuit(rounded=rounded, helix=0.4, slope=0.03)
     chamber, layout = layout_chamber([c])
     wall = build_hot_wall(chamber, layout)
+    if not rounded:
+        assert wall["sections"] == wall["runs"] == []
+        assert len(wall["revolves"]) == 1
+        assert wall["fullContourAllowed"]
+        return
+    assert not wall["fullContourAllowed"]
     assert len(wall["sections"]) == 21
     for section in wall["sections"]:
         curves = section["curves"]
@@ -210,11 +152,12 @@ def test_mixed_wall_and_internal_gap_export():
     assert len(wall["sections"][0]["curves"]) == 128
     a, b = circuit((0, 0.495)), circuit((0.505, 0.95), rounded=True)
     chamber, layout = layout_chamber([a, b])
-    wall = build_hot_wall(chamber, layout, transition_length_m=0.04)
+    wall = build_hot_wall(chamber, layout, transition_fraction=0.04)
     positions = [s["plane"]["origin_mm"][2] / 1000 for s in wall["sections"]]
-    assert positions[0] == 0 and positions[-1] == 0.95
-    assert 0.48 in positions and 0.52 in positions
-    assert not any(0.48 < x < 0.52 for x in positions)
+    assert positions[0] == 0.505 and positions[-1] == 0.95
+    assert wall["revolves"][0]["span_mm"] == [0, 495]
+    assert wall["excludedInterleaveIntervals_mm"] == []
+    assert "bridges" not in wall
 
 
 def test_bezier_trim_control_changes_shape():
@@ -255,23 +198,6 @@ def test_one_helical_circuit_is_a_single_run_cad_can_pair_curve_by_curve():
         assert [curve["name"] for curve in section["curves"]] == run["curveNames"]
 
 
-def test_hand_offs_split_runs_contiguously_where_the_channels_change():
-    a, b = circuit((0, 0.495)), circuit((0.505, 0.95), rounded=True)
-    chamber, layout = layout_chamber([a, b])
-    wall = build_hot_wall(chamber, layout, transition_length_m=0.04)
-
-    runs = wall["runs"]
-    assert len(runs) > 1
-    covered = [index for run in runs for index in run["sectionIndices"]]
-    assert covered == list(range(len(wall["sections"])))
-    for run in runs:
-        assert run["sectionIndices"] == list(
-            range(run["sectionIndices"][0], run["sectionIndices"][-1] + 1)
-        )
-    for before, after in zip(runs, runs[1:]):
-        assert before["curveNames"] != after["curveNames"]
-
-
 def _curve_from_data(data):
     if data["kind"] == "bezier":
         return TangentBezier(np.array(data["controlPoints_uv_mm"]))
@@ -282,107 +208,6 @@ def _curve_from_data(data):
         np.radians(data["startAngle_deg"]),
         np.radians(data["endAngle_deg"]),
     )
-
-
-def _hand_off_wall():
-    a, b = circuit((0, 0.495)), circuit((0.505, 0.95), rounded=True)
-    chamber, layout = layout_chamber([a, b])
-    return build_hot_wall(chamber, layout, transition_length_m=0.04)
-
-
-def test_a_hand_off_splits_both_profiles_onto_one_set_of_azimuths():
-    """Unlike profiles cannot pair by index until they are cut to match."""
-    wall = _hand_off_wall()
-
-    (bridge,) = wall["bridges"]
-    before, after = bridge["sections"]
-    assert len(before["curves"]) == len(after["curves"]) == len(bridge["curveNames"])
-    # Splitting only adds curve starts, so each side gains the other's.
-    assert len(bridge["curveNames"]) > max(
-        len(wall["sections"][bridge["beforeSection"]]["curves"]),
-        len(wall["sections"][bridge["afterSection"]]["curves"]),
-    )
-
-
-def test_split_hand_off_profiles_stay_closed_and_wind_once():
-    for section in _hand_off_wall()["bridges"][0]["sections"]:
-        curves = [_curve_from_data(curve) for curve in section["curves"]]
-        for first, second in zip(curves, curves[1:] + curves[:1]):
-            np.testing.assert_allclose(first.point(1), second.point(0), atol=1e-10)
-        points = np.vstack(
-            [curve.point(np.linspace(0, 1, 41))[:-1] for curve in curves]
-        )
-        points = np.vstack([points, points[0]])
-        angles = np.unwrap(np.arctan2(points[:, 1], points[:, 0]))
-        assert np.all(np.diff(angles) > -1e-9)
-        assert angles[-1] - angles[0] == pytest.approx(2 * np.pi)
-
-
-def test_paired_hand_off_spans_start_at_the_same_azimuth():
-    """Pairing by azimuth is what lets one loft carry several spans."""
-    before, after = _hand_off_wall()["bridges"][0]["sections"]
-
-    for first, second in zip(before["curves"], after["curves"]):
-        angles = [
-            np.arctan2(*_curve_from_data(curve).point(0.0)[::-1])
-            for curve in (first, second)
-        ]
-        assert abs((angles[0] - angles[1] + np.pi) % (2 * np.pi) - np.pi) < 1e-6
-
-
-def test_splitting_a_hand_off_profile_reproduces_its_curves_exactly():
-    def ring(count, phase):
-        return [
-            (
-                f"{count}_{i}",
-                PlanarArc(
-                    np.zeros(2),
-                    np.array([1.0, 0.0]),
-                    np.array([0.0, 1.0]),
-                    (i + phase) * 2 * np.pi / count,
-                    (i + 1 + phase) * 2 * np.pi / count,
-                ),
-            )
-            for i in range(count)
-        ]
-
-    # Interleaved starts, half a curve apart, so none of them are merged.
-    names, first, second = hot_wall_bridge(ring(5, 0.0), ring(5, 0.5))
-
-    assert len(names) == len(first) == len(second) == 10
-    for pieces in (first, second):
-        points = np.vstack([curve.point(np.linspace(0, 1, 9)) for _, curve in pieces])
-        # Both profiles are unit circles, so every split point stays on one.
-        np.testing.assert_allclose(np.linalg.norm(points, axis=1), 1.0, atol=1e-12)
-
-
-def test_a_borrowed_cut_too_close_to_a_curve_start_is_merged_into_it():
-    """Cutting there would leave one profile a sliver the other never has."""
-
-    def ring(count, phase):
-        return [
-            (
-                f"{count}_{i}",
-                PlanarArc(
-                    np.zeros(2),
-                    np.array([1.0, 0.0]),
-                    np.array([0.0, 1.0]),
-                    (i + phase) * 2 * np.pi / count,
-                    (i + 1 + phase) * 2 * np.pi / count,
-                ),
-            )
-            for i in range(count)
-        ]
-
-    names, first, second = hot_wall_bridge(ring(5, 0.0), ring(5, 0.01))
-
-    assert len(names) == 5
-    for pieces in (first, second):
-        extents = [
-            np.ptp(np.unwrap(np.arctan2(*curve.point(np.linspace(0, 1, 9)).T[::-1])))
-            for _, curve in pieces
-        ]
-        assert min(extents) > 0.9 * 2 * np.pi / 5
 
 
 def test_runs_reject_a_station_that_is_not_a_construction_sample():
@@ -396,24 +221,192 @@ def test_runs_reject_a_station_that_is_not_a_construction_sample():
         _station_index(stations, 0.75)
 
 
-def test_absolute_transition_length_overrides_fraction():
-    stations, intervals, _ = hot_wall_stations(
-        [(0, 0.5), (0.5, 2)],
-        np.linspace(0, 2, 101),
-        (0, 2),
-        transition_fraction=0.1,
-        transition_length_m=0.04,
+@pytest.mark.parametrize("helix", [0, 6])
+def test_squared_wall_revolves_only_covered_union_and_offers_full_contour(helix):
+    a, b = circuit((0.1, 0.4), helix=helix), circuit((0.6, 0.9), helix=helix)
+    chamber, layout = layout_chamber([a, b])
+    with pytest.warns(UserWarning, match="not covered"):
+        wall = build_hot_wall(chamber, layout)
+    assert [p["span_mm"] for p in wall["revolves"]] == [[100, 400], [600, 900]]
+    assert wall["fullContour"]["span_mm"] == [0, 1000]
+    assert wall["sections"] == wall["runs"] == []
+    assert wall["uncoveredLengthFraction"] == pytest.approx(0.4)
+
+
+def test_squared_interleave_uses_one_unbroken_revolve():
+    chamber, layout = layout_chamber([circuit((0, 0.6)), circuit((0.4, 1))])
+    wall = build_hot_wall(chamber, layout, transition_fraction=0.2)
+    assert [p["span_mm"] for p in wall["revolves"]] == [[0, 1000]]
+    assert wall["excludedInterleaveIntervals_mm"] == []
+
+
+def test_rounded_interleave_leaves_percentage_gap_and_preserves_shared_span():
+    a, b = circuit((0, 0.6), count=64), circuit((0.4, 1), count=64, rounded=True)
+    chamber, layout = layout_chamber([a, b], phases=[0, np.pi / 32])
+    wall = build_hot_wall(chamber, layout, transition_fraction=0.04)
+    np.testing.assert_allclose(
+        wall["excludedInterleaveIntervals_mm"], [[380, 420], [580, 620]]
     )
-    np.testing.assert_allclose(intervals, [[0.48, 0.52]])
-    assert 0.48 in stations and 0.52 in stations
+    assert wall["revolves"][0]["span_mm"] == [0, 380]
+    positions = np.array([s["plane"]["origin_mm"][2] for s in wall["sections"]])
+    runs = wall["runs"]
+    assert len(runs) == 2
+    np.testing.assert_allclose(
+        positions[runs[0]["sectionIndices"]][[0, -1]], [420, 580]
+    )
+    np.testing.assert_allclose(
+        positions[runs[1]["sectionIndices"]][[0, -1]], [620, 1000]
+    )
+    assert len(runs[0]["curveNames"]) == 128
+    assert "fullContour" not in wall and not wall["fullContourAllowed"]
 
 
-def test_fraction_uses_full_contour_not_shorter_circuit_extent():
+def test_repeated_rounded_run_does_not_loft_across_a_removed_margin():
+    # A short secondary circuit is swallowed by overlapping margins. The same
+    # primary curves remain on both sides but must still be separate lofts.
+    a, b = circuit(rounded=True), circuit((0.49, 0.51))
+    chamber, layout = layout_chamber([a, b])
+    wall = build_hot_wall(chamber, layout, transition_fraction=0.04)
+    first, second = wall["runs"]
+    assert first["curveNames"] == second["curveNames"]
+    np.testing.assert_allclose(wall["excludedInterleaveIntervals_mm"], [[470, 530]])
+    assert wall["sections"][first["sectionIndices"][-1]]["plane"]["origin_mm"][2] == 470
+    assert wall["sections"][second["sectionIndices"][0]]["plane"]["origin_mm"][2] == 530
+
+
+@pytest.mark.parametrize("fraction", [0, -1, 1.01, np.nan, np.inf])
+def test_invalid_transition_fraction_fails(fraction):
+    with pytest.raises(ValueError, match="fraction"):
+        hot_wall_regions([(0, 1)], [True], (0, 1), transition_fraction=fraction)
+
+
+def test_transition_fraction_uses_full_contour_length():
+    regions, exclusions, _ = hot_wall_regions(
+        [(0, 1.2), (0.8, 2)], [False, False], (0, 2), transition_fraction=0.04
+    )
+    np.testing.assert_allclose(exclusions, [[0.76, 0.84], [1.16, 1.24]])
+    np.testing.assert_allclose(
+        [(r["start"], r["end"]) for r in regions],
+        [(0, 0.76), (0.84, 1.16), (1.24, 2)],
+    )
+
+
+def test_coverage_warning_uses_union_and_strict_ten_percent_threshold():
     import warnings
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
-        _, intervals, _ = hot_wall_stations(
-            [(0.2, 0.5), (0.5, 0.8)], [0.2, 0.5, 0.8], (0, 2), transition_fraction=0.1
+    with warnings.catch_warnings(record=True) as caught:
+        _, _, missing = hot_wall_regions([(0, 0.5), (0.3, 0.9)], [True, True], (0, 1))
+    assert missing == pytest.approx(0.1)
+    assert not caught
+    with pytest.warns(UserWarning, match="not covered"):
+        hot_wall_regions([(0, 0.899)], [True], (0, 1))
+
+
+def _revolve_curve_points(curve):
+    """The (radius, axial) mm points a revolve curve has to pass through."""
+    if curve["kind"] == "spline":
+        return np.array(curve["points_uv_mm"])
+    return np.array(curve["controlPoints_uv_mm"])[[0, -1]]
+
+
+def test_revolve_fits_one_spline_per_smooth_run_and_cuts_at_the_throat():
+    from pyskyfire.regen import Contour
+
+    contour = Contour(
+        xs=[-1, -0.7, -0.3, 0, 0.4, 1],
+        rs=[0.3, 0.3, 0.2, 0.1, 0.2, 0.4],
+        chamber_angle=0.2,
+        nozzle_angle=0.3,
+    )
+    for span, kinds in [
+        ((-1, 1), ["spline", "spline"]),
+        ((-0.81, 0.23), ["spline", "bezier"]),
+    ]:
+        profile = hot_wall_revolve(contour, *span)
+        assert profile["span_mm"] == [v * 1000 for v in span]
+        # Smooth runs become one curve each; the throat's independent slopes
+        # stay a corner because they end up on a curve boundary.
+        assert [curve["kind"] for curve in profile["curves"]] == kinds
+        pieces = [_revolve_curve_points(curve) for curve in profile["curves"]]
+        for points in pieces:
+            np.testing.assert_allclose(
+                points[:, 0] / 1000, contour.r(points[:, 1] / 1000), atol=1e-15
+            )
+        np.testing.assert_allclose(pieces[0][-1], pieces[1][0], atol=1e-15)
+        assert pieces[0][-1][1] == 0.0
+        assert [pieces[0][0][1], pieces[-1][-1][1]] == [v * 1000 for v in span]
+
+    # A converging run interpolates every contour knot it covers, trimmed
+    # spans included, so CAD never has to infer the shape between them.
+    converging = hot_wall_revolve(contour, -0.81, 0.23)["curves"][0]
+    np.testing.assert_allclose(
+        np.array(converging["points_uv_mm"])[:, 1], [-810, -700, -300, 0]
+    )
+
+
+def test_revolve_cuts_a_spline_at_every_corner_of_a_faceted_contour():
+    """An interpolating contour corners at each point; splines must not round it."""
+    xs = np.array([-1.0, -0.5, 0.0, 0.5, 1.0])
+    rs = np.array([0.3, 0.15, 0.1, 0.25, 0.3])
+    contour = SimpleNamespace(xs=xs, r=lambda x: np.interp(x, xs, rs))
+
+    curves = hot_wall_revolve(contour, -1.0, 1.0)["curves"]
+    assert [curve["kind"] for curve in curves] == ["bezier"] * 4
+    for curve, (a, b) in zip(curves, zip(rs, rs[1:])):
+        control = np.array(curve["controlPoints_uv_mm"])
+        np.testing.assert_allclose(control[[0, -1], 0] / 1000, [a, b], atol=1e-15)
+
+
+def test_multiple_seeds_of_one_circuit_are_not_interleave_boundaries():
+    c = circuit(rounded=True, count=64)
+    chamber, layout = layout_chamber([c])
+    path = c.reference_path.copy()
+    path[:, 2] += np.pi / 32
+    second = ResolvedChannel("second_seed", 0, 1, path, 32, np.pi / 16)
+    layout = ChannelLayout("test", (*layout.channels, second))
+    wall = build_hot_wall(chamber, layout)
+    assert wall["excludedInterleaveIntervals_mm"] == []
+    assert len(wall["runs"]) == 1
+
+
+def test_mixed_helical_wall_preserves_square_and_rounded_curve_correspondence():
+    circuits = [circuit(count=64, helix=6), circuit(count=64, rounded=True, helix=6)]
+    chamber, layout = layout_chamber(circuits, phases=[0, np.pi / 32])
+    wall = build_hot_wall(chamber, layout)
+    assert wall["revolves"] == []
+    (run,) = wall["runs"]
+    first = wall["sections"][0]["curves"]
+    last = wall["sections"][-1]["curves"]
+    rotation = np.array([[np.cos(6), -np.sin(6)], [np.sin(6), np.cos(6)]])
+    for start, end in zip(first, last):
+        assert start["name"] == end["name"]
+        points = _curve_from_data(start).point(np.linspace(0, 1, 5))
+        np.testing.assert_allclose(
+            _curve_from_data(end).point(np.linspace(0, 1, 5)),
+            points @ rotation.T,
+            atol=1e-10,
         )
-    np.testing.assert_allclose(intervals, [[0.4, 0.6]])
+    assert len(run["curveNames"]) == 128
+
+
+def test_rounded_gap_stops_lofts_at_circuit_ends_without_transition():
+    chamber, layout = layout_chamber(
+        [circuit((0, 0.495), rounded=True), circuit((0.505, 1), rounded=True)]
+    )
+    wall = build_hot_wall(chamber, layout, transition_fraction=0.04)
+    positions = np.array([s["plane"]["origin_mm"][2] for s in wall["sections"]])
+    assert len(wall["runs"]) == 2
+    np.testing.assert_allclose(
+        positions[wall["runs"][0]["sectionIndices"]][[0, -1]], [0, 495]
+    )
+    np.testing.assert_allclose(
+        positions[wall["runs"][1]["sectionIndices"]][[0, -1]], [505, 1000]
+    )
+    assert wall["excludedInterleaveIntervals_mm"] == []
+
+
+def test_percentage_gap_can_consume_all_hot_wall_without_generating_a_bridge():
+    chamber, layout = layout_chamber([circuit(), circuit((0.4, 0.6), rounded=True)])
+    wall = build_hot_wall(chamber, layout, transition_fraction=1)
+    assert wall["sections"] == wall["runs"] == wall["revolves"] == []
+    assert wall["excludedInterleaveIntervals_mm"] == [[0, 1000]]

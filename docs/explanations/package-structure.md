@@ -57,10 +57,13 @@ The package content is as follows:
 src/pyskyfire/
 ├── __init__.py
 ├── common/
+├── network/
 ├── regen/
 ├── thermo/
 ├── pump/
 ├── turbine/
+├── heat_exchanger/
+├── ducts/
 └── viz/
 ```
 
@@ -84,16 +87,28 @@ The top-level file `src/pyskyfire/__init__.py` marks `pyskyfire` as a Python pac
 
 ### `pyskyfire.common`
 
-`common` contains objects and helper classes that are used by several other parts of Pyskyfire. It is where broadly useful concepts live: solids, results, engine stations, and engine-cycle blocks. Fluid definitions and property models belong to `thermo`.
+`common` holds dependency-free primitives that any other subpackage can use. It does not import from `regen`, `ducts`, `pump`, `turbine`, `network`, or `viz` — this keeps it a true leaf package and avoids circular imports. Fluid definitions and property models belong to `thermo`.
 
 | Module | Role |
 |---|---|
 | `solids.py` | Defines material-property models for solids. These can represent constant, polynomial, tabulated, or piecewise temperature-dependent properties such as thermal conductivity. |
 | `results.py` | Defines a dictionary-like `Results` container with dot access and save/load functionality. This is useful for storing simulation outputs in a convenient way. |
-| `engine_network.py` | Defines `Station` objects and the `EngineNetwork` fixed-point framework. This is used to connect pumps, turbines, cooling circuits, and other components into a larger engine-cycle calculation. |
-| `blocks.py` | Defines the block interface used by the engine network. A block reads stations and/or scalar signals, performs a calculation, and returns updated stations and signals. |
+| `section_geometry.py` | Defines 2D cross-section primitives (circular and elliptical arcs, lines, boundary construction) shared by cooling-channel geometry in `regen` and duct/volute geometry in `ducts`. |
+| `physics.py` | Shared heat-transfer functions: Bartz, Colburn, Gnielinski and recovery temperature. |
+| `friction.py` | Shared Darcy factors and continuous-curvature corrections. |
+| `momentum.py` | Shared reversible acceleration pressure change. |
 | `constants.py` | Stores shared constants that may be used across modules. Keeping constants in one place avoids repeating the same numbers throughout the code. |
 | `__init__.py` | Re-exports selected objects from the `common` subpackage so they are easier to import. |
+
+### `pyskyfire.network`
+
+`network` connects component models from other subpackages into a full engine-cycle calculation. Unlike `common`, it sits above the other subpackages: it is free to import from `regen`, `ducts`, `thermo`, and `common`.
+
+| Module | Role |
+|---|---|
+| `engine_network.py` | Defines `Station` objects and the `EngineNetwork` fixed-point framework. This is used to connect pumps, turbines, cooling circuits, and other components into a larger engine-cycle calculation. |
+| `blocks.py` | Defines the block interface used by the engine network. A block reads stations and/or scalar signals, performs a calculation, and returns updated stations and signals. |
+| `__init__.py` | Re-exports selected objects from the `network` subpackage so they are easier to import. |
 
 ### `pyskyfire.regen`
 
@@ -116,7 +131,7 @@ wall temperatures, coolant temperatures, pressure losses, heat fluxes
 | `channel_height.py` | Contains logic for channel-height distributions along the chamber. This lets cooling-channel geometry vary with axial position. |
 | `channel_placement.py` | Describes how cooling channels are placed around or inside the chamber wall. This includes channel counts and placement logic that affect per-channel mass flow. |
 | `thrust_chamber.py` | Ties the physical thrust-chamber model together. It contains wall layers, cooling circuits, film-cooling inputs, and the chamber object used by the solver. |
-| `physics.py` | Contains local engineering correlations used by the solver, such as Bartz-style hot-gas heat transfer, Colburn coolant-side heat transfer, Reynolds number, Darcy friction factor, and adiabatic wall temperature. |
+| `common.physics` (imported) | Shared engineering correlations used by the solver. |
 | `solver.py` | Runs the regenerative-cooling calculation. It marches along the cooling circuit, solves local wall heat balances, and updates coolant temperature and pressure. |
 | `coolant_properties.py` | Defines the regenerative-cooling film-property policy through `film_properties(resolver, T_film, p, getters)`, separate from the general fluid-state resolver in `thermo.state`. |
 | `film_solver.py` | Contains film-cooling model functionality. Film cooling is separate from regenerative cooling because coolant is injected into the hot-gas side rather than only flowing inside wall channels. |
@@ -165,9 +180,28 @@ name; pass a `thermo.FluidTransport` instance.
 Old stored pickle files may require regenerating because modules and class names
 have changed. Compatibility with those files is not guaranteed.
 
+### `pyskyfire.ducts`
+
+`ducts` holds duct hydraulics that no single component owns: the friction
+physics shared by cooling channels and piping, explicit pipe geometry, and
+volute and collector manifolds. It depends only on `common` for planar section
+primitives and on `thermo` for fluid state records, and it imports from neither
+`regen` nor `network`, so cooling channels, turbopump hardware and engine-cycle
+adapters can all build on it without a circular import.
+
+| Module | Role |
+|---|---|
+| `path.py` | Shared path nodes, stations, connections, rigid placement, and transported frames. |
+| `common.friction` (imported) | Geometry-agnostic friction correlations shared with regen and heat exchangers. |
+| `pipe.py` | Explicit pipe geometry and its pressure-loss marching solver. |
+| `volute_section.py` | Volute cross-section families: an elliptical bore at fixed inlet slot width, sized by one parameter and reshaped by a second. |
+| `area_law.py` | Rules relating azimuth to passage size: conservation of angular momentum for a shaped volute, uniform area for a collector. |
+| `exit_cone.py` | The duct carrying a volute's collected flow to its pipe flange, at any angle between tangential and radial and any elevation out of the volute's own plane. |
+| `volute.py` | Volute geometry generation and Aungier's one-dimensional loss analysis. |
+
 ### `pyskyfire.pump` / `pyskyfire.turbine`
 
-The `pump` and `turbine` subpackages contain tools for turbopumps. They are both under development, and currently the pyskyfire package works fine without them. In the future, these packages will generate pump, turbine and manifold geometries, and expose other turbopump-relevant properties such as eigenfrequencies of the turbopump assembly. 
+The `pump` and `turbine` subpackages contain tools for turbopumps. They are both under development, and currently the pyskyfire package works fine without them. In the future, these packages will generate pump and turbine geometries (volute manifolds now live in `pyskyfire.ducts`), and expose other turbopump-relevant properties such as eigenfrequencies of the turbopump assembly. 
 
 ### `pyskyfire.viz`
 
@@ -182,6 +216,7 @@ The `pump` and `turbine` subpackages contain tools for turbopumps. They are both
 | `plot_common.py` | Shared plotting utilities used by several plotting modules. |
 | `engine_viz.py` | 3D engine and cooling-channel visualisation tools. This includes geometry-oriented views of cooling circuits and engine structure. |
 | `impeller_viz.py` | Visualisation tools for pump and impeller geometry. |
+| `components.py` | Adapts engineering objects — thrust chambers, impellers, pipes, volutes — into scene hierarchies. |
 | `report.py` | Report-generation helpers for collecting plots, tables, and simulation summaries. |
 | `lookup_tables.py` | Lookup-table support used by plotting or reporting workflows. |
 | `__init__.py` | Re-exports selected visualisation functions and classes for easier imports. |
@@ -190,11 +225,11 @@ The `pump` and `turbine` subpackages contain tools for turbopumps. They are both
 
 The subpackages each have a responsibility, but in order to run a regenerative cooling analysis or a full cycle analysis, the packages work together. A typical regenerative-cooling analysis might work like this:
 
-1. `common` defines shared concepts such as solids, stations, blocks, and results.
+1. `common` defines shared, dependency-free primitives such as solids, results, and section geometry.
 2. `thermo` defines fluids and provides gas and coolant state and property models.
 3. `regen` defines the thrust chamber, cooling channels, wall layers, heat-transfer correlations, and regenerative-cooling solver.
 4. `pump` and `turbine` provide machinery-related utilities and can be connected into an engine-cycle model.
-5. `common.engine_network` and `common.blocks` allow component models to be connected into a full engine network.
+5. `network.engine_network` and `network.blocks` allow component models to be connected into a full engine network.
 6. `viz` turns the resulting data into plots, reports, and geometry visualisations.
 
 Geometry, material data, gas properties, heat-transfer correlations, numerical solvers, engine-cycle logic, and visualisation are different responsibilities. The idea is that keeping these responsibilities in different subpackages makes the code easier to test, replace, and understand.
@@ -264,7 +299,7 @@ For regenerative cooling, start with:
 | `examples/` or `validation/regen_vali/...` | Shows a complete setup script where the objects are actually created and connected. |
 | `regen/thrust_chamber.py` | Shows how the physical thrust chamber, wall layers, and cooling circuits are represented. |
 | `regen/coupled_solver.py` | Shows the regenerative and film-coupled cooling solve procedure. |
-| `regen/physics.py` | Shows the local equations and correlations used by the solver. |
+| `common/physics.py` | Shows the local equations and correlations used by the solver. |
 | `thermo/aerothermodynamics.py` | Shows where the hot-gas properties come from. |
 | `viz/plot_regen.py` | Shows how regenerative-cooling results are plotted. |
 
@@ -272,8 +307,8 @@ For engine-cycle work, start with:
 
 | Start here | Why |
 |---|---|
-| `common/blocks.py` | Defines the component blocks that read and write stations/signals. |
-| `common/engine_network.py` | The underlying orchestrator that connects the blocks. |
+| `network/blocks.py` | Defines the component blocks that read and write stations/signals. |
+| `network/engine_network.py` | The underlying orchestrator that connects the blocks. |
 
 ## 6. Summary
 
@@ -291,7 +326,8 @@ Pyskyfire is organised like a typical Python engineering package:
 
 Inside `src/pyskyfire/`:
 
-- `common` contains shared data structures, solid-material helpers, results containers, and engine-network logic.
+- `common` contains dependency-free shared primitives: solid-material helpers, results containers, and section geometry.
+- `network` contains the engine-cycle blocks and the `EngineNetwork` orchestrator that connects them.
 - `regen` contains thrust-chamber geometry, cooling-channel definitions, heat-transfer correlations, and the regenerative-cooling solver.
 - `thermo` provides fluid definitions, state resolution, transport-property interfaces, and CEA-based aerothermodynamics.
 - `pump` contains preliminary centrifugal pump and impeller design tools.
@@ -299,3 +335,11 @@ Inside `src/pyskyfire/`:
 - `viz` contains plotting, reporting, and visualisation tools.
 
 Pyskyfire is a set of cooperating objects and modules. The package separates geometry, properties, physics, solvers, engine-cycle blocks, and visualisation, and orchestrates them together to run a regenerative cooling or full cycle simulation. 
+
+### `pyskyfire.heat_exchanger`
+
+`circuit.py` defines channel banks, prescribed gas, and explicit thermal/flow
+connections. `solver.py` couples segment heat rates to enthalpy and static
+pressure. `chamber.py` places assemblies in prescribed chamber flow and reports
+displaced volume. Paths come from `ducts.path`, sections from `regen.cross_section`,
+and scalar correlations from `common`. See [Heat exchangers](../howto/heat-exchangers.md).

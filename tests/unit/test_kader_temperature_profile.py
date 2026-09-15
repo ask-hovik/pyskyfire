@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from pyskyfire.regen import physics
+from pyskyfire.common import physics
 from pyskyfire.viz import PlotTemperatureProfile
 
 

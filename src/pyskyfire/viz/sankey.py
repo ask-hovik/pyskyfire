@@ -7,7 +7,7 @@ between them.  This gives splitters and mergers their expected Sankey meaning:
 * a merger's branch-link widths are the inlet-station mass flows; and
 * an ordinary one-in/one-out block uses its outlet-station mass flow.
 
-The only required input is a converged :class:`~pyskyfire.common.EngineNetwork`.
+The only required input is a converged :class:`~pyskyfire.network.EngineNetwork`.
 """
 
 from __future__ import annotations
@@ -202,7 +202,7 @@ class PlotMassFlowSankey(PlotBase):
     Parameters
     ----------
     engine_network:
-        A converged :class:`~pyskyfire.common.EngineNetwork`.  It must expose
+        A converged :class:`~pyskyfire.network.EngineNetwork`.  It must expose
         ``stations`` and ``blocks``.  The station map supplies the converged
         mass flows; block ``station_inputs`` / ``station_outputs`` metadata
         supplies connectivity.

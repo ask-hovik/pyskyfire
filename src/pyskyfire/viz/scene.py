@@ -165,12 +165,17 @@ class Scene:
     world-space Anchor. Attachment mates their outward x axes in opposition.
     It is a one-time placement calculation, with no fluid-network constraints.
     Explicit placement and anchor placement are mutually exclusive.
+
+    ``show_axes`` adds a corner orientation triad marking the scene axes
+    (x red, y green, z blue). It is an orientation cue only, not a measuring
+    grid: it carries no ticks and does not indicate the origin or scale.
     """
 
-    def __init__(self, *, title="Pyskyfire 3D", color_by=None, clim=None):
+    def __init__(self, *, title="Pyskyfire 3D", color_by=None, clim=None, show_axes=False):
         self.title = title
         self.color_by = color_by
         self.clim = clim
+        self.show_axes = show_axes
         self.nodes = []
 
     def add(self, component, *, name=None, transform=None, position=None,

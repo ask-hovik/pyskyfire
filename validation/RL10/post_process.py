@@ -15,12 +15,15 @@ report from whichever result files are present:
 At least one of the two files must exist.
 """
 
+import math
 import os
 import json
 from types import SimpleNamespace
 
 import pyskyfire as psf
 import numpy as np
+
+import plumbing
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -35,6 +38,14 @@ NETWORK_LAYOUT_FILENAME = "rl10a-3-3a-engine-cycle.layout.json"
 PYSKYFIRE_RED = "#d62728"
 PYSKYFIRE_BLUE = "#1f77b4"
 PYSKYFIRE_GRAY = "#7F7F7F"
+
+# Where the turbine-discharge duct is parked in the engine scene, in metres and
+# radians. The duct's own frame comes from its bending table, whose origin is
+# tube end 1 and whose axes have nothing to do with the engine axis, and the
+# real mounting point on the turbine housing is not modelled yet. So this is a
+# legible spot beside the chamber, not a claim about where the part sits.
+TURBINE_DUCT_POSITION = (0.25, -0.15, -0.28)
+TURBINE_DUCT_ROTATION = (math.radians(0.0), math.radians(20.0), math.radians(-5.0))
 
 REF_BINDER = "[R1]"
 REF_DESIGN_REPORT = "[R2]"
@@ -440,7 +451,7 @@ def add_regen_tabs(report, results):
     tab_overview.add_markdown("## Introduction")
     tab_overview.add_markdown(REPORT_INTRODUCTION)
 
-    engine_viewer = psf.viz.Scene(color_by="T_static")
+    engine_viewer = psf.viz.Scene(color_by="T_static", show_axes=True)
     engine_viewer.add(
         psf.viz.ThrustChamberComponent(
             thrust_chamber,
@@ -451,6 +462,22 @@ def add_regen_tabs(report, results):
         ),
         name="chamber",
     )
+
+    # The duct is geometry only: it carries no solution here, because the cycle
+    # still represents its network leg as a pressure ratio. With no "T_static"
+    # field it sits outside the scene's colour range and draws in flat grey.
+    duct = engine_viewer.add(
+        psf.viz.PipeComponent(
+            plumbing.turbine_discharge_duct.build_pipe(),
+            n_theta=32,
+            segments=24,
+        ),
+        name="turbine_discharge_duct",
+        position=TURBINE_DUCT_POSITION,
+        rotation=TURBINE_DUCT_ROTATION,
+    )
+    duct.color = PYSKYFIRE_GRAY
+
     os.makedirs(standalone_dir, exist_ok=True)
     engine_viewer.save_html(os.path.join(standalone_dir, "engine-3d.html"))
     tab_overview.add_iframe(
@@ -461,7 +488,13 @@ def add_regen_tabs(report, results):
             "tubes continue through the chamber and throat, while 180 short "
             "tubes begin at the nozzle interlacing manifold. Downstream of that "
             "transition the two sets alternate around the circumference, giving "
-            "360 passages in the nozzle; upstream, only the long tubes remain."
+            "360 passages in the nozzle; upstream, only the long tubes remain.\n\n"
+            "The grey tube alongside is the turbine-discharge duct of Figure "
+            "G1, built from its bending table. It is drawn at its true size "
+            "but parked at an arbitrary position and orientation: the cycle "
+            "still models its network leg as a pressure ratio, so the duct "
+            "carries no solution and is not yet mounted where the engine puts "
+            "it."
         ),
     )
     tab_overview.add_markdown(REPORT_REPRODUCTION_GUIDE)

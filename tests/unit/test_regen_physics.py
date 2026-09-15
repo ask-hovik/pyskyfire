@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from pyskyfire.regen import physics
+from pyskyfire.common import physics
 
 
 def test_velocity_and_reynolds_number_follow_their_definitions() -> None:

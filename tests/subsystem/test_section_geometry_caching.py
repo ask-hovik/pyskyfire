@@ -49,7 +49,7 @@ class _Material:
 def _chamber(*, cross_section=None, wall_thickness=0.001):
     contour = _Cylinder()
     if cross_section is None:
-        cross_section = psf.regen.CrossSectionSquared(rib_width=5.0e-4)
+        cross_section = psf.regen.CrossSectionSquared(sidewall_half_thickness=(5.0e-4) / 2)
     circuit = psf.regen.CoolingCircuit(
         name="test",
         contour=contour,
@@ -221,14 +221,14 @@ def test_returned_arrays_are_not_views_into_the_memo() -> None:
 
     area = section.A_coolant(prof)
     perimeter = section.P_coolant(prof)
-    width = section.rib_width(prof)
+    width = section.sidewall_half_thickness(prof)
     area[:] = -1.0
     perimeter[:] = -1.0
     width[:] = -1.0
 
     assert section.A_coolant(prof)[0] > 0.0
     assert section.P_coolant(prof)[0] > 0.0
-    assert section.rib_width(prof)[0] > 0.0
+    assert section.sidewall_half_thickness(prof)[0] > 0.0
 
 
 # --- serialisation ----------------------------------------------------------
