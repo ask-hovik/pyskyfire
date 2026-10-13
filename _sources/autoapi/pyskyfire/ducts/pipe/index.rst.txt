@@ -1,0 +1,62 @@
+pyskyfire.ducts.pipe
+====================
+
+.. py:module:: pyskyfire.ducts.pipe
+
+.. autoapi-nested-parse::
+
+   Explicit pipe geometry construction and pressure-loss marching.
+
+   A :class:`Pipe` is a duct swept along a :class:`Path`: a circular bore,
+   optionally with a concentric core inside it, such as a centrebody or the inner
+   line of coaxial tubing. It contains the same :class:`PathStation` and
+   connection objects that its solver uses. :func:`generate_path_stations` is
+   only a convenience for turning human-friendly corner vertices into tangent
+   stations and connections; users may construct the resolved objects directly.
+   Where the section varies, the pipe adds the stations its loss march needs by
+   itself; see :class:`Pipe`.
+
+   The march, which :class:`~pyskyfire.ducts.AnnularDuct` shares, charges wall
+   friction, bend losses and the losses of a changing flow area, and carries
+   swirl as angular momentum. It is adiabatic, so station temperature is
+   unchanged, and it deliberately does not apply the reversible acceleration term
+   associated with changing area or compressibility. The pressure it marches is
+   therefore a stagnation pressure: the inlet's, less the irreversible losses,
+   which is what the engine network carries between blocks.
+   ``DuctResult.p_static`` subtracts the local dynamic pressure from it; it is
+   not a complete variable-area static-pressure solution.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Exceptions
+----------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/pipe/PipeCorrelationWarning
+
+.. autoapisummary::
+
+   pyskyfire.ducts.pipe.PipeCorrelationWarning
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/pipe/DisplayPath
+   /autoapi/pyskyfire/ducts/pipe/DuctResult
+   /autoapi/pyskyfire/ducts/pipe/Pipe
+
+.. autoapisummary::
+
+   pyskyfire.ducts.pipe.DisplayPath
+   pyskyfire.ducts.pipe.DuctResult
+   pyskyfire.ducts.pipe.Pipe
+
+

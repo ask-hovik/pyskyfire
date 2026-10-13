@@ -14,7 +14,7 @@ pyskyfire.viz.sankey
    * a merger's branch-link widths are the inlet-station mass flows; and
    * an ordinary one-in/one-out block uses its outlet-station mass flow.
 
-   The only required input is a converged :class:`~pyskyfire.common.EngineNetwork`.
+   The only required input is a converged :class:`~pyskyfire.network.EngineNetwork`.
 
    ..
        !! processed by numpydoc !!

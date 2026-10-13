@@ -108,9 +108,10 @@ pyskyfire.common.solids.PiecewiseModel
    .. py:method:: _find_neighbors(T: float) -> Tuple[Optional[int], Optional[int]]
 
       
-      Return indices (i_left, i_right) of nearest segments such that:
-        end[i_left] <= T <= start[i_right], with end[i_left] < start[i_right].
-      If not found on one side, that index is None.
+      Return indices (i_left, i_right) of nearest segments such that
+      ``end[i_left] <= T <= start[i_right]``, with
+      ``end[i_left] < start[i_right]``. If not found on one side, that index
+      is None.
 
 
 

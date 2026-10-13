@@ -1,0 +1,18 @@
+pyskyfire.regen.cad_geometry.TangentBezier
+==========================================
+
+.. py:class:: pyskyfire.regen.cad_geometry.TangentBezier
+
+   .. py:method:: between(first, second)
+      :classmethod:
+
+
+
+   .. py:method:: point(fraction)
+
+
+   .. py:method:: tangent(fraction)
+
+
+   .. py:method:: to_data()
+

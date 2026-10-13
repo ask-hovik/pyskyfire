@@ -1,0 +1,40 @@
+pyskyfire.heat_exchanger
+========================
+
+.. py:module:: pyskyfire.heat_exchanger
+
+.. autoapi-nested-parse::
+
+   
+   Path-based heat exchangers with prescribed gas or coupled fluid circuits.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/pyskyfire/heat_exchanger/chamber/index
+   /autoapi/pyskyfire/heat_exchanger/circuit/index
+   /autoapi/pyskyfire/heat_exchanger/solver/index
+
+

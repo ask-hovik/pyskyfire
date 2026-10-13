@@ -1,0 +1,59 @@
+pyskyfire.viz.injector_viz.InjectorComponent
+============================================
+
+.. py:class:: pyskyfire.viz.injector_viz.InjectorComponent
+
+   
+   Display the wetted bores of an injector's holes, coloured by feed.
+
+
+   :Parameters:
+
+       **injector** : :obj:`pyskyfire.injector.Injector`
+           The injector.
+
+       **result** : :obj:`pyskyfire.injector.InjectorResult`, :obj:`optional`
+           An operating point. Each hole then carries ``hole_mass_flow`` [kg/s]
+           and ``jet_velocity`` [m/s] as point fields, and each feed's bores
+           record its CoolProp fluid name as ``metadata["fluid"]``.
+
+       **show_impingement** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           Add an arrow from each hole's exit to its target, the impingement
+           point for an impinging element.
+
+       **face_radius** : :class:`python:float`, :obj:`optional`
+           Draw a translucent face of this radius [m], such as the chamber
+           radius. The injector itself has no face outline.
+
+       **colors, labels** : :obj:`mapping` :obj:`of` :obj:`feed` :obj:`to` :class:`python:str`, :obj:`optional`
+           Colour and display name of each feed. Names default to the feed
+           itself when it is a string.
+
+       **n_theta** : :class:`python:int`, :obj:`optional`
+           Facets round each bore and jet.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   Only wetted surface is drawn as hardware. A hole's bore runs back from the
+   face along its axis for the orifice's ``length``, or two diameters where
+   no length is given, and ends where it meets the face plane. The arrows
+   are drawn in grey, without fields, as annotation. The ``face`` anchor sits
+   on the axis at the face, pointing into the chamber.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build()
+

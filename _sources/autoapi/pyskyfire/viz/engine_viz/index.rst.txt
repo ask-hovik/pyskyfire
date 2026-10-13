@@ -3,16 +3,12 @@ pyskyfire.viz.engine_viz
 
 .. py:module:: pyskyfire.viz.engine_viz
 
+.. autoapi-nested-parse::
 
-Attributes
-----------
+   Deprecated engine viewer compatibility API and legacy mesh helpers.
 
-.. autoapisummary::
-
-   pyskyfire.viz.engine_viz.Point3
-   pyskyfire.viz.engine_viz.TWO_PI
-   pyskyfire.viz.engine_viz._DEFAULT_CIRCUIT_COLORS
-   pyskyfire.viz.engine_viz._EPS
+   ..
+       !! processed by numpydoc !!
 
 
 Classes
@@ -33,108 +29,13 @@ Functions
 
 .. autoapisummary::
 
-   pyskyfire.viz.engine_viz._blockage_at_x
-   pyskyfire.viz.engine_viz._read_text
-   pyskyfire.viz.engine_viz._threejs_gltf_viewer_data_url
-   pyskyfire.viz.engine_viz.build_rounded_section_points
    pyskyfire.viz.engine_viz.build_sections_for_centerlines
-   pyskyfire.viz.engine_viz.build_squared_section_points
-   pyskyfire.viz.engine_viz.circular_pattern
-   pyskyfire.viz.engine_viz.collect_channels
-   pyskyfire.viz.engine_viz.cyl_centerline_to_cartesian
-   pyskyfire.viz.engine_viz.estimate_tangents_cartesian
-   pyskyfire.viz.engine_viz.gcd_list
-   pyskyfire.viz.engine_viz.get_section_scalars
-   pyskyfire.viz.engine_viz.local_section_basis
    pyskyfire.viz.engine_viz.loft_sections_to_polydata
    pyskyfire.viz.engine_viz.make_engine_3d
-   pyskyfire.viz.engine_viz.plane_uv_to_xyz
-   pyskyfire.viz.engine_viz.redistribute_channels
-   pyskyfire.viz.engine_viz.rounded_base_height
-   pyskyfire.viz.engine_viz.rounded_lobe_arcs_yz
-   pyskyfire.viz.engine_viz.rounded_slice_arcs_uv
-   pyskyfire.viz.engine_viz.tile_centerlines
-   pyskyfire.viz.engine_viz.wedge_info
-   pyskyfire.viz.engine_viz.wrap_pi
-   pyskyfire.viz.engine_viz.yz_to_uv_offsets
 
 
 Module Contents
 ---------------
-
-.. py:function:: _blockage_at_x(circuit, x: float) -> float
-
-   
-   Return blockage_ratio at axial coordinate x for a circuit.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: _read_text(path: pathlib.Path) -> str
-
-.. py:function:: _threejs_gltf_viewer_data_url(gltf_text: str, *, assets_dir: pathlib.Path, title: str = '3D Viewer', background: str = '#ffffff') -> str
-
-   
-   Offline, single-file: embeds three.js + OrbitControls + GLTFLoader inline,
-   and embeds glTF JSON inline (base64) inside the iframe HTML.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: build_rounded_section_points(P0: numpy.ndarray, t_hat: numpy.ndarray, cl_cyl_point: numpy.ndarray, geom: dict, n_arc_pts: int, cross_section)
-
-   
-   Build rounded wedge-like ring segment by rigidly embedding the original
-   cross-section geometry into the plane normal to t_hat.
-
-   No projection to cylinder-plane intersection.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
 
 .. py:function:: build_sections_for_centerlines(centerlines, cid_full, thrust_chamber, *, stride: int = 1, n_arc_pts: int = 8)
 
@@ -166,229 +67,6 @@ Module Contents
 
        **sections_per_channel** : :class:`python:list`\[:class:`python:list`\[:obj:`np.ndarray <numpy.ndarray>`]]
            For each channel, a list of (Nk,3) section polygons in XYZ.
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: build_squared_section_points(P0: numpy.ndarray, t_hat: numpy.ndarray, cl_cyl_point: numpy.ndarray, geom: dict, n_arc_pts: int)
-
-   
-   Build squared wedge-like ring segment, but by rigidly embedding the original
-   x-normal cross-section shape into the plane normal to t_hat.
-
-   No cylinder-plane intersection, no "solve x".
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: circular_pattern(centerline: numpy.ndarray, n: int)
-
-   
-   Replicate a single centerline n times around the circumference.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: collect_channels(thrust_chamber, *, jitter_divisor: float = 100.0)
-
-   
-   Collect centerlines and widths for a minimal tiling wedge (if gcd>1)
-   or the full circumference, plus circuit ids and meta info.
-
-
-   :Parameters:
-
-       **thrust_chamber**
-           Thrust chamber object with `cooling_circuits`.
-
-       **jitter_divisor** : :class:`python:float`
-           Controls tiny angular jitter used to break symmetry.
-
-
-
-   :Returns:
-
-       **centerlines** : :class:`python:list`\[:obj:`np.ndarray <numpy.ndarray>`]
-           List of (Ni,3) [x, r, theta] centerlines within one wedge.
-
-       **widths** : :class:`python:list`\[:obj:`np.ndarray <numpy.ndarray>`]
-           List of (Ni,) arrays for channel angular width vs x.
-
-       **circuit_ids** : :class:`python:list`\[:class:`python:int`]
-           Circuit index for each centerline.
-
-       **meta** : :class:`python:dict`
-           Contains "g", "wedge_angle", "n_list" (channel counts per circuit).
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: cyl_centerline_to_cartesian(cl: numpy.ndarray) -> numpy.ndarray
-
-   
-   Convert a (N,3) [x, r, theta] centerline to Cartesian [X, Y, Z].
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: estimate_tangents_cartesian(cl_cart: numpy.ndarray) -> numpy.ndarray
-
-   
-   Estimate unit tangents along a polyline in Cartesian coordinates.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: gcd_list(ints)
-
-   
-   Greatest common divisor of a sequence of integers.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: get_section_scalars(circuit, x: float, r_center: float)
-
-   
-   For a given circuit and axial location x, return scalar geometry fields.
-
-   Returns a dict with:
-   - r_center  : centerline radius (already stored in your centerline)
-   - r_inner   : inner coolant radius (centerline + wall thickness)
-   - r_outer   : outer coolant radius (r_inner + h(x))
-   - theta_eff : effective wedge angle (blockage applied)
-   plus the raw h, t_wall, t_channel_wall, and theta_raw.
-
-   ``r_inner``/``r_outer`` follow the squared-section convention, where h(x) is
-   the radial extent of the passage. Rounded sections measure h(x) from the
-   bottom of the inner arc to the top of the outer arc, so they build their
-   lobes from h, t_channel_wall and r_center instead, and only use ``r_inner``
-   to sit the passage on top of the wall stack.
-
-   ``t_wall`` is the full wall stack (used for placement) while
-   ``t_channel_wall`` is the coolant-adjacent layer that the cross-section
-   analytics inset their arcs by.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: local_section_basis(cl_cyl_point: numpy.ndarray, t_hat: numpy.ndarray)
-
-   
-   Build an orthonormal basis (e_r, e_phi) in the plane ⟂ tangent.
-
-
-
-
-
 
 
 
@@ -438,17 +116,14 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: make_engine_3d(thrust_chamber, *, stride: int = 2, n_arc_pts: int = 8, show: bool = True, circuit_colors: collections.abc.Sequence[str] | None = None)
+.. py:function:: make_engine_3d(thrust_chamber, *, stride: int = 2, n_arc_pts: int = 8, show: bool = True, circuit_colors: collections.abc.Sequence[str] | None = None, layout: str | pyskyfire.regen.channel_layout.ChannelLayout = 'numerical')
 
    
-   Build a PyVista visualization of cooling channels using real cross-sections.
+   Deprecated: use ``Scene.add(ThrustChamberComponent(...))``.
 
-   Pipeline:
-   1. Collect a minimal wedge of channels from the thrust chamber.
-   2. Redistribute θ(x) to pack channels without overlap.
-   3. Tile the wedge around the full circumference.
-   4. For each centerline, build 3D cross-section polygons.
-   5. Loft each channel to a PolyData and add to a PyVista plotter.
+   This compatibility wrapper delegates to the shared scene implementation,
+   returns the historical viewer handle, and honours ``show``. New scene
+   callers should explicitly call ``scene.show()`` to open a window.
 
    :Parameters:
 
@@ -468,140 +143,16 @@ Module Contents
            Colors indexed by cooling-circuit order. When omitted, the default
            categorical palette is used.
 
-
-
-   :Returns:
-
-       **cl_full** : :class:`python:list`\[:obj:`np.ndarray <numpy.ndarray>`]
-           Full set of cylindrical centerlines [x, r, theta].
-
-       **w_full** : :class:`python:list`\[:obj:`np.ndarray <numpy.ndarray>`]
-           Channel width arrays for each centerline.
-
-       **cid_full** : :class:`python:list`\[:class:`python:int`]
-           Circuit index per centerline.
-
-       **meshes** : :class:`python:list`\[:obj:`pv.PolyData`]
-           Lofted meshes for each channel.
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: plane_uv_to_xyz(P0: numpy.ndarray, e_r: numpy.ndarray, e_phi: numpy.ndarray, u: numpy.ndarray, v: numpy.ndarray) -> numpy.ndarray
-
-   
-   Map section-plane offsets (u,v) into XYZ: X = P0 + u*e_r + v*e_phi.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: redistribute_channels(centerlines, widths, *, k_pack: float = 1.0, k_bend: float = 1.0, k_slope: float = 3.0, desired_slope=None, dt: float = 0.25, tol: float = 0.001, max_iters: int = 800, gamma_damp: float = 0.4, wedge_angle: float | None = None, recorder: list | None = None, endpoint_slope0=None, endpoint_slopeN=None)
-
-   
-   Relax channel angles θ(x) so channels pack nicely without overlap.
-
-   If endpoint_slope0/endpoint_slopeN are provided, they are enforced as:
-     (θ[1] - θ[0]) / (x[1] - x[0]) = endpoint_slope0[i]
-     (θ[-1] - θ[-2]) / (x[-1] - x[-2]) = endpoint_slopeN[i]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: rounded_base_height(cs, r_center: float, theta_eff: float, t_wall: float, h_measured: float) -> float
-
-   
-   Convert a measurable rounded channel height into the model's base height.
-
-   ``channel_height`` for rounded sections is the full extent from the bottom of
-   the inner arc to the top of the outer arc, while the geometry is built from
-   the radial offset between the two lobe centres. The conversion is delegated to
-   the cross-section object so the picture cannot drift from the analytics.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: rounded_lobe_arcs_yz(r_center: float, theta_center: float, theta_eff: float, t_wall: float, h_base: float, n: int = 8, r_bottom: float | None = None) -> Tuple[numpy.ndarray, numpy.ndarray]
-
-   
-   Build the inner/outer coolant lobes of a rounded section as (y, z) points.
-
-   Mirrors the analytics of :class:`CrossSectionRounded`: both lobes are circles
-   tangent to the two sector rays, inset by the channel wall thickness, with
-   centres on the sector bisector at radius ``r_center`` and
-   ``r_center + h_base``. The two straight side walls are the edges joining the
-   arc endpoints.
-
-   :Parameters:
-
-       **r_bottom** : :class:`python:float`, :obj:`optional`
-           If given, the finished section is translated radially so the bottom of
-           the inner lobe sits at this radius. The analytics centre the inner lobe
-           on the hot contour and ignore any hot-side liner, which would draw the
-           passage sunk into the wall; this shifts it out onto the wall stack the
-           way squared sections are drawn, without changing its shape.
+       **layout** : {"numerical", "analytical"} :obj:`or` :obj:`ChannelLayout`, :obj:`optional`
+           Channel layout to draw. Numerical redistribution remains the default.
+           A previously resolved layout may also be supplied directly.
 
 
 
    :Returns:
 
-       **inner_yz** : (n,2) :obj:`array <numpy.ndarray>`
-           Minor arc, running from the +side tangent point inward to the -side one.
-
-       **outer_yz** : (n,2) :obj:`array <numpy.ndarray>`
-           Major arc, running from the -side tangent point outward to the +side one.
+       :obj:`Engine3DViewer`
+           Interactive viewer and its serialized HTML data URL.
 
 
 
@@ -615,142 +166,4 @@ Module Contents
 
    ..
        !! processed by numpydoc !!
-
-.. py:function:: rounded_slice_arcs_uv(r_center: float, theta_center: float, theta_eff: float, t_wall: float, h_base: float, n: int = 8, r_bottom: float | None = None) -> tuple[numpy.ndarray, numpy.ndarray]
-
-   
-   Build inner/outer rounded arcs as (u,v) offsets in a local 2D cross-section frame,
-   relative to the centerline point at radius r_center and angle theta_center.
-
-
-
-
-
-   :Returns:
-
-       **inner_uv** : (n,2) :obj:`array <numpy.ndarray>`
-           ..
-
-       **outer_uv** : (n,2) :obj:`array <numpy.ndarray>`
-           ..
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: tile_centerlines(centerlines_subset, widths_subset, circuit_ids_subset, g: int, wedge_angle: float)
-
-   
-   Replicate a wedge subset g times around the circumference.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: wedge_info(thrust_chamber)
-
-   
-   Return (g, wedge_angle, n_list) for the chamber's cooling circuits.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: wrap_pi(delta: float) -> float
-
-   
-   Wrap an angle to (-pi, pi].
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: yz_to_uv_offsets(y: numpy.ndarray, z: numpy.ndarray, y0: float, z0: float, theta_center: float) -> tuple[numpy.ndarray, numpy.ndarray]
-
-   
-   Convert world (y,z) points into local (u,v) offsets relative to the
-   centerline point (y0,z0), expressed in the (r_hat, phi_hat) basis at theta_center.
-
-   u: radial offset (along r_hat)
-   v: circumferential offset (along phi_hat)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:data:: Point3
-
-.. py:data:: TWO_PI
-
-.. py:data:: _DEFAULT_CIRCUIT_COLORS
-   :value: ('#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',...
-
-
-.. py:data:: _EPS
-   :value: 1e-12
-
 

@@ -1,0 +1,42 @@
+pyskyfire.ducts.path.RoundedBend
+================================
+
+.. py:class:: pyskyfire.ducts.path.RoundedBend
+
+   
+   A complete lumped rounded-bend loss between adjacent stations.
+
+
+   :Parameters:
+
+       **radius** : :class:`python:float`
+           Bend centerline radius [m].
+
+       **method** : :class:`python:str`, :obj:`optional`
+           A method accepted by :func:`fluids.fittings.bend_rounded`.
+
+       **angle** : :class:`python:float`, :obj:`optional`
+           Resolved turn angle [rad]. Required by :class:`Pipe`; the station
+           generator calculates it from the neighboring control legs.
+
+       **center, normal** : :class:`python:tuple`, :obj:`optional`
+           Resolved arc geometry retained for inspection and visualization.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

@@ -1,0 +1,22 @@
+selector_to_html = {"a[href=\"#pyskyfire.regen.design_inputs.DesignContext.__len__\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.regen.design_inputs.DesignContext.__len__\">\n<span class=\"sig-name descname\"><span class=\"pre\">__len__</span></span><span class=\"sig-paren\">(</span><span class=\"sig-paren\">)</span> <span class=\"sig-return\"><span class=\"sig-return-icon\">\u2192</span> <span class=\"sig-return-typehint\"><a class=\"reference external\" href=\"https://docs.python.org/3/builtins/functions.html#int\" title=\"(in Python v3.15)\"><span class=\"pre\">int</span></a></span></span></dt><dd></dd>", "a[href=\"#pyskyfire.regen.design_inputs.DesignContext.__iter__\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.regen.design_inputs.DesignContext.__iter__\">\n<span class=\"sig-name descname\"><span class=\"pre\">__iter__</span></span><span class=\"sig-paren\">(</span><span class=\"sig-paren\">)</span></dt><dd></dd>", "a[href=\"#pyskyfire-regen-design-inputs-designcontext\"]": "<h1 class=\"tippy-header\" style=\"margin-top: 0;\">pyskyfire.regen.design_inputs.DesignContext<a class=\"headerlink\" href=\"#pyskyfire-regen-design-inputs-designcontext\" title=\"Link to this heading\">\u00b6</a></h1>", "a[href=\"#pyskyfire.regen.design_inputs.DesignContext\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.regen.design_inputs.DesignContext\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">class</span></span><span class=\"w\"> </span></span><span class=\"sig-prename descclassname\"><span class=\"pre\">pyskyfire.regen.design_inputs.</span></span><span class=\"sig-name descname\"><span class=\"pre\">DesignContext</span></span><span class=\"sig-paren\">(</span><em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">providers</span></span><span class=\"p\"><span class=\"pre\">:</span></span><span class=\"w\"> </span><span class=\"n\"><span class=\"pre\">Mapping</span><span class=\"p\"><span class=\"pre\">[</span></span><a class=\"reference external\" href=\"https://docs.python.org/3/builtins/stdtypes.html#str\" title=\"(in Python v3.15)\"><span class=\"pre\">str</span></a><span class=\"p\"><span class=\"pre\">,</span></span><span class=\"w\"> </span><span class=\"pre\">Any</span><span class=\"p\"><span class=\"pre\">]</span></span></span></em><span class=\"sig-paren\">)</span></dt><dd><p>Bases: <code class=\"xref py py-obj docutils literal notranslate\"><span class=\"pre\">Mapping</span></code></p><p>Lazily evaluated bundle of design-input quantities at one station.</p><p>Providers are either plain values or zero-argument callables.  A callable\nis invoked at most once, the first time its name is requested, so building\na context for a station that only needs <code class=\"docutils literal notranslate\"><span class=\"pre\">x</span></code> costs nothing.</p></dd>", "a[href=\"#pyskyfire.regen.design_inputs.DesignContext.__getitem__\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.regen.design_inputs.DesignContext.__getitem__\">\n<span class=\"sig-name descname\"><span class=\"pre\">__getitem__</span></span><span class=\"sig-paren\">(</span><em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">key</span></span><span class=\"p\"><span class=\"pre\">:</span></span><span class=\"w\"> </span><span class=\"n\"><a class=\"reference external\" href=\"https://docs.python.org/3/builtins/stdtypes.html#str\" title=\"(in Python v3.15)\"><span class=\"pre\">str</span></a></span></em><span class=\"sig-paren\">)</span> <span class=\"sig-return\"><span class=\"sig-return-icon\">\u2192</span> <span class=\"sig-return-typehint\"><span class=\"pre\">Any</span></span></span></dt><dd></dd>"}
+skip_classes = ["headerlink", "sd-stretched-link"]
+
+window.onload = function () {
+    for (const [select, tip_html] of Object.entries(selector_to_html)) {
+        const links = document.querySelectorAll(` ${select}`);
+        for (const link of links) {
+            if (skip_classes.some(c => link.classList.contains(c))) {
+                continue;
+            }
+
+            tippy(link, {
+                content: tip_html,
+                allowHTML: true,
+                arrow: true,
+                placement: 'auto-start', maxWidth: 600, interactive: false,
+                onShow(instance) {MathJax.typesetPromise([instance.popper]).then(() => {});},
+            });
+        };
+    };
+    console.log("tippy tips loaded!");
+};

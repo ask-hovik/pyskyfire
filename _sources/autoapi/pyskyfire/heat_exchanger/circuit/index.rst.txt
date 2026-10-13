@@ -1,0 +1,36 @@
+pyskyfire.heat_exchanger.circuit
+================================
+
+.. py:module:: pyskyfire.heat_exchanger.circuit
+
+.. autoapi-nested-parse::
+
+   Reusable channel banks, finite-volume thermal links, and prescribed gas.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/heat_exchanger/circuit/ChamberGas
+   /autoapi/pyskyfire/heat_exchanger/circuit/FlowConnection
+   /autoapi/pyskyfire/heat_exchanger/circuit/HeatExchangerCircuit
+   /autoapi/pyskyfire/heat_exchanger/circuit/Inlet
+   /autoapi/pyskyfire/heat_exchanger/circuit/PrescribedGas
+   /autoapi/pyskyfire/heat_exchanger/circuit/ThermalLink
+
+.. autoapisummary::
+
+   pyskyfire.heat_exchanger.circuit.ChamberGas
+   pyskyfire.heat_exchanger.circuit.FlowConnection
+   pyskyfire.heat_exchanger.circuit.HeatExchangerCircuit
+   pyskyfire.heat_exchanger.circuit.Inlet
+   pyskyfire.heat_exchanger.circuit.PrescribedGas
+   pyskyfire.heat_exchanger.circuit.ThermalLink
+
+

@@ -1,0 +1,42 @@
+pyskyfire.pump.diffuser.DiffuserResult
+======================================
+
+.. py:class:: pyskyfire.pump.diffuser.DiffuserResult
+
+   
+   Losses of one diffuser operating point, Gülich Table 3.8 (2).
+
+   Coefficients are referred to u2²/2, as Gülich writes them. ``vaneless``
+   is the wall friction between impeller and vanes (T3.8.23), ``inlet`` the
+   friction in the triangular inlet region (T3.8.18), ``shock`` the loss of
+   decelerating c2 onto the throat (the 0.3 term of T3.8.19) and ``channel``
+   the diffusing channel, 1 - cp - 1/AR² times the throat head. ``mixing``
+   is the channel jets filling the outlet ring: they leave through part of
+   the circumference only, the vanes' trailing edges taking the rest, and
+   mixing out keeps their swirl but loses their excess radial velocity, a
+   Borda-Carnot loss on that component. This is the part of Gülich's overflow
+   loss that belongs to the diffuser; the energy left in the mixed flow is not
+   charged, because the volute collects it and charges its own loss.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: loss_breakdown()
+
+
+   .. py:property:: total_pressure_loss
+

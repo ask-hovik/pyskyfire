@@ -1,0 +1,80 @@
+pyskyfire.regen.channel_layout.ResolvedChannel
+==============================================
+
+.. py:class:: pyskyfire.regen.channel_layout.ResolvedChannel
+
+   
+   One unique channel seed and the circular pattern that reproduces it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__() -> None
+
+
+   .. py:property:: axis_normal_section_planes
+      :type: pyskyfire.regen.channel_helpers.SectionPlanes
+
+
+      
+      Transverse construction planes for squared channel sections.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: section_planes
+      :type: pyskyfire.regen.channel_helpers.SectionPlanes
+
+
+      
+      Build and cache planes along the reference path.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

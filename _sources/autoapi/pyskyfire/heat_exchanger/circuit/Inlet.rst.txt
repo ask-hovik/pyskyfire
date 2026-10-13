@@ -1,0 +1,28 @@
+pyskyfire.heat_exchanger.circuit.Inlet
+======================================
+
+.. py:class:: pyskyfire.heat_exchanger.circuit.Inlet
+
+   
+   Bank inlet: temperature [K], static pressure [Pa], TOTAL mass flow [kg/s].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

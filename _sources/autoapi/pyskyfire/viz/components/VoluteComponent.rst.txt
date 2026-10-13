@@ -1,0 +1,89 @@
+pyskyfire.viz.components.VoluteComponent
+========================================
+
+.. py:class:: pyskyfire.viz.components.VoluteComponent
+
+   
+   Display a resolved volute or collector passage.
+
+   The volute supplies its own geometry through ``sweep(n_points=...)``, which
+   places each station's cross-section in machine coordinates, already
+   inclined by the volute's tilt. The local frame is that frame: the machine
+   axis is +z, the tongue sits at azimuth zero, and no recentering is applied.
+
+   The passage is swept from the tongue through one revolution, and on through
+   its :class:`~pyskyfire.ducts.ExitCone` duct to the flange when it has one.
+   The face at the tongue is a wall -- the cutwater -- so the step visible
+   there is the passage meeting itself.
+
+   Three child nodes come back, so the openings can be told apart from the
+   walls at a glance:
+
+   ``passage``
+       Every wall, including the whole exit-cone duct and the cutwater face.
+       This is what carries the fields.
+   ``inlet``
+       The slot mouth, the strip at the inlet radius running the full
+       revolution, where the flow being collected enters.
+   ``outlet``
+       The flange face, or the collection plane itself without an exit cone.
+
+   ``opening_color`` paints both openings, red by default. They carry no
+   fields, so they keep that colour whichever field the scene is coloured by,
+   rather than disappearing into the scale.
+
+   ``results`` is a :class:`~pyskyfire.ducts.VoluteResult`, or a mapping of
+   field names to point-associated FieldData with one value per azimuthal
+   station. A supplied mapping holds its last value along the exit cone, which
+   a result does only for quantities that have no variation to carry there.
+
+   ``exit_points`` sets how finely the exit cone is swept along its length.
+
+   Anchors mark the inlet, on the axis pointing in along -z, and the outlet:
+   the flange face, oriented along its own normal, when there is an exit
+   cone; otherwise the full-collection plane, oriented tangentially into
+   where an exit cone would continue.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _wall_fields(stations, mouth, exit_stations)
+
+      
+      Field values laid out to match the merged wall mesh's vertices.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build()
+

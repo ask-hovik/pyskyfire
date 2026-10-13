@@ -1,14 +1,43 @@
 pyskyfire.pump.impeller.Impeller
 ================================
 
-.. py:class:: pyskyfire.pump.impeller.Impeller(Q, H, n, material=None)
-
-   Bases: :py:obj:`object`
-
+.. py:class:: pyskyfire.pump.impeller.Impeller(Q, H, n, *, shaft_diameter, inlet_hub_diameter, blade_count, blade_thickness, hydraulic_efficiency, beta2_deg=None, psi=None, d2=None, u2=None, fT=1.0, b2=None, phi1=0.2, d1=None, beta1_deg=None, incidence_deg=0.0, inlet_prewhirl=0.0, wrap_deg=None, volumetric_efficiency=1.0, rho=None, tip_clearance=0.0, meridional=None, axial_length=None, blade_settings=None, splitter=None, rotation=COUNTERCLOCKWISE)
 
    
-   Execute the project of a centrifugal pump.
+   Size a radial impeller; call build_geometry() to generate pyTurbo surfaces.
 
+   Required lengths are in metres. ``blade_thickness`` is total section-normal
+   body thickness: a float or function of chord_fraction, span_fraction, x, r.
+   Angle and prewhirl functions accept span_fraction, x, r. Span runs hub to
+   blade tip, including when tip clearance is present. ``phi1`` refers to the
+   unblocked inlet annulus, and d1 overrides its sizing equation.
+
+   ``H`` is the total head at the impeller outlet and ``hydraulic_efficiency``
+   the impeller's own (see the module notes); it is a supplied assumption,
+   never predicted here. The design is closed on one quantity. By default
+   ``beta2_deg`` is solved and the outlet diameter comes from one of ``psi``,
+   ``d2``, ``u2`` or a supplied ``meridional``, or failing all of them from
+   Eq. (3.26) at ``fT``. Give ``beta2_deg`` instead and ``d2`` is solved. Giving
+   both over-specifies the wheel. The solved angle is the one below the peak
+   of the swirl it can deliver: at low specific speed that peak is broad and
+   flat, and a head above it cannot be had at any angle, which is reported
+   with the head coefficient that can.
+
+   ``blade_count`` is always an input. Gülich rejects empirical blade-count
+   formulas as likely to violate the criteria that actually set it: pressure
+   pulsations against the collector, blade loading, head-curve stability.
+   Splitters do not count toward it in the slip prediction.
+
+   ``incidence_deg`` means metal angle minus unblocked relative inlet flow
+   angle. No leakage is assumed for volumetric_efficiency=1. ``b2`` defaults
+   to Eq. (7.1).
+
+   ``rotation`` is which way the wheel turns about its own +x shaft, and only
+   mirrors the blades: every velocity triangle is a magnitude in the rotating
+   frame and is the same either way. It has to match the sense of the volute
+   collecting the discharge, once both are placed.
+   Create a new Impeller to change design inputs; build_geometry can be repeated
+   at different numerical resolutions using the same resolved definition.
 
 
 
@@ -27,10 +56,13 @@ pyskyfire.pump.impeller.Impeller
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: __str__()
+   .. py:method:: __repr__()
+
+
+   .. py:method:: build_geometry(*, span_points=33, chord_points=129)
 
       
-      Print out main values in a readable manner
+      Generate surfaces lazily. Returns and stores an ImpellerGeometry.
 
 
 
@@ -51,11 +83,15 @@ pyskyfire.pump.impeller.Impeller
           !! processed by numpydoc !!
 
 
-   .. py:method:: compute_geometry()
+   .. py:method:: from_duty(duty, **kwargs)
+      :classmethod:
+
 
       
-      Compute meridional & and blade geometry
+      Size for a :class:`~pyskyfire.pump.PumpDuty`: its inlet flow, head and speed.
 
+      The inlet density, where the duty knows one, is what the blade power is
+      reported at.
 
 
 
@@ -75,38 +111,19 @@ pyskyfire.pump.impeller.Impeller
           !! processed by numpydoc !!
 
 
-   .. py:method:: compute_mass()
-
-
-   .. py:method:: main_dimensions()
-
-      
-      Calculate the main dimensions of the impeller 
+   .. py:method:: from_pressure_rise(*, mdot, rho, dp, n, **kwargs)
+      :classmethod:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: plot_3d(a=1, b=0, c=0, beta_1B=45, beta_2B=50, num_blades=6)
+   .. py:property:: blade_power
 
       
-      Plot a 3D view of the impeller geometry.
+      Power the blades put into the fluid [W], or None without ``rho``.
 
+      Every kilogram through the impeller, leakage included, takes the full
+      blade work g*H/eta_h. Disk friction and the bearings are charged by the
+      components that own them, not here.
 
 
 

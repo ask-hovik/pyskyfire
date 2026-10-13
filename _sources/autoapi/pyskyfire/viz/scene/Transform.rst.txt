@@ -1,0 +1,36 @@
+pyskyfire.viz.scene.Transform
+=============================
+
+.. py:class:: pyskyfire.viz.scene.Transform(translation=None, rotation=None, *, matrix=None)
+
+   
+   Rigid local-to-parent transform, using column vectors.
+
+   ``rotation`` is a scipy Rotation or extrinsic xyz Euler angles in radians.
+   A supplied ``matrix`` is mutually exclusive with translation and rotation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __matmul__(other)
+
+
+   .. py:method:: apply(points)
+
+
+   .. py:method:: inverse()
+

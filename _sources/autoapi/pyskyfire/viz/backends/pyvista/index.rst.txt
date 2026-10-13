@@ -1,0 +1,26 @@
+pyskyfire.viz.backends.pyvista
+==============================
+
+.. py:module:: pyskyfire.viz.backends.pyvista
+
+.. autoapi-nested-parse::
+
+   Desktop rendering of a scene, retaining named scalar arrays and node IDs.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.viz.backends.pyvista.make_plotter
+
+
+Module Contents
+---------------
+
+.. py:function:: make_plotter(scene, *, off_screen=False)
+

@@ -1,0 +1,46 @@
+pyskyfire.viz.components.PipeComponent
+======================================
+
+.. py:class:: pyskyfire.viz.components.PipeComponent
+
+   
+   Display an explicitly defined pipe; never route or modify a solver model.
+
+   The pipe supplies its own geometry. A :class:`~pyskyfire.ducts.Pipe` offers
+   ``display_path(segments=...)``, which opens its rounded and continuous bend
+   connections into arcs for drawing without touching the solved model;
+   ``segments`` sets the drawn sides per quarter turn. Any other object is read through ``centerline``, an (N,3)
+   Cartesian polyline in metres, and ``radius``, a positive scalar or one
+   radius per station, and is drawn exactly as supplied. The local frame is
+   the frame of those coordinates (no implicit recentering).
+
+   A pipe with a core is drawn as a ``"core"`` surface, one per stretch the
+   core runs along, inside a translucent ``"bore"`` of ``opacity``, both
+   children of the returned node, which carries the bore's end anchors.
+
+   ``results`` is a :class:`~pyskyfire.ducts.DuctResult`, or a mapping of
+   field names to FieldData: point-associated with one value per station, or
+   cell-associated with one value per connection. Station values are
+   interpolated along refined bends and repeated around each ring; connection
+   values fill the rings spanning that connection. Every surface carries the
+   same fields.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build()
+

@@ -1,0 +1,133 @@
+pyskyfire.ducts.port.ResolvedRadialPort
+=======================================
+
+.. py:class:: pyskyfire.ducts.port.ResolvedRadialPort
+
+   Bases: :py:obj:`ResolvedPort`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.port.ResolvedRadialPort
+      :parts: 1
+      :private-bases:
+
+
+   
+   A stub placed in machine coordinates, with the dome it leaves through.
+
+
+
+   :Attributes:
+
+       **angle** : :class:`python:float`
+           Resolved tilt off the section's normal [rad], whichever reference the
+           stub was stated against.
+
+       **angle_reference** : :class:`python:str`
+           The reference it was stated against.
+
+       **centre** : :obj:`np.ndarray <numpy.ndarray>`
+           Ellipse centre the stub was aimed from [m, shape (3,)]. It is
+           :attr:`~ResolvedPort.start` that sits on the dome, one exit distance
+           further along; the length the designer gave is measured from here.
+
+       **dome** : :obj:`DomeSite`
+           The half-ellipse it was fitted to.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _drawing_margin()
+
+      
+      How much further than its own ellipse to sink the first ring [m].
+
+      The trim is taken against the port station's ellipse alone, which is
+      cheap but leaves a gap: the passage is swept round a circle and its
+      section shrinks away from the port, so both effects pull the real
+      surface inboard of that ellipse across the width the flange covers.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _start_frame()
+
+      
+      Across the section plane first, then out of it.
+
+      A stub's cross-section splits naturally into the direction the dome
+      curves away in, which lies in the section plane, and the azimuthal one
+      the swept passage carries straight on through. Trimming the tube to the
+      passage only moves it along the first.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sweep(n_points=64, n_stations=9)
+
+      
+      The stub's wall, trimmed back onto the dome it leaves [m, (N, M, 3)].
+
+      The first ring follows the dome rather than lying flat against it, which
+      is what stops the tube floating a chord above the passage. It is sunk a
+      little further than this station's own ellipse asks for, because the
+      section shrinks either side of the port and a tube buried slightly in
+      metal reads better than one with daylight under it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

@@ -1,0 +1,26 @@
+pyskyfire.viz.heat_exchanger_component
+======================================
+
+.. py:module:: pyskyfire.viz.heat_exchanger_component
+
+.. autoapi-nested-parse::
+
+   Heat-exchanger geometry and results in the shared scene hierarchy.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/viz/heat_exchanger_component/HeatExchangerComponent
+
+.. autoapisummary::
+
+   pyskyfire.viz.heat_exchanger_component.HeatExchangerComponent
+
+

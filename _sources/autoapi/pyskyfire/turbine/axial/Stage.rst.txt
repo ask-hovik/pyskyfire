@@ -1,0 +1,40 @@
+pyskyfire.turbine.axial.Stage
+=============================
+
+.. py:class:: pyskyfire.turbine.axial.Stage
+
+   
+   The velocity-triangle choices for one stage.
+
+   Give ``reaction`` or ``exit_swirl``, not both.
+
+   :Parameters:
+
+       **flow_coefficient** : :class:`python:float`
+           ``c_x/u`` through the stage.
+
+       **reaction** : :class:`python:float`, :obj:`optional`
+           Rotor share of the stage's static enthalpy drop.
+
+       **exit_swirl** : :class:`python:float`, :obj:`optional`
+           Absolute swirl leaving the rotor, positive in the rotation direction
+           [m s⁻¹]. Zero leaves the stage axially.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

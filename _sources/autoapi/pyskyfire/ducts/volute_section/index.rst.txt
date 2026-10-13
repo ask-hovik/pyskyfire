@@ -1,0 +1,159 @@
+pyskyfire.ducts.volute_section
+==============================
+
+.. py:module:: pyskyfire.ducts.volute_section
+
+.. autoapi-nested-parse::
+
+   Volute cross-section families.
+
+   A volute cross-section is a closed planar region measured in a section plane
+   that contains the machine axis. Its two coordinates are
+
+   ``u``
+       Distance outward from the volute inlet plane, so ``u = 0`` sits at the
+       inlet radius and the passage grows toward larger ``u``.
+   ``v``
+       Distance across the inlet slot, zero on the slot centreline. For an
+       untilted volute this is the axial direction; a tilted inlet rotates the
+       whole plane rigidly, which leaves every quantity computed here unchanged.
+
+   Sections are a one-parameter family. The inlet slot width is fixed by the
+   hardware feeding the volute -- a pump discharge, or the channel-exit band of a
+   regenerative circuit -- so a section grows only through a single ``size``
+   parameter, and the area law is what picks ``size`` at each azimuth.
+
+   Every section reports the three quantities the design and loss models need:
+   enclosed area, the radial position of the area centroid, and the boundary
+   itself. They come from one Green's-theorem integral over the exact arcs and
+   lines, so none of them carry a polygon-resolution error.
+
+   These classes deliberately do not subclass the cooling-channel
+   :class:`~pyskyfire.regen.cross_section.ChannelSection`. That class carries
+   thermal exposure fractions, fin conduction, wall thicknesses and sector
+   placement, none of which a volute has, and it is sized by a different
+   constraint. Only the planar primitives in
+   :mod:`pyskyfire.common.section_geometry` are shared.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/volute_section/EllipticalSlottedSection
+   /autoapi/pyskyfire/ducts/volute_section/VoluteSection
+
+.. autoapisummary::
+
+   pyskyfire.ducts.volute_section.EllipticalSlottedSection
+   pyskyfire.ducts.volute_section.VoluteSection
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.ducts.volute_section.section_frames
+   pyskyfire.ducts.volute_section.solve_section_size
+
+
+Module Contents
+---------------
+
+.. py:function:: section_frames(theta, *, tilt=0.0, sign=1.0)
+
+   
+   Bases of the section planes at one or more azimuths about ``+z``.
+
+   A section lies in the plane through the machine axis at its azimuth, so the
+   ``(u, v)`` coordinates it is measured in map to a radial and an axial
+   direction there, rotated together by ``tilt``.
+
+   ``sign`` is the rotation sense from
+   :func:`~pyskyfire.common.rotation.rotation_sign`: ``+1`` winds
+   counterclockwise about ``+z`` as azimuth increases, ``-1`` clockwise. It
+   mirrors where each section sits without touching the section's own shape,
+   since the mirror plane contains the axis and so maps every section plane to
+   another one.
+
+   ``tilt`` stays absolute under that mirror: which axial way a discharge
+   points is a packaging choice independent of which way the machine spins.
+
+
+
+
+   :Returns:
+
+       **radial, u_hat, v_hat** : :obj:`np.ndarray <numpy.ndarray>`
+           Unit vectors [shape (N, 3)], where ``radial`` locates the inlet and the
+           other two span the section plane.
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: solve_section_size(section, residual)
+
+   
+   The smallest section of a family satisfying an area law.
+
+   Works down three regimes as the law asks for less and less area, and is
+   shared by every passage that sizes a section this way -- a volute closing
+   on its tongue and a manifold closing on its dead point face the same
+   problem, because both laws want zero area somewhere no section can deliver.
+
+   Away from that point the design aspect ratio can hold the law, and only the
+   size is solved for. Closer in, the law wants less area than even the
+   smallest section at that aspect: the passage can never be narrower than the
+   opening feeding it, so the size has bottomed out. Flattening is the way past
+   that -- holding the size at its floor and stretching the section across the
+   opening shrinks its area without narrowing the passage -- so the aspect
+   ratio is solved for instead, up to the family's limit. Only when the
+   flattest allowed section is still too big does the law get clipped, and it
+   is clipped to that flattest section rather than to the design-aspect one,
+   which is as close to the law as the family can get.
+
+   :Parameters:
+
+       **section** : :obj:`VoluteSection`
+           The family being sized.
+
+       **residual** : :func:`python:callable`
+           ``residual(size, aspect)``, negative where the trial section is too
+           small and increasing with size.
+
+
+
+   :Returns:
+
+       :obj:`size`, :obj:`aspect`, :obj:`clipped`
+           ..
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

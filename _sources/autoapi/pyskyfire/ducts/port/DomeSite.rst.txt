@@ -1,0 +1,245 @@
+pyskyfire.ducts.port.DomeSite
+=============================
+
+.. py:class:: pyskyfire.ducts.port.DomeSite
+
+   
+   The half-ellipse a stub leaves through, in machine coordinates.
+
+   The ellipse is the one the passage's own section is built on, centred where
+   its two axes cross, which is the point a stub is aimed from. Only part of it
+   is passage boundary: past :attr:`arc_limit` the section's fillets have taken
+   over and the ellipse runs outboard of the metal, so a stub aimed out there
+   would leave through the side rather than the dome.
+
+
+   :Attributes:
+
+       **normal** : :obj:`np.ndarray <numpy.ndarray>`
+           The way the section faces [shape (3,)], along the ellipse's own
+           first axis.
+
+       **in_plane** : :obj:`np.ndarray <numpy.ndarray>`
+           The section plane's other axis [shape (3,)], across the normal and
+           along the wall the section sits against.
+
+       **semi_normal, semi_in_plane** : :class:`python:float`
+           Ellipse semi-axes along those two directions [m].
+
+       **arc_limit** : :class:`python:float`
+           Ellipse parameter the dome runs to either side of ``normal`` [rad].
+           Under a quarter turn, since the fillets take over before the ellipse
+           reaches its widest.
+
+       **tilt** : :class:`python:float`, :obj:`optional`
+           Angle of ``normal`` from machine-radial [rad], positive toward ``+z``.
+           A stub stated against the plane the passage rings rather than against
+           the section is turned through this.
+
+       **shrinkage** : :class:`python:float`, :obj:`optional`
+           How fast the dome's depth falls away either side of the port
+           [m/rad of azimuth]. Read only when drawing, to sink a stub far enough
+           that the passage does not show daylight under it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: across(angle)
+
+      
+      Unit direction across such a stub, within the section plane.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: clearance(angle)
+
+      
+      Half the room the dome leaves across a stub aimed ``angle`` off the normal [m].
+
+      The tangents to the ellipse parallel to the stub bound it where they
+      touch the dome itself. Where a tangent touches out past
+      :attr:`arc_limit` it bounds nothing, because the metal there is fillet
+      rather than dome, and the arc's own end takes over as the bound. So this
+      is how far the dome arc reaches across the stub, on whichever side
+      reaches less.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: deepest_generator(angle, radius)
+
+      
+      The furthest along a stub of ``radius`` its own dome reaches [m].
+
+      Measured from where the centreline leaves the dome. Normally negative,
+      because a curved dome falls away from the centreline's crossing to
+      either side; positive for a stub tilted far enough that the dome's crest
+      in the stub's own direction sits under the flange rather than on its
+      axis.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: direction(angle)
+
+      
+      Unit direction of a stub ``angle`` off the normal [shape (3,)].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: exit_distance(angle)
+
+      
+      How far the dome sits from the ellipse centre along a stub [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: generator_exit(angle, offsets)
+
+      
+      Where lines parallel to a stub leave the dome [m].
+
+      ``offsets`` are distances across the stub within the section plane, as
+      the walls of a round tube sit at. What comes back is each line's
+      crossing measured along the stub from where its own centreline crosses,
+      which is how far the tube's wall has to run back to meet the passage.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: angle_limit
+      :type: float
+
+
+      
+      Furthest off the normal a stub may be aimed and still clear the fillet [rad].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

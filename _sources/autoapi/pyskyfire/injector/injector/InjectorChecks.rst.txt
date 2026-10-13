@@ -1,0 +1,36 @@
+pyskyfire.injector.injector.InjectorChecks
+==========================================
+
+.. py:class:: pyskyfire.injector.injector.InjectorChecks
+
+   
+   What the injector can check about its own layout, reported not enforced.
+
+   ``min_web`` is the narrowest ligament between two hole outlines on the
+   face [m], between holes in sets ``min_web_sets``; ``overlaps`` counts
+   pairs whose outlines intersect. ``outer_radius`` is how far the
+   outermost hole outline reaches from the axis, and ``target_radius`` the
+   furthest any jet's target lies from it [m]. ``wall_clearance`` is the
+   chamber radius less ``outer_radius``: room between the holes and the
+   wall. ``target_clearance`` is the chamber radius less ``target_radius``:
+   zero where a jet is aimed at the wall on purpose, as a film-cooling jet
+   is, and negative where a target lies beyond it. Both are NaN without a
+   chamber radius. ``min_length_to_diameter`` is the shortest hole relative
+   to its diameter.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

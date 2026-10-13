@@ -1,0 +1,32 @@
+pyskyfire.regen.design_inputs.DesignInputError
+==============================================
+
+.. py:exception:: pyskyfire.regen.design_inputs.DesignInputError
+
+   Bases: :py:obj:`ValueError`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.regen.design_inputs.DesignInputError
+      :parts: 1
+      :private-bases:
+
+
+   
+   Raised when a design-input function cannot be dispatched or evaluated.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

@@ -1,7 +1,7 @@
 pyskyfire.regen.cross_section.CrossSectionSquared
 =================================================
 
-.. py:class:: pyskyfire.regen.cross_section.CrossSectionSquared(blockage_ratio: float, n_points: int = 8)
+.. py:class:: pyskyfire.regen.cross_section.CrossSectionSquared(sidewall_half_thickness, n_points=8, *, roof_thickness=None, floor='arc', roof='arc', exposure=None, enable_fin=False)
 
    Bases: :py:obj:`ChannelSection`
 
@@ -11,8 +11,19 @@ pyskyfire.regen.cross_section.CrossSectionSquared
 
 
    
-   Simplified rectangular channel section (wedge-sector approximation).
+   Squared passages with independently straight or curved floor and roof.
 
+   sidewall_half_thickness [m] is ONE tube sidewall's normal thickness,
+   equivalent to HALF the shared rib between adjacent chamber channels. A
+   constant or design-input callable is accepted. A former 1 mm full rib is
+   therefore specified as 0.5 mm here.
+
+   Floor thickness comes from SectionProfiles.t_wall. roof_thickness defaults
+   to that thickness and may instead be a constant or callable. floor and roof
+   independently accept "arc" or "line". Direct width profiles use the
+   distance between internal sidewall endpoints. With sector profiles, the
+   existing constant-material-width rib construction determines those
+   endpoints; choosing a line joins the same endpoints with a chord.
 
 
 
@@ -31,10 +42,22 @@ pyskyfire.regen.cross_section.CrossSectionSquared
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: A_coolant(prof: SectionProfiles) -> numpy.ndarray
+   .. py:method:: _fin_dimensions(prof)
+
+
+   .. py:method:: _pitch_base(prof)
+
+
+   .. py:method:: _radii(prof)
+
+
+   .. py:method:: _transform(prof)
+
+
+   .. py:method:: boundary(prof)
 
       
-      Compute coolant cross-sectional area [m²].
+      Default construction for analytical-only custom channel sections.
 
 
 
@@ -55,10 +78,31 @@ pyskyfire.regen.cross_section.CrossSectionSquared
           !! processed by numpydoc !!
 
 
-   .. py:method:: Dh_coolant(prof: SectionProfiles) -> numpy.ndarray
+   .. py:method:: equivalent_angular_width(prof)
+
+
+   .. py:method:: full_height(prof)
+
+
+   .. py:method:: open_fraction(prof)
+
+
+   .. py:method:: outer_boundary(prof)
+
+
+   .. py:method:: roof_thickness(prof)
+
+
+   .. py:method:: sidewall_half_thickness(prof)
+
+
+   .. py:method:: surface_thicknesses(prof)
+
+
+   .. py:method:: thermal_perimeters(prof, *, exterior=False)
 
       
-      Compute hydraulic diameter [m].
+      Active length of each named surface [m], excluding fin enhancement.
 
 
 
@@ -77,109 +121,4 @@ pyskyfire.regen.cross_section.CrossSectionSquared
 
       ..
           !! processed by numpydoc !!
-
-
-   .. py:method:: P_coolant(prof: SectionProfiles) -> numpy.ndarray
-
-      
-      Return coolant-wetted perimeter [m].
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: P_thermal(prof: SectionProfiles) -> numpy.ndarray
-
-      
-      Return geometric hot-gas thermal-contact perimeter [m].
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: R_coolant_per_len(prof: SectionProfiles, h_c: numpy.ndarray, k_wall: numpy.ndarray | float) -> numpy.ndarray
-
-      
-      Coolant-side thermal resistance per unit *channel length* [K m / W],
-      including rib sidewalls as fins (first-order model).
-
-      Model:
-      - Base perimeter = P_coolant(prof)  (what you already count)
-      - Fin perimeter  = 2*h             (two side walls per channel)
-      - Effective perimeter = P_base + eta_f * P_fin
-      - R_s = 1 / (h_c * P_eff)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: _theta_real(prof: SectionProfiles) -> numpy.ndarray
-
-      
-      Apply blockage ratio to effective included angle.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: blockage_ratio(x)
 

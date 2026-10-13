@@ -1,0 +1,71 @@
+pyskyfire.ducts.port.PortSite
+=============================
+
+.. py:class:: pyskyfire.ducts.port.PortSite
+
+   
+   What a passage knows about where its port attaches.
+
+
+
+   :Attributes:
+
+       **start** : :obj:`np.ndarray <numpy.ndarray>`
+           Centre of the bore the port leaves from [m, shape (3,)]. For a section
+           built on a dome this is the ellipse centre, which is where a stub is
+           aimed from rather than where it starts.
+
+       **outlet_diameter** : :class:`python:float`
+           Diameter of that bore [m].
+
+       **max_section_radius** : :class:`python:float`
+           Furthest the passage's own section reaches from ``start`` [m], used to
+           reject a bend tight enough to fold the duct through itself.
+
+       **sign** : :class:`python:float`, :obj:`optional`
+           Rotation sense of the passage, from
+           :func:`~pyskyfire.common.rotation.rotation_sign`. Tangential reverses
+           with it; radial does not.
+
+       **dome** : :obj:`DomeSite`, :obj:`optional`
+           The half-ellipse a stub would leave through. A volute has no need of
+           it, and neither has a section family that offers a stub nowhere to sit.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: require(name)
+
+      
+      Return a field a port needs, or say which port wanted it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

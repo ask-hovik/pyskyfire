@@ -1,0 +1,125 @@
+pyskyfire.network.blocks.InjectorBlock
+======================================
+
+.. py:class:: pyskyfire.network.blocks.InjectorBlock(name: str, st_in: str, st_out: str, injector, feed, fluid)
+
+   Bases: :py:obj:`FluidBlock`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.network.blocks.InjectorBlock
+      :parts: 1
+      :private-bases:
+
+
+   
+   Engine-network adapter for one feed of an :class:`~pyskyfire.injector.Injector`.
+
+   An injector with several feeds (a main fuel plenum, a film ring and an
+   oxidizer plenum, say) takes one block per feed, each with its own plenum
+   station. The block hands the plenum station and its mass flow to
+   :meth:`Injector.solve_feed` and emits the face station and the
+   ``dp_<name>`` pressure drop from plenum to face.
+
+   :Parameters:
+
+       **name** : :class:`python:str`
+           Block name used for the pressure-loss signal.
+
+       **st_in, st_out** : :class:`python:str`
+           Plenum and face station keys.
+
+       **injector** : :obj:`pyskyfire.injector.Injector`
+           The injector.
+
+       **feed** : :obj:`hashable`
+           Which of the injector's feeds this block carries.
+
+       **fluid** : :class:`python:str` or :obj:`Fluid` or :obj:`EquationOfState`
+           The fluid, as :func:`~pyskyfire.thermo.eos.as_equation_of_state` reads it.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   The flow is adiabatic, so the face station carries the plenum enthalpy.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _solve(station: pyskyfire.network.engine_network.Station)
+
+
+   .. py:method:: compute(stations: Dict[str, pyskyfire.network.engine_network.Station], signals: Dict[str, float]) -> tuple[Dict[str, pyskyfire.network.engine_network.Station], Dict[str, float]]
+
+      
+      Compute one pass of the block.
+
+
+      :Parameters:
+
+          **stations_in** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.network.engine_network.Station>`]
+              Input network stations keyed by name.
+
+          **signals_in** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
+              Input scalar signals keyed by name.
+
+
+
+      :Returns:
+
+          **stations_out** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.network.engine_network.Station>`]
+              Updated or newly created stations produced by the block.
+
+          **signals_out** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
+              Updated or newly created scalar signals produced by the block.
+
+
+
+
+
+
+
+
+      .. rubric:: Notes
+
+      .. Note::
+          Implementations should treat missing inputs as an error. The engine network orchestrator is expected to provide the declared inputs.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: post_process(stations, signals)
+
+      
+      Return the feed result at the converged plenum condition.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

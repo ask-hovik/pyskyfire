@@ -1,0 +1,136 @@
+pyskyfire.pump.diffuser
+=======================
+
+.. py:module:: pyskyfire.pump.diffuser
+
+.. autoapi-nested-parse::
+
+   Vaned radial diffuser between an impeller and its volute.
+
+   A vaneless volute collects the impeller discharge at nearly the speed it left
+   the wheel, and it carries it round the whole circumference that way, so its
+   friction is paid at the impeller's own dynamic head. Vanes take the swirl out
+   sooner. They are fixed, so they do no work: they push on the flow, remove its
+   angular momentum and turn it outward, so it reaches the volute radius in a
+   short path, and the channels between them widen, so it slows by their area
+   ratio rather than only by the radius ratio. The volute behind then collects
+   slow, low-swirl flow.
+
+   The design follows Gülich, chapter 7.9. The inlet is placed and sized by his
+   rules: the gap to the impeller from the pressure-pulsation limits (Table
+   10.2), the inlet width from the impeller outlet width, the vane angle from the
+   approach flow (T7.7.4 to T7.7.6) and the throat from conservation of angular
+   momentum times a factor (T7.7.10), or from a chosen deceleration (T7.7.11).
+   Each channel then opens from its throat at the rate that gives it the area
+   ratio recovering the most pressure for its length (T1.7.13), so its recovery
+   is Gülich's optimum (T1.7.14), corrected for the channel's curvature
+   (Eq. 1.46), and not a value read off a chart at some other ratio.
+
+   The vanes are thin, of the thickness Gülich gives for a diffuser vane (7.9.2),
+   with rounded ends. Each is a camber line: a log spiral from the leading edge,
+   at the angle that makes the throat to the next vane's leading edge the design
+   throat, then turning outward just fast enough that the channel between two
+   vanes -- about the pitch times the sine of their angle, less a vane
+   thickness -- widens at that rate. The channels therefore curve. A straight
+   channel would leave the throat far steeper than the flow arriving at it, and
+   the vane between two of them would be a wedge filling most of the ring.
+
+   Gülich's quality criteria for the finished diffuser are reported on
+   :attr:`VanedDiffuser.checks`, never enforced. Only a geometry that cannot be
+   drawn raises.
+
+   References
+   ----------
+   Gülich, J. F., *Centrifugal Pumps*, 4th ed., Springer, 2020. Tables 1.7, 3.8
+   (2), 7.7 and 10.2; chapter 7.9.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/pump/diffuser/DiffuserChecks
+   /autoapi/pyskyfire/pump/diffuser/DiffuserGeometry
+   /autoapi/pyskyfire/pump/diffuser/DiffuserOutlet
+   /autoapi/pyskyfire/pump/diffuser/DiffuserResult
+   /autoapi/pyskyfire/pump/diffuser/VanedDiffuser
+
+.. autoapisummary::
+
+   pyskyfire.pump.diffuser.DiffuserChecks
+   pyskyfire.pump.diffuser.DiffuserGeometry
+   pyskyfire.pump.diffuser.DiffuserOutlet
+   pyskyfire.pump.diffuser.DiffuserResult
+   pyskyfire.pump.diffuser.VanedDiffuser
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.pump.diffuser.minimum_gap_ratio
+   pyskyfire.pump.diffuser.vane_count_conflicts
+
+
+Module Contents
+---------------
+
+.. py:function:: minimum_gap_ratio(*, nq, rho, H)
+
+   
+   Smallest d3/d2 Gülich allows for low pressure pulsations (Table 10.2).
+
+   ``H`` is the stage head [m] and ``rho`` its density [kg/m³]. The gap grows
+   with the energy density rho*H, which is what drives the rotor-stator
+   interaction; at the heads of a rocket pump it is well over ten percent.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: vane_count_conflicts(vane_count, blade_count)
+
+   
+   Vane and blade count pairings Gülich says to avoid (7.9.1 item 5, Table 10.2).
+
+   Each entry is ``(nu2, nu3, m)`` with ``m = nu3*vane_count - nu2*blade_count``
+   of 0 or +-1 for ``nu`` up to 3: those put a harmonic of the blade passing
+   on a harmonic of the vane passing, or one lobe off it, and drive pressure
+   pulsations. An empty tuple is a pairing he would accept.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

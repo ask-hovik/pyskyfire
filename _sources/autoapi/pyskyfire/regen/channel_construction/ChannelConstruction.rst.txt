@@ -1,0 +1,58 @@
+pyskyfire.regen.channel_construction.ChannelConstruction
+========================================================
+
+.. py:class:: pyskyfire.regen.channel_construction.ChannelConstruction
+
+   
+   One circuit's resolved section geometry along a nominal winding.
+
+   ``planes`` are what the section boundary is drawn in -- transverse for a
+   squared section, flow-normal for a rounded one -- while ``flow_planes`` are
+   always flow-normal and are what the centroid is measured in. ``profiles``
+   carries the resolved dimensions, including the base-point path the section
+   is anchored on, and ``gas_area`` the combustion-gas area each channel's
+   sector keeps.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: centroid_path(cross_section)
+
+      
+      Return the section centroid in world cylindrical coordinates.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: polygon(index, n_arc_points=8)
+

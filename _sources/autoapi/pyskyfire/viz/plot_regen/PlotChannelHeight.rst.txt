@@ -1,7 +1,7 @@
 pyskyfire.viz.plot_regen.PlotChannelHeight
 ==========================================
 
-.. py:class:: pyskyfire.viz.plot_regen.PlotChannelHeight(thrust_chamber, circuit_index: IndexLike = None)
+.. py:class:: pyskyfire.viz.plot_regen.PlotChannelHeight(thrust_chamber, circuit_index: IndexLike = None, *, height: str = 'full')
 
    Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
 
@@ -11,8 +11,12 @@ pyskyfire.viz.plot_regen.PlotChannelHeight
 
 
    
-   Plot the raw cooling-channel height profile for selected circuits.
+   Plot full internal coolant height, or optionally rounded base height.
 
+   ``height="full"`` (default) reports full height even when a rounded
+   section accepts base-height input. ``height="base"`` reports only the
+   legacy base parameter; ``height="both"`` overlays both with distinct
+   labels and line styles. Squared sections have equal full/base heights.
 
 
 

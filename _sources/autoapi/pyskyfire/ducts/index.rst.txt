@@ -1,0 +1,55 @@
+pyskyfire.ducts
+===============
+
+.. py:module:: pyskyfire.ducts
+
+.. autoapi-nested-parse::
+
+   
+   Duct hydraulics shared by cooling channels, piping and manifolds.
+
+   This subpackage contains shared path geometry, explicit pipe hydraulics,
+   annular ducts, orifices and orifice plates, and volute and collector manifolds. It depends only on :mod:`pyskyfire.common` for
+   planar section primitives and friction correlations and :mod:`pyskyfire.thermo` for fluid state records,
+   and it does not import from :mod:`pyskyfire.regen` or :mod:`pyskyfire.network`,
+   so cooling channels, turbopump hardware and engine-network adapters can all
+   depend on it without a cycle.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/pyskyfire/ducts/annular/index
+   /autoapi/pyskyfire/ducts/area_law/index
+   /autoapi/pyskyfire/ducts/exit_cone/index
+   /autoapi/pyskyfire/ducts/half_moon/index
+   /autoapi/pyskyfire/ducts/manifold/index
+   /autoapi/pyskyfire/ducts/manifold_law/index
+   /autoapi/pyskyfire/ducts/orifice/index
+   /autoapi/pyskyfire/ducts/path/index
+   /autoapi/pyskyfire/ducts/pipe/index
+   /autoapi/pyskyfire/ducts/port/index
+   /autoapi/pyskyfire/ducts/volute/index
+   /autoapi/pyskyfire/ducts/volute_section/index
+
+

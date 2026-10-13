@@ -1,0 +1,32 @@
+pyskyfire.ducts.pipe.PipeCorrelationWarning
+===========================================
+
+.. py:exception:: pyskyfire.ducts.pipe.PipeCorrelationWarning
+
+   Bases: :py:obj:`RuntimeWarning`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.pipe.PipeCorrelationWarning
+      :parts: 1
+      :private-bases:
+
+
+   
+   A duct loss correlation is being evaluated outside what it describes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

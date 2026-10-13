@@ -1,0 +1,25 @@
+pyskyfire.injector.element.JetFlow
+==================================
+
+.. py:class:: pyskyfire.injector.element.JetFlow
+
+   
+   The flow out of one hole: mass flow [kg/s], velocity [m/s], density [kg/m³].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

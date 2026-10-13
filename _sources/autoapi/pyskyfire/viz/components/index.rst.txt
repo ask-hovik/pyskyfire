@@ -1,0 +1,122 @@
+pyskyfire.viz.components
+========================
+
+.. py:module:: pyskyfire.viz.components
+
+.. autoapi-nested-parse::
+
+   Engineering objects adapted into local-coordinate scene hierarchies.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/viz/components/AnnularDuctComponent
+   /autoapi/pyskyfire/viz/components/DiffuserComponent
+   /autoapi/pyskyfire/viz/components/ImpellerComponent
+   /autoapi/pyskyfire/viz/components/ManifoldComponent
+   /autoapi/pyskyfire/viz/components/PipeComponent
+   /autoapi/pyskyfire/viz/components/ThrustChamberComponent
+   /autoapi/pyskyfire/viz/components/TurbineComponent
+   /autoapi/pyskyfire/viz/components/VoluteComponent
+
+.. autoapisummary::
+
+   pyskyfire.viz.components.AnnularDuctComponent
+   pyskyfire.viz.components.DiffuserComponent
+   pyskyfire.viz.components.ImpellerComponent
+   pyskyfire.viz.components.ManifoldComponent
+   pyskyfire.viz.components.PipeComponent
+   pyskyfire.viz.components.ThrustChamberComponent
+   pyskyfire.viz.components.TurbineComponent
+   pyskyfire.viz.components.VoluteComponent
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.viz.components.duct_fields
+   pyskyfire.viz.components.volute_fields
+
+
+Module Contents
+---------------
+
+.. py:function:: duct_fields(result)
+
+   
+   Adapt a :class:`~pyskyfire.ducts.DuctResult` into scene fields.
+
+   Station quantities become point fields and interval (connection)
+   quantities become cell fields, both in the base SI units the solver
+   already works in. NaN is retained where an interval does not define a
+   quantity, such as the Darcy factor of a lumped bend. :class:`PipeComponent`
+   and :class:`AnnularDuctComponent` map either association onto their
+   meshes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: volute_fields(result, exit_stations=0)
+
+   
+   Adapt a :class:`~pyskyfire.ducts.VoluteResult` into scene fields.
+
+   Every quantity carries one value per azimuthal station, so all are
+   point-associated and :class:`VoluteComponent` repeats each around its
+   station's section ring. Units are the base SI units the solver works in.
+
+   ``collected`` marks the fraction of the mass flow gathered so far, and
+   ``clipped`` flags the stations near the tongue where the area law asked for
+   a section smaller than the family admits.
+
+   ``exit_stations`` appends that many further values covering the exit-cone
+   duct, so a component sweeping the duct can colour it too. Pressure and
+   velocity carry their real variation along it; the rest hold their
+   collection-plane value, since the duct has no azimuth left to vary with.
+
+   The two pressures are worth reading with their model in mind. Aungier
+   charges one lumped coefficient per mechanism across the whole passage, so
+   how the loss is spread round the volute is an assumption made for display
+   -- see :meth:`~pyskyfire.ducts.VoluteResult.stagnation_pressure`. The
+   endpoints are what the analysis actually fixes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

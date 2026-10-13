@@ -1,0 +1,32 @@
+pyskyfire.regen.channel_layout.AnalyticalLayoutError
+====================================================
+
+.. py:exception:: pyskyfire.regen.channel_layout.AnalyticalLayoutError
+
+   Bases: :py:obj:`ValueError`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.regen.channel_layout.AnalyticalLayoutError
+      :parts: 1
+      :private-bases:
+
+
+   
+   Raised when nominal circuits cannot form an exact analytical layout.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

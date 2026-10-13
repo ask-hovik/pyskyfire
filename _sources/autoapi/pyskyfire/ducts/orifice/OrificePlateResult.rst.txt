@@ -1,0 +1,62 @@
+pyskyfire.ducts.orifice.OrificePlateResult
+==========================================
+
+.. py:class:: pyskyfire.ducts.orifice.OrificePlateResult
+
+   Bases: :py:obj:`OrificeResult`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.orifice.OrificePlateResult
+      :parts: 1
+      :private-bases:
+
+
+   
+   An :class:`OrificeResult` with the plate's metering quantities.
+
+   ``throat_state`` is at the downstream tap, and
+   :attr:`differential_pressure` is the tap-to-tap drop a flow meter reads.
+   ``outlet_state`` is where the flow has recovered to the pipe bore, so
+   :attr:`pressure_loss` is the permanent loss, which is smaller.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:property:: differential_pressure
+      :type: float
+
+
+      
+      Drop between the upstream and downstream taps [Pa].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

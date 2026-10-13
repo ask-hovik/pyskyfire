@@ -1,0 +1,31 @@
+pyskyfire.pump.diffuser.DiffuserGeometry
+========================================
+
+.. py:class:: pyskyfire.pump.diffuser.DiffuserGeometry
+
+   
+   One vane and the walls it stands between, in the impeller's own frame.
+
+   ``vane`` is a :class:`~pyskyfire.common.BladeSurface` in (x, r, theta)
+   about the shaft (+x), in the wheel's rotation sense; ``suction`` is the
+   face toward the impeller and ``pressure`` the one away from it. ``hub``
+   and ``shroud`` are the (x, r) wall curves from the impeller outlet to the
+   diffuser outlet, symmetric about the impeller's outlet mid-plane at x = 0,
+   with the hub at +x as on the impeller.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

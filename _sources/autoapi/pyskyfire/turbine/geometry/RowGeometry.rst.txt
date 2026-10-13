@@ -1,0 +1,217 @@
+pyskyfire.turbine.geometry.RowGeometry
+======================================
+
+.. py:class:: pyskyfire.turbine.geometry.RowGeometry
+
+   
+   One row's blade and its measured section properties.
+
+
+
+   :Attributes:
+
+       **row** : :obj:`BladeRow`
+           The row as drawn.
+
+       **blade** : :obj:`BladeSurface`
+           One blade, ``(span, chord, 3)`` in ``(x, r, theta)``, with its section
+           centroids at ``theta = 0``.
+
+       **span_fractions** : :obj:`ndarray <numpy.ndarray>`
+           Span station of each section, 0 at the hub end of the blade.
+
+       **section_radius** : :obj:`ndarray <numpy.ndarray>`
+           Radius each section was drawn at and its pitch taken at [m].
+
+       **inlet_metal_angle, outlet_metal_angle** : :obj:`ndarray <numpy.ndarray>`
+           Metal angles of each section [rad].
+
+       **throat** : :obj:`ndarray <numpy.ndarray>`
+           Shortest distance from the trailing edge to the neighbouring blade,
+           per section [m].
+
+       **max_thickness** : :obj:`ndarray <numpy.ndarray>`
+           Largest thickness of each section [m].
+
+       **narrowest** : :obj:`ndarray <numpy.ndarray>`
+           Narrowest gap anywhere between neighbouring blades, per section [m].
+
+       **narrowest_at** : :obj:`ndarray <numpy.ndarray>`
+           Where that gap is, as a fraction of the axial chord from the leading
+           edge, per section.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: at_mid_span(values) -> float
+
+      
+      ``values`` (one per section) interpolated to mid-span.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: gauging_angle
+      :type: numpy.ndarray
+
+
+      
+      ``acos(throat/pitch)``, signed as the outlet metal angle [rad].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: inlet_width
+      :type: numpy.ndarray
+
+
+      
+      Width the flow enters through, ``pitch*cos(inlet metal angle)`` [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: narrowest_height
+      :type: numpy.ndarray
+
+
+      
+      Blade height where the narrowest gap is, between the row's edge heights [m].
+
+      With it, ``narrowest*narrowest_height`` is the passage's smallest flow
+      area, to set beside ``inlet_width*row.height_in``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: pinch
+      :type: numpy.ndarray
+
+
+      
+      Narrowest gap over the smaller of the inlet width and the throat.
+
+      One where the passage narrows no further than its ends; below one, the
+      flow accelerates into the pinch and diffuses out of it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: pitch
+      :type: numpy.ndarray
+
+
+      
+      Blade spacing at each section's radius [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

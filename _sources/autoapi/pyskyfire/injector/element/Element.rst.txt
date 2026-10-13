@@ -1,0 +1,136 @@
+pyskyfire.injector.element.Element
+==================================
+
+.. py:class:: pyskyfire.injector.element.Element
+
+   Bases: :py:obj:`abc.ABC`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.injector.element.Element
+      :parts: 1
+      :private-bases:
+
+
+   
+   Base class for injector element types.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: diagnostics(flows: tuple[JetFlow, ...], oxidizer: frozenset)
+      :abstractmethod:
+
+
+      
+      Mixing quantities of one element.
+
+      ``flows`` is aligned with :meth:`holes`. ``oxidizer`` is the set of
+      feeds carrying oxidizer; every other feed carries fuel.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: holes() -> tuple[Hole, ...]
+      :abstractmethod:
+
+
+      
+      Every hole of one element, in the element frame.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: orifices(feed) -> list[pyskyfire.ducts.orifice.Orifice]
+
+      
+      Every orifice fed from ``feed``: one entry per hole, repeats included.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: feeds
+      :type: tuple
+
+
+      
+      The feeds supplying this element, in the order its holes list them.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

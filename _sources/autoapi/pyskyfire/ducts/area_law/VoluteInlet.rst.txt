@@ -1,0 +1,147 @@
+pyskyfire.ducts.area_law.VoluteInlet
+====================================
+
+.. py:class:: pyskyfire.ducts.area_law.VoluteInlet
+
+   
+   Flow conditions and placement at the volute inlet, Aungier's station 5.
+
+
+
+   :Attributes:
+
+       **radius** : :class:`python:float`
+           Inlet radius ``r5`` [m], where the collected flow enters the volute.
+
+       **C_m** : :class:`python:float`
+           Meridional (through-the-slot) velocity component [m/s]. For a volute
+           around a pump discharge this is radial; the tilt of the inlet plane
+           rotates it rigidly and does not change its magnitude.
+
+       **C_u** : :class:`python:float`
+           Tangential velocity component [m/s]. This is the swirl the volute
+           collects, and it must be positive: a volute with no incoming swirl has
+           no angular momentum to conserve, and neither the design law nor the
+           loss model applies to it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:property:: C
+      :type: float
+
+
+      
+      Inlet velocity magnitude [m/s]. Losses are referred to its head.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: alpha
+      :type: float
+
+
+      
+      Inlet flow angle from tangential [rad].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: swirl
+      :type: float
+
+
+      
+      Inlet angular momentum ``r5 * C_u5`` [m^2/s].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: tan_alpha
+      :type: float
+
+
+      
+      Tangent of the inlet flow angle measured from tangential.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

@@ -336,9 +336,7 @@ pyskyfire.regen.contour.Contour
    .. py:property:: eps_c
 
       
-      Get the contraction ratio for the chamber
-      Returns: 
-          (float): contraction ratio 
+      Chamber contraction ratio.
 
 
 

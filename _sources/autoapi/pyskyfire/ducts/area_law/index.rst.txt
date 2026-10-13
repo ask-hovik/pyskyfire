@@ -1,0 +1,55 @@
+pyskyfire.ducts.area_law
+========================
+
+.. py:module:: pyskyfire.ducts.area_law
+
+.. autoapi-nested-parse::
+
+   Rules that set how a volute cross-section grows with azimuth.
+
+   An area law answers one question: at polar angle ``theta`` measured from the
+   tongue, how big should the passage be? It answers it as a residual rather than
+   as an area, because the shaped laws constrain the area *and* the centroid
+   radius together, and both follow from the section size. The volute solver
+   drives that residual to zero.
+
+   Two laws are provided.
+
+   :class:`ConstantAngularMomentum`
+       The shaped volute. Aungier calls this the method of choice, since departing
+       from conserved angular momentum is what drives the tangential-velocity
+       loss.
+
+   :class:`ConstantArea`
+       The unshaped collector: a passage of uniform cross-section all the way
+       around. This is the plain toroidal manifold used on cooling-circuit inlets
+       where manufacturing cost outweighs hydraulic efficiency.
+
+   References
+   ----------
+   Aungier, R. H., *Centrifugal Compressors: A Strategy for Aerodynamic Design and
+   Analysis*, ASME Press, 2000, Chapter 11.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/area_law/AreaLaw
+   /autoapi/pyskyfire/ducts/area_law/ConstantAngularMomentum
+   /autoapi/pyskyfire/ducts/area_law/ConstantArea
+   /autoapi/pyskyfire/ducts/area_law/VoluteInlet
+
+.. autoapisummary::
+
+   pyskyfire.ducts.area_law.AreaLaw
+   pyskyfire.ducts.area_law.ConstantAngularMomentum
+   pyskyfire.ducts.area_law.ConstantArea
+   pyskyfire.ducts.area_law.VoluteInlet
+
+

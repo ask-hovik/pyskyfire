@@ -1,0 +1,159 @@
+pyskyfire.turbine.axial.AxialTurbine
+====================================
+
+.. py:class:: pyskyfire.turbine.axial.AxialTurbine(duty, efficiency, stages, *, mean_diameter=None, blade_jet_ratio=None, work_split=None, inlet_swirl=0.0, loss_split=None, rows=None, rotation=COUNTERCLOCKWISE)
+
+   
+   Design an axial turbine at mean radius. See the module docstring.
+
+
+   :Parameters:
+
+       **duty** : :obj:`TurbineDuty`
+           What the turbine is asked to do.
+
+       **efficiency** : :class:`python:float`
+           Actual work over ``duty.isentropic_head``, on the duty's own basis.
+
+       **stages** : :term:`python:sequence` :obj:`of` :obj:`Stage`
+           Stator-rotor pairs, in flow order.
+
+       **mean_diameter** : :class:`python:float`, :obj:`optional`
+           Blade mean diameter [m].
+
+       **blade_jet_ratio** : :class:`python:float`, :obj:`optional`
+           ``u/c0``, used instead of ``mean_diameter``.
+
+       **work_split** : :term:`python:sequence` :obj:`of` :class:`python:float`, :obj:`optional`
+           Each stage's share of the work. Default: equal.
+
+       **inlet_swirl** : :class:`python:float`
+           Absolute swirl entering the first stator [m s⁻¹].
+
+       **loss_split** : :term:`python:sequence` :obj:`of` :class:`python:float`, :obj:`optional`
+           Each row's share of the entropy rise. Default: equal.
+
+       **rows** : :obj:`RowSettings`
+           How the triangles become blades.
+
+       **rotation** : :class:`python:str`
+           Which way the rotor turns about +x.
+
+   :Attributes:
+
+       **stations** : :class:`python:tuple` :obj:`of` :obj:`StationFlow`
+           The flow at every row edge, inlet to exit.
+
+       **stages** : :class:`python:tuple` :obj:`of` :obj:`StageFlow`
+           ..
+
+       **definition** : :obj:`TurbineDefinition`
+           ..
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _blade_count(flow_in, flow_out, chord, axial_chord)
+
+
+   .. py:method:: _build_definition()
+
+
+   .. py:method:: _shares(values, n, label)
+      :staticmethod:
+
+
+
+   .. py:method:: _solve_thermodynamics()
+
+
+   .. py:method:: _swirls(stage, c_in, c_x, work)
+
+      
+      Rotor inlet and exit swirl for one stage, from its reaction or exit swirl.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: station_height(station) -> float
+
+      
+      Annulus height continuity asks for at a station [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: exit_flow_angle
+      :type: float
+
+
+
+   .. py:property:: exit_swirl
+      :type: float
+
+
+      
+      Absolute swirl leaving the last rotor [m s⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

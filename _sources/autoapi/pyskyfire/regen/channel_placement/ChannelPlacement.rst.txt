@@ -1,27 +1,22 @@
 pyskyfire.regen.channel_placement.ChannelPlacement
 ==================================================
 
-.. py:class:: pyskyfire.regen.channel_placement.ChannelPlacement(n_channel_positions: int, channel_width=None, occludes: bool = True)
-
-   Bases: :py:obj:`abc.ABC`
-
-   .. autoapi-inheritance-diagram:: pyskyfire.regen.channel_placement.ChannelPlacement
-      :parts: 1
-      :private-bases:
-
+.. py:class:: pyskyfire.regen.channel_placement.ChannelPlacement(n_channel_positions: int, channel_angular_width=None, occludes: bool = True, helix_angle=0.0)
 
    
-   Abstract base class defining how coolant channels are positioned.
+   Base class defining how coolant channels are wound around the contour.
 
-   Subclasses implement different placement strategies (surface, internal)
-   that compute the radial coordinate of the channel centerline.
+   A placement owns the circumferential packing and the winding rate; where a
+   section then sits radially is resolved from the cross section and the wall
+   stack rather than from the placement. On its own this class describes
+   plain axial channels, and subclasses (surface, internal) refine it.
 
    :Parameters:
 
        **n_channel_positions** : :class:`python:int`
            Number of circumferential channel locations (“leaves”).
 
-       **channel_width** : :func:`python:callable` or :data:`python:None`, :obj:`optional`
+       **channel_angular_width** : :func:`python:callable` or :data:`python:None`, :obj:`optional`
            Function returning angular width [rad]. May be `None` if uniform.
 
        **occludes** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
@@ -32,7 +27,7 @@ pyskyfire.regen.channel_placement.ChannelPlacement
        **n_channel_positions** : :class:`python:int`
            Number of circumferential positions.
 
-       **channel_width** : :func:`python:callable` or :data:`python:None`
+       **channel_angular_width** : :func:`python:callable` or :data:`python:None`
            Angular width function or constant.
 
        **occludes** : :ref:`bool <python:bltin-boolean-values>`
@@ -60,10 +55,60 @@ pyskyfire.regen.channel_placement.ChannelPlacement
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: centerline_dtheta_dx(x: float, contour, flow_radius: float, flow_dr_dx: float) -> float
+   .. py:method:: __setstate__(state)
 
       
-      Return ``dtheta/dx`` for the actual coolant-flow centreline.
+      Load placements serialized before the angular-width rename.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _context(x, contour=None, circuit=None, *, include_section: bool) -> pyskyfire.regen.design_inputs.DesignContext
+
+      
+      Build the design-input context for one station.
+
+      A placement may be shared by several circuits, so the circuit is passed
+      in per call rather than stored. Without one, only tier A is available.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: channel_angular_width(x, contour=None, circuit=None) -> float
+
+      
+      Return the user-specified angular width [rad] at ``x``.
 
 
 
@@ -87,67 +132,61 @@ pyskyfire.regen.channel_placement.ChannelPlacement
    .. py:method:: channel_count() -> int
 
 
-   .. py:method:: compute_centerline_radius(x: float, contour) -> float
-      :abstractmethod:
-
-
-      
-      Return the section-reference radius ``r(x)`` for this placement.
-
-      For surface channels this is the hot-wall radius used by the
-      cross-section models.  The coolant-flow centre is obtained separately
-      with :meth:`compute_flow_centerline_radius`.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: compute_flow_centerline_radius(x: float, contour, wall_thickness: float, channel_height: float) -> float
-
-      
-      Return the radius of the modeled coolant-flow centre [m].
-
-      Placements that already describe a flow centre need no offset.  A
-      surface placement overrides this because its section reference is the
-      hot wall.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: dtheta_dx(x: float, contour) -> float
+   .. py:method:: dtheta_dx(x: float, contour, circuit=None) -> float
 
       
       Return dθ/dx [rad/m] for the representative lane centerline.
       Default: 0 (axial/vertical channels).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: helix_angle(x, contour=None, circuit=None) -> float
+
+      
+      Return the local helix angle [rad], measured from the meridian.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: has_channel_angular_width
+      :type: bool
+
+
+      
+      Whether this placement defines its own angular-width law.
 
 
 

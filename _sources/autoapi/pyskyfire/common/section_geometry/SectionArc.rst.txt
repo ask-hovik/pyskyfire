@@ -1,0 +1,13 @@
+pyskyfire.common.section_geometry.SectionArc
+============================================
+
+.. py:class:: pyskyfire.common.section_geometry.SectionArc
+
+   .. py:method:: derivative(fraction)
+
+
+   .. py:method:: evaluate(fraction)
+
+
+   .. py:method:: points(index, count)
+

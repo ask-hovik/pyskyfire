@@ -1,0 +1,270 @@
+pyskyfire.regen.cad_geometry
+============================
+
+.. py:module:: pyskyfire.regen.cad_geometry
+
+.. autoapi-nested-parse::
+
+   Geometry-only transverse sections and hot-wall surfaces.
+
+   No solver dimensions, paths or section analytics are modified here. Oblique
+   sections represent the local prismatic approximation, not exact CAD sweep cuts.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/regen/cad_geometry/PlanarArc
+   /autoapi/pyskyfire/regen/cad_geometry/PlanarLine
+   /autoapi/pyskyfire/regen/cad_geometry/TangentBezier
+   /autoapi/pyskyfire/regen/cad_geometry/TransverseConstruction
+
+.. autoapisummary::
+
+   pyskyfire.regen.cad_geometry.PlanarArc
+   pyskyfire.regen.cad_geometry.PlanarLine
+   pyskyfire.regen.cad_geometry.TangentBezier
+   pyskyfire.regen.cad_geometry.TransverseConstruction
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.regen.cad_geometry._hot_arc
+   pyskyfire.regen.cad_geometry._interval_bezier
+   pyskyfire.regen.cad_geometry._rotation
+   pyskyfire.regen.cad_geometry._secant_tangent
+   pyskyfire.regen.cad_geometry._span_union
+   pyskyfire.regen.cad_geometry._station_index
+   pyskyfire.regen.cad_geometry.build_hot_wall
+   pyskyfire.regen.cad_geometry.contour_corner_knots
+   pyskyfire.regen.cad_geometry.hot_wall_regions
+   pyskyfire.regen.cad_geometry.hot_wall_revolve
+   pyskyfire.regen.cad_geometry.join_hot_wall
+   pyskyfire.regen.cad_geometry.transverse_construction
+   pyskyfire.regen.cad_geometry.transverse_matrix
+
+
+Module Contents
+---------------
+
+.. py:function:: _hot_arc(construction, transverse, index, rotation)
+
+.. py:function:: _interval_bezier(contour, a, b)
+
+   
+   The cubic Bezier through four evenly spaced samples of one interval.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _rotation(angle)
+
+.. py:function:: _secant_tangent(contour, x, step)
+
+   
+   Unit (radius, axial) tangent of the meridian, from a short secant.
+
+   ``step`` is signed: a negative step reads the interval behind ``x``. The
+   result always points in the direction of increasing axial position, so a
+   contour corner shows up as two differing tangents at one knot.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _span_union(spans)
+
+.. py:function:: _station_index(stations, x)
+
+   
+   Index of the construction sample at ``x``.
+
+   Every hot-wall station is one of the samples its channel was constructed
+   on, so this is an exact lookup. Silently taking a neighbouring station's
+   geometry would mis-place the arc, so an inexact match is an error.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: build_hot_wall(chamber, resolved, *, trim_fraction=0.1, transition_fraction=0.02)
+
+   
+   Export contour revolves and independent, circumferentially blended lofts.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: contour_corner_knots(contour, grid, *, tolerance=0.001)
+
+   
+   Interior grid positions where the meridian's tangent jumps.
+
+   The throat carries independent slopes on either side, and interpolated
+   contours corner at every input point. A spline may only be fitted through
+   a smooth run, so these are the positions the run has to be cut at.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: hot_wall_regions(spans, squared, contour_span, *, transition_fraction=0.02)
+
+   
+   Partition covered spans by construction type and active channel seeds.
+
+   With rounded channels, changes into/out of shared spans leave a centered
+   open transition zone. Its width is a fraction of the full contour length,
+   matching the former blend-zone convention. Empty spans are never connected.
+   Squared-only spans can share a revolve regardless of channel count or winding.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: hot_wall_revolve(contour, start, end)
+
+   
+   Meridional splines in (radius, axial) mm, one per smooth contour run.
+
+   Each spline interpolates the contour's own knots, so CAD receives one
+   curve where the contour is smooth instead of a chain of short segments
+   that reads as faceted. Runs are cut at tangent discontinuities, which
+   keeps the throat corner sharp, and a trimmed span contributes its exact
+   endpoints without depending on coolant sampling.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: join_hot_wall(pieces, trim_fraction)
+
+   
+   Join angularly ordered (id, type, arc, reference angle) pieces.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: transverse_construction(construction)
+
+.. py:function:: transverse_matrix(construction, planes, index)
+

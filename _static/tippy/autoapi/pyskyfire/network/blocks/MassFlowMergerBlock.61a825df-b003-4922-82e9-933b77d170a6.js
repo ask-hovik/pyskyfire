@@ -1,0 +1,22 @@
+selector_to_html = {"a[href=\"../engine_network/Station.html#pyskyfire.network.engine_network.Station\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.network.engine_network.Station\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">class</span></span><span class=\"w\"> </span></span><span class=\"sig-prename descclassname\"><span class=\"pre\">pyskyfire.network.engine_network.</span></span><span class=\"sig-name descname\"><span class=\"pre\">Station</span></span></dt><dd><p>Thermodynamic state container used by the engine network.</p></dd>", "a[href=\"#pyskyfire-network-blocks-massflowmergerblock\"]": "<h1 class=\"tippy-header\" style=\"margin-top: 0;\">pyskyfire.network.blocks.MassFlowMergerBlock<a class=\"headerlink\" href=\"#pyskyfire-network-blocks-massflowmergerblock\" title=\"Link to this heading\">\u00b6</a></h1>", "a[href=\"#pyskyfire.network.blocks.MassFlowMergerBlock.compute\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.network.blocks.MassFlowMergerBlock.compute\">\n<span class=\"sig-name descname\"><span class=\"pre\">compute</span></span><span class=\"sig-paren\">(</span><em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">stations</span></span></em>, <em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">signals</span></span></em><span class=\"sig-paren\">)</span></dt><dd><p>Mix inlet streams by mass and enthalpy to produce the outlet.</p><p class=\"rubric\">Notes</p></dd>", "a[href=\"#pyskyfire.network.blocks.MassFlowMergerBlock\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.network.blocks.MassFlowMergerBlock\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">class</span></span><span class=\"w\"> </span></span><span class=\"sig-prename descclassname\"><span class=\"pre\">pyskyfire.network.blocks.</span></span><span class=\"sig-name descname\"><span class=\"pre\">MassFlowMergerBlock</span></span><span class=\"sig-paren\">(</span><em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">name</span></span><span class=\"p\"><span class=\"pre\">:</span></span><span class=\"w\"> </span><span class=\"n\"><a class=\"reference external\" href=\"https://docs.python.org/3/builtins/stdtypes.html#str\" title=\"(in Python v3.15)\"><span class=\"pre\">str</span></a></span></em>, <em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">st_in</span></span><span class=\"p\"><span class=\"pre\">:</span></span><span class=\"w\"> </span><span class=\"n\"><a class=\"reference external\" href=\"https://docs.python.org/3/builtins/stdtypes.html#list\" title=\"(in Python v3.15)\"><span class=\"pre\">list</span></a><span class=\"p\"><span class=\"pre\">[</span></span><a class=\"reference external\" href=\"https://docs.python.org/3/builtins/stdtypes.html#str\" title=\"(in Python v3.15)\"><span class=\"pre\">str</span></a><span class=\"p\"><span class=\"pre\">]</span></span></span></em>, <em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">st_out</span></span><span class=\"p\"><span class=\"pre\">:</span></span><span class=\"w\"> </span><span class=\"n\"><a class=\"reference external\" href=\"https://docs.python.org/3/builtins/stdtypes.html#str\" title=\"(in Python v3.15)\"><span class=\"pre\">str</span></a></span></em>, <em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">medium</span></span></em><span class=\"sig-paren\">)</span></dt><dd><p>Bases: <code class=\"xref py py-obj docutils literal notranslate\"><span class=\"pre\">FluidBlock</span></code></p><p>Merge multiple inlet streams into a single outlet.</p><p>Assumes identical fluid species and mixes by enthalpy at a reference\npressure equal to the minimum inlet pressure.</p></dd>"}
+skip_classes = ["headerlink", "sd-stretched-link"]
+
+window.onload = function () {
+    for (const [select, tip_html] of Object.entries(selector_to_html)) {
+        const links = document.querySelectorAll(` ${select}`);
+        for (const link of links) {
+            if (skip_classes.some(c => link.classList.contains(c))) {
+                continue;
+            }
+
+            tippy(link, {
+                content: tip_html,
+                allowHTML: true,
+                arrow: true,
+                placement: 'auto-start', maxWidth: 600, interactive: false,
+                onShow(instance) {MathJax.typesetPromise([instance.popper]).then(() => {});},
+            });
+        };
+    };
+    console.log("tippy tips loaded!");
+};

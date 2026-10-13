@@ -1,0 +1,42 @@
+pyskyfire.viz.heat_exchanger_component.HeatExchangerComponent
+=============================================================
+
+.. py:class:: pyskyfire.viz.heat_exchanger_component.HeatExchangerComponent
+
+   
+   Display an exchanger or chamber installation in the shared Scene.
+
+   Each channel is drawn as its wetted passage, the surface the coolant
+   touches, not the outer envelope of its walls. Raw exchangers use assembly
+   coordinates. Installations carry their simulation transform, relative to
+   the parent chamber; explicit Scene.add placement
+   overrides it. Each channel has inlet/outlet anchors. Root anchors
+   circuit_N.inlet/outlet refer to the first copy; origin is the assembly datum.
+
+   Optional results provide T_static, p_static, velocity, coolant_enthalpy
+   and T_coolant_wall, the wall temperature at the wetted interface. Wall
+   temperatures are area averages per exposed surface and segment. Inactive
+   portions remain NaN. The opposite (gas-side) interface is not drawn.
+   With results, each circuit records its CoolProp fluid name as
+   ``metadata["fluid"]``. ``circuit_colors`` paints each circuit apart;
+   without it every channel takes the default colour.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build()
+

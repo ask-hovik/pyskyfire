@@ -1,0 +1,144 @@
+pyskyfire.ducts.port.ResolvedPort
+=================================
+
+.. py:class:: pyskyfire.ducts.port.ResolvedPort
+
+   
+   A duct placed in machine coordinates.
+
+
+
+   :Attributes:
+
+       **start, end** : :obj:`np.ndarray <numpy.ndarray>`
+           Centres of the passage outlet and of the flange [m, shape (3,)].
+
+       **start_direction, end_direction** : :obj:`np.ndarray <numpy.ndarray>`
+           Unit normals there [shape (3,)].
+
+       **arc_length, turn_angle, bend_radius** : :class:`python:float`
+           Centreline length [m], total turn [rad], and centreline bend radius
+           [m], which is infinite for a straight duct.
+
+       **outlet_diameter, final_diameter** : :class:`python:float`
+           Bore the duct leaves from and the flange it delivers to [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _axis()
+
+
+   .. py:method:: _start_frame()
+
+      
+      A frame spanning the plane the duct starts in.
+
+      Radial is taken from where the outlet sits rather than from the
+      direction it leaves along, so a clockwise volute -- whose tangential
+      runs the other way -- still gets radial pointing outward. Where the
+      duct leaves along a direction radial is not perpendicular to, as a
+      manifold's does, radial is squared up against it first.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: frames(n_stations=17, *, start_frame=None)
+
+      
+      Centreline points and a non-twisting cross-section frame.
+
+
+      :Parameters:
+
+          **start_frame** : :class:`python:tuple` :obj:`of` :obj:`np.ndarray <numpy.ndarray>`, :obj:`optional`
+              Override for the frame at the outlet, as ``(u0, v0)`` unit vectors
+              perpendicular to :attr:`start_direction`. Defaults to
+              :meth:`_start_frame`. A passage whose section is tilted passes its
+              own basis here instead, so the duct's first ring is bit-identical
+              to the passage's last one rather than merely tangent to the same
+              curve at different points along it.
+
+
+
+      :Returns:
+
+          **points, u, v** : :obj:`np.ndarray <numpy.ndarray>`
+              Centreline [m, shape (N,3)] and two unit vectors spanning each
+              station's cross-section plane [shape (N,3)]. The arc is planar, so
+              rotating the starting frame about the arc's own axis carries it
+              along without twist, whatever that starting frame is.
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sweep(n_points=64, n_stations=9)
+
+      
+      The duct's own wall, as closed boundary rings [m, shape (N, M, 3)].
+
+      The duct's own frame, not the passage's: a stub leaves along the way its
+      section faces, so that section's outward direction *is* the duct axis
+      and spanning the cross-section with it would flatten the tube into the
+      plane it should be normal to.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: is_straight
+      :type: bool
+
+

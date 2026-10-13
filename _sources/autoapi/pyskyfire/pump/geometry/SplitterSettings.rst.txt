@@ -1,0 +1,30 @@
+pyskyfire.pump.geometry.SplitterSettings
+========================================
+
+.. py:class:: pyskyfire.pump.geometry.SplitterSettings
+
+   
+   One repeated splitter family following the main-blade camber.
+
+   ``start`` is the fraction of the main camber parameter where it begins;
+   ``pitch_fraction`` locates it between adjacent main blades.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

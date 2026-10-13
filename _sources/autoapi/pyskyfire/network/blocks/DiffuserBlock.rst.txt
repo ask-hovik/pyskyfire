@@ -1,0 +1,121 @@
+pyskyfire.network.blocks.DiffuserBlock
+======================================
+
+.. py:class:: pyskyfire.network.blocks.DiffuserBlock(name, st_in, st_out, diffuser, transport)
+
+   Bases: :py:obj:`FluidBlock`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.network.blocks.DiffuserBlock
+      :parts: 1
+      :private-bases:
+
+
+   
+   Engine-network adapter for one :class:`~pyskyfire.pump.VanedDiffuser`.
+
+   Sits between a pump block, whose outlet is the impeller outlet, and the
+   volute that collects the diffuser's discharge. It hands the network's
+   inlet station to :meth:`VanedDiffuser.solve` and emits the outlet station
+   and a ``dp_<name>`` loss signal. The geometry is resolved when the
+   diffuser is designed, so the network may iterate the operating point
+   freely. The diffuser is adiabatic; the outlet carries the inlet
+   temperature, as a volute's does.
+
+   :Parameters:
+
+       **name** : :class:`python:str`
+           Block name used for the pressure-loss signal.
+
+       **st_in, st_out** : :class:`python:str`
+           Inlet and outlet network station keys.
+
+       **diffuser** : :obj:`pyskyfire.pump.VanedDiffuser`
+           The designed diffuser.
+
+       **transport** : :obj:`object`
+           Fluid-property provider with ``get_rho`` and ``get_mu``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _solve(station: pyskyfire.network.engine_network.Station)
+
+
+   .. py:method:: compute(stations, signals)
+
+      
+      Compute one pass of the block.
+
+
+      :Parameters:
+
+          **stations_in** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.network.engine_network.Station>`]
+              Input network stations keyed by name.
+
+          **signals_in** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
+              Input scalar signals keyed by name.
+
+
+
+      :Returns:
+
+          **stations_out** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.network.engine_network.Station>`]
+              Updated or newly created stations produced by the block.
+
+          **signals_out** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
+              Updated or newly created scalar signals produced by the block.
+
+
+
+
+
+
+
+
+      .. rubric:: Notes
+
+      .. Note::
+          Implementations should treat missing inputs as an error. The engine network orchestrator is expected to provide the declared inputs.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: post_process(stations, signals)
+
+      
+      Return the detailed diffuser result at the converged inlet condition.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

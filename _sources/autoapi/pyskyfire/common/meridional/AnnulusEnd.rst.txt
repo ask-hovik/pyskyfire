@@ -1,0 +1,86 @@
+pyskyfire.common.meridional.AnnulusEnd
+======================================
+
+.. py:class:: pyskyfire.common.meridional.AnnulusEnd
+
+   
+   One end of a passage: what anything joining it there has to match.
+
+
+
+   :Attributes:
+
+       **x** : :class:`python:float`
+           Axial position of the hub end of the span line [m].
+
+       **hub, shroud** : :obj:`ndarray <numpy.ndarray>`, :obj:`shape` (2,)
+           ``(x, r)`` of each wall's end point.
+
+       **hub_tangent, shroud_tangent** : :obj:`ndarray <numpy.ndarray>`, :obj:`shape` (2,)
+           Unit ``(x, r)`` direction of each wall, pointing downstream.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:property:: area
+      :type: float
+
+
+      
+      Area the span line sweeps, as :meth:`MeridionalPassage.area`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: height
+      :type: float
+
+
+
+   .. py:property:: r_hub
+      :type: float
+
+
+
+   .. py:property:: r_mean
+      :type: float
+
+
+
+   .. py:property:: r_shroud
+      :type: float
+
+
+
+   .. py:property:: x
+      :type: float
+
+

@@ -1,0 +1,4 @@
+pyskyfire.pump.geometry.BladeSection
+====================================
+
+.. py:class:: pyskyfire.pump.geometry.BladeSection

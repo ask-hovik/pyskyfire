@@ -1,0 +1,58 @@
+pyskyfire.ducts.port.Port
+=========================
+
+.. py:class:: pyskyfire.ducts.port.Port
+
+   Bases: :py:obj:`abc.ABC`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.port.Port
+      :parts: 1
+      :private-bases:
+
+
+   
+   A request for the duct carrying collected flow to its flange.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: resolve(site: PortSite) -> ResolvedPort
+      :abstractmethod:
+
+
+      
+      Place this port on a passage, given what the passage knows.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

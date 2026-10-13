@@ -1,0 +1,30 @@
+pyskyfire.injector.element.Hole
+===============================
+
+.. py:class:: pyskyfire.injector.element.Hole
+
+   
+   One hole of an element, placed in the element's own frame.
+
+   The frame has its origin at the element centre on the face, +x along the
+   chamber axis into the chamber, and +y along the element's orientation.
+   ``exit`` is where the hole meets the face [m], ``direction`` a unit
+   vector along the discharge, and ``target`` where the jet is drawn to and
+   checked against the wall: the impingement point for an impinging element.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

@@ -1,0 +1,444 @@
+pyskyfire.ducts.pipe.Pipe
+=========================
+
+.. py:class:: pyskyfire.ducts.pipe.Pipe(path, connections=None, *, diameter, core_diameter=0.0, roughness: float | Callable[[float], float] = 0.0, max_diameter_change: float = 0.02)
+
+   
+   A circular duct swept along a path, with an optional core, and its loss solver.
+
+   The section normal to the path is a circular bore of ``diameter``, with a
+   concentric core of ``core_diameter`` inside it where that is not zero. A
+   plain pipe has no core. A core may run the whole length, as in coaxial
+   lines, or only part of it: it may start from a point, as a turbine's nose
+   does, and end, bluntly or tapering.
+
+   The march evaluates each connection at one section, the mean of its two
+   ends. Where the section varies, the pipe therefore splits
+   :class:`Straight` and :class:`Continuous` connections itself until its
+   area and hydraulic diameter each change by at most
+   ``max_diameter_change`` (relative, the area as the diameter of the circle
+   of the same area) across each piece, placing the extra stations where the
+   section changes fastest. A constant section is left exactly as supplied,
+   and so is every :class:`RoundedBend`. :attr:`path`, :attr:`stations` and
+   every result refer to the resolved stations, which include all of the
+   supplied ones.
+
+   :Parameters:
+
+       **path** : :obj:`Path` or :term:`python:sequence` :obj:`of` :obj:`PathStation`
+           Resolved stations, with ``connections`` if a plain sequence is given.
+
+       **diameter** : :class:`python:float`, :term:`python:sequence` or :func:`python:callable`
+           Bore diameter [m]: a constant, one value per supplied station (linear
+           in arc length between them), or a function of arc length ``s`` [m].
+
+       **core_diameter** : :class:`python:float`, :term:`python:sequence` or :func:`python:callable`, :obj:`optional`
+           Core diameter [m], given the same ways, smaller than the bore
+           everywhere. Zero, the default, where there is no core.
+
+       **roughness** : :class:`python:float` or :func:`python:callable`, :obj:`optional`
+           Absolute roughness of every wall [m], or a function of ``s``.
+
+       **max_diameter_change** : :class:`python:float`, :obj:`optional`
+           Largest relative change of the section across one connection. The
+           default, 2 %, keeps the error of the single-section evaluation below
+           0.05 %. ``math.inf`` keeps the supplied stations exactly.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: display_path(*, segments: int = 16) -> DisplayPath
+
+      
+      Resolve renderable geometry, opening arc connections into their arcs.
+
+      A :class:`RoundedBend` is one connection between tangent points, and a
+      generated :class:`Continuous` arc may be one connection too, so
+      :attr:`centerline` crosses such a corner as a chord. Here every arc
+      connection with a resolved ``center`` and ``normal`` is redrawn as an
+      arc of ``segments`` sides per quarter turn, at least one. A connection
+      without that geometry keeps its chord, because its plane is not
+      recoverable from the loss model alone.
+
+      This changes drawn shape only. Lengths, losses, and every solver
+      quantity come from the stations and connections, which are unchanged.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: solve(*, inlet_state: pyskyfire.thermo.state.FluidState, mass_flow: float, transport, inlet_swirl: float = 0.0, friction_model: str = 'fluids', bend_length_scale: str = 'hydraulic') -> DuctResult
+
+      
+      March irreversible pressure losses from inlet to outlet.
+
+      :class:`Straight` and :class:`Continuous` connections charge wall
+      friction on the hydraulic diameter, the latter times the curvature
+      multiplier, along the helix a swirling flow follows, plus the loss of
+      any change of area (:attr:`area_change_loss_coefficient`). A
+      :class:`RoundedBend` charges its complete loss coefficient. Every loss
+      is on the through-flow head ``rho*c_m**2/2``. Acceleration and heat
+      transfer are intentionally absent: a change of area alters the
+      velocities, and so the static pressure, but adds no reversible term
+      to the marched stagnation pressure.
+
+      :Parameters:
+
+          **inlet_state** : :obj:`FluidState`
+              ``p`` and ``T`` are taken as the inlet stagnation pressure and
+              temperature.
+
+          **mass_flow** : :class:`python:float`
+              [kg/s]
+
+          **transport**
+              Provides ``rho``, ``mu`` and ``cp`` as ``get_<name>(T, p)`` or
+              ``<name>(T, p)``.
+
+          **inlet_swirl** : :class:`python:float`, :obj:`optional`
+              Circumferential velocity about the centreline at the inlet mean
+              radius :attr:`r_mean` [m/s], positive in either sense as long as
+              it is used consistently. It is carried as angular momentum,
+              unchanged by a change of radius, and worn down by wall friction.
+              Default 0.
+
+          **friction_model** : {'fluids', 'native'}, :obj:`optional`
+              Backend for the friction factor and the curvature multiplier.
+
+          **bend_length_scale** : {'hydraulic', 'outer'}, :obj:`optional`
+              The diameter a :class:`RoundedBend` around a core is given to the
+              circular-pipe correlation: the hydraulic diameter ``D - d``, or
+              the bore. No annular-bend correlation exists here to choose
+              between them; solving with both brackets the bend loss. Without a
+              core both are the bore.
+
+
+
+
+
+
+
+
+      :Warns:
+
+          :obj:`PipeCorrelationWarning`
+              When a :class:`RoundedBend` turns round a core, since its loss
+              comes from a circular-pipe correlation, and when swirl enters a
+              :class:`RoundedBend`, since the bend correlations are for flow
+              without swirl.
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: area
+      :type: numpy.ndarray
+
+
+      
+      Flow area at each station [m²].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: area_change_loss_coefficient
+      :type: numpy.ndarray
+
+
+      
+      Loss coefficient of each connection for its change of area [-].
+
+      Where the flow area keeps growing, the flow loses to its slowing as a
+      diffuser does, and where it keeps shrinking, to its speeding up as a
+      contraction does. :meth:`solve` adds this to each connection's wall
+      friction. A run of connections changing area the same way is one
+      diffuser or contraction: it ends where the area changes the other way,
+      or at a constant-section stretch longer than four hydraulic
+      diameters. Each run loses Rennels' conical-diffuser or
+      conical-contraction term for its end sections, at the cone angle
+      averaged over the run, weighted by where the flow slows or speeds up.
+      That is his value for a true cone and for a step alike, and it is
+      unchanged by how finely the pipe is split or by a nearly parallel
+      stretch at either end. The run's loss is shared out in the same
+      proportion. Coefficients are on each connection's through-flow head
+      at its mean section; zero where the area is constant.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: centerline
+      :type: numpy.ndarray
+
+
+      
+      Resolved station positions with shape ``(N, 3)`` [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: cone_angle
+      :type: numpy.ndarray
+
+
+      
+      Full cone angle of each connection [rad], positive where the area grows.
+
+      The angle of the cone whose area grows as the section's does, from
+      the diameter ``sqrt(4A/pi)`` at the connection's ends over its length
+      along the centerline. For a pipe without a core it is the bore's own
+      wall angle. It is local wherever :class:`Pipe` has split a varying
+      section; with ``max_diameter_change=math.inf`` it only sees the
+      supplied stations.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: core_radius
+      :type: numpy.ndarray
+
+
+      
+      Core radius at each station [m], zero where there is no core.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: has_core
+      :type: bool
+
+
+      
+      Whether a core runs along any of the pipe.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: hydraulic_diameter
+      :type: numpy.ndarray
+
+
+      
+      ``4A/P`` at each station, ``D - d`` [m]: the bore where there is no core.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: r_mean
+      :type: numpy.ndarray
+
+
+      
+      Mean radius of the section, ``(D + d)/4`` [m], where swirl is measured.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: radius
+      :type: numpy.ndarray
+
+
+      
+      Bore radius at each station [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: s
+      :type: numpy.ndarray
+
+
+      
+      Arc length at each station [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

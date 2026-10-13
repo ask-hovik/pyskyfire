@@ -1,0 +1,44 @@
+pyskyfire.injector.impinging.Jet
+================================
+
+.. py:class:: pyskyfire.injector.impinging.Jet
+
+   
+   One jet of an impinging element.
+
+
+   :Parameters:
+
+       **feed** : :obj:`hashable`
+           What supplies the hole: feed hardware such as a
+           :class:`~pyskyfire.ducts.Manifold`, or a name.
+
+       **orifice** : :obj:`Orifice`
+           The hole.
+
+       **inclination** : :class:`python:float`
+           Angle between the jet and the chamber axis [rad], in [0, π/2). Zero
+           is a jet down the element axis.
+
+       **azimuth** : :class:`python:float`, :obj:`optional`
+           Where the hole sits around the element centre, from the element's
+           orientation [rad].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

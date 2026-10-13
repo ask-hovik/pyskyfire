@@ -1,0 +1,31 @@
+pyskyfire.viz.components.ImpellerComponent
+==========================================
+
+.. py:class:: pyskyfire.viz.components.ImpellerComponent
+
+   
+   Display prepared impeller.geometry arrays, with the existing local x shaft axis.
+
+   Optional ``results`` maps part names (hub, shroud, blade_N) to dictionaries
+   of mesh-aligned FieldData. ``inlet`` and ``shaft`` are axial centre datums;
+   there is no discrete outlet port on a radially discharging impeller.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build()
+

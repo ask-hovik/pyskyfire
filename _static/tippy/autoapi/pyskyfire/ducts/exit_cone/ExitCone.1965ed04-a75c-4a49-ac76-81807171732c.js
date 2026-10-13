@@ -1,0 +1,22 @@
+selector_to_html = {"a[href=\"#pyskyfire.ducts.exit_cone.ExitCone.__post_init__\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.ducts.exit_cone.ExitCone.__post_init__\">\n<span class=\"sig-name descname\"><span class=\"pre\">__post_init__</span></span><span class=\"sig-paren\">(</span><span class=\"sig-paren\">)</span></dt><dd></dd>", "a[href=\"#pyskyfire.ducts.exit_cone.ExitCone.resolve\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.ducts.exit_cone.ExitCone.resolve\">\n<span class=\"sig-name descname\"><span class=\"pre\">resolve</span></span><span class=\"sig-paren\">(</span><em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">site</span></span></em><span class=\"sig-paren\">)</span></dt><dd><p>Place this cone on a passage. See <code class=\"xref py py-class docutils literal notranslate\"><span class=\"pre\">ResolvedExitCone</span></code>.</p><p>The arc length is a multiple of the bore the duct leaves from, so a\ncone carries its length with it and takes its scale from wherever it\nis fitted.</p></dd>", "a[href=\"../port/Port.html#pyskyfire.ducts.port.Port\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.ducts.port.Port\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">class</span></span><span class=\"w\"> </span></span><span class=\"sig-prename descclassname\"><span class=\"pre\">pyskyfire.ducts.port.</span></span><span class=\"sig-name descname\"><span class=\"pre\">Port</span></span></dt><dd><p>Bases: <a class=\"reference external\" href=\"https://docs.python.org/3/library/abc.html#abc.ABC\" title=\"(in Python v3.15)\"><code class=\"xref py py-obj docutils literal notranslate\"><span class=\"pre\">abc.ABC</span></code></a></p><p>A request for the duct carrying collected flow to its flange.</p></dd>", "a[href=\"#pyskyfire-ducts-exit-cone-exitcone\"]": "<h1 class=\"tippy-header\" style=\"margin-top: 0;\">pyskyfire.ducts.exit_cone.ExitCone<a class=\"headerlink\" href=\"#pyskyfire-ducts-exit-cone-exitcone\" title=\"Link to this heading\">\u00b6</a></h1>", "a[href=\"#pyskyfire.ducts.exit_cone.ExitCone\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.ducts.exit_cone.ExitCone\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">class</span></span><span class=\"w\"> </span></span><span class=\"sig-prename descclassname\"><span class=\"pre\">pyskyfire.ducts.exit_cone.</span></span><span class=\"sig-name descname\"><span class=\"pre\">ExitCone</span></span></dt><dd><p>Bases: <a class=\"reference internal\" href=\"../port/Port.html#pyskyfire.ducts.port.Port\" title=\"pyskyfire.ducts.port.Port\"><code class=\"xref py py-obj docutils literal notranslate\"><span class=\"pre\">pyskyfire.ducts.port.Port</span></code></a></p><p>How a volute\u2019s outlet duct leaves, and what it grows into.</p><p class=\"rubric\">Notes</p><p>Exit-cone geometry reaches the loss analysis three ways.\n<code class=\"xref py py-attr docutils literal notranslate\"><span class=\"pre\">final_diameter</span></code> sets station 7 and, with the arc length, the angle\nthe cone opens out at \u2013 which is most of what decides its diffusion loss.\nThe arc length also sets the wall area friction is charged over, and the\nturn sets the bend loss.</p><p>That makes <code class=\"xref py py-attr docutils literal notranslate\"><span class=\"pre\">arc_length_parameter</span></code> a real design variable rather than\na drawing detail: a longer duct opens out more gradually and recovers more\nof the velocity head, at the cost of more wetted wall and, for a given\nturn, a gentler bend. <code class=\"xref py py-meth docutils literal notranslate\"><span class=\"pre\">loss_breakdown()</span></code>\nreports the three apart so the trade can be seen.</p></dd>"}
+skip_classes = ["headerlink", "sd-stretched-link"]
+
+window.onload = function () {
+    for (const [select, tip_html] of Object.entries(selector_to_html)) {
+        const links = document.querySelectorAll(` ${select}`);
+        for (const link of links) {
+            if (skip_classes.some(c => link.classList.contains(c))) {
+                continue;
+            }
+
+            tippy(link, {
+                content: tip_html,
+                allowHTML: true,
+                arrow: true,
+                placement: 'auto-start', maxWidth: 600, interactive: false,
+                onShow(instance) {MathJax.typesetPromise([instance.popper]).then(() => {});},
+            });
+        };
+    };
+    console.log("tippy tips loaded!");
+};

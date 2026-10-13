@@ -1,0 +1,60 @@
+pyskyfire.viz.backends.common
+=============================
+
+.. py:module:: pyskyfire.viz.backends.common
+
+.. autoapi-nested-parse::
+
+   Scalar display validation shared by desktop and HTML backends.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.viz.backends.common._style_for
+   pyskyfire.viz.backends.common.field_style
+   pyskyfire.viz.backends.common.field_styles
+   pyskyfire.viz.backends.common.is_visible
+
+
+Module Contents
+---------------
+
+.. py:function:: _style_for(scene, name, clim)
+
+.. py:function:: field_style(scene)
+
+.. py:function:: field_styles(scene)
+
+   
+   Color ranges for every field the HTML viewer's field selector can offer.
+
+   ``clim`` pins the range of the initially selected field only; the rest are
+   ranged over their own visible values. A field whose units disagree between
+   components is omitted rather than offered with a meaningless shared scale,
+   except when it is ``color_by``, where it still raises.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: is_visible(node)
+

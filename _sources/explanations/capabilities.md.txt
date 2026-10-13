@@ -10,7 +10,7 @@ in the legend to explore them.
 ## Visualize cooling-channel geometry in 3D
 
 * Generate 3D visualizations of thrust chamber cooling-channel geometry.
-* Render cooling channels with their actual centerline placement and cross-section geometry.
+* Render cooling channels with their actual resolved placement and cross-section geometry.
 * Visualize interleaved and multi-pass cooling layouts.
 * Export an interactive browser-based 3D viewer for documentation or report generation.
 * Embed a rotatable 3D engine model directly into generated HTML documentation.
@@ -77,7 +77,7 @@ pressure, expansion ratio, and $L^*$.*
   * circuits with different channel counts
   * circuits covering different chamber/nozzle regions
 * Support multiple cooling-channel cross-section models.
-* Support variable channel height, width, roughness, and hydraulic geometry along the engine.
+* Support variable channel height, angular width, roughness, and hydraulic geometry along the engine.
 * Support multi-material chamber walls, enabling studies of:
   * layered wall temperature drops
   * thermal barrier coatings

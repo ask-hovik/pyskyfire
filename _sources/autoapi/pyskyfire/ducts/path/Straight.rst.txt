@@ -1,0 +1,25 @@
+pyskyfire.ducts.path.Straight
+=============================
+
+.. py:class:: pyskyfire.ducts.path.Straight
+
+   
+   Distributed straight-pipe friction between two adjacent stations.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

@@ -1,0 +1,81 @@
+pyskyfire.thermo.eos
+====================
+
+.. py:module:: pyskyfire.thermo.eos
+
+.. autoapi-nested-parse::
+
+   Equations of state: the thermodynamic relations a design reads a fluid through.
+
+   A turbomachine design needs more of a fluid than its density at one point. It
+   needs the states at either end of the machine, and the state an isentropic
+   process reaches at the other end, since that fixes the head. A turbine's
+   meanline also needs the states between its rows, which it knows by enthalpy
+   and by the entropy the losses so far have added, and the speed of sound at
+   each. An :class:`EquationOfState` answers those questions and returns the
+   package's :class:`~pyskyfire.thermo.state.FluidState` each time, so the code
+   asking does not care whether the answer came from CoolProp or from a constant.
+
+   :class:`Incompressible` is a constant density. Giving a design a density
+   instead of a medium means this. :class:`CoolPropEOS` is a real fluid, resolved
+   through the same :class:`~pyskyfire.thermo.state.FluidStateResolver` the
+   cooling march uses, so the saturation dome is handled the same way here as
+   there.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/thermo/eos/CoolPropEOS
+   /autoapi/pyskyfire/thermo/eos/EquationOfState
+   /autoapi/pyskyfire/thermo/eos/Incompressible
+
+.. autoapisummary::
+
+   pyskyfire.thermo.eos.CoolPropEOS
+   pyskyfire.thermo.eos.EquationOfState
+   pyskyfire.thermo.eos.Incompressible
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.thermo.eos.as_equation_of_state
+
+
+Module Contents
+---------------
+
+.. py:function:: as_equation_of_state(fluid) -> EquationOfState
+
+   
+   Read ``fluid`` as an equation of state.
+
+   An :class:`EquationOfState` is returned as it is. Anything else names a
+   CoolProp fluid and is handed to :class:`CoolPropEOS`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

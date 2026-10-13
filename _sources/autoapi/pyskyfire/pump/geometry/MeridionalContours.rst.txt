@@ -1,0 +1,68 @@
+pyskyfire.pump.geometry.MeridionalContours
+==========================================
+
+.. py:class:: pyskyfire.pump.geometry.MeridionalContours
+
+   Bases: :py:obj:`pyskyfire.common.meridional.MeridionalPassage`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.pump.geometry.MeridionalContours
+      :parts: 1
+      :private-bases:
+
+
+   
+   A radial impeller's passage: axial inlet, radial outlet, in (x,r) metres.
+
+   The shared :class:`~pyskyfire.common.MeridionalPassage` with the checks
+   only a radial wheel satisfies: both walls rise monotonically in x and r,
+   and the hub runs axially downstream of the shroud.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: with_leading_edge(hub_station, tip_station)
+
+      
+      Re-pair the stations so one span line carries a slanted leading edge.
+
+      A blade section can only begin on a span line, so slanting the leading
+      edge is a statement about which hub and shroud stations pair. The hub
+      keeps its stations; the shroud is resampled so that station
+      ``hub_station`` meets it where ``tip_station`` did. The monotone map
+      relaxes back to the original pairing over the station distance it took
+      to build up, keeping the skew near the inlet where the leading edge is.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

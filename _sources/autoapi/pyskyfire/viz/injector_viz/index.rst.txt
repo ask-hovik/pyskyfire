@@ -1,0 +1,90 @@
+pyskyfire.viz.injector_viz
+==========================
+
+.. py:module:: pyskyfire.viz.injector_viz
+
+.. autoapi-nested-parse::
+
+   Injector scenes and face views.
+
+   :class:`InjectorComponent` draws the wetted surface of every hole, its bore
+   behind the face, one colour per feed, optionally carrying each hole's flow from
+   an :class:`~pyskyfire.injector.InjectorResult` as scene fields. Arrows from
+   each hole to its impingement point can be added; they are annotation, not
+   hardware.
+   :func:`plot_injector_face` is the same injector seen from the chamber: hole
+   outlines, the jets projected onto the face, and where they meet.
+
+   The injector frame is the scene frame: the face is the plane x = 0 and the
+   chamber lies towards +x, as for a thrust chamber whose contour starts at the
+   face.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.viz.injector_viz.FEED_COLORS
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/viz/injector_viz/InjectorComponent
+
+.. autoapisummary::
+
+   pyskyfire.viz.injector_viz.InjectorComponent
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.viz.injector_viz.plot_injector_face
+
+
+Module Contents
+---------------
+
+.. py:function:: plot_injector_face(injector, *, face_radius=None, colors=None, labels=None, title=None)
+
+   
+   The injector seen from the chamber, in millimetres.
+
+   Each hole's outline on the face is drawn in its feed's colour, with its
+   jet projected onto the face as a line to the impingement point, where a
+   grey dot marks where the jets meet. ``face_radius`` adds the chamber wall
+   as a grey circle. Hovering a hole shows its set, feed and diameter.
+
+   Parameters are as for :class:`InjectorComponent`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: FEED_COLORS
+   :value: ('#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300')
+
+

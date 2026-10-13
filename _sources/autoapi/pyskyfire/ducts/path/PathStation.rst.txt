@@ -1,0 +1,28 @@
+pyskyfire.ducts.path.PathStation
+================================
+
+.. py:class:: pyskyfire.ducts.path.PathStation
+
+   
+   A physical centerline station shared by flow components.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

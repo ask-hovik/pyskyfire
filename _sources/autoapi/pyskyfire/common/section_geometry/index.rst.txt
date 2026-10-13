@@ -1,0 +1,263 @@
+pyskyfire.common.section_geometry
+=================================
+
+.. py:module:: pyskyfire.common.section_geometry
+
+.. autoapi-nested-parse::
+
+   Planar arc geometry used by section analytics and physical construction.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.common.section_geometry._NODES
+   pyskyfire.common.section_geometry._WEIGHTS
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/common/section_geometry/SectionArc
+   /autoapi/pyskyfire/common/section_geometry/SectionEllipseArc
+   /autoapi/pyskyfire/common/section_geometry/SectionLine
+
+.. autoapisummary::
+
+   pyskyfire.common.section_geometry.SectionArc
+   pyskyfire.common.section_geometry.SectionEllipseArc
+   pyskyfire.common.section_geometry.SectionLine
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.common.section_geometry.arc_boundary_metrics
+   pyskyfire.common.section_geometry.boundary_surfaces
+   pyskyfire.common.section_geometry.offset_squared_boundary
+   pyskyfire.common.section_geometry.rounded_boundary
+   pyskyfire.common.section_geometry.rounded_center_distance
+   pyskyfire.common.section_geometry.rounded_gas_sector_area
+   pyskyfire.common.section_geometry.rounded_width_boundary
+   pyskyfire.common.section_geometry.squared_boundary
+   pyskyfire.common.section_geometry.squared_width_boundary
+   pyskyfire.common.section_geometry.surface_lengths
+
+
+Module Contents
+---------------
+
+.. py:function:: arc_boundary_metrics(inner, outer, transform=None)
+
+   
+   Area, centroid, and edge lengths of arc/line/arc/line boundaries.
+
+   Green's theorem integrates the actual arcs, without a polygon-resolution
+   dependency. An optional linear transform maps the section into the
+   coolant-normal plane before measuring it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: boundary_surfaces(floor, roof)
+
+   
+   Four directed surfaces, in floor/right/roof/left integration order.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: offset_squared_boundary(floor, roof, floor_thickness, roof_thickness, side_thickness)
+
+   
+   Offset each surface normally and intersect it with the offset sides.
+
+   Thicknesses are normal distances in this section plane. Corners are
+   intersections (mitres), so unequal floor and roof thicknesses are allowed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: rounded_boundary(prof, base_height)
+
+.. py:function:: rounded_center_distance(target_area, half_angle, liner=0.0)
+
+   
+   Solve the lobe-center distance for an allocated gas-sector area.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: rounded_gas_sector_area(center_distance, half_angle, liner=0.0)
+
+   
+   Gas area inside one tube sector in its unprojected section plane.
+
+   The main tube's exterior is tangent to both sector rays. A liner extends
+   its gas-facing arc inward; the neighboring arcs meet on the sector rays.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: rounded_width_boundary(floor_width, roof_width, height, *, height_input='full', side_angle=None)
+
+   
+   Two circular lobes joined tangentially, specified by endpoint chords.
+
+   With full height, choose the solution with the smaller sidewall angle
+   (larger separation of lobe centres). Sector construction supplies its
+   known angle explicitly, including the zero-length-side circular limit.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: squared_boundary(prof, sidewall_half_thickness)
+
+.. py:function:: squared_width_boundary(floor_width, roof_width, height, radius, floor, roof)
+
+   
+   Internal chord widths, with floor/roof midpoints separated by height.
+
+   The floor arc has radius ``radius`` and the roof arc ``radius + height``.
+   Infinite radius represents a line exactly, without evaluating inf * 0.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: surface_lengths(surface, fraction=1.0, transform=None)
+
+   
+   Length of a centred fraction of physical surface length [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: _NODES
+
+.. py:data:: _WEIGHTS
+

@@ -1,0 +1,41 @@
+pyskyfire.common.section_geometry.SectionEllipseArc
+===================================================
+
+.. py:class:: pyskyfire.common.section_geometry.SectionEllipseArc
+
+   
+   Elliptical boundary, with the same sampling API as a circular arc.
+
+   ``semi_x`` and ``semi_y`` are the semi-axes along the section plane's own
+   two axes, so equal semi-axes reproduce a :class:`SectionArc` exactly. The
+   angles are the ellipse's parameter, not the polar angle to the point: a
+   point sits at ``center + (semi_x*cos(t), semi_y*sin(t))``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _angle(fraction)
+
+
+   .. py:method:: derivative(fraction)
+
+
+   .. py:method:: evaluate(fraction)
+
+
+   .. py:method:: points(index, count)
+

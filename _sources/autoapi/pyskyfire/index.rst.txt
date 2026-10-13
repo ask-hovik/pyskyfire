@@ -9,11 +9,14 @@ pyskyfire
    pyskyfire - A Python library for rocket engine simulation and design.
 
    Subpackages:
-       common  - Functionality combining other subpackages. 
+       common  - Shared primitives used by other subpackages (solids, results, geometry).
+       network - Engine-cycle blocks and the network that connects them.
        regen   - Regenerative cooling analysis.
        pump    - Pump design and performance calculations.
        turbine - Turbine design and analysis.
-       skycea  - Chemical equilibrium wrapper
+       thermo  - Fluid properties, state resolution and chemical equilibrium
+       ducts   - Duct hydraulics: friction, pressure drop and orifices
+       injector - Injector elements and the flow from each feed through them
        viz     - Visualisation
 
 
@@ -42,9 +45,13 @@ Submodules
 
    /autoapi/pyskyfire/_dev_commands/index
    /autoapi/pyskyfire/common/index
+   /autoapi/pyskyfire/ducts/index
+   /autoapi/pyskyfire/heat_exchanger/index
+   /autoapi/pyskyfire/injector/index
+   /autoapi/pyskyfire/network/index
    /autoapi/pyskyfire/pump/index
    /autoapi/pyskyfire/regen/index
-   /autoapi/pyskyfire/skycea/index
+   /autoapi/pyskyfire/thermo/index
    /autoapi/pyskyfire/turbine/index
    /autoapi/pyskyfire/viz/index
 

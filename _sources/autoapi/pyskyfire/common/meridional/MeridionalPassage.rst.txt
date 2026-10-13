@@ -1,0 +1,315 @@
+pyskyfire.common.meridional.MeridionalPassage
+=============================================
+
+.. py:class:: pyskyfire.common.meridional.MeridionalPassage
+
+   
+   Paired hub and shroud curves, in ``(x, r)`` metres, inlet to outlet.
+
+
+   :Parameters:
+
+       **hub, shroud** : :term:`numpy:array_like`, :obj:`shape` (:obj:`N`, 2)
+           Wall curves. Point ``i`` on each is one end of span line ``i``.
+
+       **motion** : :obj:`WallMotion`, :obj:`optional`
+           Which wall stretches rotate. Default: none.
+
+       **clearances** : :term:`python:sequence` :obj:`of` :obj:`Clearance`, :obj:`optional`
+           Blade edges standing off a wall.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: _interpolate(curve)
+
+
+   .. py:method:: _span_ends(fraction)
+
+
+   .. py:method:: area(fraction=None)
+
+      
+      Area of the surface the span line sweeps round the axis [m²].
+
+      That is the frustum ``pi*(r_hub + r_shroud)*height``: an annulus
+      ``pi*(r_s² - r_h²)`` where the span line is radial, a cylinder
+      ``2*pi*r*b`` where it is axial. It is the flow area where the flow
+      crosses the span line square, which is what a span line is drawn for.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: clearance(blade)
+
+      
+      The clearances recorded for ``blade``, as a tuple.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: end(which)
+
+      
+      The ``'inlet'`` or ``'outlet'`` end, as an :class:`AnnulusEnd`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: height(fraction=None)
+
+      
+      Span-line length [m], at the stored stations or at ``fraction``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: hydraulic_diameter(fraction=None)
+
+      
+      ``4A/P`` over both walls [m], which for an annulus is twice its height.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: rotating(wall, fraction=None)
+
+      
+      Whether ``wall`` turns with the shaft, at the stored stations or at ``fraction``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sample(fraction, span_fraction)
+
+      
+      ``(x, r)`` at station ``fraction`` and ``span_fraction`` (0 hub, 1 shroud).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: surface(wall, n_theta=160)
+
+      
+      Cartesian points of ``wall`` revolved about +x, shape ``(N, n_theta, 3)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: wall_tangents(fraction)
+
+      
+      Unit hub and shroud tangents at the ends of one span line.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: with_clearance(clearance, wall='shroud')
+
+      
+      This passage with ``wall`` moved a distance ``clearance`` towards the other.
+
+      This is the boundary a blade is built to, not the wetted wall: the gap
+      between the two is the clearance. The pairing, motion and recorded
+      clearances are kept.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: stations
+
+      
+      Station fractions: the hub's arc length, normalised to 0..1.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

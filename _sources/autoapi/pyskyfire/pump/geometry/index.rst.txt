@@ -1,0 +1,60 @@
+pyskyfire.pump.geometry
+=======================
+
+.. py:module:: pyskyfire.pump.geometry
+
+.. autoapi-nested-parse::
+
+   Pump geometry contracts. Lengths are metres; cylindrical arrays are (x,r,theta).
+
+   The shaft is +x, and which way it turns about that axis is named by the
+   impeller's ``rotation``: counterclockwise means the right-handed sense about
+   +x, seen with the axis pointing at the viewer. A backward-swept blade has
+   decreasing theta from leading to trailing edge in that sense, and a clockwise
+   impeller is its mirror image, built by negating theta.
+
+   +x runs the way the flow does, from the inlet plane toward the back of the
+   wheel, so counterclockwise here means counterclockwise seen from behind the
+   wheel looking upstream. That anchor is a property of the impeller itself and
+   does not move when the machine is repackaged.
+
+   It is deliberately *not* the pump-industry convention of naming rotation as
+   seen from the driver end. Which end the driver sits on is a packaging choice --
+   a turbine can be mounted either side of a wheel -- so a driver-relative name
+   silently changes meaning when the drive train is rearranged, which is the
+   failure this vocabulary exists to prevent. Where a driver end is fixed and a
+   nameplate is wanted, derive that label from this sense and the drive layout
+   rather than the other way round.
+
+   The sense is named about the impeller's own +x rather than about a world axis,
+   so a placement that reverses +x also reverses the sense the impeller presents
+   to whatever it discharges into. A volute collecting that discharge is named the
+   same way about its own axis; see :mod:`pyskyfire.common.rotation`.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/pump/geometry/BladeSection
+   /autoapi/pyskyfire/pump/geometry/BladeSettings
+   /autoapi/pyskyfire/pump/geometry/ImpellerBladeDefinition
+   /autoapi/pyskyfire/pump/geometry/ImpellerGeometry
+   /autoapi/pyskyfire/pump/geometry/MeridionalContours
+   /autoapi/pyskyfire/pump/geometry/SplitterSettings
+
+.. autoapisummary::
+
+   pyskyfire.pump.geometry.BladeSection
+   pyskyfire.pump.geometry.BladeSettings
+   pyskyfire.pump.geometry.ImpellerBladeDefinition
+   pyskyfire.pump.geometry.ImpellerGeometry
+   pyskyfire.pump.geometry.MeridionalContours
+   pyskyfire.pump.geometry.SplitterSettings
+
+

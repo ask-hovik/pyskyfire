@@ -1,0 +1,446 @@
+pyskyfire.ducts.annular.AnnularDuct
+===================================
+
+.. py:class:: pyskyfire.ducts.annular.AnnularDuct(mean_line, height, *, roughness: float | Callable[[float], float] = 0.0)
+
+   
+   A stationary annulus about the shaft (+x), turning in the meridional plane.
+
+   The duct is its mean line, an ``(x, r)`` curve from inlet to outlet, and
+   the height of the passage across it. Each span line is drawn through a
+   mean-line station normal to the mean line, so the frustum it sweeps round
+   the axis is the area the through-flow crosses. The walls are the span
+   lines' ends. Use :meth:`from_walls` to start from given walls instead.
+
+   :Parameters:
+
+       **mean_line** : :term:`numpy:array_like`, :obj:`shape` (:obj:`N`, 2)
+           Mean-line stations, ``(x, r)`` [m]. They are also the march stations,
+           so give enough of them to resolve every turn.
+
+       **height** : :class:`python:float`, :term:`python:sequence` or :func:`python:callable`
+           Span-line length [m]: one value, one per station, or a function of
+           mean-line arc length.
+
+       **roughness** : :class:`python:float` or :func:`python:callable`, :obj:`optional`
+           Absolute wall roughness [m], or a function of arc length. Default 0.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   The passage may not run backward along the shaft: the walls are named
+   hub and shroud by radius, and a mean line heading toward -x would swap
+   them. Its walls may not fold either, so every turn's radius must exceed
+   half the height.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _laminar_factors()
+
+
+   .. py:method:: _mid_area()
+
+
+   .. py:method:: _setup(hub, shroud, roughness)
+
+
+   .. py:method:: end(which)
+
+      
+      The ``'inlet'`` or ``'outlet'`` end, as an :class:`~pyskyfire.common.AnnulusEnd`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_walls(hub, shroud, *, stations: int = 41, roughness: float | Callable[[float], float] = 0.0, max_iterations: int = 100)
+      :classmethod:
+
+
+      
+      Re-pair two given walls with span lines normal to their mean line.
+
+      The mean line is found by iteration. Starting from the midpoints of
+      the walls sampled at equal fractions of their own lengths, each
+      interior station is moved to the midpoint of the chord that the
+      normal to the current mean line cuts between the walls, and the
+      stations are respaced evenly along it, until they stop moving. The
+      end span lines are the walls' own ends, left where they are given:
+      they are where the duct joins its neighbours.
+
+      ``hub`` and ``shroud`` are ``(x, r)`` curves such as a
+      :class:`~pyskyfire.common.MeridionalPassage`'s; any pairing between
+      their points is discarded.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: solve(*, inlet_state: pyskyfire.thermo.state.FluidState, mass_flow: float, transport, inlet_swirl: float = 0.0, friction_model: str = 'fluids') -> pyskyfire.ducts.pipe.DuctResult
+
+      
+      March irreversible losses from inlet to outlet.
+
+      Each interval charges wall friction on the hydraulic diameter, times
+      the curvature multiplier where the mean line turns, along the helix a
+      swirling flow follows, plus the loss of any change of area
+      (:attr:`area_change_loss_coefficient`) on the through-flow head.
+
+      :Parameters:
+
+          **inlet_state** : :obj:`FluidState`
+              Inlet stagnation pressure and temperature.
+
+          **mass_flow** : :class:`python:float`
+              [kg/s]
+
+          **transport**
+              Provides ``rho``, ``mu`` and ``cp`` as ``get_<name>(T, p)`` or
+              ``<name>(T, p)``.
+
+          **inlet_swirl** : :class:`python:float`, :obj:`optional`
+              Circumferential velocity at the inlet mean radius [m/s], positive
+              in either sense as long as it is used consistently. Default 0.
+
+          **friction_model** : {'fluids', 'native'}, :obj:`optional`
+              Backend for the friction factor and the curvature multiplier.
+
+
+
+
+
+
+
+
+      :Warns:
+
+          :obj:`PipeCorrelationWarning`
+              Where the mean line turns tighter than :data:`SHARP_TURN_RATIO`
+              hydraulic diameters, since the distributed curvature model then
+              misses the separation a sharp turn causes.
+
+
+
+      .. rubric:: Notes
+
+      The area-change loss reads the annulus as a cone of the same area.
+      Whether a diffusing annulus reaches its recovery without separating
+      is a question for an annular diffuser map (Sovran & Klomp, Japikse),
+      which is not applied.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: surface(wall, n_theta=160)
+
+      
+      Cartesian points of ``wall`` revolved about +x, shape ``(N, n_theta, 3)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: area
+      :type: numpy.ndarray
+
+
+      
+      Flow area at each station [m²].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: area_change_loss_coefficient
+      :type: numpy.ndarray
+
+
+      
+      Loss coefficient of each interval for its change of area [-].
+
+      As :attr:`Pipe.area_change_loss_coefficient
+      <pyskyfire.ducts.Pipe.area_change_loss_coefficient>`: Rennels'
+      conical-diffuser or conical-contraction term for each run over which
+      the area keeps growing or shrinking, read as the cone of the same
+      area, on the through-flow head. An annular diffuser is only roughly a
+      cone, since how soon it separates depends on both walls' angles, and
+      a radial passage is closer to a vaneless diffuser than to either.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: cone_angle
+      :type: numpy.ndarray
+
+
+      
+      Full cone angle of each interval [rad], positive where the area grows.
+
+      The angle of the cone whose area grows as the duct's does,
+      ``2*atan(d(sqrt(A/pi))/ds)``, as :attr:`Pipe.cone_angle
+      <pyskyfire.ducts.Pipe.cone_angle>` measures it. An annulus is only
+      roughly comparable with a cone, and a radial one carrying swirl
+      diffuses without its through-flow alone setting the limit.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: height
+      :type: numpy.ndarray
+
+
+      
+      Span-line length at each station [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: hub
+      :type: numpy.ndarray
+
+
+      
+      Inner wall, ``(x, r)`` at each station [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: hydraulic_diameter
+      :type: numpy.ndarray
+
+
+      
+      ``4A/P`` at each station, twice the height [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: lengths
+      :type: numpy.ndarray
+
+
+      
+      Mean-line length of each interval [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: r_mean
+      :type: numpy.ndarray
+
+
+      
+      Mean-line radius at each station [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: shroud
+      :type: numpy.ndarray
+
+
+      
+      Outer wall, ``(x, r)`` at each station [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

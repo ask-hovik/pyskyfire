@@ -1,0 +1,132 @@
+pyskyfire.ducts.pipe.DuctResult
+===============================
+
+.. py:class:: pyskyfire.ducts.pipe.DuctResult
+
+   
+   Station states and per-interval diagnostics from a duct loss march.
+
+   :meth:`Pipe.solve` and :meth:`~pyskyfire.ducts.AnnularDuct.solve` both
+   return one. ``p_stagnation`` is the marched pressure: the inlet pressure
+   less the irreversible losses up to each station. It includes the swirl's
+   dynamic head. The march is adiabatic, so ``T_stagnation`` is the inlet
+   temperature at every station, and ``states`` and ``density`` are evaluated
+   at the two.
+
+   ``meridional_velocity`` is the through-flow velocity ``c_m`` normal to the
+   flow area, ``swirl_velocity`` the circumferential ``c_u`` at the mean
+   radius, and ``velocity`` their magnitude, which without swirl is the
+   through-flow velocity. ``T_static`` is the stagnation temperature less
+   ``velocity**2/(2*cp)``, with ``cp`` taken at the same state as the
+   density. Like ``p_static`` it is a first-order correction, not a
+   static-state solution.
+
+   Per-interval arrays have one value fewer than the stations.
+   ``loss_coefficient`` is referred to the through-flow head
+   ``rho*c_m**2/2`` on the interval's mean section. ``darcy_factor`` is the
+   factor applied, including any curvature multiplier, and NaN over a lumped
+   bend.
+
+   ``stations`` and ``connections`` are a :class:`Pipe`'s resolved path, and
+   None for an :class:`~pyskyfire.ducts.AnnularDuct`. ``fluid`` is the
+   CoolProp name the transport carried, or None when it named none.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:property:: p_static
+      :type: numpy.ndarray
+
+
+      
+      Static pressure at each station [Pa].
+
+      The stagnation pressure less the incompressible dynamic pressure
+      ``density*velocity**2/2``, swirl included. At Mach ``M`` that
+      understates the compressible dynamic pressure by about ``M**2/4`` of
+      itself. With swirl it is the mean across the section: swirl holds the
+      static pressure higher at the outer wall than at the inner.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: swirl_angle
+      :type: numpy.ndarray
+
+
+      
+      Flow angle from the through-flow direction, ``atan(c_u/c_m)`` [rad].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: total_pressure_loss
+      :type: float
+
+
+      
+      Total irreversible pressure loss [Pa].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

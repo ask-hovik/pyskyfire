@@ -1,0 +1,40 @@
+pyskyfire.regen.cad_geometry.PlanarLine
+=======================================
+
+.. py:class:: pyskyfire.regen.cad_geometry.PlanarLine
+
+   
+   Directed line, sharing the sampling/export contract of PlanarArc.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: point(fraction)
+
+
+   .. py:method:: tangent(fraction)
+
+
+   .. py:method:: to_data()
+
+
+   .. py:method:: transformed(matrix, origin)
+
+
+   .. py:method:: trimmed(left, right)
+

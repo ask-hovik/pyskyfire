@@ -1,0 +1,73 @@
+pyskyfire.ducts.manifold.ManifoldGeometry
+=========================================
+
+.. py:class:: pyskyfire.ducts.manifold.ManifoldGeometry
+
+   
+   Resolved passage geometry along one branch.
+
+
+
+   :Attributes:
+
+       **theta** : :obj:`np.ndarray <numpy.ndarray>`
+           Angle from the dead point [rad, shape (N,)], ending at the port.
+
+       **collected** : :obj:`np.ndarray <numpy.ndarray>`
+           Fraction of the manifold's whole mass flow through each station,
+           ending at ``1/branches`` because a branch only ever carries its share.
+
+       **size, aspect, area** : :obj:`np.ndarray <numpy.ndarray>`
+           Section size parameter [m], aspect ratio, and passage area [m^2].
+
+       **axial, radial, tilt** : :obj:`np.ndarray <numpy.ndarray>`
+           Where each section sits and how it leans, from the section family.
+
+       **clipped** : :obj:`np.ndarray <numpy.ndarray>`
+           True where the law asked for less area than the family can build even
+           at its smallest size and flattest aspect [bool, shape (N,)].
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:property:: dead_clip_angle
+      :type: float
+
+
+      
+      Angle up to which the law could not be satisfied [rad].
+
+      Zero when it is satisfied everywhere. A finite value means the passage
+      near the dead point is larger than the law wants, because the section
+      family cannot shrink any further -- the manifold's version of a
+      volute's tongue.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

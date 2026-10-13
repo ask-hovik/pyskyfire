@@ -1,0 +1,46 @@
+pyskyfire.thermo
+================
+
+.. py:module:: pyskyfire.thermo
+
+.. autoapi-nested-parse::
+
+   
+   Fluid properties, thermodynamic states and combustion-gas aerothermodynamics.
+
+   CEA-backed APIs are loaded on first access so fluid and nozzle-loss utilities
+   can be imported without loading CEA, including through the package root.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/pyskyfire/thermo/aerothermodynamics/index
+   /autoapi/pyskyfire/thermo/duty/index
+   /autoapi/pyskyfire/thermo/eos/index
+   /autoapi/pyskyfire/thermo/fluid/index
+   /autoapi/pyskyfire/thermo/nozzle_loss/index
+   /autoapi/pyskyfire/thermo/state/index
+   /autoapi/pyskyfire/thermo/transport/index
+
+

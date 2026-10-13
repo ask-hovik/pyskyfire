@@ -1,0 +1,375 @@
+pyskyfire.common.friction
+=========================
+
+.. py:module:: pyskyfire.common.friction
+
+.. autoapi-nested-parse::
+
+   Duct friction physics shared by cooling channels and piping.
+
+   This module is deliberately geometry-agnostic. Every entry point takes plain
+   scalars -- a Reynolds number, a hydraulic diameter, an absolute roughness, a
+   signed radius of curvature -- so the same physics serves a regen cooling
+   channel marching on an axial coordinate and a pipe run marching on arc length.
+   Anything that knows about contours, centerlines or stations belongs elsewhere.
+
+   Two interchangeable backends are provided:
+
+   ``"native"``
+       The correlations pyskyfire has always used, inherited from the RL10
+       modelling work of Binder et al.  Laminar ``64/Re``, Petukhov (smooth) or
+       Colebrook-White (rough) in the turbulent branch, linearly blended across
+       ``2300 < Re < 3500``, with an Ito-type curvature multiplier.
+
+   ``"fluids"``
+       The same quantities taken from the ``fluids`` library.  The straight-duct
+       factor blends the laminar and Clamond branches smoothly from ``Re=2040``;
+       curved ducts use the same transition policy starting at Schmidt's
+       curvature-dependent critical Reynolds number. The curvature multiplier is
+       the ratio of the blended Schmidt curved factor to the blended straight
+       factor, with the same roughness in both.
+
+   The native backend remains the default for validation while the ``fluids``
+   backend is evaluated. Comparing them measures model sensitivity; it does not
+   establish a bound on modelling uncertainty.
+
+   Notes
+   -----
+   Both curvature multipliers are helical-coil correlations. They model curvature
+   as an enhanced local wall friction over a continuously curved duct, which fits
+   a cooling channel bending gently over many diameters. They are *not* a model
+   for a discrete pipe bend, where the loss is set by secondary-flow development
+   and its decay downstream. Use a fitting loss coefficient for those.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.common.friction.FRICTION_MODELS
+   pyskyfire.common.friction.ReDh_laminar
+   pyskyfire.common.friction.ReDh_turbulent
+
+
+Exceptions
+----------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/common/friction/FrictionCorrelationWarning
+
+.. autoapisummary::
+
+   pyskyfire.common.friction.FrictionCorrelationWarning
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.common.friction.annulus_laminar_factor
+   pyskyfire.common.friction.curvature_multiplier
+   pyskyfire.common.friction.darcy_friction_factor
+   pyskyfire.common.friction.friction_pressure_gradient
+   pyskyfire.common.friction.resolve_friction_model
+   pyskyfire.common.friction.transition_weight
+
+
+Module Contents
+---------------
+
+.. py:function:: annulus_laminar_factor(radius_ratio)
+
+   
+   Return a concentric annulus' laminar ``f*Re`` relative to a pipe's 64.
+
+   The exact fully developed solution on the hydraulic diameter
+   ``2*(r_o - r_i)`` is ``f*Re = 64*(1-k)**2 / (1 + k**2 + (1-k**2)/ln k)``
+   with ``k = r_i/r_o``. It runs from 1 for a pipe (``k = 0``) to 1.5 for
+   parallel plates (``k -> 1``). Turbulent friction on the same hydraulic
+   diameter differs from a pipe's by only a few percent and is not corrected.
+
+   :Parameters:
+
+       **radius_ratio** : :class:`python:float`
+           Inner over outer radius, in ``[0, 1]``.
+
+
+
+   :Returns:
+
+       :class:`python:float`
+           Multiplier on the laminar ``64/Re``.
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: curvature_multiplier(ReDh, Dh, R_curv, *, roughness=0.0, model='native')
+
+   
+   Return the friction multiplier due to streamwise curvature.
+
+
+   :Parameters:
+
+       **ReDh** : :class:`python:float`
+           Reynolds number on the hydraulic diameter.
+
+       **Dh** : :class:`python:float`
+           Hydraulic diameter [m].
+
+       **R_curv** : :class:`python:float`
+           Signed radius of curvature of the duct centerline [m]. Use ``np.inf``
+           for a straight duct. The native backend ignores the sign; so does the
+           ``fluids`` backend.
+
+       **roughness** : :class:`python:float`, :obj:`optional`
+           Absolute wall roughness [m]. Zero or ``None`` means smooth. Used in
+           both factors of the ``fluids`` curved/straight ratio; ignored by the
+           native curvature correlation. Use the same value as for the straight
+           factor being multiplied.
+
+       **model** : {'native', 'fluids'}, :obj:`optional`
+           Backend to evaluate. Default ``'native'``.
+
+
+
+   :Returns:
+
+       :class:`python:float`
+           Multiplier on the straight-duct Darcy factor. Exactly ``1.0`` for a
+           straight duct; native also returns one below its activation threshold.
+
+
+
+
+
+   :Warns:
+
+       :obj:`FrictionCorrelationWarning`
+           For the ``fluids`` curved model, when ``ReDh <= 100``,
+           ``ReDh > 150000``, or ``Dh/(2*abs(R_curv)) >= 0.14``. The last limit
+           is the recommendation for the Schmidt transition criterion; upstream
+           does not specify a separate curvature range for the friction fits.
+           Extrapolated results are returned without clipping or model switching.
+
+
+
+   .. rubric:: Notes
+
+   Limits are from the ``fluids.friction`` documentation for
+   ``helical_laminar_fd_Schmidt``, ``helical_turbulent_fd_Schmidt`` and
+   ``helical_transition_Re_Schmidt``. These warnings concern the coil models,
+   not straight-pipe Colebrook numerical accuracy or two-phase validity.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: darcy_friction_factor(ReDh, Dh, roughness=0.0, *, model='native', laminar_factor=1.0)
+
+   
+   Return the Darcy friction factor for a straight duct.
+
+
+   :Parameters:
+
+       **ReDh** : :class:`python:float`
+           Reynolds number on the hydraulic diameter.
+
+       **Dh** : :class:`python:float`
+           Hydraulic diameter [m].
+
+       **roughness** : :class:`python:float`, :obj:`optional`
+           Absolute wall roughness [m]. Zero or ``None`` means hydraulically
+           smooth. Default 0.
+
+       **model** : {'native', 'fluids'}, :obj:`optional`
+           Backend to evaluate. Default ``'native'``.
+
+       **laminar_factor** : :class:`python:float`, :obj:`optional`
+           Multiplier on the laminar branch's ``64/Re`` for a non-circular
+           section, such as :func:`annulus_laminar_factor`. Default 1.
+
+
+
+   :Returns:
+
+       :class:`python:float`
+           Darcy friction factor (dimensionless).
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: friction_pressure_gradient(ReDh, Dh, rho, velocity, *, roughness=0.0, R_curv=np.inf, curvature_correction=True, model='native')
+
+   
+   Return the irreversible pressure gradient ``dp/ds`` [Pa m⁻¹].
+
+   This is the friction term of the one-dimensional momentum equation only.
+   The reversible acceleration term ``-rho u du/ds`` depends on the state at
+   both ends of a segment rather than on a local gradient, so the caller
+   applies it while marching.
+
+   :Parameters:
+
+       **ReDh** : :class:`python:float`
+           Reynolds number on the hydraulic diameter.
+
+       **Dh** : :class:`python:float`
+           Hydraulic diameter [m].
+
+       **rho** : :class:`python:float`
+           Bulk density [kg m⁻³].
+
+       **velocity** : :class:`python:float`
+           Bulk velocity [m s⁻¹].
+
+       **roughness** : :class:`python:float`, :obj:`optional`
+           Absolute wall roughness [m]. Default 0.
+
+       **R_curv** : :class:`python:float`, :obj:`optional`
+           Signed radius of curvature [m]. Default ``np.inf`` (straight).
+
+       **curvature_correction** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
+           Apply :func:`curvature_multiplier`. Default True.
+
+       **model** : {'native', 'fluids'}, :obj:`optional`
+           Backend to evaluate. Default ``'native'``.
+
+
+
+   :Returns:
+
+       :class:`python:float`
+           Pressure gradient with respect to arc length [Pa m⁻¹]. Negative for
+           flow in the positive arc-length direction.
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: resolve_friction_model(model)
+
+   
+   Return a validated backend name.
+
+
+   :Parameters:
+
+       **model** : :class:`python:str`
+           Backend name, case-insensitive. One of :data:`FRICTION_MODELS`.
+
+
+
+   :Returns:
+
+       :class:`python:str`
+           The normalized (lower-case) backend name.
+
+
+
+
+   :Raises:
+
+       :obj:`ValueError`
+           If ``model`` is not a recognized backend.
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: transition_weight(Re, Re_critical)
+
+   
+   Return the shared laminar-to-turbulent blending weight.
+
+   The weight is zero through ``Re_critical`` and one from
+   ``Re_critical * (3500/2300)`` onward. Between those limits it follows the
+   cubic smoothstep ``3*x**2 - 2*x**3``, giving continuous values and first
+   derivatives where the pure laminar and turbulent branches are joined.
+
+   The fixed critical value ``2040`` is used for straight ducts. Curved ducts
+   supply Schmidt's geometry-dependent critical Reynolds number.
+
+   :Parameters:
+
+       **Re** : :class:`python:float`
+           Reynolds number.
+
+       **Re_critical** : :class:`python:float`
+           Reynolds number at the start of transition.
+
+
+
+   :Returns:
+
+       :class:`python:float`
+           Turbulent-branch weight in the closed interval ``[0, 1]``.
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: FRICTION_MODELS
+   :value: ('native', 'fluids')
+
+
+.. py:data:: ReDh_laminar
+   :value: 2300
+
+
+.. py:data:: ReDh_turbulent
+   :value: 3500
+
+

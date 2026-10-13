@@ -46,8 +46,8 @@ Functions
 
    pyskyfire.regen.contour.compute_chamber_volume
    pyskyfire.regen.contour.compute_cutoff_length
-   pyskyfire.regen.contour.get_contour
-   pyskyfire.regen.contour.get_contour_internal
+   pyskyfire.regen.contour.generate_contour
+   pyskyfire.regen.contour.generate_contour_internal
    pyskyfire.regen.contour.get_theta_e_n
    pyskyfire.regen.contour.integrate_area
 
@@ -137,10 +137,10 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: get_contour(r_t, area_ratio, r_c=None, L_c=None, V_c=None, eps_c=None, AR_c=None, theta_conv=45, theta_div=15, nozzle='rao', R_1f=1.5, R_2f=0.5, R_3f=0.382, length_fraction=0.8, angle_input='degrees', export_tikz=False)
+.. py:function:: generate_contour(r_t, area_ratio, r_c=None, L_c=None, V_c=None, eps_c=None, AR_c=None, theta_conv=45, theta_div=15, nozzle='rao', R_1f=1.5, R_2f=0.5, R_3f=0.382, length_fraction=0.8, angle_input='degrees', export_tikz=False)
 
    
-   High-level API to generate a nozzle contour using four input modes.
+   Generate a chamber and nozzle contour using four input modes.
 
    Exactly one of the following input combinations must be provided:
 
@@ -175,9 +175,21 @@ Module Contents
        **nozzle** : {'rao', 'conical'}, :obj:`optional`
            Nozzle geometry. Default ``'rao'``.
 
-       **R_1f, R_2f, R_3f** : :class:`python:float`, :obj:`optional`
-           Throat/chamber fillet/exit curvature scale factors (× ``r_t``).
-           ``R_2f=0`` or ``None`` gives a hard corner.
+       **R_1f** : :class:`python:float`, :obj:`optional`
+           Dimensionless throat entrance curvature factor. The arc joining the
+           converging section to the throat (upstream of the minimum radius) has
+           radius ``R1 = R_1f * r_t``. Default ``1.5``.
+
+       **R_2f** : :class:`python:float` or :data:`python:None`, :obj:`optional`
+           Dimensionless chamber fillet curvature factor. The arc joining the
+           cylindrical chamber to the converging section has radius
+           ``R2 = R_2f * r_t``. Default ``0.5``. Set to ``0`` or ``None`` for a
+           sharp corner at the chamber-to-converging-section junction.
+
+       **R_3f** : :class:`python:float`, :obj:`optional`
+           Dimensionless throat exit curvature factor. The arc joining the throat
+           to the diverging nozzle (downstream of the minimum radius) has radius
+           ``R3 = R_3f * r_t``. Default ``0.382``.
 
        **length_fraction** : :class:`python:float`, :obj:`optional`
            Rao length fraction in ``[0.60, 1.00]`` (Default ``0.8``).
@@ -209,19 +221,24 @@ Module Contents
    .. seealso::
 
        
-       :obj:`get_contour_internal`
+       :obj:`generate_contour_internal`
            Low-level builder used by all modes.
        :obj:`compute_chamber_volume`
            Volume integral used by modes that solve for ``L_c``.
        
        
+   .. rubric:: Notes
+
+   In the flow direction, the curvature factors occur in the order
+   ``R_2f`` (chamber fillet), ``R_1f`` (throat entrance), then ``R_3f``
+   (throat exit). All three scale the throat radius ``r_t``.
 
 
 
    ..
        !! processed by numpydoc !!
 
-.. py:function:: get_contour_internal(r_c, r_t, area_ratio, L_c, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz)
+.. py:function:: generate_contour_internal(r_c, r_t, area_ratio, L_c, theta_conv, theta_div, nozzle, R_1f, R_2f, R_3f, length_fraction, export_tikz)
 
    
    Generate the full nozzle contour coordinates from geometric inputs.

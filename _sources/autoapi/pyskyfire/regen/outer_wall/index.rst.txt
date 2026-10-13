@@ -1,0 +1,73 @@
+pyskyfire.regen.outer_wall
+==========================
+
+.. py:module:: pyskyfire.regen.outer_wall
+
+.. autoapi-nested-parse::
+
+   The cold-side envelope of a cooling circuit, read like a contour.
+
+   :class:`~pyskyfire.regen.contour.Contour` describes where the hot gas sees the
+   chamber. This describes the other face of the same hardware: the outermost
+   surface the cooling channels and their walls reach. It is what a manifold
+   wrapped around the chamber has to sit against, and it is stated the same way --
+   a radius as a function of axial station, plus the direction the wall faces
+   there -- so the two can be read side by side.
+
+   A channelled wall is not a smooth cylinder, so "the outer radius" is two
+   numbers rather than one.
+
+   ``envelope``
+       The outermost point the hardware reaches. Rounded tubes bulge, so this is
+       the crest of a bump. Anything that has to *clear* the chamber -- a manifold
+       cavity, a jacket, a clamp -- is sized against this one, which is why it is
+       the default.
+   ``equivalent``
+       The radius of the plain cylinder enclosing the same cross-sectional area as
+       the real scalloped surface, so it sits between the crests and the troughs.
+       This is the one that belongs in area, volume and mass bookkeeping, where
+       counting out to the crests would claim material that is not there.
+
+   The two are equal wherever the outer surface really is a cylinder, which is the
+   case for a squared channel: its roof is an arc at constant radius and the rib
+   tops between channels sit at that same radius. They separate only for sections
+   whose exterior is scalloped.
+
+   Both are surfaces of revolution even when the channels are helical. A helical
+   channel presents a narrower section in the plane normal to its own path, and
+   that narrowing is already carried in the resolved section; sweeping it about
+   the axis still traces one radius per station. So the outer wall stays straight
+   in exactly the sense the contour does.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.regen.outer_wall.OUTER_WALL_KINDS
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/regen/outer_wall/OuterWall
+
+.. autoapisummary::
+
+   pyskyfire.regen.outer_wall.OuterWall
+
+
+Module Contents
+---------------
+
+.. py:data:: OUTER_WALL_KINDS
+   :value: ('envelope', 'equivalent')
+
+

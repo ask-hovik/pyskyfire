@@ -1,0 +1,125 @@
+pyskyfire.network.blocks.OrificeBlock
+=====================================
+
+.. py:class:: pyskyfire.network.blocks.OrificeBlock(name: str, st_in: str, st_out: str, orifice, fluid, viscosity: float | None = None)
+
+   Bases: :py:obj:`FluidBlock`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.network.blocks.OrificeBlock
+      :parts: 1
+      :private-bases:
+
+
+   
+   Engine-network adapter for one :class:`Orifice` or :class:`OrificePlate`.
+
+   The contained restriction remains independently usable through its own
+   ``solve``. This block only translates network stations into that public
+   API and emits the outlet station and the ``dp_<name>`` loss signal. The
+   signal is the irreversible loss: the whole drop for an orifice, and the
+   permanent loss after recovery for a plate.
+
+   :Parameters:
+
+       **name** : :class:`python:str`
+           Block name used for the pressure-loss signal.
+
+       **st_in, st_out** : :class:`python:str`
+           Inlet and outlet network station keys.
+
+       **orifice** : :obj:`pyskyfire.ducts.Orifice` or :obj:`pyskyfire.ducts.OrificePlate`
+           Physical restriction.
+
+       **fluid** : :class:`python:str` or :obj:`Fluid` or :obj:`EquationOfState`
+           The fluid, as :func:`~pyskyfire.thermo.eos.as_equation_of_state` reads it.
+
+       **viscosity** : :class:`python:float`, :obj:`optional`
+           Passed to :meth:`OrificePlate.solve`; only a plate uses it.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   The flow is adiabatic, so the outlet carries the inlet enthalpy.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _solve(station: pyskyfire.network.engine_network.Station)
+
+
+   .. py:method:: compute(stations: Dict[str, pyskyfire.network.engine_network.Station], signals: Dict[str, float]) -> tuple[Dict[str, pyskyfire.network.engine_network.Station], Dict[str, float]]
+
+      
+      Compute one pass of the block.
+
+
+      :Parameters:
+
+          **stations_in** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.network.engine_network.Station>`]
+              Input network stations keyed by name.
+
+          **signals_in** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
+              Input scalar signals keyed by name.
+
+
+
+      :Returns:
+
+          **stations_out** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.network.engine_network.Station>`]
+              Updated or newly created stations produced by the block.
+
+          **signals_out** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
+              Updated or newly created scalar signals produced by the block.
+
+
+
+
+
+
+
+
+      .. rubric:: Notes
+
+      .. Note::
+          Implementations should treat missing inputs as an error. The engine network orchestrator is expected to provide the declared inputs.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: post_process(stations, signals)
+
+      
+      Return the detailed orifice result at the converged inlet condition.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

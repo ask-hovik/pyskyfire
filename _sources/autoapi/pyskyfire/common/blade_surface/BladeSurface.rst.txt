@@ -1,0 +1,28 @@
+pyskyfire.common.blade_surface.BladeSurface
+===========================================
+
+.. py:class:: pyskyfire.common.blade_surface.BladeSurface
+
+   
+   One blade's closed-edge sides, (span, chord, 3), in (x,r,theta).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

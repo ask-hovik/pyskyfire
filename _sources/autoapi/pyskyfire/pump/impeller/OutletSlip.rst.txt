@@ -1,0 +1,29 @@
+pyskyfire.pump.impeller.OutletSlip
+==================================
+
+.. py:class:: pyskyfire.pump.impeller.OutletSlip
+
+   
+   Gülich's slip prediction at the impeller outlet, Table 3.2.
+
+   ``blockage`` is tau_2 (T3.2.3), ``limiting_ratio`` epsilon_lim (T3.2.4),
+   ``diameter_correction`` k_w (T3.2.5) and ``slip_factor`` gamma (T3.2.6).
+   ``cm`` is the unblocked meridional velocity and ``cu`` the absolute swirl
+   the blades leave (T3.2.7), both in m/s.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

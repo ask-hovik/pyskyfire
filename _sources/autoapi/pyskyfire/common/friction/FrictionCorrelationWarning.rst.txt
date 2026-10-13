@@ -1,0 +1,32 @@
+pyskyfire.common.friction.FrictionCorrelationWarning
+====================================================
+
+.. py:exception:: pyskyfire.common.friction.FrictionCorrelationWarning
+
+   Bases: :py:obj:`UserWarning`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.common.friction.FrictionCorrelationWarning
+      :parts: 1
+      :private-bases:
+
+
+   
+   A friction correlation is being extrapolated beyond a documented limit.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

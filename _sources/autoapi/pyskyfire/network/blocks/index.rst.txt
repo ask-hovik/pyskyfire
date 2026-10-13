@@ -1,0 +1,45 @@
+pyskyfire.network.blocks
+========================
+
+.. py:module:: pyskyfire.network.blocks
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/network/blocks/DiffuserBlock
+   /autoapi/pyskyfire/network/blocks/FluidBlock
+   /autoapi/pyskyfire/network/blocks/InjectorBlock
+   /autoapi/pyskyfire/network/blocks/MassFlowMergerBlock
+   /autoapi/pyskyfire/network/blocks/MassFlowSplitterBlock
+   /autoapi/pyskyfire/network/blocks/OrificeBlock
+   /autoapi/pyskyfire/network/blocks/PipeBlock
+   /autoapi/pyskyfire/network/blocks/PumpBlock
+   /autoapi/pyskyfire/network/blocks/RegenBlock
+   /autoapi/pyskyfire/network/blocks/SignalBlock
+   /autoapi/pyskyfire/network/blocks/SimpleDuctBlock
+   /autoapi/pyskyfire/network/blocks/TransmissionBlock
+   /autoapi/pyskyfire/network/blocks/TurbineBlock
+   /autoapi/pyskyfire/network/blocks/VoluteBlock
+
+.. autoapisummary::
+
+   pyskyfire.network.blocks.DiffuserBlock
+   pyskyfire.network.blocks.FluidBlock
+   pyskyfire.network.blocks.InjectorBlock
+   pyskyfire.network.blocks.MassFlowMergerBlock
+   pyskyfire.network.blocks.MassFlowSplitterBlock
+   pyskyfire.network.blocks.OrificeBlock
+   pyskyfire.network.blocks.PipeBlock
+   pyskyfire.network.blocks.PumpBlock
+   pyskyfire.network.blocks.RegenBlock
+   pyskyfire.network.blocks.SignalBlock
+   pyskyfire.network.blocks.SimpleDuctBlock
+   pyskyfire.network.blocks.TransmissionBlock
+   pyskyfire.network.blocks.TurbineBlock
+   pyskyfire.network.blocks.VoluteBlock
+
+

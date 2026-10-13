@@ -1,0 +1,30 @@
+pyskyfire.viz.scene.FieldData
+=============================
+
+.. py:class:: pyskyfire.viz.scene.FieldData
+
+   
+   Scalar mesh values in base SI units. NaN represents unavailable data.
+
+   Units are descriptive metadata, never conversion inputs. Association is
+   ``point`` or ``cell`` (one value per triangle).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

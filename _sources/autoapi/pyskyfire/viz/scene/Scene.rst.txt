@@ -1,0 +1,100 @@
+pyskyfire.viz.scene.Scene
+=========================
+
+.. py:class:: pyskyfire.viz.scene.Scene(*, title='Pyskyfire 3D', color_by=None, clim=None, show_axes=False)
+
+   
+   Assemble components for desktop or standalone HTML display.
+
+   ``anchor`` names the added component's local anchor; ``attach_to`` is a
+   world-space Anchor. Attachment mates their outward x axes in opposition.
+   It is a one-time placement calculation, with no fluid-network constraints.
+   Explicit placement and anchor placement are mutually exclusive.
+
+   ``tags`` labels the added node, a string or an iterable of them. Nodes
+   sharing a tag appear together as one group in the HTML viewer, so a
+   grouping written into the script survives regenerating the results.
+
+   ``show_axes`` adds a corner orientation triad marking the scene axes
+   (x red, y green, z blue). It is an orientation cue only, not a measuring
+   grid: it carries no ticks and does not indicate the origin or scale.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: add(component, *, name=None, transform=None, position=None, rotation=None, parent=None, anchor=None, attach_to=None, tags=())
+
+
+   .. py:method:: save_html(path)
+
+
+   .. py:method:: show()
+
+
+   .. py:method:: to_html()
+
+
+   .. py:method:: to_plotter(*, off_screen=False)
+
+      
+      Create a PyVista plotter; the caller owns and closes it (also for GUI embedding).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: walk()
+
+
+   .. py:property:: data_url
+
+      
+      Interactive HTML for Report.add_iframe().
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

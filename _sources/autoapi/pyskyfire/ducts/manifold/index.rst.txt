@@ -1,0 +1,65 @@
+pyskyfire.ducts.manifold
+========================
+
+.. py:module:: pyskyfire.ducts.manifold
+
+.. autoapi-nested-parse::
+
+   A ring that shares flow out to a circumference, or gathers it back in.
+
+   Where a volute collects swirling flow and is sized to conserve the angular
+   momentum it takes in, a manifold has no swirl to conserve. Fluid arrives
+   through a port and has to travel round to reach the far channels, or comes in
+   all round and has to travel to the port; either way the circumferential velocity
+   is a cost rather than a design variable. So a manifold is not a volute with a
+   different area law, and it is not named the way one is.
+
+   Branches, not a direction
+   -------------------------
+   A volute can only run one way, because the swirl it collects already has a
+   sense. A manifold can be built either way, and the choice is a topology rather
+   than a direction.
+
+   ``branches=1``
+       The flow runs one way round the whole ring, from a dead point at the tongue
+       to the port a full revolution later. This needs a ``rotation``, because
+       which way it runs is a real choice about the hardware.
+   ``branches=2``
+       The flow splits at a dead point and runs both ways, each half gathering its
+       own semicircle and meeting at the port. This is mirror-symmetric, so no
+       rotation applies and asking for one is refused: there is no sense to name.
+
+   Two branches is the usual arrangement for a chamber manifold, because it halves
+   the distance the fluid travels and so the head it spends getting there.
+
+   Multiple ports are the obvious next step and would put a dead point between
+   each neighbouring pair. The machinery counts branches rather than assuming two,
+   so that arrives as ``branches=2*n_ports`` with the dead points steerable, not as
+   a second class.
+
+   What is resolved
+   ----------------
+   Only one branch. Every branch of a given manifold is the same arc sized the
+   same way, so the ring is that one arc repeated -- mirrored for a split
+   manifold, rotated for a multi-port one -- and :meth:`Manifold.sweep` is what
+   puts the whole ring together.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/manifold/Manifold
+   /autoapi/pyskyfire/ducts/manifold/ManifoldGeometry
+
+.. autoapisummary::
+
+   pyskyfire.ducts.manifold.Manifold
+   pyskyfire.ducts.manifold.ManifoldGeometry
+
+

@@ -4,7 +4,7 @@ pyskyfire.viz.engine_viz.Engine3DViewer
 .. py:class:: pyskyfire.viz.engine_viz.Engine3DViewer
 
    
-   Interactive self-contained HTML viewer for a thrust-chamber model.
+   Deprecated compatibility handle; new code should use :class:`Scene`.
 
 
 
@@ -23,6 +23,9 @@ pyskyfire.viz.engine_viz.Engine3DViewer
 
    ..
        !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
 
    .. py:method:: close() -> None
 

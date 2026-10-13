@@ -1,0 +1,40 @@
+pyskyfire.viz.backends
+======================
+
+.. py:module:: pyskyfire.viz.backends
+
+.. autoapi-nested-parse::
+
+   
+   Rendering adapters for the common scene model.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /autoapi/pyskyfire/viz/backends/common/index
+   /autoapi/pyskyfire/viz/backends/pyvista/index
+   /autoapi/pyskyfire/viz/backends/threejs/index
+
+

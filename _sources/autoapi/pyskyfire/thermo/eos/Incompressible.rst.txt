@@ -1,0 +1,202 @@
+pyskyfire.thermo.eos.Incompressible
+===================================
+
+.. py:class:: pyskyfire.thermo.eos.Incompressible(rho: float, cp: float | None = None)
+
+   Bases: :py:obj:`EquationOfState`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.thermo.eos.Incompressible
+      :parts: 1
+      :private-bases:
+
+
+   
+   A fluid of constant density.
+
+   Enthalpy is ``cp*T + p/rho``. With constant density, an isentropic
+   process is also isothermal, so it moves only the ``p/rho`` term. The
+   isentropic head between two pressures is then ``Δp/rho`` exactly: the
+   familiar pump head.
+
+   ``cp`` is optional. Without it temperature is carried through isentropic
+   processes but cannot be recovered from an enthalpy, so :meth:`state_ph`
+   reports it as NaN, and there is no entropy: :meth:`entropy` and
+   :meth:`state_hs` need ``cp``. Entropy is then ``cp*ln(T)``, datum 1 K.
+   Sound is infinitely fast in an incompressible fluid.
+
+   :Parameters:
+
+       **rho** : :class:`python:float`
+           Density [kg m⁻³].
+
+       **cp** : :class:`python:float`, :obj:`optional`
+           Specific heat [J kg⁻¹ K⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __repr__()
+
+
+   .. py:method:: _need_cp(what)
+
+
+   .. py:method:: _state(p, T, h)
+
+
+   .. py:method:: entropy(state)
+
+      
+      Specific entropy of ``state`` [J kg⁻¹ K⁻¹], on this EOS's own datum.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: isentropic(state, p)
+
+      
+      The state reached from ``state`` by an isentropic process to ``p``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: speed_of_sound(state)
+
+      
+      Speed of sound in ``state`` [m s⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: state_hs(h, s)
+
+      
+      The state with specific enthalpy ``h`` and specific entropy ``s``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: state_pT(p, T)
+
+      
+      The state at pressure ``p`` and temperature ``T``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: state_ph(p, h)
+
+      
+      The state at pressure ``p`` and specific enthalpy ``h``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

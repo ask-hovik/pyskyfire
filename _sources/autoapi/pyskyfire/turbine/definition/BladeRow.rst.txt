@@ -1,0 +1,213 @@
+pyskyfire.turbine.definition.BladeRow
+=====================================
+
+.. py:class:: pyskyfire.turbine.definition.BladeRow
+
+   
+   One row of blades, as hardware.
+
+
+   :Parameters:
+
+       **name** : :class:`python:str`
+           The row's name, such as ``'S1'`` or ``'R1'``.
+
+       **kind** : {'stator', 'rotor'}
+           Whether the row turns with the shaft.
+
+       **blade_count** : :class:`python:int`
+           Blades around the full circumference.
+
+       **x_le** : :class:`python:float`
+           Axial position of the leading edge [m].
+
+       **axial_chord** : :class:`python:float`
+           Axial extent of the blade [m].
+
+       **r_hub_in, r_tip_in, r_hub_out, r_tip_out** : :class:`python:float`
+           Passage radii at the leading and trailing edges [m].
+
+       **inlet_metal_angle, outlet_metal_angle** : :class:`python:float`
+           Camber-line angles at mean radius [rad].
+
+       **stagger** : :class:`python:float`
+           Angle of the chord line from axial at mean radius [rad].
+
+       **leading_edge_diameter** : :class:`python:float`
+           Leading-edge thickness [m].
+
+       **trailing_edge_thickness** : :class:`python:float`
+           Trailing-edge thickness [m].
+
+       **max_thickness** : :class:`python:float`
+           The thickness the section is drawn with [m]. The built section's
+           actual maximum is measured and reported alongside.
+
+       **trailing_edge_wedge_angles** : (:class:`python:float`, :class:`python:float`)
+           Suction- and pressure-side wedge angles at the trailing edge [rad].
+
+       **thickness_distribution** : :obj:`ThicknessDistribution`
+           How the thickness is laid along the camber line.
+
+       **tip_clearance** : :class:`python:float`
+           Gap from a rotor's tips to the casing [m]. Zero is a shrouded rotor,
+           whose shroud turns with it and forms the outer wall over the row.
+
+       **hub_clearance** : :class:`python:float`
+           Gap from a cantilevered stator's hub end to the rotating drum under
+           it [m]. Zero is a stator carried on a stationary hub.
+
+       **admission** : :class:`python:float`
+           Fraction of the circumference fed with flow.
+
+       **twist** : :func:`python:callable`, :obj:`optional`
+           ``twist(span_fraction, r) -> (inlet_metal, outlet_metal)``. None gives
+           the mean section at every span.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: section_angles(span_fraction, r)
+
+      
+      Inlet metal, outlet metal and stagger at one span station [rad].
+
+      The stagger keeps its offset from the mean of the two metal angles,
+      so a twisted section leans with its camber.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: aspect_ratio
+      :type: float
+
+
+      
+      Mean blade height over chord.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: chord
+      :type: float
+
+
+      
+      True chord at mean radius [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: height_in
+      :type: float
+
+
+
+   .. py:property:: height_out
+      :type: float
+
+
+
+   .. py:property:: is_rotor
+      :type: bool
+
+
+
+   .. py:property:: pitch
+      :type: float
+
+
+      
+      Blade spacing at mean radius [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: r_mean
+      :type: float
+
+
+
+   .. py:property:: x_te
+      :type: float
+
+

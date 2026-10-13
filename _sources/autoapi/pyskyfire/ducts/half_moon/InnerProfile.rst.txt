@@ -1,0 +1,113 @@
+pyskyfire.ducts.half_moon.InnerProfile
+======================================
+
+.. py:class:: pyskyfire.ducts.half_moon.InnerProfile
+
+   
+   A wall curve in the meridional plane, measured by arc length.
+
+
+
+   :Attributes:
+
+       **arc** : :obj:`np.ndarray <numpy.ndarray>`
+           Arc length from the anchor [m, shape (M,)], strictly increasing and
+           spanning zero. Negative upstream of the anchor, positive downstream.
+
+       **points** : :obj:`np.ndarray <numpy.ndarray>`
+           Matching ``(axial, radial)`` positions [m, shape (M, 2)].
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   Build one with :meth:`~pyskyfire.regen.outer_wall.OuterWall.profile` to take
+   the wall off a resolved thrust chamber, or directly to state a wall
+   pyskyfire did not resolve.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: at(s)
+
+      
+      Meridional position at arc length ``s`` [m, shape (..., 2)].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: tangent(s)
+
+      
+      Unit tangent at arc length ``s``, pointing downstream.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: span
+
+      
+      Arc length available upstream and downstream of the anchor [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

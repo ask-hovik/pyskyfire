@@ -1,0 +1,44 @@
+pyskyfire.regen.design_inputs.DesignContext
+===========================================
+
+.. py:class:: pyskyfire.regen.design_inputs.DesignContext(providers: Mapping[str, Any])
+
+   Bases: :py:obj:`Mapping`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.regen.design_inputs.DesignContext
+      :parts: 1
+      :private-bases:
+
+
+   
+   Lazily evaluated bundle of design-input quantities at one station.
+
+   Providers are either plain values or zero-argument callables.  A callable
+   is invoked at most once, the first time its name is requested, so building
+   a context for a station that only needs ``x`` costs nothing.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __getitem__(key: str) -> Any
+
+
+   .. py:method:: __iter__()
+
+
+   .. py:method:: __len__() -> int
+

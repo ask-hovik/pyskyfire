@@ -1,0 +1,136 @@
+pyskyfire.viz.turbine_viz
+=========================
+
+.. py:module:: pyskyfire.viz.turbine_viz
+
+.. autoapi-nested-parse::
+
+   Plotly figures of an axial turbine: triangles, passage, cascade and spanwise angles.
+
+   Each function takes one of the turbine objects and returns a ``go.Figure``,
+   ready for :meth:`Report.add_figure` or ``fig.show()``. Lengths are shown in
+   millimetres and angles in degrees. Pitchwise distances and angles are positive
+   in the direction the rotor turns, as in :mod:`pyskyfire.turbine`.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.viz.turbine_viz.plot_turbine_cascade
+   pyskyfire.viz.turbine_viz.plot_turbine_meridional
+   pyskyfire.viz.turbine_viz.plot_turbine_spanwise
+   pyskyfire.viz.turbine_viz.plot_velocity_triangles
+
+
+Module Contents
+---------------
+
+.. py:function:: plot_turbine_cascade(geometry, span_fraction=0.5, passages=3)
+
+   
+   Every row at one span, unrolled flat: axial against pitchwise distance.
+
+   Suction sides are solid and pressure sides dashed. Each row shows
+   ``passages`` neighbouring blades at its own pitch.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: plot_turbine_meridional(geometry)
+
+   
+   The passage in (x, r), with rotating wall stretches, gaps and blade edges.
+
+   ``geometry`` is a :class:`~pyskyfire.turbine.TurbineGeometry`. Thick red
+   stretches of wall turn with the shaft; the blade outlines are each row's
+   leading and trailing edges and its tip or hub end.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: plot_turbine_spanwise(geometry)
+
+   
+   Each row's metal angles, measured gauging angle, throat and pitch, hub to tip.
+
+   The gauging angle ``acos(throat/pitch)`` is measured on the built blades;
+   beside the outlet metal angle it shows how far the section turns the flow
+   from what it was drawn for. Line styles are the same in every row: see
+   the subplot titles.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: plot_velocity_triangles(turbine)
+
+   
+   Each stage's rotor inlet and exit triangles, drawn from a common apex.
+
+   Velocities point down the page in the flow direction, with swirl across
+   it, positive in the rotation direction. At each station the absolute
+   velocity ``c`` is the relative velocity ``w`` plus the blade speed ``u``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

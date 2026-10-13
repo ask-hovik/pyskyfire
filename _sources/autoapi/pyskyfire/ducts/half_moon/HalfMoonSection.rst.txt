@@ -1,0 +1,432 @@
+pyskyfire.ducts.half_moon.HalfMoonSection
+=========================================
+
+.. py:class:: pyskyfire.ducts.half_moon.HalfMoonSection(profile, slit_height, fillet_radius, *, slit_placement=0.5, exposure_placement=0.5, aspect_ratio=1.0, max_aspect_ratio=None)
+
+   Bases: :py:obj:`pyskyfire.ducts.volute_section.VoluteSection`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.half_moon.HalfMoonSection
+      :parts: 1
+      :private-bases:
+
+
+   
+   A manifold section: chamber wall inboard, half-ellipse outboard.
+
+
+   :Parameters:
+
+       **profile** : :obj:`InnerProfile`
+           The chamber wall this section sits against, anchored where the slit is.
+
+       **slit_height** : :class:`python:float`
+           Arc of wall reserved for the cooling channels to break out into [m].
+           The section may never close below it.
+
+       **fillet_radius** : :class:`python:float`
+           Corner radius blending each end of the exposed wall into the ellipse
+           [m]. Zero leaves a sharp corner.
+
+       **slit_placement** : :class:`python:float`, :obj:`optional`
+           Where the slit sits about the anchor, as the fraction of it lying
+           upstream. ``0.5`` centres it.
+
+       **exposure_placement** : :class:`python:float`, :obj:`optional`
+           How the exposed wall outside the slit divides, as the fraction of it
+           lying upstream of the slit. Held at every azimuth, so ``0.75`` keeps
+           three quarters of the spare wall upstream all the way round.
+
+       **aspect_ratio, max_aspect_ratio** : :class:`python:float`, :obj:`optional`
+           Ellipse width over depth at the design point, and the flattest it may
+           be pushed once the exposed wall has closed onto the slit.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _frame(size)
+
+      
+      Chord frame of the exposed wall: origin, axes, and chord length.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _layout(size, aspect=None)
+
+      
+      Resolve the chord frame, the ellipse, and both fillet arcs.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _tangency(chord, aspects)
+
+      
+      Ellipse parameter where each fillet touches it.
+
+      The fillet centres sit one radius inboard of the chord at each of its
+      ends, so requiring the ellipse to be tangent to both -- and centred on
+      the chord -- leaves a single equation. It is monotone on ``(0, pi/2)``,
+      running to plus infinity as the parameter approaches the chord and to
+      ``-fillet_radius`` at the outboard extreme, so the bracket is fixed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: boundary(size, aspect=None)
+
+      
+      Counterclockwise boundary pieces for each size and aspect.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: dome(size, aspect=None)
+
+      
+      The outboard dome, as ``(depth, half_width, arc_limit)``.
+
+      The depth is how far the section reaches out along the normal from its
+      chord and the half-width is the ellipse axis across it, both semi-axes
+      of the ellipse the section is built on. The arc limit is the ellipse
+      parameter the fillets take over at: only within it is the ellipse
+      passage boundary, so it is what bounds where a port may leave through.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: exposed_wall(size, aspect=None)
+
+      
+      Arc of wall left clear between the two fillets [m].
+
+      Equal to ``size``: the fillets are tangent to the chord at the ends of
+      the exposed arc, so they begin where it ends rather than eating into
+      it. Reported so that a design can be checked against the room the
+      channel breakout actually needs.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: fan_origin(size, aspect=None)
+
+      
+      A point on the centreline that sees the whole boundary.
+
+      Outboard of the wall's own bulge, since a wall curving into the cavity
+      would otherwise hide part of itself from a point on the chord.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: margin_boundaries(size, aspect=None)
+
+      
+      The chamber-facing wall either side of the slit, as boundary pieces.
+
+      Returned in the order the face is traversed, so the two of them and
+      :meth:`slit_boundary` between them tile it exactly. That matters for
+      drawing: the slit is where channels break out and the rest of the face
+      is metal against the chamber, and the two want telling apart without
+      laying one surface on top of the other.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: meridional_frame(size, aspect=None)
+
+      
+      Where each section sits on the wall, as ``(axial, radial, tilt)``.
+
+      A manifold's section slides along the wall as the area law resizes it,
+      and leans with whatever the wall is doing there, so it carries its own
+      placement rather than taking one from the passage. ``tilt`` is the angle
+      of the section's outward direction from radial, positive toward ``+x``,
+      which is what a sweep needs to lay the section plane down correctly.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: slit_boundary(size, aspect=None)
+
+      
+      The reserved slit alone, as a boundary piece in the section frame.
+
+      The same wall curve the section is drawn with, read only between the
+      slit's own bounds. What comes back is the strip the cooling channels
+      break out through, which is otherwise indistinguishable from the rest
+      of the chamber-facing face.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: window(size)
+
+      
+      Arc-length bounds of the exposed wall at each size [m].
+
+      The slit stays put and the spare wall divides about it in the fixed
+      ratio, so the window closes onto the slit as ``size`` reaches
+      :attr:`minimum_size`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: maximum_size
+      :type: float
+
+
+      
+      The most wall there is to spread onto, given where the slit sits.
+
+      The window opens either side of the fixed slit in the fixed ratio, so
+      whichever side runs out of wall first is what caps the section.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: minimum_size
+      :type: float
+
+
+      
+      The slit itself, where the exposed wall has nothing left to give.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: slit
+
+      
+      Arc-length bounds of the reserved slit [m], about the anchor.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

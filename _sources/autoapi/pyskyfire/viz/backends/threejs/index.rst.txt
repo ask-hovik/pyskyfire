@@ -1,0 +1,32 @@
+pyskyfire.viz.backends.threejs
+==============================
+
+.. py:module:: pyskyfire.viz.backends.threejs
+
+.. autoapi-nested-parse::
+
+   Offline HTML rendering with mesh references and original scalar values.
+
+   The scene is serialized directly instead of exporting a VTK rendering window
+   through glTF, so fields and node identities survive the browser boundary.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.viz.backends.threejs.scene_payload
+   pyskyfire.viz.backends.threejs.to_html
+
+
+Module Contents
+---------------
+
+.. py:function:: scene_payload(scene)
+
+.. py:function:: to_html(scene)
+

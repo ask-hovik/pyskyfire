@@ -1,0 +1,73 @@
+pyskyfire.regen.channel_layout.ChannelLayout
+============================================
+
+.. py:class:: pyskyfire.regen.channel_layout.ChannelLayout
+
+   
+   A consumer-neutral collection of unique, circularly patternable seeds.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: expanded_channels() -> tuple[ResolvedChannel, ...]
+
+      
+      Expand every seed into its complete physical circular pattern.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: for_circuits(circuit_indices) -> ChannelLayout
+
+      
+      Return a layout containing only the requested source circuits.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

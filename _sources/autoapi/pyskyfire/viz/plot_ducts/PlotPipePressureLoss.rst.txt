@@ -1,0 +1,36 @@
+pyskyfire.viz.plot_ducts.PlotPipePressureLoss
+=============================================
+
+.. py:class:: pyskyfire.viz.plot_ducts.PlotPipePressureLoss(*results, labels=None, markers=True, template='plotly_white')
+
+   Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.viz.plot_ducts.PlotPipePressureLoss
+      :parts: 1
+      :private-bases:
+
+
+   
+   Cumulative irreversible pressure loss against arc length for solved pipes.
+
+   The loss at each station is the inlet stagnation pressure less the
+   stagnation pressure there, so every curve starts at zero and ends at the
+   result's ``total_pressure_loss``. Inputs are as for
+   :class:`PlotPipePressure`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

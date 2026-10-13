@@ -1,0 +1,46 @@
+pyskyfire.heat_exchanger.solver.CircuitResult
+=============================================
+
+.. py:class:: pyskyfire.heat_exchanger.solver.CircuitResult
+
+   
+   One representative channel; heat_rate is TOTAL bank heat per segment.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:property:: T
+
+
+   .. py:property:: energy_change
+
+
+   .. py:property:: h
+
+
+   .. py:property:: outlet
+
+
+   .. py:property:: p
+
+
+   .. py:property:: s
+
+
+   .. py:property:: total_heat
+

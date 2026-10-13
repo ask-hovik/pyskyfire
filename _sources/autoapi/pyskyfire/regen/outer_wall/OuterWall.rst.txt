@@ -1,0 +1,311 @@
+pyskyfire.regen.outer_wall.OuterWall
+====================================
+
+.. py:class:: pyskyfire.regen.outer_wall.OuterWall(xs, envelope, equivalent, *, name=None)
+
+   
+   Outer radius of a channelled wall against axial station.
+
+
+   :Parameters:
+
+       **xs** : :term:`numpy:array_like`
+           Axial stations [m], strictly increasing.
+
+       **envelope, equivalent** : :term:`numpy:array_like`
+           The two radii at each station [m].
+
+       **name** : :class:`python:str`, :obj:`optional`
+           Label for error messages.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   Build one with :meth:`from_circuit` or :meth:`from_chamber` rather than
+   directly, unless the wall is being stated by hand for a part pyskyfire did
+   not resolve.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _measure(circuit, x)
+      :staticmethod:
+
+
+      
+      ``(envelope, equivalent, pitch)`` for one circuit at one ``x``.
+
+      The equivalent radius is normalised by the angle the circuit's own
+      channel sweeps, so it holds whether or not the circuit tiles the circle
+      by itself. ``pitch`` is the total angle the circuit occupies, which is
+      what weights it against any circuit interleaved with it.
+
+      An outer liner is added to both radii rather than folded into the swept
+      area: it is a layer laid over the finished surface, so it raises the
+      crest and the mean by its own thickness.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _spline(kind)
+
+
+   .. py:method:: dr_dx(x, kind='envelope')
+
+      
+      Slope of the outer wall at ``x``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_chamber(chamber, *, n_stations=None)
+      :classmethod:
+
+
+      
+      Measure the outer wall across every circuit of a thrust chamber.
+
+      Where circuits overlap in ``x`` they are interleaved around the
+      circumference rather than stacked on top of each other, so the two
+      radii combine differently. The envelope is whichever circuit reaches
+      furthest out, since that is the crest a surrounding part has to clear.
+      The equivalent radius is built from the area they jointly enclose, each
+      circuit contributing over the angle its own channels occupy -- taking
+      the larger of the two would claim the whole circumference looks like
+      the deeper circuit, and taking one circuit's channel count would assume
+      it had the circle to itself.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_circuit(circuit, *, n_stations=None)
+      :classmethod:
+
+
+      
+      Measure the outer wall of one resolved cooling circuit.
+
+      The equivalent radius is normalised by the angle the circuit's own
+      channel sweeps, so it answers "what cylinder encloses the same area per
+      radian as this roof" without assuming the circuit tiles the circle by
+      itself.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: normal(x, kind='envelope')
+
+      
+      Outward unit normal in the meridional plane, as ``(n_x, n_r)``.
+
+      Radially outward where the wall runs parallel to the axis, and tipped
+      toward the narrowing end where it does not.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: normal_angle(x, kind='envelope')
+
+      
+      Signed angle of the outward normal from radial [rad].
+
+      Positive toward ``+x``. Unlike
+      :meth:`~pyskyfire.regen.contour.Contour.normal_angle`, which reports an
+      unsigned angle, this keeps the sign: a manifold has to know which way
+      along the axis the wall tips, not merely by how much.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: profile(x, kind='envelope', *, reach=None, samples=401)
+
+      
+      The wall around station ``x``, ready for a manifold section.
+
+      Returns a :class:`~pyskyfire.ducts.half_moon.InnerProfile`: the wall
+      measured by arc length from ``x`` rather than by station, because that
+      is the room a cooling-channel breakout actually has on the surface. On
+      a sloped wall the surface runs further than the station span does.
+
+      :Parameters:
+
+          **x** : :class:`python:float`
+              Anchor station [m], strictly inside the wall's span.
+
+          **kind** : {'envelope', 'equivalent'}, :obj:`optional`
+              Which radius the wall follows. The default clears the crests,
+              which is what a cavity wrapped around the chamber has to do.
+
+          **reach** : :class:`python:float`, :obj:`optional`
+              Arc length to carry either side of the anchor [m]. Defaults to
+              whatever the wall offers, which is all a section can ever use.
+
+          **samples** : :class:`python:int`, :obj:`optional`
+              Stations sampled across that reach.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: r(x, kind='envelope')
+
+      
+      Outer radius at ``x`` [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: span
+
+      
+      First and last axial station the wall is defined over [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

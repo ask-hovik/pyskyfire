@@ -1,0 +1,61 @@
+pyskyfire.regen.cad_geometry.PlanarArc
+======================================
+
+.. py:class:: pyskyfire.regen.cad_geometry.PlanarArc
+
+   
+   Affine circular arc: c + a*cos(t) + b*sin(t), in metres.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: point(fraction)
+
+
+   .. py:method:: tangent(fraction)
+
+
+   .. py:method:: to_data()
+
+      
+      Principal-axis ellipse parameters, retaining directed endpoints.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: transformed(matrix, origin)
+
+
+   .. py:method:: trimmed(left, right)
+

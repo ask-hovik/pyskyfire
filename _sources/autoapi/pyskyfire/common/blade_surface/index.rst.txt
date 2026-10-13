@@ -1,0 +1,44 @@
+pyskyfire.common.blade_surface
+==============================
+
+.. py:module:: pyskyfire.common.blade_surface
+
+.. autoapi-nested-parse::
+
+   Blade surfaces in cylindrical coordinates, shared by impellers and turbines.
+
+   A blade is two sides, suction and pressure, each an array of shape
+   ``(span, chord, 3)`` in ``(x, r, theta)``: metres, metres, radians, about the
+   shaft (+x). The sides meet at the leading and trailing edges, so their first
+   and last chord stations coincide.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/common/blade_surface/BladeSurface
+
+.. autoapisummary::
+
+   pyskyfire.common.blade_surface.BladeSurface
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.common.blade_surface.cylindrical_to_cartesian
+
+
+Module Contents
+---------------
+
+.. py:function:: cylindrical_to_cartesian(cyl)
+

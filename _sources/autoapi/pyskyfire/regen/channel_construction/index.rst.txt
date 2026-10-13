@@ -1,0 +1,77 @@
+pyskyfire.regen.channel_construction
+====================================
+
+.. py:module:: pyskyfire.regen.channel_construction
+
+.. autoapi-nested-parse::
+
+   Resolve nominal paths into physical section anchors, arcs and centroids.
+
+   The normal section is projected locally onto an engine-axis-normal plane to
+   allocate gas area. This is exact for prismatic sections; a curved CAD loft is
+   an approximation to the sequence of these local sections.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.regen.channel_construction.ConstructionArc
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/regen/channel_construction/ChannelConstruction
+
+.. autoapisummary::
+
+   pyskyfire.regen.channel_construction.ChannelConstruction
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.regen.channel_construction.build_channel_construction
+
+
+Module Contents
+---------------
+
+.. py:function:: build_channel_construction(circuit, reference_path=None)
+
+   
+   Build sections from the ideal-contour winding, including rotated seeds.
+
+   Every angular sector receives its share of the target gas area. Rounded
+   lobes are tangent to that sector in the locally projected geometry; liners
+   extend the gas-facing arc inward. No translation follows lobe sizing.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: ConstructionArc
+

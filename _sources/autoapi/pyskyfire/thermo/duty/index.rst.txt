@@ -1,0 +1,44 @@
+pyskyfire.thermo.duty
+=====================
+
+.. py:module:: pyskyfire.thermo.duty
+
+.. autoapi-nested-parse::
+
+   What a turbomachine is asked to do, before anything is decided about how.
+
+   A duty is the fluid's side of the contract: the mass flow, the state it
+   arrives in, the pressure it must leave at and the shaft speed. Everything a
+   design sizes itself on follows from those four, and :class:`MachineDuty` holds
+   the results in the form designs read:
+
+   - the isentropic head, i.e. the enthalpy change of an ideal machine across
+     the same pressures (J kg⁻¹, positive for pumps and turbines alike);
+   - the volumetric flow at the inlet, and at the outlet an ideal machine would
+     reach.
+
+   Only the isentropic outlet is known here. The real outlet depends on the
+   machine's losses, and a duty says nothing about the machine.
+
+   A duty given as head and flow directly, as a pump often is, has no absolute
+   state: ``inlet``, ``outlet`` and ``eos`` are then ``None``, and ``mdot`` is
+   only known if a density was. The pump and turbine packages subclass this with
+   the constructors and derived numbers each needs.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/thermo/duty/MachineDuty
+
+.. autoapisummary::
+
+   pyskyfire.thermo.duty.MachineDuty
+
+

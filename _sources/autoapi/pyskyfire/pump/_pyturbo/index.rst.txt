@@ -1,0 +1,30 @@
+pyskyfire.pump._pyturbo
+=======================
+
+.. py:module:: pyskyfire.pump._pyturbo
+
+.. autoapi-nested-parse::
+
+   Translate physical pump inputs to pyTurbo 1.3.8 construction controls.
+
+   The conformal (m',theta) plane uses dm'=dm/r. Metal angles are from +m',
+   and upstream wrap_angle means atan(dtheta/m'), not total blade wrap.
+   Thickness controls are section-normal offsets in this plane: locally t/(2r).
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.pump._pyturbo.build_geometry
+
+
+Module Contents
+---------------
+
+.. py:function:: build_geometry(definition, *, span_points, chord_points)
+

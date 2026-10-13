@@ -1,0 +1,28 @@
+pyskyfire.ducts.path.PathNode
+=============================
+
+.. py:class:: pyskyfire.ducts.path.PathNode
+
+   
+   Human-friendly route vertex consumed by :func:`generate_path_stations`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

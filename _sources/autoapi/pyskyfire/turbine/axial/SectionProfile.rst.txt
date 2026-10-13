@@ -1,0 +1,114 @@
+pyskyfire.turbine.axial.SectionProfile
+======================================
+
+.. py:class:: pyskyfire.turbine.axial.SectionProfile
+
+   
+   The section shape of one kind of row, in fractions of its chord.
+
+
+   :Parameters:
+
+       **max_thickness** : :class:`python:float`
+           Section thickness over chord.
+
+       **leading_edge_diameter** : :class:`python:float`
+           Leading-edge thickness over chord.
+
+       **trailing_edge_thickness** : :class:`python:float`
+           Trailing-edge thickness over chord.
+
+       **trailing_edge_wedge_deg** : (:class:`python:float`, :class:`python:float`)
+           Suction- and pressure-side trailing-edge wedge angles.
+
+       **distribution** : :obj:`ThicknessDistribution`
+           How the thickness is laid along the camber line.
+
+       **stagger_fraction** : :class:`python:float`
+           Where the chord line sits between the two metal angles: 0 along the
+           inlet metal angle, 1 along the outlet. The default, 0.5, is their
+           mean, which is also where a symmetric impulse blade has it. A row that
+           turns the flow a long way from axial needs a larger fraction for the
+           built section's throat to leave the flow near its outlet metal angle;
+           the measured gauging angle shows how close it comes.
+
+       **stagger_deg** : :class:`python:float`, :obj:`optional`
+           Stagger at mean radius, used instead of ``stagger_fraction``.
+
+       **:meth:`impulse` is a starting point for impulse rotor blades: thick at**
+           ..
+
+       **mid-chord and thin at both edges, so the leading edge does not narrow the**
+           ..
+
+       **steep inlet the flow comes in through.**
+           ..
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: impulse(**changes)
+      :classmethod:
+
+
+      
+      An impulse blade: symmetric thickness and equally thin edges.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: stagger(inlet_metal, outlet_metal)
+
+      
+      Stagger at mean radius for a section between these metal angles [rad].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

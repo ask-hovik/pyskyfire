@@ -1,0 +1,46 @@
+pyskyfire.injector.impinging
+============================
+
+.. py:module:: pyskyfire.injector.impinging
+
+.. autoapi-nested-parse::
+
+   Impinging elements: jets drilled so that they meet at one point.
+
+   An impinging element is a set of jets aimed at a common impingement point a
+   height above the face. Like and unlike doublets, triplets and pentads are the
+   same class with different jets: a like doublet has two jets on one feed, an
+   unlike doublet one on each, an O-F-O triplet a fuel jet on the axis between two
+   oxidizer jets. Each jet's inclination is its own, so an unlike doublet can
+   lean its jets unequally to point the resultant momentum down the axis.
+
+   A jet's hole leaves the face at ``impingement_height·tan(inclination)`` from
+   the element centre, at its azimuth, and points at the impingement point.
+
+   The mixing quantities are the element's resultant momentum, its angle from the
+   chamber axis, and the element mixture ratio. An element with exactly one fuel
+   and one oxidizer jet also reports Rupe's ratio, ``ρ_o v_o² d_o / ρ_f v_f² d_f``,
+   which Rupe found gives the most uniform mixing near one, and the
+   momentum-flux ratio ``ρ_o v_o² / ρ_f v_f²``.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/injector/impinging/ImpingingDiagnostics
+   /autoapi/pyskyfire/injector/impinging/ImpingingElement
+   /autoapi/pyskyfire/injector/impinging/Jet
+
+.. autoapisummary::
+
+   pyskyfire.injector.impinging.ImpingingDiagnostics
+   pyskyfire.injector.impinging.ImpingingElement
+   pyskyfire.injector.impinging.Jet
+
+

@@ -1,0 +1,35 @@
+pyskyfire.ducts.path.Continuous
+===============================
+
+.. py:class:: pyskyfire.ducts.path.Continuous
+
+   
+   A locally resolved continuous-curvature connection.
+
+   ``radius`` is the exact centerline radius when known. If omitted on a
+   manually supplied layout, :class:`Path` estimates it transparently from
+   neighboring station triples using Menger curvature. Attached to a
+   :class:`PathNode`, it rounds that corner with a circular arc of ``radius``,
+   which the generator emits as one connection carrying its exact arc
+   ``length``, ``center`` and ``normal``. A constant-section arc needs no
+   further stations; :class:`Pipe` adds them where its section varies.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

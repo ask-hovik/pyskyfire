@@ -23,8 +23,9 @@ pyskyfire.viz.plot_regen.PlotWallLayers
 
    * **The closeout wall.** The wall on the atmosphere side of the channel has
      no definition anywhere in the library, so it is drawn as a copy of the
-     coolant-facing layer and hatched to mark it as an assumption. Replace it
-     once a real definition exists (e.g. for strength calculations).
+     main layers in reverse order, excluding liners, and hatched to mark it
+     as an assumption. Replace it once a real definition exists
+     (e.g. for strength calculations).
    * **Ribs.** The channel band is the full circumferential sector, so the
      land between channels is not resolved; the band shows where coolant
      lives radially, not the channel-to-rib split.

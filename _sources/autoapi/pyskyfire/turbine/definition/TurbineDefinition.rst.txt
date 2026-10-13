@@ -1,0 +1,160 @@
+pyskyfire.turbine.definition.TurbineDefinition
+==============================================
+
+.. py:class:: pyskyfire.turbine.definition.TurbineDefinition
+
+   
+   An axial turbine's rows and the annular passage through them.
+
+
+   :Parameters:
+
+       **rows** : :term:`python:sequence` :obj:`of` :obj:`BladeRow`
+           In flow order, without overlapping.
+
+       **rotation** : :class:`python:str`
+           Which way the rotor turns about +x. See :mod:`pyskyfire.common.rotation`.
+
+       **inlet_length, outlet_length** : :class:`python:float`
+           Straight annulus ahead of the first row and behind the last [m]. The
+           passage ends there, where a duct would join it.
+
+   :Attributes:
+
+       **passage** : :obj:`MeridionalPassage`
+           Hub and casing through all rows. The hub turns under each rotor, the
+           casing turns over a shrouded one, and every clearance is recorded
+           against the row it belongs to.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: _build_passage(points_per_segment=8)
+
+
+   .. py:method:: build_geometry(*, span_points=9, chord_points=129)
+
+      
+      Blade surfaces for every row, and each row's throat, measured from them.
+
+      Needs the optional ``pyturbo-aero`` package.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: row(name) -> BladeRow
+
+
+   .. py:property:: axial_gaps
+      :type: tuple
+
+
+      
+      Axial spacing between consecutive rows [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: exit_annulus
+
+
+   .. py:property:: inlet_annulus
+
+
+   .. py:property:: length
+      :type: float
+
+
+      
+      Axial length of the passage, including the straight ends [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: rotation_sign
+      :type: float
+
+
+      
+      +1 counterclockwise about +x, -1 clockwise.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

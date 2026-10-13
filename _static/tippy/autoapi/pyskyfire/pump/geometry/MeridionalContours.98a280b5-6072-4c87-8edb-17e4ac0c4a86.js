@@ -1,0 +1,22 @@
+selector_to_html = {"a[href=\"#pyskyfire.pump.geometry.MeridionalContours.__post_init__\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.pump.geometry.MeridionalContours.__post_init__\">\n<span class=\"sig-name descname\"><span class=\"pre\">__post_init__</span></span><span class=\"sig-paren\">(</span><span class=\"sig-paren\">)</span></dt><dd></dd>", "a[href=\"../../common/meridional/MeridionalPassage.html#pyskyfire.common.meridional.MeridionalPassage\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.common.meridional.MeridionalPassage\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">class</span></span><span class=\"w\"> </span></span><span class=\"sig-prename descclassname\"><span class=\"pre\">pyskyfire.common.meridional.</span></span><span class=\"sig-name descname\"><span class=\"pre\">MeridionalPassage</span></span></dt><dd><p>Paired hub and shroud curves, in <code class=\"docutils literal notranslate\"><span class=\"pre\">(x,</span> <span class=\"pre\">r)</span></code> metres, inlet to outlet.</p></dd>", "a[href=\"#pyskyfire.pump.geometry.MeridionalContours.with_leading_edge\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.pump.geometry.MeridionalContours.with_leading_edge\">\n<span class=\"sig-name descname\"><span class=\"pre\">with_leading_edge</span></span><span class=\"sig-paren\">(</span><em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">hub_station</span></span></em>, <em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">tip_station</span></span></em><span class=\"sig-paren\">)</span></dt><dd><p>Re-pair the stations so one span line carries a slanted leading edge.</p><p>A blade section can only begin on a span line, so slanting the leading\nedge is a statement about which hub and shroud stations pair. The hub\nkeeps its stations; the shroud is resampled so that station\n<code class=\"docutils literal notranslate\"><span class=\"pre\">hub_station</span></code> meets it where <code class=\"docutils literal notranslate\"><span class=\"pre\">tip_station</span></code> did. The monotone map\nrelaxes back to the original pairing over the station distance it took\nto build up, keeping the skew near the inlet where the leading edge is.</p></dd>", "a[href=\"#pyskyfire-pump-geometry-meridionalcontours\"]": "<h1 class=\"tippy-header\" style=\"margin-top: 0;\">pyskyfire.pump.geometry.MeridionalContours<a class=\"headerlink\" href=\"#pyskyfire-pump-geometry-meridionalcontours\" title=\"Link to this heading\">\u00b6</a></h1>", "a[href=\"#pyskyfire.pump.geometry.MeridionalContours\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.pump.geometry.MeridionalContours\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">class</span></span><span class=\"w\"> </span></span><span class=\"sig-prename descclassname\"><span class=\"pre\">pyskyfire.pump.geometry.</span></span><span class=\"sig-name descname\"><span class=\"pre\">MeridionalContours</span></span></dt><dd><p>Bases: <a class=\"reference internal\" href=\"../../common/meridional/MeridionalPassage.html#pyskyfire.common.meridional.MeridionalPassage\" title=\"pyskyfire.common.meridional.MeridionalPassage\"><code class=\"xref py py-obj docutils literal notranslate\"><span class=\"pre\">pyskyfire.common.meridional.MeridionalPassage</span></code></a></p><p>A radial impeller\u2019s passage: axial inlet, radial outlet, in (x,r) metres.</p><p>The shared <code class=\"xref py py-class docutils literal notranslate\"><span class=\"pre\">MeridionalPassage</span></code> with the checks\nonly a radial wheel satisfies: both walls rise monotonically in x and r,\nand the hub runs axially downstream of the shroud.</p></dd>"}
+skip_classes = ["headerlink", "sd-stretched-link"]
+
+window.onload = function () {
+    for (const [select, tip_html] of Object.entries(selector_to_html)) {
+        const links = document.querySelectorAll(` ${select}`);
+        for (const link of links) {
+            if (skip_classes.some(c => link.classList.contains(c))) {
+                continue;
+            }
+
+            tippy(link, {
+                content: tip_html,
+                allowHTML: true,
+                arrow: true,
+                placement: 'auto-start', maxWidth: 600, interactive: false,
+                onShow(instance) {MathJax.typesetPromise([instance.popper]).then(() => {});},
+            });
+        };
+    };
+    console.log("tippy tips loaded!");
+};

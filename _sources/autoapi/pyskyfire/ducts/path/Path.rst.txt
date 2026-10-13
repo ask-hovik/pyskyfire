@@ -1,0 +1,121 @@
+pyskyfire.ducts.path.Path
+=========================
+
+.. py:class:: pyskyfire.ducts.path.Path
+
+   
+   Resolved stations and connections in order from inlet to outlet.
+
+   ``s`` is true arc length [m]. Geometry carries no bore diameter or state.
+   Use :meth:`refined` to choose the thermal/flow integration resolution.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: from_curve(curve, t_span, *, max_turn: float = math.radians(5.0))
+      :classmethod:
+
+
+      
+      Sample a curve-like object into stations, as finely as its bends need.
+
+      ``curve`` is anything that maps a parameter ``t`` to a point: called
+      with an array of parameters it returns points of shape ``(len(t), 3)``,
+      or it returns one point per scalar ``t``. SciPy's ``CubicSpline``,
+      ``make_interp_spline`` and ``PchipInterpolator`` qualify as they are, and
+      so does a plain function. Planar points ``(len(t), 2)`` lie in the x-y
+      plane. ``t_span`` is the ``(start, end)`` parameter range to follow.
+
+      Sampling is adaptive. Any interval whose curve turns by more than
+      ``max_turn`` [rad] is halved, so stations crowd into tight bends and
+      stay sparse along straight stretches. Each interval then becomes the
+      circular arc through its two stations and the curve's own midpoint: a
+      :class:`Continuous` carrying that arc's radius, length, center, and
+      normal, or a :class:`Straight` where the three are collinear.
+
+
+
+
+
+
+
+
+      :Raises:
+
+          :obj:`ValueError`
+              If the curve has a corner, a sharp turn no amount of halving
+              resolves, or does not advance between two parameter values.
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_nodes(nodes)
+      :classmethod:
+
+
+
+   .. py:method:: refined(max_step)
+
+      
+      Split distributed connections, retaining exact generated arc geometry.
+
+      Manually supplied Continuous connections without a center and normal
+      must already be resolved finely enough; their centerline is interpolated
+      linearly while their supplied arc length and curvature are retained.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: centerline
+
+
+   .. py:property:: curvature_radius
+
+
+   .. py:property:: lengths
+
+
+   .. py:property:: s
+
+
+   .. py:property:: tangents
+

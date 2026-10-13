@@ -1,0 +1,73 @@
+pyskyfire.ducts.volute
+======================
+
+.. py:module:: pyskyfire.ducts.volute
+
+.. autoapi-nested-parse::
+
+   Volute geometry generation and one-dimensional loss analysis.
+
+   A :class:`Volute` resolves its own geometry on construction: it sweeps the
+   polar angle from the tongue, and at each station solves the area law for the
+   cross-section size that satisfies it. :meth:`Volute.solve` then runs Aungier's
+   meanline loss analysis over the resolved geometry.
+
+   Stations follow Aungier's numbering:
+
+   ``5``
+       Volute inlet, where the swirling flow is collected.
+   ``6``
+       Full-collection plane, one revolution from the tongue, where the whole mass
+       flow has been gathered and turns into the exit cone.
+   ``7``
+       Exit cone discharge, at the round pipe the volute delivers to.
+
+   The analysis is incompressible. Aungier iterates on the full-collection-plane
+   velocity because gas density responds to the losses; for the liquids pyskyfire
+   pumps that feedback is weak, so density is re-evaluated at the mean pressure a
+   few times rather than solved as a thermodynamic loop. Aungier himself notes
+   that density variation through a volute is nearly negligible even for gas.
+
+   References
+   ----------
+   Aungier, R. H., *Centrifugal Compressors: A Strategy for Aerodynamic Design and
+   Analysis*, ASME Press, 2000. Sections 5.7 (Eqs. 5-105 to 5-110) and 11.2
+   (Eqs. 11-1 to 11-5).
+
+   Weber, C. R. and Koronowski, M. E., "Meanline Performance Prediction of Volutes
+   in Centrifugal Compressors," ASME 86-GT-216, 1986.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Exceptions
+----------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/volute/VoluteConsistencyWarning
+
+.. autoapisummary::
+
+   pyskyfire.ducts.volute.VoluteConsistencyWarning
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/volute/Volute
+   /autoapi/pyskyfire/ducts/volute/VoluteGeometry
+   /autoapi/pyskyfire/ducts/volute/VoluteResult
+
+.. autoapisummary::
+
+   pyskyfire.ducts.volute.Volute
+   pyskyfire.ducts.volute.VoluteGeometry
+   pyskyfire.ducts.volute.VoluteResult
+
+

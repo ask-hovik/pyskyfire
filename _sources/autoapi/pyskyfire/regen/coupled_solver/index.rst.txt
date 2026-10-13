@@ -95,11 +95,11 @@ pyskyfire.regen.coupled_solver
    :math:`T_\text{sat}(p)` while the fluid keeps absorbing heat -- and a
    temperature march stepping past saturation silently lands on the superheated
    vapour branch, with a ~19x density error. See
-   :mod:`pyskyfire.regen.coolant_state` for the full argument and for what the
+   :mod:`pyskyfire.regen.coolant_properties` for the full argument and for what the
    two-phase treatment does and does not cover.
 
    Two coolants keep the old temperature march, via
-   :func:`~pyskyfire.regen.coolant_state.probe_coolant`:
+   :func:`~pyskyfire.thermo.state.probe_fluid`:
 
    * **mixtures**, because a mixture ``(h, p)`` flash costs ~374 ms against ~57 us
      for a pure fluid and would put a 100-node run into the hours;
@@ -163,7 +163,7 @@ Functions
 Module Contents
 ---------------
 
-.. py:function:: coupled_steady_heating_analysis(thrust_chamber, boundary_conditions, nodes=100, circuit_index: int = 0, film: Union[bool, str] = 'auto', film_model: Optional[FilmHeatFluxModel] = None, h_liquid_wall: Union[float, Callable[[float], float]] = DEFAULT_H_LIQUID_WALL, film_x_array: Optional[Sequence[float]] = None, solver: str = 'newton', output: bool = True, heat_curvature_correction: bool = True, pressure_curvature_correction: bool = True) -> RegenResult
+.. py:function:: coupled_steady_heating_analysis(thrust_chamber, boundary_conditions, nodes=100, circuit_index: int = 0, film: Union[bool, str] = 'auto', film_model: Optional[FilmHeatFluxModel] = None, h_liquid_wall: Union[float, Callable[[float], float]] = DEFAULT_H_LIQUID_WALL, film_x_array: Optional[Sequence[float]] = None, solver: str = 'newton', output: bool = True, heat_curvature_correction: bool = True, pressure_curvature_correction: bool = True, friction_model: str = 'native') -> RegenResult
 
    
    Run a steady heating analysis with film cooling, regen cooling, or both.
@@ -214,7 +214,19 @@ Module Contents
            True.
 
        **pressure_curvature_correction** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
-           Apply the RTE/Ito Darcy-friction curvature correction. Default True.
+           Apply the selected backend's Darcy-friction curvature correction.
+           Default True.
+
+       **friction_model** : {'native', 'fluids'}, :obj:`optional`
+           Which correlation set supplies the coolant Darcy friction factor and
+           its curvature multiplier. ``'native'`` (default) is the RL10-derived
+           model pyskyfire has always used. ``'fluids'`` takes both from the
+           ``fluids`` library: laminar and Clamond straight-duct branches, and
+           laminar and turbulent Schmidt curved-duct branches. Both use the same
+           smooth transition policy, starting at ``Re=2040`` for a straight duct
+           and Schmidt's geometry-dependent critical Reynolds number for a curved
+           duct. See :mod:`pyskyfire.common.friction` for details and applicability
+           warnings.
 
 
 
@@ -241,7 +253,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: solve_coupled_heat_exchanger(thrust_chamber, boundary_conditions, nodes, circuit_index, output, film_model: Optional[FilmHeatFluxModel] = None, log_residuals: bool = True, heat_curvature_correction: bool = True, pressure_curvature_correction: bool = True) -> RegenResult
+.. py:function:: solve_coupled_heat_exchanger(thrust_chamber, boundary_conditions, nodes, circuit_index, output, film_model: Optional[FilmHeatFluxModel] = None, log_residuals: bool = True, heat_curvature_correction: bool = True, pressure_curvature_correction: bool = True, friction_model: str = 'native') -> RegenResult
 
    
    Solve wall heating on detailed nodes coupled to lumped coolant nodes.

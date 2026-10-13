@@ -15,7 +15,7 @@ pyskyfire.viz.plot_regen.PlotReynoldsNumber
 
    Coolant profiles are evaluated on each result's coolant grid using the
    same bulk-state convention as the regenerative solver.  The laminar and
-   turbulent limits from :mod:`pyskyfire.regen.physics` are drawn only when
+   turbulent limits from :mod:`pyskyfire.common.physics` are drawn only when
    an individual profile spans the corresponding limit.
 
    :Parameters:

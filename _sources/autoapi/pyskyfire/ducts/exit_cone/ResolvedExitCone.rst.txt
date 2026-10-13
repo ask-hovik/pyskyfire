@@ -1,0 +1,48 @@
+pyskyfire.ducts.exit_cone.ResolvedExitCone
+==========================================
+
+.. py:class:: pyskyfire.ducts.exit_cone.ResolvedExitCone
+
+   Bases: :py:obj:`pyskyfire.ducts.port.ResolvedPort`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.exit_cone.ResolvedExitCone
+      :parts: 1
+      :private-bases:
+
+
+   
+   An exit cone placed in machine coordinates.
+
+   Everything a duct has in common with any other is on
+   :class:`~pyskyfire.ducts.port.ResolvedPort`; what a cone adds is the pair
+   of angles it was steered by, and where round the volute they carried it.
+   ``start_direction`` is tangential at the volute outlet.
+
+
+   :Attributes:
+
+       **first_angle, second_angle** : :class:`python:float`
+           The resolved turn within the volute's plane and the elevation [rad].
+
+       **radial_angle** : :class:`python:float`
+           The turn that would have put the flange radial [rad]. Equal to
+           :attr:`first_angle` when ``'radial'`` was asked for, and the upper
+           bound on it otherwise.
+
+       **end_azimuth** : :class:`python:float`
+           Azimuth the flange ends up at, measured from the volute outlet [rad].
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

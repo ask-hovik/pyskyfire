@@ -1,0 +1,37 @@
+pyskyfire.viz.components.ThrustChamberComponent
+===============================================
+
+.. py:class:: pyskyfire.viz.components.ThrustChamberComponent
+
+   
+   Cooling-channel surfaces with optional RegenResult fields.
+
+   Each layout seed is constructed once. Instances share its immutable mesh
+   and fields and carry separate rotations and identities. No hot wall is
+   constructed. ``circuit_N.inlet/outlet`` anchors refer to the first seed's
+   first channel, at its end-section polygon centre, not a manifold port.
+   Every channel also exposes its own inlet/outlet anchors.
+
+   A circuit with a result records its coolant's CoolProp name as
+   ``metadata["fluid"]``. ``circuit_colors`` paints each circuit apart;
+   without it every channel takes the default colour.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build()
+

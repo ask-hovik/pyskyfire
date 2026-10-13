@@ -1,0 +1,63 @@
+pyskyfire.ducts.manifold_law
+============================
+
+.. py:module:: pyskyfire.ducts.manifold_law
+
+.. autoapi-nested-parse::
+
+   Rules that set how a manifold's passage grows as it gathers flow.
+
+   A volute's area law answers to swirl: the passage is sized so the angular
+   momentum it collects is conserved, and departing from that is what costs the
+   tangential loss. A chamber manifold has no swirl to conserve. Its circumferential
+   velocity is a nuisance rather than a design variable -- it exists only because
+   fluid has to travel round to reach the far channels -- so the laws here answer a
+   different question: how much dynamic head does the passage carry, and is it the
+   same everywhere the channels tap into it?
+
+   Two are provided.
+
+   :class:`UniformArea`
+       A passage of constant cross-section. Cheapest to make, and perfectly valid
+       where the manifold is oversized enough that its dynamic head is small
+       against the channel pressure drop, which is the usual design rule.
+
+   :class:`ConstantVelocity`
+       Area in proportion to the flow gathered so far, so the through-flow
+       velocity is the same at every station. The point is not the velocity but
+       the head: a uniform dynamic head leaves every branch seeing the same static
+       pressure, which is what makes the split even.
+
+   Not provided, and worth knowing about: holding *static* pressure uniform is not
+   the same as holding velocity uniform. A dividing header decelerates, so
+   momentum recovery lifts static pressure back and partly cancels friction, and
+   the taper that truly flattens static pressure follows from a momentum balance
+   that includes the branch flow. It needs the branch pressure drop, which couples
+   the manifold to the circuit it feeds, so it waits until that coupling exists.
+
+   The laws are stated as geometry rather than as an operating point, the way
+   :class:`~pyskyfire.ducts.area_law.ConstantArea` is: a duty is turned into an
+   area once, through :meth:`ConstantVelocity.for_duty`, and the law itself then
+   carries no fluid state.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/manifold_law/ConstantVelocity
+   /autoapi/pyskyfire/ducts/manifold_law/ManifoldLaw
+   /autoapi/pyskyfire/ducts/manifold_law/UniformArea
+
+.. autoapisummary::
+
+   pyskyfire.ducts.manifold_law.ConstantVelocity
+   pyskyfire.ducts.manifold_law.ManifoldLaw
+   pyskyfire.ducts.manifold_law.UniformArea
+
+

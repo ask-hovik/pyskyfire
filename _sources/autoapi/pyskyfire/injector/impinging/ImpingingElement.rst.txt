@@ -1,0 +1,116 @@
+pyskyfire.injector.impinging.ImpingingElement
+=============================================
+
+.. py:class:: pyskyfire.injector.impinging.ImpingingElement(jets, impingement_height)
+
+   Bases: :py:obj:`pyskyfire.injector.element.Element`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.injector.impinging.ImpingingElement
+      :parts: 1
+      :private-bases:
+
+
+   
+   Jets drilled to meet at a point ``impingement_height`` above the face.
+
+
+   :Parameters:
+
+       **jets** : :term:`python:sequence` :obj:`of` :obj:`Jet`
+           The element's jets.
+
+       **impingement_height** : :class:`python:float`
+           Distance from the face to the impingement point [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __repr__()
+
+
+   .. py:method:: diagnostics(flows, oxidizer) -> ImpingingDiagnostics
+
+      
+      Mixing quantities of one element.
+
+      ``flows`` is aligned with :meth:`holes`. ``oxidizer`` is the set of
+      feeds carrying oxidizer; every other feed carries fuel.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: free_jet_length(jet: Jet) -> float
+
+      
+      Distance a jet travels from its hole to the impingement point [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: holes() -> tuple[pyskyfire.injector.element.Hole, ...]
+
+      
+      Every hole of one element, in the element frame.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

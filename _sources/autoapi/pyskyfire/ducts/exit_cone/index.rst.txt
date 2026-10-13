@@ -1,0 +1,61 @@
+pyskyfire.ducts.exit_cone
+=========================
+
+.. py:module:: pyskyfire.ducts.exit_cone
+
+.. autoapi-nested-parse::
+
+   The duct carrying collected flow from a volute to its pipe flange.
+
+   A volute delivers into piping whose diameter is usually fixed by a standard,
+   and the direction it delivers in varies with how the machine is packaged: some
+   outlets run straight on from the full-collection plane, some curve round until
+   they point radially outward, and real hardware sits anywhere between. The exit
+   cone is the transition that reconciles the passage with that flange.
+
+   Direction is given by two angles.
+
+   **First angle** turns within the plane the volute sits in, measured from
+   *tangential*. Tangential is fixed at the volute outlet -- the direction the
+   flow is already travelling when it leaves the full-collection plane -- because
+   by the time the duct reaches its flange it has moved round the volute, and
+   there is no longer room for it to be tangential to the passage there. Radial
+   is not fixed that way: it always means straight out from the machine axis, so
+   it is evaluated where the flange actually ends up. Having travelled round to
+   azimuth ``phi``, that radial direction is only ``pi/2 - phi`` away from
+   tangential, and it is that angle -- not a right angle -- that a first angle may
+   not exceed. Beyond it the duct would have turned past radial and be heading
+   back inward.
+
+   **Second angle** lifts the outlet out of the volute's plane, positive toward
+   ``+z``. It applies on top of the first angle, so a radial outlet with a second
+   angle still leaves in the plane through the machine axis and the flange.
+
+   The two together fix the flange's normal, and with the arc length they fix the
+   whole duct. A purely tangential outlet has nothing to turn through, so it runs
+   straight.
+
+   Tangential means the direction the collected flow is travelling, so it reverses
+   with the volute's rotation sense and a clockwise volute's duct leaves the other
+   way round. Radial and the elevation do not reverse: they are fixed by the
+   machine axis rather than by which way the flow runs round it.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/exit_cone/ExitCone
+   /autoapi/pyskyfire/ducts/exit_cone/ResolvedExitCone
+
+.. autoapisummary::
+
+   pyskyfire.ducts.exit_cone.ExitCone
+   pyskyfire.ducts.exit_cone.ResolvedExitCone
+
+

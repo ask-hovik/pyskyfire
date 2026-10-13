@@ -1,0 +1,55 @@
+pyskyfire.pump.disk_friction.DiskFriction
+=========================================
+
+.. py:class:: pyskyfire.pump.disk_friction.DiskFriction
+
+   
+   The disk friction of one impeller, all its wetted faces together.
+
+   ``inner_radii`` holds one entry per face: a shrouded impeller has two, the
+   front shroud starting at its eye seal and the back at the hub. An open
+   impeller has only the back one.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: power(*, rho, mu, n)
+
+      
+      Friction power of every face [W] at one fluid state and speed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

@@ -1,0 +1,97 @@
+pyskyfire.pump.disk_friction
+============================
+
+.. py:module:: pyskyfire.pump.disk_friction
+
+.. autoapi-nested-parse::
+
+   Friction on the outside of a spinning impeller: its disk friction loss.
+
+   A shrouded impeller's two outer faces turn in the fluid filling the gaps
+   between them and the casing. The shear on them costs shaft power and heats the
+   fluid. The flow through the blades never sees any of it, so it is charged here,
+   not in the hydraulic efficiency.
+
+   The correlation is Gülich's Eqs. (T3.6.2) and (T3.6.3), with his roughness
+   factor (T3.6.6). It holds with no leakage through the side gaps: the leakage
+   factor f_L of (T3.6.7) is taken as one, which matches the no-leakage state of
+   the pump model until a seal model supplies that flow.
+
+   References
+   ----------
+   Gülich, J. F., *Centrifugal Pumps*, 4th ed., Springer, 2020. Table 3.6.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/pump/disk_friction/DiskFriction
+
+.. autoapisummary::
+
+   pyskyfire.pump.disk_friction.DiskFriction
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.pump.disk_friction.disk_friction_power
+
+
+Module Contents
+---------------
+
+.. py:function:: disk_friction_power(*, rho, mu, n, radius, axial_gap, inner_radius=0.0, roughness=0.0, cone_angle_deg=0.0)
+
+   
+   Friction power on one face of a rotating disk [W], Gülich (T3.6.2).
+
+
+   :Parameters:
+
+       **rho, mu** : :class:`python:float`
+           Density [kg/m³] and dynamic viscosity [Pa s] of the fluid in the gap.
+
+       **n** : :class:`python:float`
+           Shaft speed [rpm].
+
+       **radius** : :class:`python:float`
+           Outer radius of the face, normally r2 [m].
+
+       **axial_gap** : :class:`python:float`
+           Axial distance between the face and the casing wall, s_ax [m].
+
+       **inner_radius** : :class:`python:float`, :obj:`optional`
+           Radius the wetted face starts at, R_n [m]: the hub on the back, the
+           seal on the front.
+
+       **roughness** : :class:`python:float`, :obj:`optional`
+           Equivalent sand roughness of the face [m].
+
+       **cone_angle_deg** : :class:`python:float`, :obj:`optional`
+           Inclination of the face from the radial plane, delta. Below 45 degrees.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

@@ -1,0 +1,36 @@
+pyskyfire.pump.duty
+===================
+
+.. py:module:: pyskyfire.pump.duty
+
+.. autoapi-nested-parse::
+
+   The duty a pump is designed for: flow, head and speed.
+
+   A pump is usually specified as ``Q``, ``H`` and ``n``, but in an engine those
+   fall out of a medium, a mass flow and two pressures. :class:`PumpDuty` takes
+   either and stores the same thing, so a design reads it the same way whichever
+   the user had to hand.
+
+   ``H`` is the isentropic head in metres of the fluid pumped: the enthalpy an
+   ideal pump adds, over ``g``. For a constant density it is ``Δp/(rho*g)``. For
+   a real fluid it is not quite, since the fluid compresses on the way through,
+   and the duty says by how much.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/pump/duty/PumpDuty
+
+.. autoapisummary::
+
+   pyskyfire.pump.duty.PumpDuty
+
+

@@ -1,0 +1,119 @@
+pyskyfire.ducts.orifice
+=======================
+
+.. py:module:: pyskyfire.ducts.orifice
+
+.. autoapi-nested-parse::
+
+   Orifices: short restrictions described by a flow area and a discharge coefficient.
+
+   An :class:`Orifice` is a hole that discharges into a large volume: an injector
+   orifice into the chamber, a valve seat into the line behind it, a bleed into a
+   cavity. Its jet's kinetic energy is not recovered, so the whole drop from the
+   inlet to the discharge pressure is lost. An :class:`OrificePlate` is a thin
+   round hole sitting in a pipe: the flow approaches it at the pipe velocity, and
+   part of the drop recovers downstream as the jet re-expands to the pipe bore.
+   The plate follows ISO 5167; see its notes.
+
+   An orifice's ideal flow expands isentropically from the inlet stagnation state
+   to the throat pressure through the fluid's
+   :class:`~pyskyfire.thermo.eos.EquationOfState`:
+
+   .. math::
+
+       \dot m = C_d A \rho_t \sqrt{2 (h_1 - h_t)}
+
+   For a constant-density fluid this is the familiar
+   :math:`C_d A \sqrt{2 \rho \Delta p}`. For a gas it is the isentropic nozzle
+   flow, and it chokes where the ideal mass flux peaks.
+   For a liquid expanded below its vapour pressure, a real equation of state
+   gives the homogeneous-equilibrium two-phase flow, whose flux peaks close to
+   the vapour pressure: the flow then passes about
+   :math:`C_d A \sqrt{2 \rho (p_1 - p_{sat})}` whatever the discharge pressure,
+   which is how a cavitating orifice behaves. Metastable (delayed) flashing is
+   not modelled; the homogeneous model is known to under-predict flow near
+   saturation.
+
+   The discharge coefficient is always supplied, except on a plate, where the
+   Reader-Harris/Gallagher correlation of ISO 5167-2 is the default.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Exceptions
+----------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/orifice/OrificeCapacityError
+   /autoapi/pyskyfire/ducts/orifice/OrificeCorrelationWarning
+
+.. autoapisummary::
+
+   pyskyfire.ducts.orifice.OrificeCapacityError
+   pyskyfire.ducts.orifice.OrificeCorrelationWarning
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/orifice/Orifice
+   /autoapi/pyskyfire/ducts/orifice/OrificePlate
+   /autoapi/pyskyfire/ducts/orifice/OrificePlateResult
+   /autoapi/pyskyfire/ducts/orifice/OrificeResult
+
+.. autoapisummary::
+
+   pyskyfire.ducts.orifice.Orifice
+   pyskyfire.ducts.orifice.OrificePlate
+   pyskyfire.ducts.orifice.OrificePlateResult
+   pyskyfire.ducts.orifice.OrificeResult
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.ducts.orifice.required_area
+
+
+Module Contents
+---------------
+
+.. py:function:: required_area(*, mass_flow, inlet_state, dp, fluid, cd) -> float
+
+   
+   Geometric area that passes ``mass_flow`` with a pressure drop ``dp`` [m²].
+
+   The inverse of :meth:`Orifice.solve`, for any hole shape: the orifice
+   discharges at ``inlet_state.p - dp``, with discharge coefficient ``cd``.
+
+
+
+
+
+
+
+
+   :Raises:
+
+       :obj:`ValueError`
+           When ``dp`` is larger than the drop at which the flow chokes. Such an
+           orifice would pass the flow at a smaller drop, so the drop could not
+           be the one asked for.
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

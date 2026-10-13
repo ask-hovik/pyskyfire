@@ -1,0 +1,177 @@
+pyskyfire.regen.channel_placement.ChannelKeepOut
+================================================
+
+.. py:class:: pyskyfire.regen.channel_placement.ChannelKeepOut(x_start, x_end, width, *, count=1, angle=0.0, taper=0.0, name='keep-out')
+
+   
+   Circumferential sectors of the wall that surface channels must leave clear.
+
+   A keep-out is room reserved in the channel layer for something else, such
+   as hardware passing through the wall. It is not a circuit: it carries no
+   flow, is not solved, drawn or exported. It acts twice. Every surface
+   channel present in its span shares only the circumference it leaves free,
+   so all of them narrow a little and the thermal solve sees that. And the
+   numerical layout pins it as an obstacle, so the channels next to it bend
+   aside while the rest spread to close up behind them.
+
+   Circuits whose placement states its own ``channel_angular_width`` keep
+   that width and ignore keep-outs.
+
+   :Parameters:
+
+       **x_start, x_end** : :class:`python:float`
+           Axial extent over which the full width is kept clear [m].
+
+       **width** : :class:`python:float`
+           Circumferential width of one sector, measured along the hot wall [m].
+
+       **count** : :class:`python:int`, :obj:`optional`
+           Number of equally spaced sectors. Default 1.
+
+       **angle** : :class:`python:float`, :obj:`optional`
+           Angular position of the first sector's centre [rad]. Default 0.
+
+       **taper** : :class:`python:float`, :obj:`optional`
+           Axial length beyond each end over which the width runs out linearly
+           to zero [m], so the channels bend aside gradually. Default 0.
+
+       **name** : :class:`python:str`, :obj:`optional`
+           Label for messages.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: blocked_angle(x, contour) -> float
+
+      
+      Angle kept clear by all sectors together at ``x`` [rad].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: centerline(contour) -> numpy.ndarray
+
+      
+      The first sector's centre in cylindrical ``(x, r, angle)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sector_angle(x, contour) -> float
+
+      
+      Angular width of one sector at the hot wall at ``x`` [rad].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: width_at(x) -> float
+
+      
+      Circumferential width of one sector at ``x`` [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: breakpoints
+      :type: numpy.ndarray
+
+
+      
+      Stations where the width law has a corner [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

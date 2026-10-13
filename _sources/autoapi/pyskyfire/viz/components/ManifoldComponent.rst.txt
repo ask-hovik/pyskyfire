@@ -1,0 +1,90 @@
+pyskyfire.viz.components.ManifoldComponent
+==========================================
+
+.. py:class:: pyskyfire.viz.components.ManifoldComponent
+
+   
+   Display a resolved distributing or collecting manifold.
+
+   The manifold supplies its own geometry through ``sweep(n_points=...)``,
+   already placed on the wall it was built against, and the local frame is
+   that frame: the machine axis is +z and the dead point sits at azimuth zero.
+   A split manifold sweeps the whole ring, both branches together.
+
+   Three child nodes come back, so the opening can be told apart from the
+   walls at a glance:
+
+   ``passage``
+       Every wall of the cavity, and the cutwater face where a single-branch
+       ring meets itself. This is what carries the fields.
+   ``passage``
+       Every wall: the dome, the stub's own tube, the chamber-facing face
+       outside the slit, and the cutwater where a single-branch ring meets
+       itself. This is what carries the fields.
+   ``slit``
+       The strip of the chamber-facing face reserved for the cooling channels
+       to break out through. A reservation rather than modelled geometry --
+       the breakout itself is CAD work -- so what is drawn is where it has
+       been kept clear. A section that reserves nothing gives an ``opening``
+       instead, its whole face being a real hole.
+   ``outlet``
+       The flange the stub ends on, where there is one.
+
+   ``opening_color`` paints only those faces, red by default: the places flow
+   crosses the boundary, not the walls that carry it there. They hold no
+   fields, so they keep that colour whichever field the scene is coloured by,
+   rather than disappearing into the scale.
+
+   ``results`` is a mapping of field names to point-associated FieldData, one
+   value per swept station of the resolved ring -- which for a split manifold
+   is both branches, not one.
+
+   ``n_points`` samples each boundary piece of the section. ``n_stations``
+   refines the ring in azimuth for drawing, which is the direction a manifold
+   facets in first, and leaves the resolved design alone; values on the
+   resolved grid are read between its stations onto the refined mesh. ``None``
+   draws the ring exactly as it was resolved.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _wall_fields(stations, order)
+
+      
+      Field values laid out to match the merged wall mesh's vertices.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build()
+

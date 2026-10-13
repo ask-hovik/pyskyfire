@@ -1,0 +1,28 @@
+pyskyfire.heat_exchanger.solver.HeatExchangerResult
+===================================================
+
+.. py:class:: pyskyfire.heat_exchanger.solver.HeatExchangerResult
+
+   .. py:property:: energy_balance_error
+
+      
+      Sum of all bank energy changes minus prescribed-gas heat [W].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

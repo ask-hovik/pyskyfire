@@ -1,0 +1,38 @@
+pyskyfire.viz.scene
+===================
+
+.. py:module:: pyskyfire.viz.scene
+
+.. autoapi-nested-parse::
+
+   Renderer-independent scenes. Coordinates are metres; rotations are radians.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/viz/scene/Anchor
+   /autoapi/pyskyfire/viz/scene/Component
+   /autoapi/pyskyfire/viz/scene/FieldData
+   /autoapi/pyskyfire/viz/scene/MeshData
+   /autoapi/pyskyfire/viz/scene/Scene
+   /autoapi/pyskyfire/viz/scene/SceneNode
+   /autoapi/pyskyfire/viz/scene/Transform
+
+.. autoapisummary::
+
+   pyskyfire.viz.scene.Anchor
+   pyskyfire.viz.scene.Component
+   pyskyfire.viz.scene.FieldData
+   pyskyfire.viz.scene.MeshData
+   pyskyfire.viz.scene.Scene
+   pyskyfire.viz.scene.SceneNode
+   pyskyfire.viz.scene.Transform
+
+

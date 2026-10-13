@@ -1,9 +1,9 @@
 pyskyfire.regen.cross_section.CrossSectionRounded
 =================================================
 
-.. py:class:: pyskyfire.regen.cross_section.CrossSectionRounded(n_points: int = 16)
+.. py:class:: pyskyfire.regen.cross_section.CrossSectionRounded(n_points=16, *, height_input='full', exposure=None, exposure_angles=None, enable_fin=False)
 
-   Bases: :py:obj:`_RoundedGeometryMixin`, :py:obj:`ChannelSection`
+   Bases: :py:obj:`ChannelSection`
 
    .. autoapi-inheritance-diagram:: pyskyfire.regen.cross_section.CrossSectionRounded
       :parts: 1
@@ -11,8 +11,18 @@ pyskyfire.regen.cross_section.CrossSectionRounded
 
 
    
-   Rounded cooling channel whose input height is its full radial extent.
+   Two circular lobes connected by straight tangent sidewalls.
 
+   Both input routes build the same boundary: sector radius/angle/wall
+   thickness, or internal floor and roof endpoint widths and height. Equal
+   widths give parallel sides; equal widths with full height equal to width
+   give a circle. A single wall thickness offsets all four surfaces.
+
+   height_input="full" measures bottom-to-top passage height; "base" measures
+   separation of lobe centres. For unequal endpoint widths and full height,
+   the less steep of the two possible tangent constructions is selected.
+   Invalid combinations raise rather than distorting the lobes. Angular
+   input retains its exact prescribed sidewall angle.
 
 
 
@@ -31,10 +41,19 @@ pyskyfire.regen.cross_section.CrossSectionRounded
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: A_coolant(prof: SectionProfiles) -> numpy.ndarray
+   .. py:method:: _fin_dimensions(prof)
+
+
+   .. py:method:: _sector_inner_radius(prof)
+
+
+   .. py:method:: base_height(prof)
+
+
+   .. py:method:: boundary(prof)
 
       
-      Compute effective coolant cross-sectional area [m²].
+      Default construction for analytical-only custom channel sections.
 
 
 
@@ -55,103 +74,17 @@ pyskyfire.regen.cross_section.CrossSectionRounded
           !! processed by numpydoc !!
 
 
-   .. py:method:: Dh_coolant(prof: SectionProfiles) -> numpy.ndarray
+   .. py:method:: full_height(prof)
 
-      
-      Compute hydraulic diameter [m].
 
+   .. py:method:: minimum_channel_height(prof)
 
 
+   .. py:method:: outer_boundary(prof)
 
 
+   .. py:method:: surface_thicknesses(prof)
 
 
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: P_coolant(prof: SectionProfiles) -> numpy.ndarray
-
-      
-      Compute coolant-wetted perimeter [m].
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: P_thermal(prof: SectionProfiles) -> numpy.ndarray
-
-      
-      Compute thermal-contact perimeter [m].
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: R_coolant_per_len(prof: SectionProfiles, h_c: numpy.ndarray, k_wall: numpy.ndarray | float) -> numpy.ndarray
-
-      
-      Coolant-side thermal resistance per unit channel length [K m / W]. 
-      In this function I included a rib on the backside of the cooling channel, 
-      basically the same way as standard rib calculations with rib efficiency. 
-      Unsure if this is completely appropriate. But it had only a minor effect
-      on the RL10 validation case, which use low conductivity stainless. For 
-      thin copper walls adding the rib has a large effect. 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
+   .. py:property:: height_input
 

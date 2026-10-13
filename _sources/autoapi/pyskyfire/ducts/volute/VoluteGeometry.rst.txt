@@ -1,0 +1,107 @@
+pyskyfire.ducts.volute.VoluteGeometry
+=====================================
+
+.. py:class:: pyskyfire.ducts.volute.VoluteGeometry
+
+   
+   Resolved passage geometry around the volute.
+
+
+
+   :Attributes:
+
+       **theta** : :obj:`np.ndarray <numpy.ndarray>`
+           Polar angle from the tongue [rad, shape (N,)], ending at ``2*pi``.
+
+       **size** : :obj:`np.ndarray <numpy.ndarray>`
+           Section size parameter at each station [m, shape (N,)].
+
+       **aspect** : :obj:`np.ndarray <numpy.ndarray>`
+           Section aspect ratio at each station [shape (N,)]. Equal to the
+           section family's design aspect ratio wherever ``size`` alone could
+           satisfy the area law, and flattened above it near the tongue where it
+           could not.
+
+       **area** : :obj:`np.ndarray <numpy.ndarray>`
+           Passage area at each station [m^2, shape (N,)].
+
+       **centroid_radius** : :obj:`np.ndarray <numpy.ndarray>`
+           Radius of the section area centroid [m, shape (N,)].
+
+       **clipped** : :obj:`np.ndarray <numpy.ndarray>`
+           True where the area law asked for less area than the family can
+           produce even at its smallest size and flattest aspect, so that
+           smallest section was substituted [bool, shape (N,)].
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:property:: flattened
+
+      
+      True where the aspect ratio was pushed past its design value.
+
+      These are the stations near the tongue that a fixed-aspect section
+      would have had to clip, and that flattening kept on the area law
+      instead. Flattening only ever raises the aspect ratio, so the smallest
+      one around the volute is the design value it was raised from.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: tongue_clip_angle
+      :type: float
+
+
+      
+      Azimuth up to which the area law could not be satisfied [rad].
+
+      Zero when the law is satisfied everywhere. A finite value means the
+      passage near the tongue is larger than conservation of angular momentum
+      wants, because the cross-section family cannot shrink any further --
+      at its smallest size *and* its flattest allowed aspect ratio.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

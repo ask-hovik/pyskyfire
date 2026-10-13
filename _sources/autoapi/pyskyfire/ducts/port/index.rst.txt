@@ -1,0 +1,57 @@
+pyskyfire.ducts.port
+====================
+
+.. py:module:: pyskyfire.ducts.port
+
+.. autoapi-nested-parse::
+
+   How a collecting passage hands its flow to a pipe.
+
+   A volute and a chamber manifold both end at a flange, and both need a duct to
+   get there, but they leave in different directions. A volute's flow is already
+   travelling round the passage, so its duct leaves tangentially and turns; a
+   manifold has no such direction, so its duct runs straight out of the dome its
+   section is built on, aimed wherever the packaging wants it. Those are two ports,
+   not two classes of machine, and either passage may carry either one -- a
+   manifold fed tangentially is a real arrangement, and it should not cost a second
+   implementation of the same duct.
+
+   So a port is stated in two parts. :class:`Port` is the request, carrying
+   whatever the designer chose. :class:`PortSite` is what the passage knows about
+   where the port attaches, handed over at resolve time. The result is a
+   :class:`ResolvedPort`, which is the duct placed in machine coordinates and is
+   all the loss model and the mesher ever read.
+
+   The site carries more than any one port uses. A tangential duct wants the
+   rotation sense, since tangential reverses with it; a radial one wants the dome
+   it leaves through. Each port asks for the fields it needs and says so plainly
+   when they are missing, which is what lets a passage offer both without knowing
+   which it has been given.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/port/DomeSite
+   /autoapi/pyskyfire/ducts/port/Port
+   /autoapi/pyskyfire/ducts/port/PortSite
+   /autoapi/pyskyfire/ducts/port/RadialPort
+   /autoapi/pyskyfire/ducts/port/ResolvedPort
+   /autoapi/pyskyfire/ducts/port/ResolvedRadialPort
+
+.. autoapisummary::
+
+   pyskyfire.ducts.port.DomeSite
+   pyskyfire.ducts.port.Port
+   pyskyfire.ducts.port.PortSite
+   pyskyfire.ducts.port.RadialPort
+   pyskyfire.ducts.port.ResolvedPort
+   pyskyfire.ducts.port.ResolvedRadialPort
+
+

@@ -1,0 +1,36 @@
+pyskyfire.heat_exchanger.circuit.ChamberGas
+===========================================
+
+.. py:class:: pyskyfire.heat_exchanger.circuit.ChamberGas(chamber, *, position=(0.0, 0.0, 0.0), rotation=None, coefficient=None)
+
+   
+   Adapter to an unchanged thrust-chamber aerothermodynamics solution.
+
+   Assembly coordinates map into chamber coordinates by rotation and position.
+   A supplied coefficient [W/m²/K] or callback(position, wall_T) is preferred
+   for a specific baffle geometry. The default uses the existing Bartz-style
+   reference-temperature correlation as an engineering approximation; it is
+   not a resolved flow-around-baffles model.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: sample(point, wall_temperature)
+
+
+   .. py:method:: world_position(point)
+

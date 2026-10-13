@@ -1,0 +1,80 @@
+pyskyfire.injector.injector.SetResult
+=====================================
+
+.. py:class:: pyskyfire.injector.injector.SetResult
+
+   
+   The flow through one element set.
+
+   ``mass_flows`` maps each of the set's feeds to the set's total from it
+   [kg/s]. ``diagnostics`` is the element type's own mixing report for one
+   element; every element in a set runs identically.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:property:: element_mass_flow
+      :type: float
+
+
+      
+      Mass flow through one element [kg/s].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: mass_flow
+      :type: float
+
+
+      
+      Total mass flow through the set [kg/s].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

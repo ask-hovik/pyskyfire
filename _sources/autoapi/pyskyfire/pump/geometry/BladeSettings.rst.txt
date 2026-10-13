@@ -1,0 +1,43 @@
+pyskyfire.pump.geometry.BladeSettings
+=====================================
+
+.. py:class:: pyskyfire.pump.geometry.BladeSettings
+
+   
+   Blade extent in normalized hub arc length and edge construction controls.
+
+   ``start`` is the leading edge. One station puts it on an existing span line;
+   a ``(hub, tip)`` pair slants it, beginning the blade further downstream on
+   the hub as a blade development normally is drawn, and the passage is
+   re-paired to carry that line. Both stations are always available as
+   ``start_hub`` and ``start_tip``.
+
+   Thickness is a body thickness; both edges close to a point. The leading
+   edge is rounded by pyTurbo. ``trailing_edge`` selects its closure style.
+   ``angle_law`` is used only to estimate total wrap.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:property:: start_hub
+
+
+   .. py:property:: start_tip
+

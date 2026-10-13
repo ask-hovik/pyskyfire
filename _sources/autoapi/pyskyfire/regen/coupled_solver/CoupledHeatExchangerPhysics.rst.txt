@@ -1,7 +1,7 @@
 pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics
 ==========================================================
 
-.. py:class:: pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics(thrust_chamber, boundary_conditions, circuit_index, film_model=None, coolant_state: Optional[pyskyfire.regen.coolant_state.CoolantState] = None, heat_curvature_correction: bool = True, pressure_curvature_correction: bool = True)
+.. py:class:: pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics(thrust_chamber, boundary_conditions, circuit_index, film_model=None, coolant_state: Optional[pyskyfire.thermo.state.FluidStateResolver] = None, heat_curvature_correction: bool = True, pressure_curvature_correction: bool = True, friction_model: str = 'native')
 
    
    Heat-exchanger physics whose hot side may be gas- or film-driven.
@@ -23,7 +23,11 @@ pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics
            Apply the RL10 curvature multiplier to coolant-side heat transfer.
 
        **pressure_curvature_correction** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
-           Apply the RTE/Ito curvature multiplier to Darcy pressure loss.
+           Apply the selected backend's curvature multiplier to Darcy pressure loss.
+
+       **friction_model** : {'native', 'fluids'}, :obj:`optional`
+           Backend for the coolant Darcy friction factor and its curvature
+           multiplier. See :mod:`pyskyfire.common.friction`.
 
 
 
@@ -202,7 +206,7 @@ pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics
       This is a **single-phase** correlation everywhere, including inside the
       boiling dome, where it is evaluated on saturated-liquid properties. It
       therefore models neither flow-boiling enhancement nor dryout. See
-      :mod:`pyskyfire.regen.coolant_state`.
+      :mod:`pyskyfire.regen.coolant_properties`.
 
 
 
@@ -279,7 +283,7 @@ pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics
 
       Single-phase only -- it assumes all the heat is sensible. Used for
       coolants that cannot support the enthalpy march (mixtures, and backends
-      without saturation data); see :func:`.coolant_state.probe_coolant`.
+      without saturation data); see :func:`~pyskyfire.thermo.state.probe_fluid`.
 
 
 

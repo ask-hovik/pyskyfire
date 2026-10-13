@@ -1,0 +1,127 @@
+pyskyfire.thermo.state
+======================
+
+.. py:module:: pyskyfire.thermo.state
+
+.. autoapi-nested-parse::
+
+   CoolProp-backed fluid state resolution, including the saturation dome.
+
+   Specific enthalpy and pressure identify states through the boiling dome,
+   where temperature and pressure alone cannot determine vapour quality.
+   ``FluidStateResolver`` caches saturation data and resolves bulk states using
+   homogeneous (no-slip) two-phase density. ``probe_fluid`` reports whether the
+   backend supports enthalpy-based resolution and saturation properties.
+
+   This module supplies thermodynamic states, not heat-transfer or pressure-drop
+   correlations. Mixtures and unsupported backends retain the temperature-based
+   fallback; above the critical pressure, quality is undefined.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.thermo.state.PHASE_LIQUID
+   pyskyfire.thermo.state.PHASE_SUPERCRITICAL
+   pyskyfire.thermo.state.PHASE_TWO_PHASE
+   pyskyfire.thermo.state.PHASE_UNKNOWN
+   pyskyfire.thermo.state.PHASE_VAPOUR
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/thermo/state/FluidCapability
+   /autoapi/pyskyfire/thermo/state/FluidState
+   /autoapi/pyskyfire/thermo/state/FluidStateResolver
+   /autoapi/pyskyfire/thermo/state/SaturationState
+
+.. autoapisummary::
+
+   pyskyfire.thermo.state.FluidCapability
+   pyskyfire.thermo.state.FluidState
+   pyskyfire.thermo.state.FluidStateResolver
+   pyskyfire.thermo.state.SaturationState
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.thermo.state.probe_fluid
+
+
+Module Contents
+---------------
+
+.. py:function:: probe_fluid(fluid: str, p_ref: float) -> FluidCapability
+
+   
+   Determine what two-phase support a CoolProp fluid string has.
+
+   Run once per solve, at the inlet pressure. Cheap: a handful of property
+   calls.
+
+   :Parameters:
+
+       **fluid** : :class:`python:str`
+           CoolProp fluid string, e.g. ``'HEOS::Ethanol[1.000]'``.
+
+       **p_ref** : :class:`python:float`
+           Reference pressure to probe at [Pa], normally the fluid inlet.
+
+
+
+   :Returns:
+
+       :obj:`FluidCapability`
+           ..
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   The critical-pressure probe is deliberately tolerant. ``Props1SI`` refuses
+   mixtures outright, and ``AbstractState.p_critical()`` can fail even for
+   well-behaved binaries (ethanol/water reports "found 4 critical points"), so
+   a missing critical point downgrades the capability rather than raising.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: PHASE_LIQUID
+   :value: 'liquid'
+
+
+.. py:data:: PHASE_SUPERCRITICAL
+   :value: 'supercritical'
+
+
+.. py:data:: PHASE_TWO_PHASE
+   :value: 'two_phase'
+
+
+.. py:data:: PHASE_UNKNOWN
+   :value: 'unknown'
+
+
+.. py:data:: PHASE_VAPOUR
+   :value: 'vapour'
+
+

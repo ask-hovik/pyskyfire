@@ -1,0 +1,129 @@
+pyskyfire.injector.injector.InjectorResult
+==========================================
+
+.. py:class:: pyskyfire.injector.injector.InjectorResult
+
+   
+   Every feed and set at one operating point, into a face at ``p_face``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:property:: fuel_mass_flow
+      :type: float
+
+
+      
+      Mass flow of every other feed [kg/s].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: mass_flow
+      :type: float
+
+
+      
+      Total mass flow [kg/s].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: mixture_ratio
+      :type: float
+
+
+      
+      Overall oxidizer over fuel mass flow, NaN without a named oxidizer.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: oxidizer_mass_flow
+      :type: float
+
+
+      
+      Mass flow of the oxidizer feeds [kg/s].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

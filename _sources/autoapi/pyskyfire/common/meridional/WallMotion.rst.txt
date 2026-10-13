@@ -1,0 +1,85 @@
+pyskyfire.common.meridional.WallMotion
+======================================
+
+.. py:class:: pyskyfire.common.meridional.WallMotion
+
+   
+   Which stretches of each wall rotate with the shaft.
+
+   Each wall lists the ``(start, end)`` station fractions over which it
+   turns; everywhere else it stands still. The default is a passage that
+   stands still throughout, as a duct does.
+
+   :Parameters:
+
+       **hub, shroud** : :term:`python:sequence` :obj:`of` (:obj:`start`, :obj:`end`)
+           Rotating intervals, as fractions of the passage's stations.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: rotating(wall, fraction)
+
+      
+      Whether ``wall`` turns at each station ``fraction``. Ends count as inside.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: whole(*walls)
+      :classmethod:
+
+
+      
+      The named walls rotate over their whole length, the rest stand still.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

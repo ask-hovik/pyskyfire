@@ -1,0 +1,30 @@
+pyskyfire.heat_exchanger.circuit.ThermalLink
+============================================
+
+.. py:class:: pyskyfire.heat_exchanger.circuit.ThermalLink
+
+   
+   Pair finite volumes on two paths through ONE shared wall.
+
+   Each (i,j) pair couples the segment beginning at station i on a to the
+   segment beginning at station j on b. Reverse j for counterflow. All copied
+   channels are paired one-to-one. Contact areas [m² per pair per copy] may be
+   explicit, otherwise use the smaller exposed surface area. Wall thickness
+   is evaluated at the midpoint s on circuit a; it is never counted twice.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

@@ -1,0 +1,287 @@
+pyskyfire.ducts.volute.VoluteResult
+===================================
+
+.. py:class:: pyskyfire.ducts.volute.VoluteResult
+
+   
+   Loss breakdown and station conditions for one volute operating point.
+
+   All loss coefficients are referred to the inlet velocity head, so a total
+   pressure loss follows as ``omega * rho * C5**2 / 2``.
+
+
+   :Attributes:
+
+       **geometry** : :obj:`VoluteGeometry`
+           The geometry the analysis ran on.
+
+       **SP** : :class:`python:float`
+           Realised sizing parameter, ``r5*C_u5 / (r6*C6)`` (Aungier Eq. 5-106).
+           Unity is the minimum-loss value.
+
+       **omega_meridional, omega_tangential, omega_friction** : :class:`python:float`
+           Loss coefficients from Aungier Eqs. 5-105, 5-107 (with 5-108 applied
+           for a collector) and 5-109.
+
+       **omega_exit_cone** : :class:`python:float`
+           The area change into the flange. The Rennels conical diffuser or
+           contraction correlation according to which way the cone tapers, and
+           Aungier's Eq. 5-110 where there is no cone to resolve. See
+           :meth:`loss_breakdown`.
+
+       **omega_exit_friction, omega_exit_bend** : :class:`python:float`
+           Wall friction along the exit-cone duct, and the loss of turning it.
+           Both are zero without an attached
+           :class:`~pyskyfire.ducts.ExitCone`, since there is then no duct to
+           charge them against.
+
+       **omega_total** : :class:`python:float`
+           Their sum.
+
+       **pressure_loss** : :class:`python:float`
+           Total pressure loss across the volute and its exit cone [Pa].
+
+       **C_5, C_6, C_7** : :class:`python:float`
+           Velocity magnitudes at the three stations [m/s].
+
+       **A_6, r_6, d_H** : :class:`python:float`
+           Full-collection-plane area [m^2], centroid radius [m], and Aungier's
+           equivalent hydraulic diameter ``sqrt(4*A6/pi)`` [m].
+
+       **path_length** : :class:`python:float`
+           Mean flow path length ``pi*(r5 + r6)/2`` used by the friction term [m].
+
+       **reynolds, friction_factor** : :class:`python:float`
+           Reynolds number on ``d_H`` and the Fanning friction factor ``c_f``.
+
+       **mass_flow, density** : :class:`python:float`
+           The operating point the analysis ran at [kg/s] and the density it
+           resolved [kg/m^3].
+
+       **states** : :class:`python:tuple` :obj:`of` :obj:`FluidState`
+           Inlet and discharge states.
+
+       **fluid** : :class:`python:str` or :data:`python:None`
+           The CoolProp name the transport carried, or None when it named none.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: collected_velocity()
+
+      
+      Through-flow velocity at each azimuthal station [m/s].
+
+      Only the fraction ``theta / (2*pi)`` of the mass flow has been gathered
+      by azimuth ``theta``, so this is what the passage area at that station
+      actually has to carry. It ends at ``C_6``.
+
+      Under conservation of angular momentum it is the *product* with the
+      centroid radius that stays constant, not the velocity: the flow slows
+      as the passage carries it outward. A constant-velocity law would be the
+      one holding this uniform.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: collection_loss() -> float
+
+      
+      Total pressure lost between the inlet and the collection plane [Pa].
+
+      Everything except the exit cone's three terms, which are spent in the
+      duct downstream of it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: exit_cone_pressures(stations=9)
+
+      
+      Stagnation and static pressure along the exit cone [Pa].
+
+      Unlike the volute passage, the duct's losses really are spent between
+      two stations the model pins down, so the stagnation pressure ramps
+      linearly between them rather than apportioning a lumped total. The
+      velocity is eased from ``C_6`` to ``C_7`` on the same smoothstep the
+      swept duct's section morphs along, so the static pressure follows the
+      rendered shape; only its endpoints carry model weight.
+
+      Returns ``(stagnation, static)``, each with ``stations`` values, the
+      first at the collection plane and the last at the flange.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: loss_breakdown() -> dict
+
+      
+      Loss coefficients by mechanism, for reporting.
+
+      The three exit terms are disjoint. ``exit_cone`` is the area change
+      into the flange, ``exit_friction`` the wall shear along the duct, and
+      ``exit_bend`` the cost of turning it. Where the cone tapers either
+      way, the first two are the two halves of one Rennels coefficient --
+      evaluated at the real friction factor and at zero -- rather than two
+      correlations that might overlap.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: stagnation_pressure()
+
+      
+      Total pressure at each azimuthal station [Pa].
+
+      Aungier's analysis is lumped: it charges one coefficient per mechanism
+      between the inlet and the collection plane, and says nothing about
+      where round the volute each is spent. Spreading them linearly with
+      azimuth is an assumption made so the passage can be coloured by
+      pressure, not a result of the model. It is a defensible one -- the dump
+      terms are paid as flow is collected, and collected flow grows linearly
+      with azimuth, while the friction term accumulates along a path length
+      that also grows with azimuth -- but the endpoints are what the model
+      actually pins down.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: static_pressure()
+
+      
+      Static pressure at each azimuthal station [Pa].
+
+      The local velocity head taken off the stagnation pressure above, so it
+      inherits the same caveat. It starts at the inlet stagnation pressure,
+      where nothing has been collected and the passage is still.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: total_pressure_loss
+      :type: float
+
+
+      
+      Alias matching :class:`~pyskyfire.ducts.DuctResult`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

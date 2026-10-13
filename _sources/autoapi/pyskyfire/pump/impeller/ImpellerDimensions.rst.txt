@@ -1,0 +1,4 @@
+pyskyfire.pump.impeller.ImpellerDimensions
+==========================================
+
+.. py:class:: pyskyfire.pump.impeller.ImpellerDimensions

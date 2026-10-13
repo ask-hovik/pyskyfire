@@ -1,0 +1,80 @@
+pyskyfire.turbine.definition.ThicknessDistribution
+==================================================
+
+.. py:class:: pyskyfire.turbine.definition.ThicknessDistribution
+
+   
+   How a section's thickness is laid along its camber line.
+
+   The section is drawn as offsets from the camber line: control points on
+   the suction side and on the pressure side, each a fraction of the row's
+   ``max_thickness``, spaced from leading edge towards trailing edge. The
+   built section's actual thickness is measured, not assumed from these.
+
+   :Parameters:
+
+       **suction, pressure** : :term:`python:sequence` :obj:`of` :class:`python:float`
+           Offsets of each side's control points, as fractions of the maximum
+           thickness. A negative pressure-side offset bends that side back
+           across the camber line.
+
+       **suction_extent, pressure_extent** : :class:`python:float`
+           Fraction of the camber line the control points spread over.
+
+       **spacing** : :class:`python:float`
+           Growth ratio between control-point spacings: 1 spaces them evenly,
+           larger values bunch them towards the leading edge.
+
+       **The default is front-loaded, thickest near the leading edge, as a**
+           ..
+
+       **reaction blade or a nozzle vane is. :meth:`symmetric` peaks at**
+           ..
+
+       **mid-chord and thins towards both edges, as an impulse blade does.**
+           ..
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: symmetric()
+      :classmethod:
+
+
+      
+      Thickest at mid-chord, thin at both edges: an impulse blade.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

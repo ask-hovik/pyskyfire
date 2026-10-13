@@ -1,0 +1,124 @@
+pyskyfire.network.blocks.PipeBlock
+==================================
+
+.. py:class:: pyskyfire.network.blocks.PipeBlock(name: str, st_in: str, st_out: str, pipe: pyskyfire.ducts.pipe.Pipe, transport, friction_model: str = 'fluids', inlet_swirl: float = 0.0)
+
+   Bases: :py:obj:`FluidBlock`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.network.blocks.PipeBlock
+      :parts: 1
+      :private-bases:
+
+
+   
+   Engine-network adapter for one explicitly resolved :class:`Pipe`.
+
+   The contained pipe remains independently usable through :meth:`Pipe.solve`.
+   This block only translates network stations into that public solver API and
+   emits the resulting outlet station and ``dp_<name>`` loss signal.
+
+   :Parameters:
+
+       **name** : :class:`python:str`
+           Block name used for the pressure-loss signal.
+
+       **st_in, st_out** : :class:`python:str`
+           Inlet and outlet network station keys.
+
+       **pipe** : :obj:`pyskyfire.ducts.Pipe`
+           Physical pipe model, with or without a core.
+
+       **transport** : :obj:`object`
+           Fluid-property provider accepted by :meth:`Pipe.solve`.
+
+       **friction_model** : {'native', 'fluids'}, :obj:`optional`
+           Distributed-friction backend. Default ``'fluids'``.
+
+       **inlet_swirl** : :class:`python:float`, :obj:`optional`
+           Swirl at the inlet mean radius [m/s], as :meth:`Pipe.solve` takes it.
+           Network stations carry no swirl, so it is fixed here. Default 0.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _solve(station: pyskyfire.network.engine_network.Station)
+
+
+   .. py:method:: compute(stations: Dict[str, pyskyfire.network.engine_network.Station], signals: Dict[str, float]) -> tuple[Dict[str, pyskyfire.network.engine_network.Station], Dict[str, float]]
+
+      
+      Compute one pass of the block.
+
+
+      :Parameters:
+
+          **stations_in** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.network.engine_network.Station>`]
+              Input network stations keyed by name.
+
+          **signals_in** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
+              Input scalar signals keyed by name.
+
+
+
+      :Returns:
+
+          **stations_out** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.network.engine_network.Station>`]
+              Updated or newly created stations produced by the block.
+
+          **signals_out** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
+              Updated or newly created scalar signals produced by the block.
+
+
+
+
+
+
+
+
+      .. rubric:: Notes
+
+      .. Note::
+          Implementations should treat missing inputs as an error. The engine network orchestrator is expected to provide the declared inputs.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: post_process(stations, signals)
+
+      
+      Return the detailed pipe result at the converged inlet condition.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

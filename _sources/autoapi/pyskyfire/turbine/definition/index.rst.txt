@@ -1,0 +1,94 @@
+pyskyfire.turbine.definition
+============================
+
+.. py:module:: pyskyfire.turbine.definition
+
+.. autoapi-nested-parse::
+
+   The drawing of an axial turbine's bladed flow path.
+
+   A :class:`TurbineDefinition` is hardware and nothing else: an ordered tuple of
+   :class:`BladeRow` objects and the annular passage they sit in. It holds no
+   velocity triangles, no duty and no efficiency, so it does not care how it was
+   designed. A meanline design produces one, a user can write one out by hand,
+   and evaluators and the geometry builder read one.
+
+   Conventions
+   -----------
+   - The shaft is +x and the flow runs along +x.
+   - Angles are radians from axial, positive in the direction the rotor turns,
+     which is the direction of blade speed. The machine's ``rotation`` then says
+     which way that is about +x, so a clockwise turbine is the mirror image of a
+     counterclockwise one and nothing else changes.
+   - Metal angles are the direction of the camber line at each edge. The flow
+     meets and leaves at slightly different angles: incidence is metal minus
+     flow at the inlet, and deviation is how far the leaving flow falls short of
+     the outlet metal angle.
+   - Section properties (radii, metal angles, stagger) are given at mean radius.
+     ``twist`` says how the metal angles change from hub to tip; without it the
+     section is the same at every span.
+
+   What is *not* here is anything the built section decides: the throat, and
+   the realised maximum thickness. :meth:`TurbineDefinition.build_geometry`
+   measures those from the blades it builds.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/turbine/definition/BladeRow
+   /autoapi/pyskyfire/turbine/definition/FreeVortexTwist
+   /autoapi/pyskyfire/turbine/definition/ThicknessDistribution
+   /autoapi/pyskyfire/turbine/definition/TurbineDefinition
+
+.. autoapisummary::
+
+   pyskyfire.turbine.definition.BladeRow
+   pyskyfire.turbine.definition.FreeVortexTwist
+   pyskyfire.turbine.definition.ThicknessDistribution
+   pyskyfire.turbine.definition.TurbineDefinition
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.turbine.definition.metal_angles
+
+
+Module Contents
+---------------
+
+.. py:function:: metal_angles(flow_in, flow_out, incidence=0.0, deviation=0.0)
+
+   
+   Metal angles for a row turning the flow from ``flow_in`` to ``flow_out``.
+
+   Incidence is added to the inlet flow angle. Deviation is added to the
+   outlet in the direction the row turns the flow, since the leaving flow
+   falls short of the metal and the blade has to turn it further.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

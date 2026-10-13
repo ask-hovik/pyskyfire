@@ -1,0 +1,167 @@
+pyskyfire.thermo.state.FluidStateResolver
+=========================================
+
+.. py:class:: pyskyfire.thermo.state.FluidStateResolver(transport, p_ref: float)
+
+   
+   Resolve fluid states from ``(h, p)``, with cached saturation data.
+
+
+   :Parameters:
+
+       **transport** : :obj:`Any`
+           Object carrying a CoolProp fluid string on ``.fluid``, normally a
+           :class:`~pyskyfire.thermo.transport.FluidTransport`.
+
+       **p_ref** : :class:`python:float`
+           Reference pressure for the capability probe [Pa], normally the fluid
+           inlet pressure.
+
+   :Attributes:
+
+       **capability** : :obj:`FluidCapability`
+           Result of :func:`probe_fluid`. Check ``enthalpy_march`` before using
+           :meth:`from_hp`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _build_saturation(p: float) -> Optional[SaturationState]
+
+
+   .. py:method:: _liquid_transport(output: str, T_sat: float, p: float)
+
+
+   .. py:method:: enthalpy(T: float, p: float) -> float
+
+      
+      Specific enthalpy at ``(T, p)`` [J kg⁻¹].
+
+      Used once, to turn the inlet boundary condition into the march's state
+      variable.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_hp(h: float, p: float) -> FluidState
+
+      
+      Resolve the bulk state from specific enthalpy and pressure.
+
+
+      :Parameters:
+
+          **h** : :class:`python:float`
+              Specific enthalpy [J kg⁻¹].
+
+          **p** : :class:`python:float`
+              Static pressure [Pa].
+
+
+
+      :Returns:
+
+          :obj:`FluidState`
+              ..
+
+
+
+
+
+
+
+
+      .. rubric:: Notes
+
+      Inside the dome the temperature is taken as ``T_sat`` and the density as
+      the homogeneous mixture value, rather than trusting a flash to land on
+      the right branch. Outside it, both come from an ``(h, p)`` flash, which
+      is unambiguous on either side.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_tp(T: float, p: float) -> FluidState
+
+      
+      Resolve the bulk state from ``(T, p)``, for the temperature march.
+
+      Cannot represent a two-phase state -- that is the whole limitation of
+      the temperature march -- so the phase is reported as
+      :data:`PHASE_UNKNOWN` unless the fluid is known to be supercritical.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: saturation(p: float) -> Optional[SaturationState]
+
+      
+      Saturation state at ``p`` [Pa], or ``None`` where there is no dome.
+
+      ``None`` means either that the fluid has no usable saturation data or
+      that ``p`` is at/above the critical pressure. Results are cached on
+      ``p``, so the inner wall solve costs nothing after the first call at a
+      station.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

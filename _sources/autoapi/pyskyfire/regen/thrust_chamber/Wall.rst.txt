@@ -1,7 +1,7 @@
 pyskyfire.regen.thrust_chamber.Wall
 ===================================
 
-.. py:class:: pyskyfire.regen.thrust_chamber.Wall(material, thickness, name=None)
+.. py:class:: pyskyfire.regen.thrust_chamber.Wall(material, thickness, name=None, *, role='main')
 
    
    Single structural wall or coating layer in a thrust chamber.
@@ -20,6 +20,13 @@ pyskyfire.regen.thrust_chamber.Wall
        **name** : :class:`python:str`, :obj:`optional`
            Descriptive label of the layer (e.g. “Copper liner”).
 
+       **role** : {"main", "liner"}, keyword-only, :obj:`optional`
+           Defaults to ``"main"``. Main layers form the channel walls and all
+           contribute to channel thickness. Liners lie on the combustion side
+           and contribute to the hot-side offset and conduction, but not to
+           channel-wall thickness. Circuit layers are ordered hot to cold,
+           with liners before main layers.
+
    :Attributes:
 
        **material** : :obj:`Material`
@@ -30,6 +37,9 @@ pyskyfire.regen.thrust_chamber.Wall
 
        **name** : :class:`python:str` or :data:`python:None`
            Optional descriptive name.
+
+       **role** : {"main", "liner"}
+           Whether the layer forms the channel wall or lies only on its hot side.
 
 
 
@@ -46,5 +56,76 @@ pyskyfire.regen.thrust_chamber.Wall
    ..
        !! processed by numpydoc !!
 
+   .. py:method:: __setstate__(state)
+
+      
+      Restore legacy walls with a main role and a thickness evaluator.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: bind_contour(contour)
+
+      
+      Attach the contour that tier A design inputs are evaluated against.
+
+      Called by :class:`CoolingCircuit`. A wall whose thickness only depends
+      on ``x`` never needs this.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: thickness(x)
+
+      
+      Return the layer thickness [m] at ``x``, which may be an array.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
 

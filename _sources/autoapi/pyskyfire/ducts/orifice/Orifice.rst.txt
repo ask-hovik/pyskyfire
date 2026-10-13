@@ -1,0 +1,307 @@
+pyskyfire.ducts.orifice.Orifice
+===============================
+
+.. py:class:: pyskyfire.ducts.orifice.Orifice(area, *, cd, hydraulic_diameter=None, length=0.0)
+
+   
+   A short restriction discharging into a large volume.
+
+
+   :Parameters:
+
+       **area** : :class:`python:float`
+           Geometric flow area [m²].
+
+       **cd** : :class:`python:float`
+           Discharge coefficient, in (0, 1]. It relates the real flow to the
+           ideal isentropic flow through ``area`` and is supplied, not computed:
+           about 0.6 for a sharp-edged hole, 0.8 and above for a rounded or long
+           one, and much lower for a swirl element whose air core blocks the exit.
+
+       **hydraulic_diameter** : :class:`python:float`, :obj:`optional`
+           Hydraulic diameter of the flow area [m]. The constructors set it.
+
+       **length** : :class:`python:float`, :obj:`optional`
+           Length of the passage [m]. It is geometry only here; it does not
+           change ``cd``.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   Use :meth:`circular`, :meth:`annular` or :meth:`slot` for those shapes.
+   The generic constructor takes any area, so an effective area quoted as
+   ``Cd·A`` can be given as ``Orifice(area=CdA, cd=1.0)``.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __repr__()
+
+
+   .. py:method:: _result(eos, inlet, p_throat, p_out, choked)
+
+
+   .. py:method:: annular(inner_diameter, outer_diameter, *, cd, length=0.0)
+      :classmethod:
+
+
+      
+      The annulus between two concentric diameters [m], as around a coaxial post.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: circular(diameter, *, cd, length=0.0)
+      :classmethod:
+
+
+      
+      A round hole of ``diameter`` [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: mass_flow(*, inlet_state: pyskyfire.thermo.state.FluidState, p_out: float, fluid) -> OrificeResult
+
+      
+      The flow the orifice passes from ``inlet_state`` to a discharge pressure.
+
+      Parameters are as for :meth:`solve`, with ``p_out`` the discharge
+      pressure [Pa] instead of a mass flow. Below the choking pressure the
+      flow no longer depends on ``p_out``, and the result says so.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sized(*, mass_flow, inlet_state, dp, fluid, cd, length=0.0)
+      :classmethod:
+
+
+      
+      The round hole that passes ``mass_flow`` with a pressure drop ``dp``.
+
+      See :func:`required_area`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: slot(width, height, *, cd, length=0.0)
+      :classmethod:
+
+
+      
+      A rectangular slot of ``width`` by ``height`` [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: solve(*, inlet_state: pyskyfire.thermo.state.FluidState, mass_flow: float, fluid) -> OrificeResult
+
+      
+      The discharge pressure that drives ``mass_flow`` through the orifice.
+
+
+      :Parameters:
+
+          **inlet_state** : :obj:`FluidState`
+              Upstream stagnation state. Its enthalpy is used when finite, so
+              it must then be on ``fluid``'s datum; otherwise the state is
+              resolved from its pressure and temperature.
+
+          **mass_flow** : :class:`python:float`
+              Mass flow [kg/s].
+
+          **fluid** : :class:`python:str` or :obj:`Fluid` or :obj:`EquationOfState`
+              The fluid, as :func:`~pyskyfire.thermo.eos.as_equation_of_state`
+              reads it. :class:`~pyskyfire.thermo.eos.Incompressible` gives the
+              constant-density orifice equation.
+
+
+
+
+
+
+
+      :Raises:
+
+          :obj:`OrificeCapacityError`
+              When the flow would choke below ``mass_flow``.
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: solve_inlet_pressure(*, mass_flow: float, p_out: float, T_in: float, fluid) -> OrificeResult
+
+      
+      The inlet pressure that drives ``mass_flow`` to a discharge at ``p_out``.
+
+      The inlet is at temperature ``T_in`` [K], and its state is resolved
+      from that and each trial pressure. This is the question a feed
+      plenum asks: what it must hold to deliver a flow into a chamber at
+      known pressure. Parameters are otherwise as for :meth:`solve`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: effective_area
+      :type: float
+
+
+      
+      Discharge coefficient times area, ``Cd·A`` [m²].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: length_to_diameter
+      :type: float
+
+
+      
+      Passage length over hydraulic diameter, ``L/D``. NaN without a diameter.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

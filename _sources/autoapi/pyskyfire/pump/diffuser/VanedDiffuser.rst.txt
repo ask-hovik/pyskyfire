@@ -1,0 +1,143 @@
+pyskyfire.pump.diffuser.VanedDiffuser
+=====================================
+
+.. py:class:: pyskyfire.pump.diffuser.VanedDiffuser(*, flow, d2, b2, u2, c2u, impeller_blade_count, n, H, nq, rho, vane_count, gap_ratio=None, inlet_width_ratio=1.15, outer_diameter_ratio=None, length_ratio=None, outlet_width_ratio=1.0, throat_factor=None, deceleration=None, vane_thickness_ratio=0.012, roughness=0.0, rotation=COUNTERCLOCKWISE)
+
+   
+   A vaned radial diffuser designed from the impeller it follows.
+
+   Build one with :meth:`from_impeller`. The direct constructor takes the
+   impeller outlet as numbers: ``flow`` through the impeller [m³/s], its
+   outlet diameter ``d2`` and width ``b2`` [m], tip speed ``u2`` and outlet
+   swirl ``c2u`` [m/s], blade count, speed ``n`` [rpm], head ``H`` [m] (the
+   head at the impeller outlet, used for the gap and exit-energy rules),
+   specific speed ``nq``, density ``rho`` [kg/m³] and ``rotation``.
+
+   Design inputs, with Gülich's ranges:
+
+   ``vane_count``
+       Required. Match it against the impeller blade count; see
+       :attr:`DiffuserChecks.vane_count_conflicts`.
+   ``gap_ratio``
+       d3/d2. Defaults to the Table 10.2 minimum.
+   ``inlet_width_ratio``
+       b3/b2, 1.05 to 1.3. Default 1.15.
+   ``outer_diameter_ratio``, ``length_ratio``
+       d4/d2, or the channel length over its throat width, L/a3, which
+       then sets d4. Give at most one. By default L/a3 is 4, the middle of
+       Gülich's 2.5 to 6. His own d4 rule, (1.05 to 1.15) + 0.01 nq, assumes
+       a gap of a few percent; the gap a high-head pump needs eats most of
+       that, so the channel is sized directly instead.
+   ``outlet_width_ratio``
+       b4/b3: the walls flare linearly from inlet to outlet radius. The
+       flare opens the channel too, and the equivalent angle counts both.
+       Default 1, a plane diffuser.
+   ``throat_factor``, ``deceleration``
+       f_a3 of T7.7.10, 1.1 to 1.3, or instead c3q/c2 of T7.7.11, 0.7 to
+       0.85. Give at most one. By default c3q/c2 is 0.8: Table 10.2 asks for
+       not much below 0.8 against part-load pulsations, and behind the wide
+       gap of a high-head pump f_a3 = 1.2 would decelerate below 0.7.
+   ``vane_thickness_ratio``
+       Vane thickness over d2. Gülich gives 0.01 to 0.015 at the inlet.
+       Default 0.012, held along the vane, with rounded ends.
+   ``roughness``
+       Wall roughness [m], for the friction terms.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __repr__()
+
+
+   .. py:method:: build_geometry(*, chord_points=65)
+
+      
+      Resolve the vane surfaces and walls for display. Returns and stores them.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_impeller(impeller, *, rho=None, **design)
+      :classmethod:
+
+
+      
+      Design the diffuser for an :class:`~pyskyfire.pump.Impeller`'s outlet.
+
+      The swirl is the impeller's slip prediction on its mean streamline, and
+      the head its outlet head. ``rho`` defaults to the impeller's.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: solve(*, inlet_state, mass_flow, transport)
+
+      
+      Total pressure lost from impeller outlet to channel exit, Table 3.8 (2).
+
+      The swirl entering is the design swirl and the through-flow follows the
+      mass flow, as the volute treats it. Density and viscosity are taken at
+      the inlet; the flow is a liquid.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

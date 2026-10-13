@@ -10,11 +10,8 @@ pyskyfire.regen.thrust_chamber.FilmCooling
    :Parameters:
 
        **x_fraction** : :class:`python:float`
-           Signed axial fraction in [-1, 1], where:
-               -1 -> chamber start
-                0 -> throat
-               +1 -> nozzle exit
-           This is resolved to ``x`` by ``ThrustChamber``.
+           Signed axial fraction in [-1, 1], where -1 is the chamber start, 0 the
+           throat and +1 the nozzle exit. This is resolved to ``x`` by ``ThrustChamber``.
 
        **coolant_mass_flow_rate** : :class:`python:float`
            Total coolant mass flow injected into the film [kg/s].

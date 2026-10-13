@@ -1,0 +1,36 @@
+pyskyfire.heat_exchanger.solver
+===============================
+
+.. py:module:: pyskyfire.heat_exchanger.solver
+
+.. autoapi-nested-parse::
+
+   Steady single-phase heat exchange with conservative segment heat rates.
+
+   A circuit solution represents identical parallel copies. Static pressure obeys
+   Darcy friction plus rho*u*du; energy conserves h + u²/2. Exchanger heat rates
+   are iterated against segment midpoint states, including counterflow links.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/heat_exchanger/solver/CircuitResult
+   /autoapi/pyskyfire/heat_exchanger/solver/HeatExchanger
+   /autoapi/pyskyfire/heat_exchanger/solver/HeatExchangerResult
+   /autoapi/pyskyfire/heat_exchanger/solver/WallResult
+
+.. autoapisummary::
+
+   pyskyfire.heat_exchanger.solver.CircuitResult
+   pyskyfire.heat_exchanger.solver.HeatExchanger
+   pyskyfire.heat_exchanger.solver.HeatExchangerResult
+   pyskyfire.heat_exchanger.solver.WallResult
+
+

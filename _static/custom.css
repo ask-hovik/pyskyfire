@@ -29,3 +29,42 @@
   height: 100%;
   border: 0;
 }
+
+/* Keep the monochrome contour diagram legible in Furo's dark theme. */
+body[data-theme="dark"] img[src$="thrust-chamber-contour.svg"] {
+  filter: invert(1);
+}
+
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme="light"]) img[src$="thrust-chamber-contour.svg"] {
+    filter: invert(1);
+  }
+}
+
+/* Hover tips (sphinx-tippy): follow Furo's light/dark colours. */
+.tippy-box {
+  background: var(--color-background-primary);
+  color: var(--color-foreground-primary);
+  border: 1px solid var(--color-background-border);
+  border-radius: 0.4rem;
+  box-shadow: 0 0.3rem 1rem rgba(0, 0, 0, 0.15);
+  font-size: var(--font-size--small);
+}
+
+.tippy-box > .tippy-arrow {
+  color: var(--color-background-border);
+}
+
+.tippy-box dt {
+  font-size: var(--font-size--small--2);
+}
+
+.tippy-box dd {
+  margin: 0.5rem 0 0;
+}
+
+/* Keep the tip to the summary: hide numpydoc sections such as Notes. */
+.tippy-box dd p.rubric,
+.tippy-box dd p.rubric ~ * {
+  display: none;
+}

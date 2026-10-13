@@ -1,0 +1,49 @@
+pyskyfire.ducts.annular
+=======================
+
+.. py:module:: pyskyfire.ducts.annular
+
+.. autoapi-nested-parse::
+
+   Annular ducts about the machine's shaft.
+
+   :class:`AnnularDuct` is a passage between a hub and a shroud, both walls of
+   revolution about the shaft (+x). Its walls are curves in the meridional
+   ``(x, r)`` plane, so it can turn between axial and radial: a turbine's inlet
+   or exhaust annulus, or the crossover that carries a pump stage's radial
+   discharge round to the next eye. It is built on
+   :class:`~pyskyfire.common.MeridionalPassage`, with its span lines drawn normal
+   to the mean line so the area they sweep is the flow area.
+
+   An annulus about a centreline that bends anywhere in space, such as a pipe
+   round a centrebody or coaxial lines, is a :class:`~pyskyfire.ducts.Pipe` with
+   a ``core_diameter``.
+
+   The duct reduces to station data -- flow area, hydraulic diameter, mean
+   radius, length and curvature -- and is solved by the march every duct shares
+   (see :mod:`pyskyfire.ducts.pipe`). It is adiabatic and carries the stagnation
+   pressure, less the irreversible losses, and the swirl ``c_u`` about the shaft
+   as the angular momentum ``r*c_u``: unchanged by a change of radius, which is
+   reversible, and reduced only by wall friction. A meridional turn presses the
+   flow from one wall to the other equally all the way round, so there is no
+   secondary flow round the circumference; it is charged as friction on a curved
+   duct. Every loss coefficient is referred to the through-flow head
+   ``rho*c_m**2/2``.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/annular/AnnularDuct
+
+.. autoapisummary::
+
+   pyskyfire.ducts.annular.AnnularDuct
+
+

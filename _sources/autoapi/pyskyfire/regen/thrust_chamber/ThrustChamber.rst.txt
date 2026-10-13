@@ -1,7 +1,7 @@
 pyskyfire.regen.thrust_chamber.ThrustChamber
 ============================================
 
-.. py:class:: pyskyfire.regen.thrust_chamber.ThrustChamber(contour, cooling_circuits, combustion_transport, optimal_values=None, K_factor: float = 0.3, n_nodes: int = 50, h_gas_corr: float = 1.0, h_cold_corr: float = 1.0, compute_gas: bool = True, enable_fin: bool = True, film_cooling: FilmCooling | None = None)
+.. py:class:: pyskyfire.regen.thrust_chamber.ThrustChamber(contour, cooling_circuits, combustion_transport, optimal_values=None, K_factor: float = 0.3, n_nodes: int = 50, h_gas_corr: float = 1.0, h_cold_corr: float = 1.0, compute_gas: bool = True, film_cooling: FilmCooling | None = None, keep_outs=None)
 
    
    Simulation-only thrust-chamber assembly.
@@ -21,7 +21,7 @@ pyskyfire.regen.thrust_chamber.ThrustChamber
    .. rubric:: Notes
 
    • Define x-domains for circuits from their fractional spans
-   • Build section-reference and coolant-flow centerlines per circuit
+   • Build nominal reference, physical base-point and coolant centroid paths
    • Compute per-circuit wedge angles (theta) and heights (h)
    • Trigger each circuit's precompute/finalize (A, Dh, perimeters, volume)
    • (Optionally) trigger combustion aerothermodynamics
@@ -31,10 +31,115 @@ pyskyfire.regen.thrust_chamber.ThrustChamber
    ..
        !! processed by numpydoc !!
 
+   .. py:method:: __getstate__()
+
+      
+      Leave the derived outer wall out; it rebuilds on demand.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: _resolve_signed_fraction_to_x(f: float) -> float
 
 
-   .. py:method:: build_channel_centerlines()
+   .. py:method:: _with_keep_out_breakpoints(x_domain)
+
+      
+      Put a station on every corner of a keep-out's width law.
+
+      Channel widths are interpolated between stations, so a keep-out edge
+      between two of them would be smeared over the whole interval, or
+      missed if it is shorter. The nearest station is moved onto a corner
+      when it is within a quarter spacing, so the grid stays even; otherwise
+      one is added.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: blocked_angle(x) -> float
+
+      
+      Angle of the channel layer kept clear by keep-outs at ``x`` [rad].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_channel_angular_widths()
+
+      
+      Compute wedge angle (theta) arrays used by cross-section analytics.
+
+      Priority:
+
+      1) If placement provides channel_angular_width(x), use it.
+      2) If placement is 'internal' (non-occluding), use height as an angular-width proxy.
+      3) Otherwise, default to an even packing among surface-occluding channels:
+         theta(x) = (2π - blocked(x)) / n_occ(x), where n_occ is provided by
+         the circuit group and blocked(x) is what keep-outs reserve.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
 
 
    .. py:method:: build_channel_heights()
@@ -61,16 +166,13 @@ pyskyfire.regen.thrust_chamber.ThrustChamber
           !! processed by numpydoc !!
 
 
-   .. py:method:: build_channel_widths()
+   .. py:method:: build_circuit_x_domain()
 
       
-      Compute wedge angle (theta) arrays used by cross-section analytics.
+      Convert each circuit's fractional span into an x-grid whose size
+      scales with the fraction of the overall contour length covered.
+      Uses at least 3 nodes per circuit.
 
-      Priority:
-      1) If placement provides channel_width(x), use it.
-      2) If placement is 'internal' (non-occluding), use height-as-width (simple radial-stack proxy).
-      3) Otherwise, default to an even packing among surface-occluding channels:
-         theta(x) = 2π / n_occ(x), where n_occ is provided by the circuit group.
 
 
 
@@ -90,13 +192,61 @@ pyskyfire.regen.thrust_chamber.ThrustChamber
           !! processed by numpydoc !!
 
 
-   .. py:method:: build_circuit_x_domain()
+   .. py:method:: build_physical_channel_paths()
 
       
-      Convert each circuit's fractional span into an x-grid whose size
-      scales with the fraction of the overall contour length covered.
-      Uses at least 3 nodes per circuit.
+      Resolve section anchors, lobe sizes and centroid paths together.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: build_reference_paths()
+
+      
+      Build the ideal-contour winding on a shared integration grid.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: install_heat_exchanger(exchanger, *, position=(0.0, 0.0, 0.0), rotation=None, coefficient=None)
+
+      
+      Place an exchanger against the prescribed gas and report its volume.
+
+      Returns a ChamberInstallation with ``solve`` and ``volume_change``.
+      The chamber temperature, chemistry, contour and gas flow remain prescribed.
 
 
 
@@ -161,6 +311,38 @@ pyskyfire.regen.thrust_chamber.ThrustChamber
       See :meth:`CoolingCircuit.compute_volume` for what one circuit's
       ``volume`` covers. Circuits that overlap axially, such as an RL10-style
       half pass and full pass, each contribute their own channels.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: outer_wall
+
+      
+      Cold-side envelope of the channelled wall.
+
+      The counterpart to :attr:`contour`: where that one is the face the hot
+      gas sees, this is the outermost surface the channels and their walls
+      reach, which is what anything wrapped around the chamber has to sit
+      against. Measured on first use and then kept, since it follows from
+      geometry that is already resolved.
+
+      See :class:`~pyskyfire.regen.outer_wall.OuterWall` for the difference
+      between its ``envelope`` and ``equivalent`` radii.
 
 
 

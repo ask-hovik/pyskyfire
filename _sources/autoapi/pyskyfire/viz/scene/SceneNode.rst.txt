@@ -1,0 +1,58 @@
+pyskyfire.viz.scene.SceneNode
+=============================
+
+.. py:class:: pyskyfire.viz.scene.SceneNode
+
+   
+   A selectable part or group, independent of the renderer's actor layout.
+
+   ``tags`` are free-form labels. The HTML viewer offers every tag as a group
+   of the nodes carrying it, as it does every ``metadata["fluid"]`` a
+   component recorded from its results.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: anchor(name)
+
+      
+      Return a snapshot of a named anchor in scene coordinates.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: id
+
+
+   .. py:property:: world_transform
+

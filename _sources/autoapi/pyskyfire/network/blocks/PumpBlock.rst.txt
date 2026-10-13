@@ -1,0 +1,166 @@
+pyskyfire.network.blocks.PumpBlock
+==================================
+
+.. py:class:: pyskyfire.network.blocks.PumpBlock(name, st_in, st_out, overcome, p_base, input_p, load_fraction, n, hydraulic_efficiency, medium, *, mechanical_efficiency=1.0, disk_friction=None)
+
+   Bases: :py:obj:`FluidBlock`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.network.blocks.PumpBlock
+      :parts: 1
+      :private-bases:
+
+
+   
+   Pump stage charged component by component.
+
+   The block raises inlet pressure to meet a target set by the load
+   (sum of downstream pressure drops) and computes shaft power and outlet state.
+
+   Each loss is charged once, where it happens. The outlet is the impeller
+   outlet, so a volute or diffuser after it is its own block and its loss is
+   part of the load. The blades do ``g*H/eta_h`` of work on every kilogram,
+   with ``hydraulic_efficiency`` the impeller's own. Disk friction on the
+   outside of the wheel is added on top, and both end up as heat in the
+   fluid. The mechanical efficiency then covers bearings and shaft seals,
+   whose heat leaves through the housing rather than the flow. No leakage is
+   modelled yet: every kilogram through the impeller is delivered.
+
+   :Parameters:
+
+       **name** : :class:`python:str`
+           Block name used to form signal keys (e.g., ``P_{name}``).
+
+       **st_in** : :class:`python:str`
+           Inlet station key.
+
+       **st_out** : :class:`python:str`
+           Outlet station key.
+
+       **overcome** : :class:`python:list`\[:class:`python:str`]
+           Names of blocks whose ``dp_*`` signals form the load to overcome.
+
+       **p_base** : :class:`python:float`
+           Baseline pressure added to the load [Pa].
+
+       **input_p** : :class:`python:float`
+           Upstream pressure offset already present [Pa].
+
+       **load_fraction** : :class:`python:float`
+           Fraction of total load to apply in this pump (0..1).
+
+       **n** : :class:`python:float`
+           Rotational speed [rpm].
+
+       **hydraulic_efficiency** : :class:`python:float`
+           The impeller's hydraulic efficiency, eta_h,La (0..1].
+
+       **medium** : :class:`python:str`
+           CoolProp fluid string.
+
+       **mechanical_efficiency** : :class:`python:float`, :obj:`optional`
+           Bearings and shaft seals (0..1]. Default 1.
+
+       **disk_friction** : :obj:`pyskyfire.pump.DiskFriction`, :obj:`optional`
+           Friction on the wheel's outer faces, evaluated at the inlet state.
+
+   :Attributes:
+
+       **dp_key** : :class:`python:str`
+           Name of emitted power signal (``P_{name}``).
+
+       **station_inputs, station_outputs, signal_inputs, signal_outputs** : :class:`python:list`\[:class:`python:str`]
+           Network I/O metadata.
+
+
+
+
+
+
+
+
+
+   .. seealso::
+
+       
+       :obj:`TurbineBlock`
+           Consumes power to satisfy aggregate shaft load.
+       
+       
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _evaluate(stations, signals)
+
+
+   .. py:method:: compute(stations, signals)
+
+      
+      Compute outlet state and required pump power.
+
+
+      :Parameters:
+
+          **stations** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.network.engine_network.Station>`]
+              Network stations (must contain ``st_in``).
+
+          **signals** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
+              Scalar signals (must contain all ``dp_{blk}`` listed in ``overcome``).
+
+
+
+      :Returns:
+
+          **stations_out** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.network.engine_network.Station>`]
+              ``{st_out: Station}`` with updated pressure and temperature.
+
+          **signals_out** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
+              ``{f"P_{name}": float}`` required shaft power [W].
+
+
+
+
+      :Raises:
+
+          :obj:`KeyError`
+              If required stations or signals are missing.
+
+
+
+
+      .. rubric:: Notes
+
+      Temperature property calls are offset by ``1e-3 K`` to avoid
+      saturation-line singularities in CoolProp.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: post_process(stations, signals)
+
+      
+      The shaft power split by where it went, at the converged state.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

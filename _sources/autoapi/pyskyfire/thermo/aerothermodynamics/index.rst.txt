@@ -1,0 +1,117 @@
+pyskyfire.thermo.aerothermodynamics
+===================================
+
+.. py:module:: pyskyfire.thermo.aerothermodynamics
+
+.. autoapi-nested-parse::
+
+   CEA-backed gas properties along a rocket-engine contour.
+
+   All public values use base SI units. The old constructor and getter API is
+   retained, but the implementation has only one design path and one state path.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.thermo.aerothermodynamics.BAR_TO_PA
+   pyskyfire.thermo.aerothermodynamics.G0
+   pyskyfire.thermo.aerothermodynamics.KJ_TO_J
+   pyskyfire.thermo.aerothermodynamics.MILLIPOISE_TO_PA_S
+   pyskyfire.thermo.aerothermodynamics.MIN_CEA_TEMPERATURE
+   pyskyfire.thermo.aerothermodynamics.MW_PER_CM_K_TO_W_PER_M_K
+   pyskyfire.thermo.aerothermodynamics.PA_TO_BAR
+   pyskyfire.thermo.aerothermodynamics.SEA_LEVEL_PRESSURE
+   pyskyfire.thermo.aerothermodynamics._LOG_TANGENT_FIELDS
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/thermo/aerothermodynamics/Aerothermodynamics
+   /autoapi/pyskyfire/thermo/aerothermodynamics/CombustionGasState
+
+.. autoapisummary::
+
+   pyskyfire.thermo.aerothermodynamics.Aerothermodynamics
+   pyskyfire.thermo.aerothermodynamics.CombustionGasState
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.thermo.aerothermodynamics.verify_state_scaling
+
+
+Module Contents
+---------------
+
+.. py:function:: verify_state_scaling(aero, T=3000.0, P=2000000.0, rtol=0.0001)
+
+   
+   Check TP -> HP and, if available, TP -> SP round trips.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: BAR_TO_PA
+   :value: 100000.0
+
+
+.. py:data:: G0
+   :value: 9.81
+
+
+.. py:data:: KJ_TO_J
+   :value: 1000.0
+
+
+.. py:data:: MILLIPOISE_TO_PA_S
+   :value: 0.0001
+
+
+.. py:data:: MIN_CEA_TEMPERATURE
+   :value: 200.0
+
+
+.. py:data:: MW_PER_CM_K_TO_W_PER_M_K
+   :value: 0.1
+
+
+.. py:data:: PA_TO_BAR
+   :value: 1e-05
+
+
+.. py:data:: SEA_LEVEL_PRESSURE
+   :value: 101325.0
+
+
+.. py:data:: _LOG_TANGENT_FIELDS
+   :value: ('rho', 'cp', 'gamma', 'a', 'mu', 'k', 'Pr', 'mw')
+
+

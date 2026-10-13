@@ -1,0 +1,7 @@
+pyskyfire.pump.geometry.ImpellerBladeDefinition
+===============================================
+
+.. py:class:: pyskyfire.pump.geometry.ImpellerBladeDefinition
+
+   .. py:method:: __post_init__()
+

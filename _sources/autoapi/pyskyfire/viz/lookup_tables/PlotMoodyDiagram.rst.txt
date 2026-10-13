@@ -11,10 +11,12 @@ pyskyfire.viz.lookup_tables.PlotMoodyDiagram
 
 
    
-   Moody-style plot of Darcy friction factor vs Reynolds number, using
-   the correlations implemented in pyskyfire.physics.f_darcy.
+   Representative straight-duct Moody chart using the ``fluids`` backend.
 
-   Each curve corresponds to a chosen relative roughness ε/D.
+   Each curve corresponds to a chosen relative roughness ε/D. The ``fluids``
+   laminar and Clamond branches are joined with pyskyfire's shared cubic
+   smoothstep transition. This chart does not change the solver's default
+   friction backend.
 
 
 

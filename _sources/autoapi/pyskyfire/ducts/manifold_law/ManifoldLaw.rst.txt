@@ -1,0 +1,69 @@
+pyskyfire.ducts.manifold_law.ManifoldLaw
+========================================
+
+.. py:class:: pyskyfire.ducts.manifold_law.ManifoldLaw
+
+   Bases: :py:obj:`abc.ABC`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.manifold_law.ManifoldLaw
+      :parts: 1
+      :private-bases:
+
+
+   
+   A rule relating flow gathered to passage size.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: residual(collected, area)
+      :abstractmethod:
+
+
+      
+      Return the signed miss at one station.
+
+      Negative means the trial section is too small. Must increase with
+      section area so that the solver can bracket a root.
+
+      :Parameters:
+
+          **collected** : :class:`python:float`
+              Fraction of the manifold's whole mass flow that has passed through
+              this station. Runs from zero at the dead point to ``1/branches`` at
+              the port, so a law never has to know how the ring is divided.
+
+          **area** : :class:`python:float`
+              Trial section area [m^2].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

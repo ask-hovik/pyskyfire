@@ -3,16 +3,44 @@ pyskyfire.pump.impeller
 
 .. py:module:: pyskyfire.pump.impeller
 
+.. autoapi-nested-parse::
+
+   Preliminary radial impeller sizing and physical inputs for pyTurbo Aero.
+
+   No surface generator or efficiency predictor is run during construction.
+   Metal angles are measured from the backward circumferential direction toward
+   the meridional direction. Positive wrap denotes backward sweep for +x rotation.
+
+   The outlet triangle carries slip, and the design is closed on it. The flow does
+   not leave along the blades, so the swirl a wheel actually delivers is less than
+   its blade angle says, and it is that swirl the head comes from. Exactly one of
+   the blade outlet angle and the outlet diameter is therefore solved, so that the
+   swirl the blades are predicted to leave (Gülich Eq. T3.2.7) is the swirl the
+   head needs at the supplied hydraulic efficiency (Eq. T3.2.8). Solving the angle
+   is the order of Gülich's own design procedure; solving the diameter is its
+   converse, for when the blades are fixed.
+
+   The hydraulic efficiency is the impeller's alone: the losses between its inlet
+   and its outlet, Gülich's eta_h,La (Eq. 8.13a). The head ``H`` is therefore the
+   total head at the impeller outlet, which is the pump's delivered head plus
+   whatever the volute or diffuser after it will lose. Those losses belong to the
+   collector and are charged there.
+
+   References
+   ----------
+   Gülich, J. F., *Centrifugal Pumps*, 4th ed., Springer, 2020. Table 3.2,
+   Eq. (3.26), Eq. (7.1) and chapter 7.2.
+
+   ..
+       !! processed by numpydoc !!
+
 
 Attributes
 ----------
 
 .. autoapisummary::
 
-   pyskyfire.pump.impeller.r_a_star_norm
-   pyskyfire.pump.impeller.r_i_star_norm
-   pyskyfire.pump.impeller.z_a_star_norm
-   pyskyfire.pump.impeller.z_i_star_norm
+   pyskyfire.pump.impeller.G0
 
 
 Classes
@@ -22,10 +50,20 @@ Classes
    :hidden:
 
    /autoapi/pyskyfire/pump/impeller/Impeller
+   /autoapi/pyskyfire/pump/impeller/ImpellerDiagnostics
+   /autoapi/pyskyfire/pump/impeller/ImpellerDimensions
+   /autoapi/pyskyfire/pump/impeller/ImpellerVelocityTriangles
+   /autoapi/pyskyfire/pump/impeller/OutletSlip
+   /autoapi/pyskyfire/pump/impeller/VelocityTriangle
 
 .. autoapisummary::
 
    pyskyfire.pump.impeller.Impeller
+   pyskyfire.pump.impeller.ImpellerDiagnostics
+   pyskyfire.pump.impeller.ImpellerDimensions
+   pyskyfire.pump.impeller.ImpellerVelocityTriangles
+   pyskyfire.pump.impeller.OutletSlip
+   pyskyfire.pump.impeller.VelocityTriangle
 
 
 Functions
@@ -33,11 +71,14 @@ Functions
 
 .. autoapisummary::
 
-   pyskyfire.pump.impeller.add_theta_to_streamlines
-   pyskyfire.pump.impeller.create_inbetween_streamlines
-   pyskyfire.pump.impeller.meridional_streamlines
+   pyskyfire.pump.impeller._positive
+   pyskyfire.pump.impeller._section_path
+   pyskyfire.pump.impeller.design_value
+   pyskyfire.pump.impeller.inlet_diameter_from_phi
+   pyskyfire.pump.impeller.meridional_contours
    pyskyfire.pump.impeller.outlet_diameter
-   pyskyfire.pump.impeller.outlet_width
+   pyskyfire.pump.impeller.outlet_slip
+   pyskyfire.pump.impeller.outlet_width_ratio
    pyskyfire.pump.impeller.pressure_coefficient
    pyskyfire.pump.impeller.specific_speed
 
@@ -45,29 +86,13 @@ Functions
 Module Contents
 ---------------
 
-.. py:function:: add_theta_to_streamlines(meridionals, a, b, c, beta_1B, beta_2B)
+.. py:function:: _positive(value, name, *, zero=False)
+
+.. py:function:: _section_path(passage, settings, span)
 
    
-   Given a list of streamlines (each a list of (z, r) tuples) in the meridional plane,
-   compute a theta coordinate for each point based on a prescribed incremental rotation.
+   Normalised m' fraction and (x, r) samples along one blade section.
 
-   For each point (except the first) along a streamline, the incremental angle is given by:
-
-       beta_B = beta_B_star * (beta_2B - beta_1B) + beta_1B
-       beta_B_star = a*y_star + b*y_star**2 + c*y_star**3
-       y_star is a normalized coordinate from 0 to 1 along the streamline.
-
-   Parameters:
-       meridionals (list): List of streamlines, each a list of (z, r) tuples.
-       subdivisions (int or None): If provided, each streamline is assumed to have this number
-                                   of points. Otherwise, the function uses the length of each streamline.
-       a, b, c (float): Coefficients for the polynomial defining beta_B_star.
-       beta_1B (float): The lower bound of the incremental angle.
-       beta_2B (float): The upper bound of the incremental angle.
-
-   Returns:
-       new_meridionals (list): A list of streamlines where each point is a (z, r, theta) tuple.
-                               The first point of each streamline is assigned theta = 0.
 
 
 
@@ -86,22 +111,14 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: create_inbetween_streamlines(upper_points, lower_points, num_inbetween=2)
+.. py:function:: design_value(value, *, label, **context)
 
    
-   Given two lists of evenly spaced points (tuples) representing the upper and lower boundaries,
-   generate a set of streamlines that includes the boundaries and a specified number of intermediate
-   (in-between) streamlines.
+   Dispatch a scalar callback by its requested keyword names.
 
-   Parameters:
-       upper_points (list of tuples): Points along the upper boundary.
-       lower_points (list of tuples): Points along the lower boundary.
-       num_inbetween (int): Number of intermediate streamlines to generate (excluding the boundaries).
-
-   Returns:
-       streamlines (list): A list of streamlines. Each streamline is a list of (z, r) tuples.
-                           The first streamline corresponds to the lower boundary (alpha = 0)
-                           and the last to the upper boundary (alpha = 1).
+   Angle/prewhirl callbacks receive span_fraction, x, r. Thickness callbacks
+   additionally receive chord_fraction (normalized m-prime along the blade).
+   Callbacks are evaluated at scalar positions and must return finite scalars.
 
 
 
@@ -120,12 +137,90 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: meridional_streamlines(n_q, b_2, d_n, d_1, d_2)
+.. py:function:: inlet_diameter_from_phi(*, Q, n, phi1, inlet_hub_diameter)
+
+   
+   Solve annular continuity for a fixed wetted hub and Cm1 = phi1*Ueye.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: meridional_contours(d1, dh, d2, b2, *, axial_length=None)
+
+   
+   Smooth quarter-ellipse endwalls with axial inlet and radial outlet.
+
+   The inlet is x=0; the shroud outlet is x=L and hub outlet x=L+b2.
+   Axial length is a design choice, with a preliminary dimension-based default.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
 
 .. py:function:: outlet_diameter(psi, n, H)
 
+.. py:function:: outlet_slip(*, beta2_deg, blade_count, d2, b2, u2, flow, blade_thickness, d1m, f1=0.98)
+
    
-   From Gülich table 7.1, 4th edition 
+   Swirl a radial wheel leaves with, including slip (Gülich Table 3.2).
+
+   ``flow`` is the flow through the impeller, leakage included. ``d1m`` is the
+   mean leading-edge diameter, which lowers the slip factor once it reaches
+   far enough out that the blades are too short to guide the flow.
+   ``blade_thickness`` is the full body thickness: Gülich correlated the
+   factor with it as the blockage, not with a thinned trailing edge. ``f1``
+   is 0.98 for radial impellers. The correlation reproduces tests with a
+   standard deviation of about 4 percent.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: outlet_width_ratio(nq)
+
+   
+   Mean relative outlet width b2/d2 of radial impellers, Gülich Eq. (7.1).
 
 
 
@@ -145,34 +240,16 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: outlet_width(n_q)
+.. py:function:: pressure_coefficient(nq, *, fT=1.0)
 
    
-   Gülich, Eq. 7.1 
+   Best-efficiency head coefficient of radial pumps, Gülich Eq. (3.26).
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: pressure_coefficient(n_q, z)
-
-   
-   From Gülich. Analytical expression for psi. Eq. 3.26, 4th edition
-
+   A mean curve through measured industrial pumps, so it proposes an outlet
+   diameter rather than fixing one. ``fT`` says where in the scatter band the
+   design sits: Gülich finds 1.0 describes multistage pumps and 1.1 low-head
+   single-stage volute pumps (EN 733). A higher coefficient gives a smaller
+   wheel and a flatter, less stable head curve.
 
 
 
@@ -194,27 +271,12 @@ Module Contents
 .. py:function:: specific_speed(n, Q, H)
 
    
-   Calculate centrifugal pump's specific speed.
-
-   From Gülich Table D2.1
-
-   :Parameters:
-
-       **Q** : :class:`python:float`
-           Flow rate [m^3/s].
-
-       **H** : :class:`python:float`
-           Head [m].
-
-       **n** : :class:`python:int`
-           Rotational speed [rpm].
+   Gülich nq convention: rpm, m³/s, m.
 
 
 
-   :Returns:
 
-       **n_q** : :class:`python:float`
-           Specific speen
+
 
 
 
@@ -229,19 +291,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:data:: r_a_star_norm
-   :value: [1.0, 0.9335, 0.8692, 0.8072, 0.7475, 0.6901, 0.6351, 0.5825, 0.5325, 0.4849, 0.4401, 0.3971,...
-
-
-.. py:data:: r_i_star_norm
-   :value: [1.0, 0.8068, 0.6969, 0.6195, 0.561, 0.5134, 0.4729, 0.4374, 0.4056, 0.3767, 0.3503, 0.3253,...
-
-
-.. py:data:: z_a_star_norm
-   :value: [1.0, 0.9986, 0.9945, 0.9878, 0.9784, 0.9664, 0.9519, 0.9349, 0.9155, 0.8938, 0.8698, 0.8437,...
-
-
-.. py:data:: z_i_star_norm
-   :value: [1.0, 0.9911, 0.9735, 0.9526, 0.9302, 0.905, 0.8834, 0.8603, 0.8378, 0.8108, 0.7863, 0.7614,...
+.. py:data:: G0
+   :value: 9.80665
 
 

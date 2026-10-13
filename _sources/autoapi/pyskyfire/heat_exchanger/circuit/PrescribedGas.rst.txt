@@ -1,0 +1,30 @@
+pyskyfire.heat_exchanger.circuit.PrescribedGas
+==============================================
+
+.. py:class:: pyskyfire.heat_exchanger.circuit.PrescribedGas
+
+   
+   Fixed surrounding flow: callbacks receive assembly position and wall T.
+
+   ``temperature`` may be a constant or ``temperature(position)``; coefficient
+   may be a constant or ``coefficient(position, wall_temperature)`` [W/m²/K].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: sample(position, wall_temperature)
+

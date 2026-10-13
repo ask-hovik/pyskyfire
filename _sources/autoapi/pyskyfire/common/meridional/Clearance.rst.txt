@@ -1,0 +1,42 @@
+pyskyfire.common.meridional.Clearance
+=====================================
+
+.. py:class:: pyskyfire.common.meridional.Clearance
+
+   
+   A blade edge that stops short of a passage wall.
+
+
+   :Parameters:
+
+       **blade** : :class:`python:str`
+           Which blade this is, in the owning machine's own naming, such as
+           ``'main'`` or ``'R1'``.
+
+       **wall** : {'hub', 'shroud'}
+           The wall the edge faces.
+
+       **start, end** : :class:`python:float`
+           Station fractions the edge runs between.
+
+       **gap** : :class:`python:float`
+           Distance from the edge to the wall, along the span line [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

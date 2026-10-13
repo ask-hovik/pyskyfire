@@ -1,0 +1,468 @@
+pyskyfire.ducts.manifold.Manifold
+=================================
+
+.. py:class:: pyskyfire.ducts.manifold.Manifold(section, area_law, *, branches=2, rotation=None, port=None, radius=None, tilt=0.0, n_stations=181)
+
+   
+   A distributing or collecting ring, resolved from a section and a law.
+
+
+   :Parameters:
+
+       **section** : :obj:`VoluteSection`
+           Cross-section family. A
+           :class:`~pyskyfire.ducts.half_moon.HalfMoonSection` carries its own
+           placement on the chamber wall; any other family needs ``radius``.
+
+       **area_law** : :obj:`ManifoldLaw`
+           How the passage grows as flow is gathered. Stated rather than
+           defaulted, because a uniform ring and a tapered one are different
+           pieces of hardware.
+
+       **branches** : :class:`python:int`, :obj:`optional`
+           How many arcs the circumference is divided into. One runs the whole way
+           round; two split at a dead point and meet at the port.
+
+       **rotation** : :class:`python:str`, :obj:`optional`
+           Which way a single-branch manifold runs. Required for ``branches=1``
+           and refused for anything else, which is mirror-symmetric and has no
+           sense to name.
+
+       **port** : :obj:`Port`, :obj:`optional`
+           The duct carrying flow to or from its flange, normally a
+           :class:`~pyskyfire.ducts.port.RadialPort`, which leaves the dome the
+           section is built on and may be steered within the section plane. A
+           manifold fed tangentially may be given an
+           :class:`~pyskyfire.ducts.exit_cone.ExitCone` instead.
+
+       **radius, tilt** : :class:`python:float`, :obj:`optional`
+           Where the section sits, for a family that does not place itself.
+
+       **n_stations** : :class:`python:int`, :obj:`optional`
+           Stations along one branch, including both the dead point and the port.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   Geometry is resolved on construction and carries no operating point, so one
+   manifold can be reported at several mass flows.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __repr__()
+
+
+   .. py:method:: _dome_shrinkage()
+
+      
+      How fast the dome's depth falls away from the port [m/rad].
+
+      Read only when drawing a stub, which is trimmed against the port
+      station's ellipse and has to be sunk past it by whatever the neighbouring
+      sections fall short. A dome that grows away from the port leaves nothing
+      to make up.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _place(sizes, aspects)
+
+      
+      Where each section sits, from the family or from the manifold.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _port_frame()
+
+      
+      Outward direction and origin of the section carrying the port.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _reserved(name, n_stations=None)
+
+      
+      A boundary piece the section reserves, sized for the whole ring.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _resolve(n_stations)
+
+
+   .. py:method:: _resolve_port(port)
+
+
+   .. py:method:: _ring(n_stations=None)
+
+      
+      One branch expanded to the whole circumference.
+
+      A split manifold is its branch and that branch's mirror image, which in
+      azimuth is the same arc run backwards. Nothing about the section itself
+      mirrors: the plane the mirror acts in contains the machine axis, so it
+      carries each section plane onto another one and leaves the shape in it
+      alone.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _sweep_piece(curve, n_points, n_stations=None)
+
+      
+      Place one boundary piece of every station into machine coordinates.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: collected_velocity(mass_flow, density)
+
+      
+      Through-flow velocity at each station of a branch [m/s].
+
+      Only the share the branch has gathered by that station is passing
+      through it, so this is what the area there actually has to carry. A
+      uniform ring ramps from nothing to its maximum at the port; a
+      constant-velocity ring holds this flat, which is the whole point of it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: display_geometry(n_stations=None)
+
+      
+      Branch geometry on a chosen station grid, for drawing only.
+
+      A swept manifold facets in azimuth long before it facets around its
+      section -- the ring is metres round and the section centimetres -- so
+      a smooth picture needs more stations than the area law was resolved on,
+      and needing them is a drawing matter rather than a design one.
+
+      The sizes the law resolved are read between stations, and everything
+      that follows from a size is then computed at the new angles exactly:
+      where the section sits, how it leans, and the area it ends up with. So
+      the passage drawn agrees with the resolved one at every design station
+      and is interpolated only in between. ``None`` gives the resolved grid
+      itself, which is what the design says and nothing more.
+
+
+
+
+      :Returns:
+
+          :obj:`ManifoldGeometry`
+              Geometry along one branch, on the requested grid.
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: fan_origins(n_stations=None)
+
+      
+      Star-shaped fan origins for each swept station, in machine coordinates.
+
+      One per station of :meth:`sweep`, so an end face can be closed off as a
+      fan about a point that sees its whole boundary.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sweep(n_points=64, n_stations=None)
+
+      
+      Section boundaries swept into machine coordinates.
+
+      The machine axis is ``z`` and the dead point sits at azimuth zero. A
+      split manifold is swept over the whole ring, both branches together, so
+      what comes back is the closed cavity rather than half of it.
+
+      ``n_points`` samples each boundary piece of the section; ``n_stations``
+      asks for a finer grid along the branch than the law was resolved on,
+      for drawing -- see :meth:`display_geometry`.
+
+
+
+
+      :Returns:
+
+          :obj:`np.ndarray <numpy.ndarray>`
+              Closed boundary rings [m, shape (N, M, 3)], one per station.
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sweep_margins(n_points=16, n_stations=None)
+
+      
+      The chamber-facing wall either side of the slit [m].
+
+      Returns the two strips in the order the face is traversed, so with
+      :meth:`sweep_slit` between them they tile it without overlapping.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sweep_port(n_points=64, n_stations=9)
+
+      
+      The port duct swept into machine coordinates.
+
+      A radial port is a plain stub, so this is the tube it cuts, trimmed back
+      onto the dome it leaves rather than laid flat against it. What comes back
+      is the cavity a printed part would leave for the duct, not a fairing into
+      the passage.
+
+
+
+
+      :Returns:
+
+          :obj:`np.ndarray <numpy.ndarray>`
+              Closed boundary rings [m, shape (n_stations, n_points, 3)].
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sweep_slit(n_points=16, n_stations=None)
+
+      
+      The reserved slit swept into machine coordinates.
+
+      A strip inside the chamber-facing face, not a separate face: it is
+      where the channels break out, and the rest of that face is metal
+      against the wall. Drawn apart so a layout can be checked against where
+      the passes actually start and end.
+
+
+
+
+      :Returns:
+
+          :obj:`np.ndarray <numpy.ndarray>`
+              Points [m, shape (N, n_points, 3)], one row per swept station.
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sweep_stations(n_stations=None)
+
+      
+      How many stations :meth:`sweep` returns on a given grid.
+
+      A split manifold sweeps both branches, so this is more than the branch
+      that was resolved has: the two meet at the dead point and share it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

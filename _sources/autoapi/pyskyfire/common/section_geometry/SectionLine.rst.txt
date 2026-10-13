@@ -1,0 +1,34 @@
+pyskyfire.common.section_geometry.SectionLine
+=============================================
+
+.. py:class:: pyskyfire.common.section_geometry.SectionLine
+
+   
+   Directed straight boundary, with the same sampling API as an arc.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: derivative(fraction)
+
+
+   .. py:method:: evaluate(fraction)
+
+
+   .. py:method:: points(index, count)
+

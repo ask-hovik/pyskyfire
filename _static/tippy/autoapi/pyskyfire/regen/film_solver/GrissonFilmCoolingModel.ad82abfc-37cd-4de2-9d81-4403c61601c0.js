@@ -1,0 +1,22 @@
+selector_to_html = {"a[href=\"#pyskyfire.regen.film_solver.GrissonFilmCoolingModel.solve\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.regen.film_solver.GrissonFilmCoolingModel.solve\">\n<span class=\"sig-name descname\"><span class=\"pre\">solve</span></span><span class=\"sig-paren\">(</span><em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">x_array</span></span><span class=\"p\"><span class=\"pre\">:</span></span><span class=\"w\"> </span><span class=\"n\"><span class=\"pre\">Sequence</span><span class=\"p\"><span class=\"pre\">[</span></span><a class=\"reference external\" href=\"https://docs.python.org/3/builtins/functions.html#float\" title=\"(in Python v3.15)\"><span class=\"pre\">float</span></a><span class=\"p\"><span class=\"pre\">]</span></span></span></em><span class=\"sig-paren\">)</span> <span class=\"sig-return\"><span class=\"sig-return-icon\">\u2192</span> <span class=\"sig-return-typehint\"><a class=\"reference external\" href=\"https://docs.python.org/3/builtins/stdtypes.html#tuple\" title=\"(in Python v3.15)\"><span class=\"pre\">tuple</span></a><span class=\"p\"><span class=\"pre\">[</span></span><a class=\"reference internal\" href=\"LiquidFilmResults.html#pyskyfire.regen.film_solver.LiquidFilmResults\" title=\"pyskyfire.regen.film_solver.LiquidFilmResults\"><span class=\"pre\">LiquidFilmResults</span></a><span class=\"p\"><span class=\"pre\">,</span></span><span class=\"w\"> </span><a class=\"reference internal\" href=\"GaseousFilmResults.html#pyskyfire.regen.film_solver.GaseousFilmResults\" title=\"pyskyfire.regen.film_solver.GaseousFilmResults\"><span class=\"pre\">GaseousFilmResults</span></a><span class=\"p\"><span class=\"pre\">]</span></span></span></span></dt><dd></dd>", "a[href=\"#pyskyfire.regen.film_solver.GrissonFilmCoolingModel\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.regen.film_solver.GrissonFilmCoolingModel\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">class</span></span><span class=\"w\"> </span></span><span class=\"sig-prename descclassname\"><span class=\"pre\">pyskyfire.regen.film_solver.</span></span><span class=\"sig-name descname\"><span class=\"pre\">GrissonFilmCoolingModel</span></span><span class=\"sig-paren\">(</span><em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">thrust_chamber</span></span></em>, <em class=\"sig-param\"><span class=\"n\"><span class=\"pre\">boundary_conditions</span></span></em><span class=\"sig-paren\">)</span></dt><dd></dd>", "a[href=\"LiquidFilmResults.html#pyskyfire.regen.film_solver.LiquidFilmResults\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.regen.film_solver.LiquidFilmResults\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">class</span></span><span class=\"w\"> </span></span><span class=\"sig-prename descclassname\"><span class=\"pre\">pyskyfire.regen.film_solver.</span></span><span class=\"sig-name descname\"><span class=\"pre\">LiquidFilmResults</span></span></dt><dd></dd>", "a[href=\"#pyskyfire-regen-film-solver-grissonfilmcoolingmodel\"]": "<h1 class=\"tippy-header\" style=\"margin-top: 0;\">pyskyfire.regen.film_solver.GrissonFilmCoolingModel<a class=\"headerlink\" href=\"#pyskyfire-regen-film-solver-grissonfilmcoolingmodel\" title=\"Link to this heading\">\u00b6</a></h1>", "a[href=\"GaseousFilmResults.html#pyskyfire.regen.film_solver.GaseousFilmResults\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.regen.film_solver.GaseousFilmResults\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">class</span></span><span class=\"w\"> </span></span><span class=\"sig-prename descclassname\"><span class=\"pre\">pyskyfire.regen.film_solver.</span></span><span class=\"sig-name descname\"><span class=\"pre\">GaseousFilmResults</span></span></dt><dd></dd>"}
+skip_classes = ["headerlink", "sd-stretched-link"]
+
+window.onload = function () {
+    for (const [select, tip_html] of Object.entries(selector_to_html)) {
+        const links = document.querySelectorAll(` ${select}`);
+        for (const link of links) {
+            if (skip_classes.some(c => link.classList.contains(c))) {
+                continue;
+            }
+
+            tippy(link, {
+                content: tip_html,
+                allowHTML: true,
+                arrow: true,
+                placement: 'auto-start', maxWidth: 600, interactive: false,
+                onShow(instance) {MathJax.typesetPromise([instance.popper]).then(() => {});},
+            });
+        };
+    };
+    console.log("tippy tips loaded!");
+};

@@ -1,0 +1,43 @@
+pyskyfire.injector.element
+==========================
+
+.. py:module:: pyskyfire.injector.element
+
+.. autoapi-nested-parse::
+
+   What every injector element type offers the injector it sits in.
+
+   An element is one repeated unit on the faceplate: an impinging doublet, a
+   coaxial swirl element, a pintle. Each type has its own class, its own
+   parameters and its own modelling. The injector asks each of them only two
+   things: where its holes are and which feed supplies each one
+   (:meth:`Element.holes`), and what its flows mean for mixing
+   (:meth:`Element.diagnostics`).
+
+   A *feed* is whatever supplies a hole: a :class:`~pyskyfire.ducts.Manifold`,
+   another piece of feed hardware, or a plain name where the hardware is not
+   modelled yet. Feeds are only ever compared and used as dictionary keys, so any
+   hashable object works. Hardware objects compare by identity, so two physically
+   separate manifolds stay separate even if they are built alike.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/injector/element/Element
+   /autoapi/pyskyfire/injector/element/Hole
+   /autoapi/pyskyfire/injector/element/JetFlow
+
+.. autoapisummary::
+
+   pyskyfire.injector.element.Element
+   pyskyfire.injector.element.Hole
+   pyskyfire.injector.element.JetFlow
+
+

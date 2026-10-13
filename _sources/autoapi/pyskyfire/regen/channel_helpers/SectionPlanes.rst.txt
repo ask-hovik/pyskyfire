@@ -1,0 +1,61 @@
+pyskyfire.regen.channel_helpers.SectionPlanes
+=============================================
+
+.. py:class:: pyskyfire.regen.channel_helpers.SectionPlanes
+
+   
+   Orthonormal planes located at the samples of a channel centerline.
+
+   ``origins`` and the three axes use the Cartesian coordinate convention of
+   PySkyFire: X is the engine axis, while Y and Z span a radial plane.
+   ``normals`` follow either the centerline tangent or the engine axis.
+   ``x_axes`` point outward and form the zero-angle direction of a section.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __len__() -> int
+
+
+   .. py:method:: __post_init__() -> None
+
+
+   .. py:property:: y_axes
+      :type: numpy.ndarray
+
+
+      
+      Return each plane's second in-plane axis.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

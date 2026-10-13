@@ -1,0 +1,121 @@
+pyskyfire.injector.injector.ElementSet
+======================================
+
+.. py:class:: pyskyfire.injector.injector.ElementSet(element, r, theta, *, orientation=0.0, name)
+
+   
+   One element type repeated at supplied face positions.
+
+
+   :Parameters:
+
+       **element** : :obj:`Element`
+           The element every position carries.
+
+       **r, theta** : :term:`numpy:array_like`
+           Radius [m] and angle [rad] of each element centre on the face. The
+           face is the plane x = 0 with the chamber towards +x, and θ is measured
+           from +y towards +z.
+
+       **orientation** : :class:`python:float` or :term:`numpy:array_like`, :obj:`optional`
+           Angle of each element's own +y axis from the local radial direction,
+           towards the local tangential direction [rad]. One value for all, or
+           one per element.
+
+       **name** : :class:`python:str`
+           Label for results and scenes. Unique within an injector.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __repr__()
+
+
+   .. py:method:: rotations() -> numpy.ndarray
+
+      
+      Rotation of each element's frame into the injector's, ``(count, 3, 3)``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: centers
+      :type: numpy.ndarray
+
+
+      
+      Element centres on the face, shape ``(count, 3)`` [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: count
+      :type: int
+
+
+      
+      Number of elements in the set.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

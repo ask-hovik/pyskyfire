@@ -1,0 +1,22 @@
+selector_to_html = {"a[href=\"#pyskyfire-injector-injector-injectorresult\"]": "<h1 class=\"tippy-header\" style=\"margin-top: 0;\">pyskyfire.injector.injector.InjectorResult<a class=\"headerlink\" href=\"#pyskyfire-injector-injector-injectorresult\" title=\"Link to this heading\">\u00b6</a></h1>", "a[href=\"#pyskyfire.injector.injector.InjectorResult.mixture_ratio\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.injector.injector.InjectorResult.mixture_ratio\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">property</span></span><span class=\"w\"> </span></span><span class=\"sig-name descname\"><span class=\"pre\">mixture_ratio</span></span><span class=\"property\"><span class=\"p\"><span class=\"pre\">:</span></span><span class=\"w\"> </span><a class=\"reference external\" href=\"https://docs.python.org/3/builtins/functions.html#float\" title=\"(in Python v3.15)\"><span class=\"pre\">float</span></a></span></dt><dd><p>Overall oxidizer over fuel mass flow, NaN without a named oxidizer.</p></dd>", "a[href=\"#pyskyfire.injector.injector.InjectorResult\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.injector.injector.InjectorResult\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">class</span></span><span class=\"w\"> </span></span><span class=\"sig-prename descclassname\"><span class=\"pre\">pyskyfire.injector.injector.</span></span><span class=\"sig-name descname\"><span class=\"pre\">InjectorResult</span></span></dt><dd><p>Every feed and set at one operating point, into a face at <code class=\"docutils literal notranslate\"><span class=\"pre\">p_face</span></code>.</p></dd>", "a[href=\"#pyskyfire.injector.injector.InjectorResult.oxidizer_mass_flow\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.injector.injector.InjectorResult.oxidizer_mass_flow\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">property</span></span><span class=\"w\"> </span></span><span class=\"sig-name descname\"><span class=\"pre\">oxidizer_mass_flow</span></span><span class=\"property\"><span class=\"p\"><span class=\"pre\">:</span></span><span class=\"w\"> </span><a class=\"reference external\" href=\"https://docs.python.org/3/builtins/functions.html#float\" title=\"(in Python v3.15)\"><span class=\"pre\">float</span></a></span></dt><dd><p>Mass flow of the oxidizer feeds [kg/s].</p></dd>", "a[href=\"#pyskyfire.injector.injector.InjectorResult.fuel_mass_flow\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.injector.injector.InjectorResult.fuel_mass_flow\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">property</span></span><span class=\"w\"> </span></span><span class=\"sig-name descname\"><span class=\"pre\">fuel_mass_flow</span></span><span class=\"property\"><span class=\"p\"><span class=\"pre\">:</span></span><span class=\"w\"> </span><a class=\"reference external\" href=\"https://docs.python.org/3/builtins/functions.html#float\" title=\"(in Python v3.15)\"><span class=\"pre\">float</span></a></span></dt><dd><p>Mass flow of every other feed [kg/s].</p></dd>", "a[href=\"#pyskyfire.injector.injector.InjectorResult.mass_flow\"]": "<dt class=\"sig sig-object py\" id=\"pyskyfire.injector.injector.InjectorResult.mass_flow\">\n<span class=\"property\"><span class=\"k\"><span class=\"pre\">property</span></span><span class=\"w\"> </span></span><span class=\"sig-name descname\"><span class=\"pre\">mass_flow</span></span><span class=\"property\"><span class=\"p\"><span class=\"pre\">:</span></span><span class=\"w\"> </span><a class=\"reference external\" href=\"https://docs.python.org/3/builtins/functions.html#float\" title=\"(in Python v3.15)\"><span class=\"pre\">float</span></a></span></dt><dd><p>Total mass flow [kg/s].</p></dd>"}
+skip_classes = ["headerlink", "sd-stretched-link"]
+
+window.onload = function () {
+    for (const [select, tip_html] of Object.entries(selector_to_html)) {
+        const links = document.querySelectorAll(` ${select}`);
+        for (const link of links) {
+            if (skip_classes.some(c => link.classList.contains(c))) {
+                continue;
+            }
+
+            tippy(link, {
+                content: tip_html,
+                allowHTML: true,
+                arrow: true,
+                placement: 'auto-start', maxWidth: 600, interactive: false,
+                onShow(instance) {MathJax.typesetPromise([instance.popper]).then(() => {});},
+            });
+        };
+    };
+    console.log("tippy tips loaded!");
+};

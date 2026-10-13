@@ -1,0 +1,186 @@
+pyskyfire.thermo.duty.MachineDuty
+=================================
+
+.. py:class:: pyskyfire.thermo.duty.MachineDuty
+
+   
+   Head, flow and speed asked of one turbomachine.
+
+   Build one through a subclass's constructors rather than field by field;
+   they are what keep the fields consistent with one another.
+
+
+   :Attributes:
+
+       **n** : :class:`python:float`
+           Shaft speed [rpm].
+
+       **isentropic_head** : :class:`python:float`
+           Magnitude of the isentropic enthalpy change between the inlet state
+           and the outlet pressure [J kg⁻¹].
+
+       **Q_in** : :class:`python:float`
+           Volumetric flow at the inlet [m³ s⁻¹].
+
+       **Q_out** : :class:`python:float`
+           Volumetric flow at the isentropic outlet state [m³ s⁻¹].
+
+       **mdot** : :class:`python:float` or :data:`python:None`
+           Mass flow [kg s⁻¹].
+
+       **inlet** : :obj:`FluidState` or :data:`python:None`
+           Inlet state.
+
+       **outlet** : :obj:`FluidState` or :data:`python:None`
+           Isentropic outlet state: the inlet entropy at the outlet pressure.
+
+       **eos** : :obj:`EquationOfState` or :data:`python:None`
+           The equation of state the states were resolved with.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: _resolve(fluid, mdot, p_in, T_in, p_out)
+      :staticmethod:
+
+
+      
+      Inlet and isentropic outlet states, and the fields they give.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: isentropic_power
+      :type: float | None
+
+
+      
+      Power an ideal machine would exchange with the fluid [W].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: omega
+      :type: float
+
+
+      
+      Shaft speed [rad s⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: rho_in
+      :type: float | None
+
+
+      
+      Inlet density [kg m⁻³], if the mass flow is known.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: rho_out
+      :type: float | None
+
+
+      
+      Isentropic outlet density [kg m⁻³], if the mass flow is known.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

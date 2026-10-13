@@ -11,30 +11,33 @@ Attributes
 
    pyskyfire.common.solids.ArrayLike
    pyskyfire.common.solids.GRCop42
+   pyskyfire.common.solids.GRCop42_AM
+   pyskyfire.common.solids.GRCop84_AM
    pyskyfire.common.solids.Inconel625
    pyskyfire.common.solids.Inconel718
    pyskyfire.common.solids.L0
    pyskyfire.common.solids.PureSilver
+   pyskyfire.common.solids.SilicaDeposit
    pyskyfire.common.solids.StainlessSteel304
    pyskyfire.common.solids.StainlessSteel347
    pyskyfire.common.solids.T625
    pyskyfire.common.solids.T625_C
    pyskyfire.common.solids.T718_hi
-   pyskyfire.common.solids.TEOS
    pyskyfire.common.solids.T_347_NERVA
    pyskyfire.common.solids.T_347_NERVA_F
    pyskyfire.common.solids.T_347_RHO_NERVA
    pyskyfire.common.solids.T_347_RHO_NERVA_F
    pyskyfire.common.solids.T_F
+   pyskyfire.common.solids.T_GRCop84
    pyskyfire.common.solids.T_cold
    pyskyfire.common.solids.T_hi
    pyskyfire.common.solids.T_pure_silver
    pyskyfire.common.solids.T_ref
+   pyskyfire.common.solids.T_vitreous_silica
    pyskyfire.common.solids.YellowBrass_70_30
    pyskyfire.common.solids.ZirconiumOxide
    pyskyfire.common.solids.alpha
    pyskyfire.common.solids.copper
-   pyskyfire.common.solids.k42_mono
    pyskyfire.common.solids.k625
    pyskyfire.common.solids.k625_W
    pyskyfire.common.solids.k718
@@ -47,11 +50,16 @@ Attributes
    pyskyfire.common.solids.k_347_NERVA_BTU_HR_FT_F
    pyskyfire.common.solids.k_347_table
    pyskyfire.common.solids.k_BTUin
+   pyskyfire.common.solids.k_GRCop42_AM
+   pyskyfire.common.solids.k_GRCop84_AM
+   pyskyfire.common.solids.k_GRCop84_builds
    pyskyfire.common.solids.k_YellowBrass_70_30
    pyskyfire.common.solids.k_cold
    pyskyfire.common.solids.k_hi
    pyskyfire.common.solids.k_pure_silver
    pyskyfire.common.solids.k_pure_silver_values
+   pyskyfire.common.solids.k_vitreous_silica
+   pyskyfire.common.solids.k_vitreous_silica_values
    pyskyfire.common.solids.k_yb_cold
    pyskyfire.common.solids.k_yb_hi
    pyskyfire.common.solids.log10poly_304_cryo
@@ -91,12 +99,120 @@ Classes
    pyskyfire.common.solids.TabulatedModel
 
 
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.common.solids._grcop_alpha
+   pyskyfire.common.solids._grcop_k
+
+
 Module Contents
 ---------------
+
+.. py:function:: _grcop_alpha(strain_coeffs)
+
+   
+   Instantaneous CTE [1/K], the derivative of a thermal-strain cubic in (T - 273).
+
+   Chen et al. fit strain over 20-1000 °C; their printed CTE equations are
+   garbled, so the CTE is taken from the strain fit instead.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _grcop_k(coeffs_per_kK, T_solidus)
+
+   
+   Conductivity [W/m·K] from a cubic in T/1000 fitted over 298-973 K.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
 
 .. py:data:: ArrayLike
 
 .. py:data:: GRCop42
+
+.. py:data:: GRCop42_AM
+
+   
+   GRCop-42 built by laser powder bed fusion, from Chen et al. (2023).
+
+   Conductivity is measured over 298-973 K, held constant below and extended
+   linearly above to the solidus. About 85 % of pure copper at room temperature.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: GRCop84_AM
+
+   
+   GRCop-84 built by laser powder bed fusion, from Chen et al. (2023).
+
+   Conductivity is the mean of two builds over 298-973 K, held constant below
+   and extended linearly above to the solidus. Modulus, Poisson's ratio and
+   density are not given by the source and are left unset.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
 
 .. py:data:: Inconel625
 
@@ -130,6 +246,39 @@ Module Contents
 
 .. py:data:: PureSilver
 
+.. py:data:: SilicaDeposit
+
+   
+   Silica laid down on the hot wall by a silicon fuel additive such as TEOS.
+
+   Conductivity is that of dense vitreous silica without radiative transfer, from
+   Carwile and Hoge (1966): 1.37 W/m·K at 300 K, 1.79 W/m·K at 660 K and about
+   2.1 W/m·K at 1500 K. Below 660 K it is measured; above, it is their estimate.
+
+   No measured conductivity of an additive-formed deposit was found. Such a
+   deposit is likely porous and then conducts less than this. Only the thermal
+   resistance ``t/k`` of the layer enters the solve, so read its thickness as the
+   thickness of dense silica with the same resistance, and calibrate it against a
+   measured drop in heat load. Use it as a ``role="liner"`` wall ahead of the
+   chamber wall. Density is left unset, since a porous deposit's is not known.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
 .. py:data:: StainlessSteel304
 
 .. py:data:: StainlessSteel347
@@ -139,8 +288,6 @@ Module Contents
 .. py:data:: T625_C
 
 .. py:data:: T718_hi
-
-.. py:data:: TEOS
 
 .. py:data:: T_347_NERVA
 
@@ -152,6 +299,8 @@ Module Contents
 
 .. py:data:: T_F
 
+.. py:data:: T_GRCop84
+
 .. py:data:: T_cold
 
 .. py:data:: T_hi
@@ -162,6 +311,8 @@ Module Contents
    :value: 293.15
 
 
+.. py:data:: T_vitreous_silica
+
 .. py:data:: YellowBrass_70_30
 
 .. py:data:: ZirconiumOxide
@@ -171,8 +322,6 @@ Module Contents
 
 
 .. py:data:: copper
-
-.. py:data:: k42_mono
 
 .. py:data:: k625
 
@@ -198,6 +347,12 @@ Module Contents
 
 .. py:data:: k_BTUin
 
+.. py:data:: k_GRCop42_AM
+
+.. py:data:: k_GRCop84_AM
+
+.. py:data:: k_GRCop84_builds
+
 .. py:data:: k_YellowBrass_70_30
 
 .. py:data:: k_cold
@@ -207,6 +362,10 @@ Module Contents
 .. py:data:: k_pure_silver
 
 .. py:data:: k_pure_silver_values
+
+.. py:data:: k_vitreous_silica
+
+.. py:data:: k_vitreous_silica_values
 
 .. py:data:: k_yb_cold
 

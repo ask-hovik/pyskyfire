@@ -1,0 +1,72 @@
+pyskyfire.turbine.definition.FreeVortexTwist
+============================================
+
+.. py:class:: pyskyfire.turbine.definition.FreeVortexTwist
+
+   
+   Metal angles from hub to tip for a free-vortex row.
+
+   In a free vortex the axial velocity is the same at every radius and the
+   swirl falls off as ``1/r``, so ``r*c_u`` is constant across the span. A
+   rotor's blade speed grows with ``r``, so its relative angles twist more
+   than a stator's absolute ones.
+
+   :Parameters:
+
+       **r_mean** : :class:`python:float`
+           Radius the swirl and blade speed are given at [m].
+
+       **c_x_in, c_x_out** : :class:`python:float`
+           Axial velocity at the row's inlet and outlet [m s⁻¹].
+
+       **c_u_in, c_u_out** : :class:`python:float`
+           Absolute swirl at mean radius, positive in the rotation direction [m s⁻¹].
+
+       **u_mean** : :class:`python:float`
+           Blade speed at mean radius: zero for a stator [m s⁻¹].
+
+       **incidence, deviation** : :class:`python:float`
+           As :func:`metal_angles` [rad].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __call__(span_fraction, r)
+
+
+   .. py:method:: flow_angles(r)
+
+      
+      Inlet and outlet flow angles, in the row's own frame, at radius ``r``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

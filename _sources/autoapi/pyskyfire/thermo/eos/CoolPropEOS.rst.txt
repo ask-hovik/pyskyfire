@@ -1,0 +1,227 @@
+pyskyfire.thermo.eos.CoolPropEOS
+================================
+
+.. py:class:: pyskyfire.thermo.eos.CoolPropEOS(fluid)
+
+   Bases: :py:obj:`EquationOfState`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.thermo.eos.CoolPropEOS
+      :parts: 1
+      :private-bases:
+
+
+   
+   A real fluid, from CoolProp.
+
+
+   :Parameters:
+
+       **fluid** : :class:`python:str` or :obj:`Fluid` or :obj:`object` :obj:`with` ``.fluid``
+           A CoolProp fluid string such as ``'Methane'``, a
+           :class:`~pyskyfire.thermo.fluid.Fluid`, or a transport object
+           carrying the string on ``.fluid`` (a
+           :class:`~pyskyfire.thermo.transport.FluidTransport`).
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   A ``(p, T)`` pair lying on the saturation line doesn't identify a state:
+   it could be liquid, vapour or anything between. :meth:`state_pT` reads
+   such a pair as saturated liquid, a millikelvin into the liquid, because
+   a pump inlet drawn from a tank at its own vapour pressure is where this
+   comes up. Give the enthalpy through :meth:`state_ph` to mean anything
+   else.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __getstate__()
+
+
+   .. py:method:: __repr__()
+
+
+   .. py:method:: entropy(state: pyskyfire.thermo.state.FluidState) -> float
+
+      
+      Specific entropy of ``state`` [J kg⁻¹ K⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: isentropic(state, p)
+
+      
+      The state reached from ``state`` by an isentropic process to ``p``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: resolver(p_ref: float) -> pyskyfire.thermo.state.FluidStateResolver
+
+      
+      The state resolver, probed at the first pressure it is asked about.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: speed_of_sound(state)
+
+      
+      Single-phase speed of sound; NaN inside the dome, where it is not defined.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: state_hs(h, s, *, p_guess=1000000.0, tolerance=1e-10)
+
+      
+      The state at ``(h, s)``.
+
+      CoolProp's own ``(h, s)`` flash is used where it answers. It refuses
+      states beyond the equation's temperature range, though its ``(p, h)``
+      flash still extrapolates there, so where it refuses the pressure is
+      found along the isenthalp instead. At constant enthalpy
+      ``ds/dp = -1/(rho*T)``, and a Newton step in ``ln p`` with that
+      slope converges in a few steps from far off.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: state_pT(p, T)
+
+      
+      The state at pressure ``p`` and temperature ``T``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: state_ph(p, h)
+
+      
+      The state at pressure ``p`` and specific enthalpy ``h``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

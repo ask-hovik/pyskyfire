@@ -1,0 +1,291 @@
+pyskyfire.regen.channel_layout
+==============================
+
+.. py:module:: pyskyfire.regen.channel_layout
+
+.. autoapi-nested-parse::
+
+   Resolve nominal cooling circuits into patternable channel layouts.
+
+   The analytical resolver only applies constant angular phase shifts, so every
+   seed remains an exact copy of its circuit's nominal reference path.  The
+   numerical resolver retains the visualization packing solver and may deform the
+   angular coordinate along a seed.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Exceptions
+----------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/regen/channel_layout/AnalyticalLayoutError
+
+.. autoapisummary::
+
+   pyskyfire.regen.channel_layout.AnalyticalLayoutError
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/regen/channel_layout/ChannelLayout
+   /autoapi/pyskyfire/regen/channel_layout/ResolvedChannel
+
+.. autoapisummary::
+
+   pyskyfire.regen.channel_layout.ChannelLayout
+   pyskyfire.regen.channel_layout.ResolvedChannel
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.regen.channel_layout.circular_pattern
+   pyskyfire.regen.channel_layout.collect_channels
+   pyskyfire.regen.channel_layout.collect_keep_outs
+   pyskyfire.regen.channel_layout.gcd_list
+   pyskyfire.regen.channel_layout.redistribute_channels
+   pyskyfire.regen.channel_layout.resolve_analytical_layout
+   pyskyfire.regen.channel_layout.resolve_numerical_layout
+   pyskyfire.regen.channel_layout.tile_centerlines
+   pyskyfire.regen.channel_layout.wedge_info
+
+
+Module Contents
+---------------
+
+.. py:function:: circular_pattern(centerline: numpy.ndarray, count: int) -> list[numpy.ndarray]
+
+   
+   Replicate a cylindrical centerline evenly around the engine axis.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: collect_channels(thrust_chamber, *, jitter_divisor: float = 100.0)
+
+   
+   Collect the unique nominal channels in the numerical symmetry wedge.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: collect_keep_outs(thrust_chamber, symmetry_count: int)
+
+   
+   Collect the keep-out sectors in the numerical symmetry wedge.
+
+   Returns their centerlines and angular widths, sampled at the corners of
+   each width law so that linear interpolation reproduces it exactly.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: gcd_list(integers) -> int
+
+   
+   Return the greatest common divisor of an integer sequence.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: redistribute_channels(centerlines, angular_widths, *, k_pack: float = 1.0, k_bend: float = 1.0, k_slope: float = 3.0, desired_slope=None, dt: float = 0.25, tol: float = 0.001, max_iters: int = 800, gamma_damp: float = 0.4, wedge_angle: float | None = None, recorder: list | None = None, endpoint_slope0=None, endpoint_slopeN=None, fixed=None, shape_offsets=None)
+
+   
+   Relax channel angles so they pack without overlap.
+
+   This is the existing visualization solver, now shared by visualization and
+   external exporters through :func:`resolve_numerical_layout`. Entries
+   flagged in ``fixed`` push on their neighbours but never move; keep-outs
+   enter this way. ``shape_offsets`` holds, per entry, an angular detour
+   the bending and slope terms treat as straight, so a channel already
+   bent around a keep-out is not pulled back into it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: resolve_analytical_layout(thrust_chamber, *, span_tolerance: float = 1e-09, angular_rate_tolerance: float = 1e-07) -> ChannelLayout
+
+   
+   Resolve an exact nominal layout using only constant phase rotations.
+
+   Overlapping, occluding circuits are inferred to interleave.  Such circuits
+   must have equal channel counts and matching reference-path angular
+   rates.  The coolant-centroid path is intentionally ignored.  Two may
+   have different axial endpoints; groups of three or more must have identical
+   spans.  The first circuit has zero added phase and later circuits divide a
+   single channel pitch evenly.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: resolve_numerical_layout(thrust_chamber, **solver_options) -> ChannelLayout
+
+   
+   Resolve the historical numerical packing layout.
+
+   The result stores only the unique seeds in the greatest-common-divisor
+   wedge.  Consumers may call :meth:`ChannelLayout.expanded_channels` when
+   they need all physical instances.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: tile_centerlines(centerlines_subset, angular_widths_subset, circuit_ids_subset, symmetry_count: int, wedge_angle: float)
+
+   
+   Replicate a numerical wedge subset around the circumference.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: wedge_info(thrust_chamber) -> tuple[int, float, list[int]]
+
+   
+   Return the numerical layout's symmetry and circuit channel counts.
+
+   Keep-out sector counts join the symmetry, since every wedge has to hold
+   the same share of them, but are not listed among the channel counts.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

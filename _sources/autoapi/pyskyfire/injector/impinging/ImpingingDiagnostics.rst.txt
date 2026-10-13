@@ -1,0 +1,31 @@
+pyskyfire.injector.impinging.ImpingingDiagnostics
+=================================================
+
+.. py:class:: pyskyfire.injector.impinging.ImpingingDiagnostics
+
+   
+   Mixing quantities of one impinging element.
+
+   ``momentum`` is the magnitude of the summed jet momentum [N] and
+   ``resultant_angle`` its angle from the chamber axis [rad].
+   ``mixture_ratio`` is the element's oxidizer over fuel mass flow, NaN
+   without fuel or without any oxidizer feed named. ``rupe`` and
+   ``momentum_flux_ratio`` are oxidizer over fuel, and NaN unless the element
+   has exactly one fuel and one oxidizer jet.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

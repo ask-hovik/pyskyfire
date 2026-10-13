@@ -1,0 +1,32 @@
+pyskyfire.injector.injector.FeedCondition
+=========================================
+
+.. py:class:: pyskyfire.injector.injector.FeedCondition
+
+   
+   The operating point of one feed.
+
+   Give the plenum ``temperature`` [K], the ``fluid`` (anything
+   :func:`~pyskyfire.thermo.eos.as_equation_of_state` reads), and either the
+   plenum ``pressure`` [Pa], to find the flow it drives, or the
+   ``mass_flow`` [kg/s], to find the pressure it needs.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

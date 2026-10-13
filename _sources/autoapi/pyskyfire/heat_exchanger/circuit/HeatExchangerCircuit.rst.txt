@@ -1,0 +1,90 @@
+pyskyfire.heat_exchanger.circuit.HeatExchangerCircuit
+=====================================================
+
+.. py:class:: pyskyfire.heat_exchanger.circuit.HeatExchangerCircuit(*, name, path, cross_section, wall, transport, dimensions=None, section_profiles=None, placements=None, roughness=0.0, heat_transfer=None, laminar_nusselt=3.66, property_correction=True)
+
+   
+   Identical parallel copies of one path, each receiving equal mass flow.
+
+   ``dimensions`` is a mapping accepted by SectionProfiles.from_dimensions;
+   each value may be a scalar, station array, or function of path distance s.
+   Wall.thickness(s) supplies the floor thickness (and rounded tube thickness).
+   Cross-section roof and sidewall settings retain their own definitions.
+   Alternatively supply a complete ``section_profiles`` object.
+
+   Path stations anchor the passage area centroid. The local section +u axis
+   points floor-to-roof. One thermal solution represents all identical copies;
+   prescribed boundaries are checked for equality across placements.
+
+   The default internal coefficient is Gnielinski with bulk properties,
+   corrected for a heated fluid by ``(T_b/T_w)^0.45``. ``property_correction=False``
+   leaves the bulk-property value uncorrected. Neither applies to a supplied
+   ``heat_transfer`` callback.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: section_points(placement_index=0, *, exterior=True, samples=12)
+
+      
+      Closed swept-section vertices [station, perimeter point, xyz].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: displaced_volume
+
+      
+      Sum of swept outer-envelope volumes [m³], assuming no overlap.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: n_channels
+

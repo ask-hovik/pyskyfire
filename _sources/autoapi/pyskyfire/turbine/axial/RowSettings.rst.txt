@@ -1,0 +1,59 @@
+pyskyfire.turbine.axial.RowSettings
+===================================
+
+.. py:class:: pyskyfire.turbine.axial.RowSettings
+
+   
+   How the triangles become blades.
+
+
+   :Parameters:
+
+       **aspect_ratio** : :class:`python:float`
+           Mean blade height over true chord.
+
+       **pitch_chord** : :class:`python:float`, :obj:`optional`
+           Blade spacing over true chord, at mean radius.
+
+       **zweifel** : :class:`python:float`, :obj:`optional`
+           Zweifel's tangential loading coefficient, used instead of
+           ``pitch_chord`` to set the spacing from the turning. With neither
+           given, 0.8.
+
+       **incidence_deg, deviation_deg** : :class:`python:float`
+           See :func:`~pyskyfire.turbine.definition.metal_angles`.
+
+       **stator, rotor** : :obj:`SectionProfile`
+           Section shape of every stator row and every rotor row.
+
+       **axial_gap** : :class:`python:float`
+           Gap between rows over the upstream row's axial chord.
+
+       **inlet_length, outlet_length** : :class:`python:float`
+           Straight annulus ahead of the first row and behind the last, over that
+           row's axial chord.
+
+       **tip_clearance** : :class:`python:float`
+           Rotor tip gap [m]. Zero is a shrouded rotor.
+
+       **hub_clearance** : :class:`python:float`
+           Stator hub gap [m], for cantilevered stators over a rotating drum.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

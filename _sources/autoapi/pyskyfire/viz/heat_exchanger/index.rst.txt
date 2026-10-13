@@ -1,0 +1,71 @@
+pyskyfire.viz.heat_exchanger
+============================
+
+.. py:module:: pyskyfire.viz.heat_exchanger
+
+.. autoapi-nested-parse::
+
+   Heat-exchanger swept geometry and wall/flow report panels.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.viz.heat_exchanger.heat_exchanger_report
+   pyskyfire.viz.heat_exchanger.plot_heat_exchanger_geometry
+
+
+Module Contents
+---------------
+
+.. py:function:: heat_exchanger_report(exchanger, result, *, title='Heat exchanger', installation=None, scene=None)
+
+   
+   Create a Report with geometry, fluid states, wall temperatures, and balance.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: plot_heat_exchanger_geometry(exchanger, *, installation=None)
+
+   
+   Draw the actual exposed tube envelopes, including transported sections.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

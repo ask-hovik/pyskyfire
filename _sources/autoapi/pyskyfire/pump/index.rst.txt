@@ -3,6 +3,29 @@ pyskyfire.pump
 
 .. py:module:: pyskyfire.pump
 
+.. autoapi-nested-parse::
+
+   
+   Preliminary centrifugal pump design with optional pyTurbo blade generation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
 
 Submodules
 ----------
@@ -10,10 +33,13 @@ Submodules
 .. toctree::
    :maxdepth: 1
 
+   /autoapi/pyskyfire/pump/_pyturbo/index
    /autoapi/pyskyfire/pump/constants/index
+   /autoapi/pyskyfire/pump/diffuser/index
+   /autoapi/pyskyfire/pump/disk_friction/index
+   /autoapi/pyskyfire/pump/duty/index
+   /autoapi/pyskyfire/pump/geometry/index
    /autoapi/pyskyfire/pump/impeller/index
-   /autoapi/pyskyfire/pump/impeller_new/index
-   /autoapi/pyskyfire/pump/impeller_new_2/index
    /autoapi/pyskyfire/pump/pump_cli/index
    /autoapi/pyskyfire/pump/utils/index
 

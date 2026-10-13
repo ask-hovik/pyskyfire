@@ -1,0 +1,134 @@
+pyskyfire.ducts.manifold_law.ConstantVelocity
+=============================================
+
+.. py:class:: pyskyfire.ducts.manifold_law.ConstantVelocity
+
+   Bases: :py:obj:`ManifoldLaw`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.manifold_law.ConstantVelocity
+      :parts: 1
+      :private-bases:
+
+
+   
+   Grow the passage in step with the flow it has gathered.
+
+   ``A = collected * full_area`` holds the through-flow velocity uniform, and
+   with it the dynamic head, so every branch tapping the manifold sees the
+   same static pressure. That evenness is the point; the velocity is how it is
+   obtained.
+
+   The area goes to zero at the dead point, which no section family can build.
+   Stations where the law asks for less than the smallest section are flagged
+   through ``geometry.clipped``, exactly as a volute's tongue is.
+
+   :Parameters:
+
+       **full_area** : :class:`python:float`
+           Area that would carry the manifold's whole mass flow at the design
+           velocity [m^2]. A ring split into two branches reaches half of it at
+           the port, since each branch only ever gathers half the flow.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: for_duty(*, velocity, mass_flow, density)
+      :classmethod:
+
+
+      
+      Size the law from a duty and the velocity it should be carried at.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: residual(collected, area)
+
+      
+      Return the signed miss at one station.
+
+      Negative means the trial section is too small. Must increase with
+      section area so that the solver can bracket a root.
+
+      :Parameters:
+
+          **collected** : :class:`python:float`
+              Fraction of the manifold's whole mass flow that has passed through
+              this station. Runs from zero at the dead point to ``1/branches`` at
+              the port, so a law never has to know how the ring is divided.
+
+          **area** : :class:`python:float`
+              Trial section area [m^2].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: velocity(mass_flow, density)
+
+      
+      The through-flow velocity this law holds, for a given duty [m/s].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

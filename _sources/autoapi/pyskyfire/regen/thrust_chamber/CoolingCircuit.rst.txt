@@ -1,11 +1,19 @@
 pyskyfire.regen.thrust_chamber.CoolingCircuit
 =============================================
 
-.. py:class:: pyskyfire.regen.thrust_chamber.CoolingCircuit(name, contour, cross_section, span: list[float], placement, channel_height, walls, coolant_transport, roughness, hot_gas_surface_area_multiplier=1.0)
+.. py:class:: pyskyfire.regen.thrust_chamber.CoolingCircuit(name, contour, cross_section, span: list[float], placement, channel_height, walls, coolant_transport, roughness, hot_gas_surface_area_multiplier=1.0, *, outer_walls=None, enable_fin: bool = True, rib_material=None)
 
    
    Simulation-only representation of a cooling circuit.
 
+   ``walls`` are ordered from hot gas to coolant. Any ``role="liner"``
+   layers precede the main layers; at least one main layer is required.
+   Wall-like objects without a role are treated as main layers.
+
+   ``enable_fin=True`` enables this circuit's rib/fin heat-transfer model.
+   ``rib_material`` optionally supplies its material (with ``get_k(T)``).
+   When omitted, the coolant-facing main-wall material is used. Disabling
+   fins removes their thermal enhancement, not their channel geometry.
 
 
 
@@ -56,11 +64,287 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
           !! processed by numpydoc !!
 
 
+   .. py:method:: __getstate__()
+
+      
+      Leave the derived section cache out; it rebuilds on demand.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: __setstate__(state)
+
+      
+      Load circuits serialized before the angular-width rename.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _build_prof(centerline: numpy.ndarray) -> pyskyfire.regen.cross_section.SectionProfiles
+
+
+   .. py:method:: _build_section_profiles_at(x: float) -> pyskyfire.regen.cross_section.SectionProfiles
+
+
+   .. py:method:: _channels_all_circuits_provider(x)
+
+
+   .. py:method:: _design_input_context(x)
+
+      
+      Return the optional ``SectionProfiles`` fields, best effort.
+
+      Everything here only feeds design-input functions. A quantity that
+      cannot be determined is left out rather than raising, so that a
+      partially built circuit can still be asked for plain geometry; a
+      design input that needs the missing quantity is what raises.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _evaluate(evaluator, x, *, include_section: bool)
+
+      
+      Evaluate a design input over a scalar or array of ``x``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _invalidate_section_cache()
+
+      
+      Drop the cached section geometry after a change that redefines it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _occluding_channel_counts(x)
+
+      
+      Return the occluding channel count at each station, if knowable.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: _prof(centerline: numpy.ndarray) -> pyskyfire.regen.cross_section.SectionProfiles
 
       
       Build a SectionProfiles with trivial frames (analytics don't use them).
 
+      The bundle is pure geometry, so it is cached against the path it was
+      built from and reused until :meth:`_invalidate_section_cache` drops it.
+      Assembling one walks every station of every wall, evaluating any
+      design-input function a station at a time, and the solver reaches a
+      single station through :meth:`section_profiles_at` on every residual
+      it forms, so rebuilding it there dominated the whole simulation.
+
+      Staleness is bounded the same way the ``*_vals`` arrays that
+      :meth:`precompute_thermal_properties` writes are: change the geometry
+      and you have to rebuild, which for the profile setters happens
+      automatically and for a wholesale path swap falls out of the path no
+      longer being the one the bundle was built from.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _section_cache_for(centerline: numpy.ndarray)
+
+      
+      Return ``(path, bundle, stations)`` for ``centerline``, building it once.
+
+      The single-station profiles live in the same entry as the bundle they
+      were interpolated from, so swapping the path cannot leave stations
+      behind that describe the old geometry.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _section_provider_values(x)
+
+      
+      Interpolate whichever section quantities have been built at ``x``.
+
+      Anything not built yet comes back as ``None`` and is then omitted from
+      the context, which is what makes the later part of tier C unavailable
+      to slots that are evaluated earlier in the geometry build.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _wall_thickness(x, role=None)
+
+
+   .. py:method:: bind_chamber(chamber)
+
+      
+      Attach the owning chamber, which supplies cross-circuit counts.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: channel_height(x)
+
+      
+      Return the supplied height [m], using the section's input convention.
+
+      Use ``channel_full_heights`` or ``channel_base_heights`` to report
+      resolved physical heights on ``x_domain`` after chamber assembly.
 
 
 
@@ -83,7 +367,7 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
    .. py:method:: channel_wall_thickness(x)
 
       
-      Return the coolant-adjacent layer used for channel geometry.
+      Return the combined main-wall thickness used for channel geometry.
 
 
 
@@ -112,13 +396,18 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
       One channel encloses :math:`\int A\,ds` along its own centreline, so
       the circuit holds :math:`n_{chan}\int A\,(ds/dx)\,dx`.
 
-      ``A_coolant`` is the flow area in the plane normal to the channel, not
-      an axial slice: :meth:`ThrustChamber.build_channel_widths` narrows the
-      sector by :math:`\cos\gamma` for a helix angle :math:`\gamma`, while
-      ``ds/dx`` lengthens the path by the reciprocal on a cylinder. A helical
-      circuit therefore encloses the same volume as an axial one of the same
-      azimuthal pitch, which is the physically correct answer -- only the
-      path is longer and the section correspondingly narrower.
+      ``A_coolant`` is the flow area in the plane normal to the *reference
+      path*, not an axial slice, so it is that path's ``ds/dx`` the area is
+      swept along here. :meth:`ThrustChamber.build_channel_angular_widths`
+      narrows the sector by :math:`\cos\gamma` for a helix angle
+      :math:`\gamma`, while ``ds/dx`` lengthens the path by the reciprocal
+      on a cylinder. A helical circuit therefore encloses the same volume as
+      an axial one of the same azimuthal pitch, which is the physically
+      correct answer -- only the path is longer and the section
+      correspondingly narrower. ``ds_dx_vals`` follows the coolant centroid
+      instead, which sits further out and so runs slightly further still;
+      pairing it with the section area would make the swept volume depend on
+      the helix angle.
 
       Trapezoidal on the circuit's own ``x_domain``, so the result converges
       with axial resolution rather than being exact at any given ``n_nodes``.
@@ -148,6 +437,30 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
 
 
    .. py:method:: dA_dx_thermal_exhaust(x)
+
+
+   .. py:method:: design_context(x, *, include_section: bool) -> pyskyfire.regen.design_inputs.DesignContext
+
+      
+      Build the design-input context for this circuit at ``x``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
 
 
    .. py:method:: ds_dx(x)
@@ -183,7 +496,7 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
    .. py:method:: hot_side_layer_thickness(x)
 
       
-      Return liner/coating thickness between hot contour and tube wall.
+      Return the combined thickness of explicitly marked hot-side liners.
 
 
 
@@ -207,14 +520,37 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
    .. py:method:: local_sector_angle(x)
 
 
+   .. py:method:: outer_wall_thickness(x)
+
+      
+      Return the combined thickness of the cold-side outer liners [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: precompute_thermal_properties()
 
       
       Precompute passage geometry along a representative coolant path.
 
-      ``centerlines`` remains the section-reference curve expected by the
-      cross-section models.  ``coolant_centerlines`` is the actual modeled
-      flow-centre curve and controls passage length and curvature.
+      ``cross_section_base_point_path`` anchors section geometry;
+      ``cooling_channel_centroid_path`` controls passage length and curvature.
 
 
 
@@ -239,38 +575,61 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
 
    .. py:method:: roughness(x)
 
+      
+      Return the absolute channel roughness [m] at ``x``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: section_planes(reference_path=None, *, axis_normal=False)
+
+      
+      Return physical section planes, optionally at a resolved layout seed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
 
    .. py:method:: section_profiles_at(x: float) -> pyskyfire.regen.cross_section.SectionProfiles
 
       
-      Single-station SectionProfiles for use in local closures (rib/fin, LUTs, etc.).
-      Returns arrays of length 1.
+      Interpolate the resolved physical section on the solver grid.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      ..
-          !! processed by numpydoc !!
-
-
-   .. py:method:: set_centerline(centerline_list)
-
-      
-      Provide one or more centerlines as arrays of shape (N, 3): [x, r, theta].
-      For simulation we use the first as the representative path.
-
+      Cached per station, because the solver holds ``x`` fixed while it
+      iterates one wall node's temperatures and so asks for the same station
+      repeatedly. Sharing the profile also shares the geometry each section
+      memoises on it; see :meth:`SectionProfiles.cached`.
 
 
 
@@ -288,6 +647,9 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
 
       ..
           !! processed by numpydoc !!
+
+
+   .. py:method:: set_channel_angular_width(angular_widths_rad)
 
 
    .. py:method:: set_channel_height(heights)
@@ -296,13 +658,13 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
    .. py:method:: set_channel_local_sector(local_sectors)
 
 
-   .. py:method:: set_channel_width(widths_rad)
+   .. py:method:: set_x_domain(x_domain)
 
 
-   .. py:method:: set_coolant_centerline(centerline_list)
+   .. py:method:: total_thickness(x)
 
       
-      Set modeled coolant-flow-centre curves ``[x, r, theta]``.
+      Return the full hot-to-coolant stack thickness, including liners.
 
 
 
@@ -323,13 +685,55 @@ pyskyfire.regen.thrust_chamber.CoolingCircuit
           !! processed by numpydoc !!
 
 
-   .. py:method:: set_x_domain(x_domain)
-
-
-   .. py:method:: total_thickness(x)
-
-
    .. py:method:: wedge_angle(x)
+
+
+   .. py:property:: channel_base_heights
+
+      
+      Rounded base heights on ``x_domain`` [m]; full heights for squared.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: channel_full_heights
+
+      
+      Full internal coolant heights on ``x_domain`` [m], for reporting.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
 
 
    .. py:property:: n_channels

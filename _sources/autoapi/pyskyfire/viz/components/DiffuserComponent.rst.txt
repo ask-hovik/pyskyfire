@@ -1,0 +1,33 @@
+pyskyfire.viz.components.DiffuserComponent
+==========================================
+
+.. py:class:: pyskyfire.viz.components.DiffuserComponent
+
+   
+   Display a built vaned diffuser: its two walls and every vane.
+
+   ``diffuser.build_geometry()`` must have been called. The diffuser is drawn
+   in the impeller's own frame, walls symmetric about the impeller outlet
+   mid-plane at local x = 0, so it takes the impeller's rotation and a
+   translation to that mid-plane. The ``outlet`` anchor is not a port: the
+   diffuser discharges radially all round into its volute.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build()
+

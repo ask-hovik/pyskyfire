@@ -1,0 +1,77 @@
+pyskyfire.ducts.area_law.AreaLaw
+================================
+
+.. py:class:: pyskyfire.ducts.area_law.AreaLaw
+
+   Bases: :py:obj:`abc.ABC`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.area_law.AreaLaw
+      :parts: 1
+      :private-bases:
+
+
+   
+   A rule relating azimuth to passage size.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: residual(theta, area, centroid_radius, inlet_width, inlet)
+      :abstractmethod:
+
+
+      
+      Return the signed miss at one azimuth.
+
+      Negative means the trial section is too small. Must increase with
+      section size so that the solver can bracket a root.
+
+      :Parameters:
+
+          **theta** : :class:`python:float`
+              Polar angle from the tongue [rad], increasing in the direction of
+              collection.
+
+          **area** : :class:`python:float`
+              Trial section area [m^2].
+
+          **centroid_radius** : :class:`python:float`
+              Radius of the trial section's area centroid [m].
+
+          **inlet_width** : :class:`python:float`
+              Inlet slot width ``b5`` [m].
+
+          **inlet** : :obj:`VoluteInlet`
+              Inlet flow conditions.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

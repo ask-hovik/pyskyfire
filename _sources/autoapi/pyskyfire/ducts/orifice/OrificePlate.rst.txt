@@ -1,0 +1,238 @@
+pyskyfire.ducts.orifice.OrificePlate
+====================================
+
+.. py:class:: pyskyfire.ducts.orifice.OrificePlate(pipe_diameter, orifice_diameter, *, cd=None, taps='flange', thickness=0.0)
+
+   
+   A thin round orifice plate in a straight pipe.
+
+
+   :Parameters:
+
+       **pipe_diameter** : :class:`python:float`
+           Internal diameter of the pipe upstream and downstream [m].
+
+       **orifice_diameter** : :class:`python:float`
+           Diameter of the bore through the plate [m].
+
+       **cd** : :class:`python:float`, :obj:`optional`
+           Discharge coefficient. By default it is the Reader-Harris/Gallagher
+           correlation of ISO 5167-2 (through ``fluids``), evaluated at each
+           solve's Reynolds number.
+
+       **taps** : {'flange', 'corner', 'D', 'D/2'}, :obj:`optional`
+           Pressure-tap arrangement the correlation, and so
+           :attr:`OrificePlateResult.differential_pressure`, refer to.
+
+       **thickness** : :class:`python:float`, :obj:`optional`
+           Plate thickness [m]. Geometry only.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   The flow follows ISO 5167,
+   :math:`\dot m = C \varepsilon A \sqrt{2 \rho_1 \Delta p / (1 - \beta^4)}`,
+   with :meth:`expansibility` for ε. That ε is fitted to thin plates, whose
+   jet keeps contracting past the bore, and it is not the isentropic nozzle
+   expansion :class:`Orifice` uses: for a gas at a 2.5 % tap drop the
+   nozzle expansion would overstate the drop by about 1.6 %.
+
+   The permanent loss is ISO 5167-1's recovery relation,
+
+   .. math::
+
+       \Delta \bar\omega = \frac{\sqrt{1 - \beta^4 (1 - C^2)} - C \beta^2}
+       {\sqrt{1 - \beta^4 (1 - C^2)} + C \beta^2} \Delta p.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __repr__()
+
+
+   .. py:method:: _check_range(reynolds)
+
+
+   .. py:method:: _viscosity(eos, inlet, viscosity)
+
+
+   .. py:method:: discharge_coefficient(*, reynolds: float, density: float = 1.0) -> float
+
+      
+      The plate's discharge coefficient at a pipe Reynolds number.
+
+      A supplied ``cd`` is returned as it is. Otherwise this is
+      Reader-Harris/Gallagher, which depends only on the Reynolds number
+      and geometry; ``density`` does not change the result.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: expansibility(eos: pyskyfire.thermo.eos.EquationOfState, inlet: pyskyfire.thermo.state.FluidState, p_tap: float) -> float
+
+      
+      ISO 5167-2's expansibility factor, ε, between the taps.
+
+      The isentropic exponent is the secant ``ln(p1/p2)/ln(ρ1/ρ2)`` along
+      the isentrope between the tap pressures, so it applies to real
+      fluids, and a constant density gives ε = 1.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: permanent_loss_fraction(cd: float) -> float
+
+      
+      Permanent loss over tap-to-tap drop, from ISO 5167-1.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: solve(*, inlet_state: pyskyfire.thermo.state.FluidState, mass_flow: float, fluid, viscosity: float | None = None) -> OrificePlateResult
+
+      
+      The tap-to-tap drop and permanent loss at ``mass_flow``.
+
+
+      :Parameters:
+
+          **inlet_state** : :obj:`FluidState`
+              State at the upstream tap. See :meth:`Orifice.solve`.
+
+          **mass_flow** : :class:`python:float`
+              Mass flow [kg/s].
+
+          **fluid** : :class:`python:str` or :obj:`Fluid` or :obj:`EquationOfState`
+              The fluid; see :meth:`Orifice.solve`.
+
+          **viscosity** : :class:`python:float`, :obj:`optional`
+              Dynamic viscosity at the inlet [Pa s], for the Reynolds number.
+              Looked up from CoolProp when ``fluid`` is a CoolProp fluid; it
+              must be given otherwise. Not used when ``cd`` was supplied, except
+              to report the Reynolds number.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: area
+      :type: float
+
+
+      
+      Bore area [m²].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: beta
+      :type: float
+
+
+      
+      Diameter ratio, bore over pipe.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

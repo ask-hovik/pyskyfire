@@ -1,0 +1,232 @@
+pyskyfire.pump.duty.PumpDuty
+============================
+
+.. py:class:: pyskyfire.pump.duty.PumpDuty
+
+   Bases: :py:obj:`pyskyfire.thermo.duty.MachineDuty`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.pump.duty.PumpDuty
+      :parts: 1
+      :private-bases:
+
+
+   
+   What a pump is asked to do. See :class:`~pyskyfire.thermo.MachineDuty`.
+
+   Build one with a constructor:
+
+   - :meth:`from_head` for flow, head and speed, as pumps are specified;
+   - :meth:`from_pressure_rise` for a mass flow and a pressure rise, at one
+     density;
+   - :meth:`from_states` for a medium, a mass flow and two pressures;
+   - :meth:`from_stations` for two solved network stations.
+
+   Pressures are total pressures, as the network carries them, so the head
+   is total-to-total.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: from_head(Q, H, n, *, rho=None)
+      :classmethod:
+
+
+      
+      Flow [m³ s⁻¹], head [m] and speed [rpm], and a density if known.
+
+      Without a density there is no mass flow and no state, which is all
+      the impeller's geometry needs.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_pressure_rise(*, mdot, rho, dp, n)
+      :classmethod:
+
+
+      
+      Mass flow [kg s⁻¹], density [kg m⁻³], pressure rise [Pa], speed [rpm].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_states(*, fluid, mdot, p_in, T_in, p_out, n)
+      :classmethod:
+
+
+      
+      A medium, a mass flow and the pressures either side of the pump.
+
+      ``fluid`` is a CoolProp name, a :class:`~pyskyfire.thermo.Fluid`, or
+      any :class:`~pyskyfire.thermo.EquationOfState`, including
+      :class:`~pyskyfire.thermo.Incompressible`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_stations(st_in, st_out, *, fluid, n)
+      :classmethod:
+
+
+      
+      Two network stations, by their pressures and the inlet's T and mdot.
+
+      The outlet station's temperature is not read: it is what the real
+      pump's losses made of the flow, and a duty is about the pressure it
+      was asked to reach.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: H
+      :type: float
+
+
+      
+      Isentropic head [m of the fluid pumped].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: Q
+      :type: float
+
+
+      
+      Volumetric flow at the inlet [m³ s⁻¹], the flow a pump is rated at.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: specific_speed
+      :type: float
+
+
+      
+      Gülich's ``n_q``: rpm, m³ s⁻¹, m.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

@@ -1,0 +1,39 @@
+pyskyfire.turbine.duty
+======================
+
+.. py:module:: pyskyfire.turbine.duty
+
+.. autoapi-nested-parse::
+
+   The duty a turbine is designed for: a gas expanding between two pressures.
+
+   Unlike a pump's, a turbine's duty cannot be given as head and flow alone.
+   The gas expands on its way through, so the volumetric flow at the exit can be
+   a good deal larger than at the inlet, and every blade height downstream is
+   sized on that. :class:`TurbineDuty` therefore always carries the states: a
+   medium, a mass flow, the inlet state and the pressure the gas leaves at.
+
+   The inlet is a total state. The outlet pressure is whatever the caller means
+   by it, and ``outlet_basis`` records which: ``'total'`` when the kinetic energy
+   leaving the last row counts as delivered (as network stations carry it), or
+   ``'static'`` when it is charged to the turbine as a loss. The isentropic head
+   is computed the same way either way; only what a design does with the leaving
+   velocity differs.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/turbine/duty/TurbineDuty
+
+.. autoapisummary::
+
+   pyskyfire.turbine.duty.TurbineDuty
+
+

@@ -1,0 +1,68 @@
+pyskyfire.common.meridional
+===========================
+
+.. py:module:: pyskyfire.common.meridional
+
+.. autoapi-nested-parse::
+
+   The wetted flow path of a turbomachine or annular duct, seen in meridional section.
+
+   A passage is two walls of revolution about the shaft (+x), each given as an
+   ``(x, r)`` curve: the ``hub`` nearer the axis and the ``shroud`` outside it.
+   Both curves have the same number of points, and point ``i`` on one pairs with
+   point ``i`` on the other. Each pair is the end of a span line, and positions
+   along the passage are fractions of the hub's arc length. That pairing is what
+   lets blade sections be placed at a span fraction, and what an annular duct
+   reads its area from.
+
+   The walls also record what an efficiency evaluator needs and the curves
+   alone do not say:
+
+   - :class:`WallMotion`: which stretches of each wall turn with the shaft. A
+     rotor's hub is its disk; the casing over its tips stands still.
+   - :class:`Clearance`: where a blade edge stops short of a wall, and by how
+     much. The walls stay where they are drawn: a clearance is a gap between
+     the blade and the wall, not a moved wall.
+
+   Nothing here knows what kind of machine the passage belongs to. Checks that
+   only hold for one kind, such as a radial impeller's monotone walls, belong
+   to that machine.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.common.meridional.WALLS
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/common/meridional/AnnulusEnd
+   /autoapi/pyskyfire/common/meridional/Clearance
+   /autoapi/pyskyfire/common/meridional/MeridionalPassage
+   /autoapi/pyskyfire/common/meridional/WallMotion
+
+.. autoapisummary::
+
+   pyskyfire.common.meridional.AnnulusEnd
+   pyskyfire.common.meridional.Clearance
+   pyskyfire.common.meridional.MeridionalPassage
+   pyskyfire.common.meridional.WallMotion
+
+
+Module Contents
+---------------
+
+.. py:data:: WALLS
+   :value: ('hub', 'shroud')
+
+

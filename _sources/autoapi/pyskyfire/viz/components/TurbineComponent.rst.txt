@@ -1,0 +1,36 @@
+pyskyfire.viz.components.TurbineComponent
+=========================================
+
+.. py:class:: pyskyfire.viz.components.TurbineComponent
+
+   
+   Display a built turbine: its passage walls and every row's blades.
+
+   ``geometry`` is a :class:`~pyskyfire.turbine.TurbineGeometry`. Walls are
+   the passage revolved about the local +x shaft; each row's one built blade
+   is repeated round the wheel in the turbine's rotation sense. ``colors``
+   paints (stator, rotor) blades apart; without it every part takes the
+   default colour. Optional ``results`` maps part names
+   (hub, shroud, ``<row>_<i>``) to dictionaries of mesh-aligned FieldData.
+   ``inlet`` and ``outlet`` anchors sit on the axis at the passage ends,
+   pointing out of the turbine.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build()
+

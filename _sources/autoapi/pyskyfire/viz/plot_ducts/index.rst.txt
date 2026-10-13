@@ -1,0 +1,28 @@
+pyskyfire.viz.plot_ducts
+========================
+
+.. py:module:: pyskyfire.viz.plot_ducts
+
+.. autoapi-nested-parse::
+
+   Pressure along a solved duct, against arc length.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/viz/plot_ducts/PlotPipePressure
+   /autoapi/pyskyfire/viz/plot_ducts/PlotPipePressureLoss
+
+.. autoapisummary::
+
+   pyskyfire.viz.plot_ducts.PlotPipePressure
+   pyskyfire.viz.plot_ducts.PlotPipePressureLoss
+
+

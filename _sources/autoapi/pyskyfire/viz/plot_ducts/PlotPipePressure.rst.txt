@@ -1,0 +1,37 @@
+pyskyfire.viz.plot_ducts.PlotPipePressure
+=========================================
+
+.. py:class:: pyskyfire.viz.plot_ducts.PlotPipePressure(*results, labels=None, static=True, stagnation=True, markers=True, template='plotly_white')
+
+   Bases: :py:obj:`pyskyfire.viz.core.PlotBase`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.viz.plot_ducts.PlotPipePressure
+      :parts: 1
+      :private-bases:
+
+
+   
+   Static and/or stagnation pressure against arc length for solved pipes.
+
+   Each input is a :class:`~pyskyfire.ducts.DuctResult`, or any result with
+   the same ``s``, ``p_stagnation`` and ``p_static`` station arrays. Markers
+   sit on the :class:`~pyskyfire.ducts.PathStation` positions the solver
+   evaluated; between them the line is only a straight join, so a lumped
+   :class:`~pyskyfire.ducts.RoundedBend` shows as one step across its arc.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

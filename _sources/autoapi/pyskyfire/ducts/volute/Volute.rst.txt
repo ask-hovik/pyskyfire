@@ -1,0 +1,344 @@
+pyskyfire.ducts.volute.Volute
+=============================
+
+.. py:class:: pyskyfire.ducts.volute.Volute(section, inlet, area_law, *, rotation, exit_cone=None, tilt=0.0, n_stations=181)
+
+   
+   A volute or collector resolved from a section family and an area law.
+
+
+   :Parameters:
+
+       **section** : :obj:`VoluteSection`
+           Cross-section family. Its fixed inlet width is the ``b5`` of the design
+           equation.
+
+       **inlet** : :obj:`VoluteInlet`
+           Inlet radius and velocity components.
+
+       **area_law** : :obj:`AreaLaw`
+           How the passage grows with azimuth.
+           :class:`~pyskyfire.ducts.area_law.ConstantAngularMomentum` is the
+           shaped volute and :class:`~pyskyfire.ducts.area_law.ConstantArea` the
+           uniform collector. It is stated rather than defaulted because the two
+           are different pieces of hardware, sized by different rules and costing
+           different amounts of pressure, and which one a design uses should be
+           readable from the design.
+
+       **rotation** : {'ccw', 'counterclockwise', 'cw', 'clockwise'}
+           Which way the passage winds as it collects, counterclockwise seen from
+           ``+z`` with the axis pointing at the viewer. This must match the sense
+           the machine feeding the volute spins in, once both are placed: a volute
+           wound against the incoming swirl collects the flow backwards. Nothing
+           in the loss analysis changes with it -- like :attr:`tilt`, it mirrors
+           where the passage sits without touching any scalar the model uses.
+
+       **exit_cone** : :obj:`Port`, :obj:`optional`
+           The duct carrying the collected flow to its pipe flange, normally an
+           :class:`~pyskyfire.ducts.exit_cone.ExitCone`. When given,
+           its final diameter is what :meth:`solve` uses for station 7, so the
+           flange size is stated once. Without one the volute stops at the
+           full-collection plane and ``solve`` needs an explicit ``exit_diameter``.
+
+       **tilt** : :class:`python:float`, :obj:`optional`
+           Inclination of the inlet plane away from radial, toward the machine
+           axis [rad]. Zero collects the flow radially, with the slot spanning the
+           axial direction; a pump whose discharge points a little downward, or a
+           manifold following a nozzle's slope, has a nonzero tilt. Constant
+           around the circumference.
+
+       **n_stations** : :class:`python:int`, :obj:`optional`
+           Number of azimuthal stations, including both the tongue and the
+           full-collection plane.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   Geometry is resolved on construction and is independent of the operating
+   point, so one volute can be solved at several mass flows.
+
+   Tilt rotates the section plane rigidly, and rotation mirrors the whole
+   passage about a plane through the axis, so both change where the passage
+   sits in space but leave every scalar in the loss analysis unchanged. They
+   matter for packaging and for :meth:`sweep`, not for pressure loss.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _exit_cone_losses(rho, mu, C_5, C_6, C_7, roughness, friction_model)
+
+      
+      Diffusion, wall friction and bend loss of the exit-cone duct.
+
+      All three are referred to the inlet velocity head, like every other
+      coefficient here.
+
+      An exit cone is a conical transition, and how gradually it opens out
+      or closes in is most of what decides its loss. Aungier's Eq. 5-110
+      charges the whole velocity head change, ``(C_6 - C_7)**2``, which is
+      the Borda-Carnot loss of a *sudden* expansion and carries no angle
+      dependence at all: it returns the same loss for a duct that opens out
+      over three degrees as for one that dumps straight into the pipe. That
+      is a fair model only when there is no cone to speak of, so it is kept
+      for exactly that case, and the matching Rennels correlation is used
+      whenever there is a real cone to resolve. The diffuser branch
+      approaches the same Borda-Carnot value as the included angle opens
+      toward 180 degrees, so the two agree where they should.
+
+      A flange narrower than the passage feeding it is a contraction rather
+      than a diffuser, and a much cheaper one -- Borda-Carnot is not merely
+      angle-blind there but the wrong shape of formula, since it is derived
+      for a flow that separates on expanding. Both directions take their own
+      Rennels correlation, which is why the coefficient is referred to
+      whichever end is the faster: the passage for a diffuser, the flange
+      for a contraction.
+
+      Rennels carries its own wall-friction term either way, so friction is
+      not charged again separately. Evaluating the correlation twice, once
+      at the real friction factor and once at zero, splits its coefficient
+      into the transition and friction parts the breakdown reports. As the
+      cone flattens toward a plain tube that friction term tends to
+      ``darcy * length / diameter``, which is what the untapered branch
+      charges, so the two meet without a step. The bend uses the same
+      ``fluids`` correlation the pipe solver uses for a rounded bend, at the
+      duct's own centreline radius and turn.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _residual(size, theta, aspect=None)
+
+      
+      Area-law miss for one trial section.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _resolve(n_stations)
+
+
+   .. py:method:: _resolve_exit(exit_cone)
+
+
+   .. py:method:: _solve_size(theta)
+
+      
+      The smallest section satisfying the area law at ``theta``.
+
+      The three regimes are the same ones a manifold works through, so the
+      cascade itself is shared; what a volute supplies is its own residual.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: outlet_center()
+
+      
+      Centre of the volute outlet bore, in machine coordinates [m].
+
+      This is the point an exit cone leaves from, and the axis its flange is
+      carried along.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: solve(*, inlet_state: pyskyfire.thermo.state.FluidState, mass_flow: float, transport, exit_diameter: float | None = None, roughness: float = 0.0, friction_model: str = 'fluids') -> VoluteResult
+
+      
+      Run Aungier's meanline loss analysis at one operating point.
+
+
+      :Parameters:
+
+          **inlet_state** : :obj:`FluidState`
+              Conditions at the volute inlet.
+
+          **mass_flow** : :class:`python:float`
+              Mass flow through the volute [kg/s]. Checked against the inlet
+              velocity components and the inlet slot area, which are independent
+              inputs; a mismatch is warned about rather than silently absorbed.
+
+          **transport** : :obj:`object`
+              Property source exposing ``get_rho(T, p)`` and ``get_mu(T, p)``.
+
+          **exit_diameter** : :class:`python:float`, :obj:`optional`
+              Diameter of the round pipe the exit cone discharges to [m], which
+              sets station 7. Defaults to the attached exit cone's final
+              diameter, and is required when there is no exit cone.
+
+          **roughness** : :class:`python:float`, :obj:`optional`
+              Absolute wall roughness [m].
+
+          **friction_model** : :class:`python:str`, :obj:`optional`
+              Backend passed to
+              :func:`~pyskyfire.common.friction.darcy_friction_factor`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sweep(n_points=64)
+
+      
+      Section boundaries swept into machine coordinates.
+
+      The machine axis is ``z`` and the tongue sits at azimuth zero. Each
+      station's section is placed in the plane through the axis at its
+      azimuth, rotated about the local tangential direction by
+      :attr:`tilt`, with the slot mouth centred on the inlet radius.
+      Azimuth advances toward ``+y`` for a counterclockwise volute and
+      toward ``-y`` for a clockwise one.
+
+      :Parameters:
+
+          **n_points** : :class:`python:int`, :obj:`optional`
+              Boundary samples per piece of the section outline.
+
+
+
+      :Returns:
+
+          :obj:`np.ndarray <numpy.ndarray>`
+              Closed boundary rings [m, shape (N, M, 3)], one per azimuthal
+              station.
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: sweep_exit_cone(n_points=64, n_stations=17)
+
+      
+      The exit-cone duct swept into machine coordinates.
+
+      The duct starts as the volute's own outlet section, sampled exactly as
+      :meth:`sweep` samples it -- the same call, at the same size, with the
+      same ``n_points`` -- so its first ring is bit-identical to the
+      volute's own last one rather than merely tracing the same curve at
+      different points along it. That identity is what makes the two sweeps
+      stitch into one seamless duct wall.
+
+      Each of those vertices then keeps its own angle about the outlet
+      centre fixed for the whole duct, while its radius blends by a
+      smoothstep toward the flange radius, so the wall leaves the volute and
+      meets the flange without a crease. The frame it blends within starts as
+      the volute's own tilted section-plane basis, not the untilted
+      machine-frame default, so a tilted volute's cutwater edge continues to
+      rotate smoothly into the flange instead of snapping to meet it.
+
+
+
+
+      :Returns:
+
+          :obj:`np.ndarray <numpy.ndarray>`
+              Closed boundary rings [m, shape (n_stations, n_points, 3)].
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

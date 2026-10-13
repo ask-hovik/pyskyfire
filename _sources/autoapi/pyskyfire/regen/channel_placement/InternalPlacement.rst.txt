@@ -1,7 +1,7 @@
 pyskyfire.regen.channel_placement.InternalPlacement
 ===================================================
 
-.. py:class:: pyskyfire.regen.channel_placement.InternalPlacement(n_channel_positions: int, n_channels_per_leaf: int, *, channel_width, occludes: bool = False)
+.. py:class:: pyskyfire.regen.channel_placement.InternalPlacement(n_channel_positions: int, n_channels_per_leaf: int, *, channel_angular_width, occludes: bool = False, helix_angle=0.0)
 
    Bases: :py:obj:`ChannelPlacement`
 
@@ -14,7 +14,7 @@ pyskyfire.regen.channel_placement.InternalPlacement
    Placement model for in-wall or in-chamber heat-exchanger channels.
 
    Allows multiple stacked channels per angular leaf and optional
-   user-defined width laws.
+   user-defined angular-width laws.
 
    :Parameters:
 
@@ -24,7 +24,7 @@ pyskyfire.regen.channel_placement.InternalPlacement
        **n_channels_per_leaf** : :class:`python:int`
            Channels stacked radially per leaf.
 
-       **channel_width** : :func:`python:callable`
+       **channel_angular_width** : :func:`python:callable`
            Function returning angular spacing between channel rows [rad].
 
        **occludes** : :ref:`bool <python:bltin-boolean-values>`, :obj:`optional`
@@ -38,7 +38,7 @@ pyskyfire.regen.channel_placement.InternalPlacement
        **n_channels_per_leaf** : :class:`python:int`
            Channels per leaf.
 
-       **channel_width** : :func:`python:callable`
+       **channel_angular_width** : :func:`python:callable`
            Angular spacing function.
 
        **occludes** : :ref:`bool <python:bltin-boolean-values>`
@@ -66,14 +66,12 @@ pyskyfire.regen.channel_placement.InternalPlacement
    ..
        !! processed by numpydoc !!
 
-   .. py:method:: compute_centerline_radius(x, contour)
+   .. py:method:: dtheta_dx(x, contour, circuit=None)
 
       
-      Return the section-reference radius ``r(x)`` for this placement.
+      Return dθ/dx [rad/m] for the representative lane centerline.
+      Default: 0 (axial/vertical channels).
 
-      For surface channels this is the hot-wall radius used by the
-      cross-section models.  The coolant-flow centre is obtained separately
-      with :meth:`compute_flow_centerline_radius`.
 
 
 

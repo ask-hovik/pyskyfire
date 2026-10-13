@@ -1,0 +1,106 @@
+pyskyfire.common.rotation
+=========================
+
+.. py:module:: pyskyfire.common.rotation
+
+.. autoapi-nested-parse::
+
+   Sense of rotation about a component's own axis.
+
+   An impeller spins one way about its shaft and the volute around it must wind
+   the same way, since a volute wound against the discharge swirl collects the
+   flow backwards. Both state the sense with the same word here, so that a design
+   can be checked by reading it rather than by looking at a render.
+
+   The sense is named as seen looking down the component's own axis from its
+   positive end, with the axis pointing at the viewer. Counterclockwise is then
+   the right-handed sense about that axis and carries sign ``+1``. Which axis
+   that is belongs to the component: ``+z`` for a volute, ``+x`` for an impeller.
+
+   Naming the sense about the part's own axis keeps it independent of how the
+   part is later placed. A rigid placement carries the sense along with the axis,
+   so two parts agree exactly when their placed axes point the same way and their
+   senses match -- and disagree when a placement reverses one of the axes, which
+   is the failure this vocabulary exists to make visible.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.common.rotation.CLOCKWISE
+   pyskyfire.common.rotation.COUNTERCLOCKWISE
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.common.rotation.parse_rotation
+   pyskyfire.common.rotation.rotation_sign
+
+
+Module Contents
+---------------
+
+.. py:function:: parse_rotation(value) -> str
+
+   
+   Normalise a rotation sense to :data:`CLOCKWISE` or :data:`COUNTERCLOCKWISE`.
+
+   Accepts ``'cw'``, ``'clockwise'``, ``'ccw'`` and ``'counterclockwise'``,
+   in any capitalisation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: rotation_sign(value) -> float
+
+   
+   ``+1.0`` for a counterclockwise sense, ``-1.0`` for a clockwise one.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: CLOCKWISE
+   :value: 'clockwise'
+
+
+.. py:data:: COUNTERCLOCKWISE
+   :value: 'counterclockwise'
+
+

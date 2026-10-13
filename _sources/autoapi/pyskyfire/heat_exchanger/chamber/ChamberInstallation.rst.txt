@@ -1,0 +1,36 @@
+pyskyfire.heat_exchanger.chamber.ChamberInstallation
+====================================================
+
+.. py:class:: pyskyfire.heat_exchanger.chamber.ChamberInstallation(chamber, exchanger, *, position=(0.0, 0.0, 0.0), rotation=None, coefficient=None)
+
+   
+   An exchanger in chamber coordinates, without gas-solution feedback.
+
+   Volume is the sum of nonoverlapping swept outer envelopes, including
+   passages. Users must avoid overlapping copies. Partially intersecting
+   sections use deterministic triangle/axial quadrature, not a CAD Boolean.
+   ``volume_change.chamber_displaced`` counts only x <= contour.x_t;
+   ``displaced`` includes nozzle volume too.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _volume_change()
+
+
+   .. py:method:: solve(inlets, **kwargs)
+

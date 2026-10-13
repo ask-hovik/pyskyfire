@@ -1,0 +1,83 @@
+pyskyfire.ducts.half_moon
+=========================
+
+.. py:module:: pyskyfire.ducts.half_moon
+
+.. autoapi-nested-parse::
+
+   The half-moon manifold section: a chamber wall on one side, an ellipse on the other.
+
+   A manifold wrapped around a thrust chamber is not a free shape. One side of it
+   is the chamber itself -- whatever the wall happens to do at that station -- and
+   the other is a dome the designer picks. So the section is an arbitrary inner
+   curve, a half-ellipse outboard of it, and a fillet at each end blending the two.
+   Real hardware of this kind reads as a D at the cylindrical part of a chamber and
+   as a kidney where the wall curves.
+
+   Measured along the wall
+   -----------------------
+   The slit and the width are arc lengths along the wall, not axial extents. The
+   slit is space reserved on the wall surface for cooling channels to break out
+   into, and on a sloped wall the surface runs further than the station span does:
+   a nozzle at 28 degrees gives only 12.4 mm of wall for every 14 mm of ``x``.
+   Reserving it axially would quietly hand back a tenth of the room the channels
+   need. On a cylindrical wall the two measures coincide.
+
+   The slit is a reservation, not modelled geometry. Where the channels actually
+   break through, how they are divided and what the fairing looks like is CAD
+   work; what pyskyfire draws is the cavity they open into, with enough of the wall
+   kept clear that the breakout has somewhere to go.
+
+   How it is placed
+   ----------------
+   An anchor station fixes the slit, and it stays there at every azimuth --
+   channels come out where they come out. ``slit_placement`` says where the slit
+   sits about that anchor, and ``exposure_placement`` says how the wall left over
+   once the slit is accounted for is divided either side of it. That division is
+   held at every azimuth too, so as the area law closes the section down the
+   exposed wall shrinks onto the slit from both sides in a fixed ratio, and reaches
+   it exactly at :attr:`minimum_size`.
+
+   How it is sized
+   ---------------
+   The same three regimes a volute works through, for the same reason. ``size`` is
+   the exposed arc of wall, and shrinking it is the first and cheapest way to take
+   area out. Once it has closed onto the slit there is no wall left to give up, so
+   the ellipse's aspect ratio takes over and flattens the dome instead. When that
+   reaches ``max_aspect_ratio`` the family has run out of knobs, and the area law
+   gets clipped to the smallest section it can build.
+
+   Closing the ends
+   ----------------
+   The fillets are circular arcs of the radius given -- a real corner radius, the
+   kind a print or a cutter leaves -- tangent to the wall at each end of the
+   exposed arc and tangent to the ellipse. Where they touch the ellipse is solved
+   rather than assumed, because the offset curve of an ellipse is not an ellipse.
+   The ellipse is carried on the chord between the two ends of the exposed wall and
+   is centred on it, which is what closes the construction: the chord fixes the
+   frame, one tangency solve fixes the ellipse, and both fillets follow from it.
+
+   Working on the chord means the fillets are tangent to the chord rather than to
+   the wall's own slope at the point they meet it. The two differ by how far the
+   wall turns across half a section, which for a manifold on a chamber is a couple
+   of degrees at most, and the inner boundary still follows the wall exactly.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/half_moon/HalfMoonSection
+   /autoapi/pyskyfire/ducts/half_moon/InnerProfile
+
+.. autoapisummary::
+
+   pyskyfire.ducts.half_moon.HalfMoonSection
+   pyskyfire.ducts.half_moon.InnerProfile
+
+

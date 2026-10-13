@@ -1,0 +1,28 @@
+pyskyfire.heat_exchanger.chamber
+================================
+
+.. py:module:: pyskyfire.heat_exchanger.chamber
+
+.. autoapi-nested-parse::
+
+   Placement and volume accounting inside a prescribed thrust-chamber flow.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/heat_exchanger/chamber/ChamberInstallation
+   /autoapi/pyskyfire/heat_exchanger/chamber/VolumeChange
+
+.. autoapisummary::
+
+   pyskyfire.heat_exchanger.chamber.ChamberInstallation
+   pyskyfire.heat_exchanger.chamber.VolumeChange
+
+

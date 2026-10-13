@@ -1,0 +1,89 @@
+pyskyfire.turbine._pyturbo
+==========================
+
+.. py:module:: pyskyfire.turbine._pyturbo
+
+.. autoapi-nested-parse::
+
+   Turbine blade sections from pyTurbo 1.3.8, wrapped onto the annulus.
+
+   pyTurbo's ``Airfoil2D`` draws a cascade section flowing top to bottom (-y),
+   with the trailing edge at the origin and angles from axial. It turns the flow
+   toward +x. This package's angles are positive in the rotation direction, and
+   a row can turn the flow either way (a stator towards the rotation, a rotor
+   back against it), so each section is drawn turning the pyTurbo way and
+   mirrored where the row turns the other way.
+
+   Each section lies in the cascade plane unrolled at its own radius: axial
+   distance, and pitchwise distance ``r*theta``. The builder stacks the sections
+   on their centroids, then wraps each onto the annulus. A point's radius comes
+   from its axial position and span fraction, and its angle is its pitchwise
+   distance over the section radius. The throat and the narrowest gap are
+   measured in that unrolled plane, before wrapping.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.turbine._pyturbo._LEADING_EDGE
+   pyskyfire.turbine._pyturbo._MEASURE_POINTS
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.turbine._pyturbo._require_pyturbo
+   pyskyfire.turbine._pyturbo._row
+   pyskyfire.turbine._pyturbo._section
+   pyskyfire.turbine._pyturbo.build_geometry
+
+
+Module Contents
+---------------
+
+.. py:function:: _require_pyturbo()
+
+.. py:function:: _row(definition, row, span_points, chord_points)
+
+.. py:function:: _section(row, inlet, outlet, stagger, n)
+
+   
+   One section's suction and pressure sides as ``(axial, pitchwise)`` from its LE.
+
+   Returns the two sides at ``n`` points and the outline at the measuring
+   resolution.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: build_geometry(definition, *, span_points, chord_points)
+
+.. py:data:: _LEADING_EDGE
+   :value: 0.6666666666666666
+
+
+.. py:data:: _MEASURE_POINTS
+   :value: 400
+
+

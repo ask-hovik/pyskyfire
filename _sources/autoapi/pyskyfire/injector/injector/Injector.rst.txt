@@ -1,0 +1,250 @@
+pyskyfire.injector.injector.Injector
+====================================
+
+.. py:class:: pyskyfire.injector.injector.Injector(element_sets)
+
+   
+   Element sets on a face, and the hydraulics of the feeds that supply them.
+
+
+   :Parameters:
+
+       **element_sets** : :term:`python:sequence` :obj:`of` :obj:`ElementSet`
+           The sets, with unique names.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __repr__()
+
+
+   .. py:method:: _check_feed(feed)
+
+
+   .. py:method:: _feed_result(feed, orifice_result, fluid) -> FeedResult
+
+
+   .. py:method:: checks(*, chamber_radius: float | None = None) -> InjectorChecks
+
+      
+      Layout checks: webs between holes, holes and targets against the wall, hole L/D.
+
+      Hole outlines on the face are taken as circles of the
+      :attr:`InjectorHoles.footprint` radius, which is conservative for an
+      inclined hole's ellipse.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: equivalent_orifice(feed) -> pyskyfire.ducts.orifice.Orifice
+
+      
+      One orifice with the summed area and ``Cd·A`` of every hole on ``feed``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: hole_count(feed) -> int
+
+      
+      Number of holes on ``feed``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: holes() -> InjectorHoles
+
+      
+      Every hole, placed in the injector frame.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: solve(conditions: collections.abc.Mapping, *, p_face: float, oxidizer=()) -> InjectorResult
+
+      
+      Every feed at its operating point, discharging into a face at ``p_face``.
+
+
+      :Parameters:
+
+          **conditions** : :obj:`mapping` :obj:`of` :obj:`feed` :obj:`to` :obj:`FeedCondition`
+              One condition for every feed of the injector. A condition with a
+              pressure gives that feed's flow; one with a mass flow gives the
+              plenum pressure it needs.
+
+          **p_face** : :class:`python:float`
+              Pressure at the injector face [Pa].
+
+          **oxidizer** : :term:`python:iterable` :obj:`of` :obj:`feeds`, :obj:`optional`
+              The feeds carrying oxidizer. Mixture ratios need them.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: solve_feed(feed, *, inlet_state: pyskyfire.thermo.state.FluidState, mass_flow: float, fluid) -> FeedResult
+
+      
+      The face pressure one feed reaches from its plenum at ``mass_flow``.
+
+      The engine network's direction: see :meth:`Orifice.solve`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: feeds
+      :type: tuple
+
+
+      
+      Every feed, in the order the sets first name them.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: sets
+      :type: dict
+
+
+      
+      Element sets by name.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

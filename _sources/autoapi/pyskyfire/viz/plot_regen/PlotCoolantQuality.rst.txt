@@ -43,7 +43,7 @@ pyskyfire.viz.plot_regen.PlotCoolantQuality
 
    A quality profile says *where* the coolant boils, not how hot the wall gets
    there: the coolant-side coefficient is still a single-phase correlation
-   inside the dome. See :mod:`pyskyfire.regen.coolant_state`.
+   inside the dome. See :mod:`pyskyfire.regen.coolant_properties`.
 
 
 

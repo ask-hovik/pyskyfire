@@ -1,0 +1,28 @@
+pyskyfire.pump.diffuser.DiffuserOutlet
+======================================
+
+.. py:class:: pyskyfire.pump.diffuser.DiffuserOutlet
+
+   
+   What the diffuser hands the volute, circumferentially mixed.
+
+   ``cm`` is the mean radial velocity over the whole outlet ring and ``cu``
+   the mass-averaged swirl of the channel jets, both in m/s. Together with
+   ``radius`` and ``width`` they are a volute inlet.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

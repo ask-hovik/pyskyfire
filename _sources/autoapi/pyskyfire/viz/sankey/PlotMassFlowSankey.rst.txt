@@ -17,7 +17,7 @@ pyskyfire.viz.sankey.PlotMassFlowSankey
    :Parameters:
 
        **engine_network:**
-           A converged :class:`~pyskyfire.common.EngineNetwork`.  It must expose
+           A converged :class:`~pyskyfire.network.EngineNetwork`.  It must expose
            ``stations`` and ``blocks``.  The station map supplies the converged
            mass flows; block ``station_inputs`` / ``station_outputs`` metadata
            supplies connectivity.

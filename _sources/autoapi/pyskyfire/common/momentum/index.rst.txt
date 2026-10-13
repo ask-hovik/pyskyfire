@@ -1,0 +1,49 @@
+pyskyfire.common.momentum
+=========================
+
+.. py:module:: pyskyfire.common.momentum
+
+.. autoapi-nested-parse::
+
+   One-dimensional static-pressure changes shared by heated duct solvers.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.common.momentum.acceleration_pressure_drop
+
+
+Module Contents
+---------------
+
+.. py:function:: acceleration_pressure_drop(rho_up, velocity_up, rho_down, velocity_down)
+
+   
+   Trapezoidal integral of rho*u*du [Pa]; positive for acceleration.
+
+   Exact for constant density (Bernoulli) and constant area (mass-flux form).
+   This is reversible static-pressure change, separate from wall friction.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

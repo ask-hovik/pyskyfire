@@ -3,6 +3,29 @@ pyskyfire.turbine
 
 .. py:module:: pyskyfire.turbine
 
+.. autoapi-nested-parse::
+
+   
+   Axial turbine design: the duty, a meanline design, and the hardware it produces.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
 
 Submodules
 ----------
@@ -10,6 +33,10 @@ Submodules
 .. toctree::
    :maxdepth: 1
 
-   /autoapi/pyskyfire/turbine/temporary_file/index
+   /autoapi/pyskyfire/turbine/_pyturbo/index
+   /autoapi/pyskyfire/turbine/axial/index
+   /autoapi/pyskyfire/turbine/definition/index
+   /autoapi/pyskyfire/turbine/duty/index
+   /autoapi/pyskyfire/turbine/geometry/index
 
 

@@ -1,0 +1,137 @@
+pyskyfire.network.blocks.VoluteBlock
+====================================
+
+.. py:class:: pyskyfire.network.blocks.VoluteBlock(name: str, st_in: str, st_out: str, volute: pyskyfire.ducts.volute.Volute, transport, exit_diameter: float | None = None, roughness: float = 0.0, friction_model: str = 'fluids')
+
+   Bases: :py:obj:`FluidBlock`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.network.blocks.VoluteBlock
+      :parts: 1
+      :private-bases:
+
+
+   
+   Engine-network adapter for one :class:`Volute` or collector.
+
+   The contained volute remains independently usable through
+   :meth:`Volute.solve`. This block only translates network stations into that
+   public solver API and emits the resulting outlet station and ``dp_<name>``
+   loss signal. Its geometry is resolved once, when the volute is built, so
+   the network may iterate the operating point freely.
+
+   :Parameters:
+
+       **name** : :class:`python:str`
+           Block name used for the pressure-loss signal.
+
+       **st_in, st_out** : :class:`python:str`
+           Inlet and outlet network station keys.
+
+       **volute** : :obj:`pyskyfire.ducts.Volute`
+           Physical volute model.
+
+       **transport** : :obj:`object`
+           Fluid-property provider accepted by :meth:`Volute.solve`.
+
+       **exit_diameter** : :class:`python:float`, :obj:`optional`
+           Diameter of the round pipe the exit cone discharges to [m]. Defaults to
+           the volute's attached :class:`~pyskyfire.ducts.ExitCone` final
+           diameter, and is required when the volute has none.
+
+       **roughness** : :class:`python:float`, :obj:`optional`
+           Absolute wall roughness [m].
+
+       **friction_model** : {'native', 'fluids'}, :obj:`optional`
+           Skin-friction backend. Default ``'fluids'``.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   The volute is adiabatic, so the outlet station carries the inlet
+   temperature. The inlet velocity components are a design input of the volute
+   itself rather than something the network sets, so a mass flow that
+   disagrees with them raises
+   :class:`~pyskyfire.ducts.volute.VoluteConsistencyWarning` on every solve.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _solve(station: pyskyfire.network.engine_network.Station)
+
+
+   .. py:method:: compute(stations: Dict[str, pyskyfire.network.engine_network.Station], signals: Dict[str, float]) -> tuple[Dict[str, pyskyfire.network.engine_network.Station], Dict[str, float]]
+
+      
+      Compute one pass of the block.
+
+
+      :Parameters:
+
+          **stations_in** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.network.engine_network.Station>`]
+              Input network stations keyed by name.
+
+          **signals_in** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
+              Input scalar signals keyed by name.
+
+
+
+      :Returns:
+
+          **stations_out** : :class:`python:dict`\[:class:`python:str`, :obj:`Station <pyskyfire.network.engine_network.Station>`]
+              Updated or newly created stations produced by the block.
+
+          **signals_out** : :class:`python:dict`\[:class:`python:str`, :class:`python:float`]
+              Updated or newly created scalar signals produced by the block.
+
+
+
+
+
+
+
+
+      .. rubric:: Notes
+
+      .. Note::
+          Implementations should treat missing inputs as an error. The engine network orchestrator is expected to provide the declared inputs.
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: post_process(stations, signals)
+
+      
+      Return the detailed volute result at the converged inlet condition.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

@@ -1,0 +1,43 @@
+pyskyfire.pump.diffuser.DiffuserChecks
+======================================
+
+.. py:class:: pyskyfire.pump.diffuser.DiffuserChecks
+
+   
+   The finished diffuser against Gülich's criteria (7.9.1 item 10). Reported only.
+
+   ``gap_ratio`` is d3/d2 against ``minimum_gap_ratio`` (Table 10.2).
+   ``inlet_width_ratio`` b3/b2 should be 1.05 to 1.3. ``throat_factor`` is
+   f_a3, normally 1.1 to 1.3. ``deceleration`` is c3q/c2: 0.7 to 0.85,
+   higher allowed below nq 12 to 15, and Table 10.2 asks for not much below
+   0.8. ``length_ratio`` L/a3 should lie between 2.5 and 6 and
+   ``aspect_ratio`` b3/a3 between 0.8 and 2. ``exit_energy`` is c4²/(2gH),
+   0.02 to 0.04 for multistage pumps. ``opening_angle_deg`` is the equivalent
+   conical half-angle (Eq. 1.45), which must stay below
+   ``allowed_opening_angle_deg`` (Eq. 1.44) or the channel stalls.
+   ``vane_count_conflicts`` lists each (nu2, nu3, m) with
+   ``|m| = |nu3 z_Le - nu2 z_La|`` of 0 or 1 for nu up to 3, which Gülich says
+   to avoid (7.9.1 item 5, Table 10.2). ``incidence_deg`` is the vane's
+   leading spiral against the approach flow, within +-3 degrees by his rule;
+   it follows from the throat. ``deflection_deg`` is how far the channel
+   turns the flow from throat to exit; Gülich applies straight-diffuser data
+   up to about 25 degrees. ``drawn_throat_ratio`` and ``drawn_exit_ratio``
+   are the throat and exit widths measured on the drawn vanes over the design
+   values, which the camber construction meets only approximately.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

@@ -1,0 +1,261 @@
+pyskyfire.regen.design_inputs
+=============================
+
+.. py:module:: pyskyfire.regen.design_inputs
+
+.. autoapi-nested-parse::
+
+   Keyword-dispatched design inputs for cooling-channel geometry.
+
+   Most user-facing geometry inputs in :mod:`pyskyfire.regen` accept either a
+   constant or a function of position.  Historically every such function had to
+   take exactly one positional argument ``x``, even when the value did not depend
+   on it.  This module replaces that convention: a design-input function declares
+   the quantities it needs *by parameter name*, and only those are supplied.
+
+       sidewall_half_thickness = lambda: 0.5e-3                    # 1 mm full rib
+       sidewall_half_thickness = lambda x: 0.5e-3 + 0.5e-5 * x     # grows downstream
+       sidewall_half_thickness = lambda pitch_mid: 0.05 * pitch_mid # 10% full-rib blockage
+
+   Which names are legal depends on where the function is plugged in.  The
+   geometry build order forms a dependency chain, so a function may only ask for
+   quantities that are already known when its slot is evaluated.  Those
+   quantities are grouped into three tiers:
+
+   ``A``
+       Contour geometry.  Known before any channel exists.
+   ``B``
+       Channel layout and wall stack.  Known once the circuits are configured.
+   ``C``
+       The resolved channel section.  Known only after heights, centerlines and
+       angular widths have been built.
+
+   See ``docs/explanations/design-input-functions.md`` for the user-facing
+   description of the tiers and an exhaustive glossary.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.regen.design_inputs.SLOT_KEYS
+   pyskyfire.regen.design_inputs.TIER_A
+   pyskyfire.regen.design_inputs.TIER_B
+   pyskyfire.regen.design_inputs.TIER_C
+   pyskyfire.regen.design_inputs.VOCABULARY
+
+
+Exceptions
+----------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/regen/design_inputs/DesignInputError
+
+.. autoapisummary::
+
+   pyskyfire.regen.design_inputs.DesignInputError
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/regen/design_inputs/DesignContext
+
+.. autoapisummary::
+
+   pyskyfire.regen.design_inputs.DesignContext
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.regen.design_inputs.contour_providers
+   pyskyfire.regen.design_inputs.evaluate
+   pyskyfire.regen.design_inputs.evaluate_profile
+   pyskyfire.regen.design_inputs.layout_providers
+   pyskyfire.regen.design_inputs.make_evaluator
+   pyskyfire.regen.design_inputs.section_providers
+
+
+Module Contents
+---------------
+
+.. py:function:: contour_providers(contour, x: float) -> dict[str, Any]
+
+   
+   Return the Tier A providers for one station on ``contour``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: evaluate(value, context: DesignContext, *, slot: str, label: str) -> float
+
+   
+   Evaluate a single design input at a single station.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: evaluate_profile(value, contexts: Iterable[DesignContext], *, slot: str, label: str) -> numpy.ndarray
+
+   
+   Evaluate a design input at every station in ``contexts``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: layout_providers(*, n_channel_positions=None, n_channels=None, n_channels_all_circuits=None, t_wall=None, t_wall_total=None, t_hot_layer=None) -> dict[str, Any]
+
+   
+   Return the Tier B providers, skipping any that are unavailable.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: make_evaluator(value, *, slot: str, label: str) -> Callable[[DesignContext], float]
+
+   
+   Return ``f(context) -> float`` for a constant or design-input function.
+
+   The callable's signature is inspected once, here, rather than at every
+   station.
+
+   The returned evaluator carries two attributes that let hot callers skip
+   context construction: ``required_keys`` is the tuple of names it will read
+   (``None`` when the function has a ``**kwargs`` catch-all), and
+   ``constant_value`` is the float it always returns, or ``None``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: section_providers(*, r=None, r_base=None, h=None, gamma=None, theta=None, t_wall=None) -> dict[str, Any]
+
+   
+   Return the Tier C providers derived from a resolved channel section.
+
+   ``r`` is the hot-wall (contour) radius and ``r_base`` the resolved
+   cross-section base point. They differ by the wall stack projected onto the
+   contour normal, so ``r_base`` is not simply ``r + t_wall``; it defaults to
+   ``r`` only for a section that has not been placed yet.
+
+   Quantities whose inputs are still unknown are simply omitted, which is how
+   a slot evaluated part-way through the geometry build ends up seeing only
+   the part of tier C that already exists.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: SLOT_KEYS
+   :type:  dict[str, frozenset[str]]
+
+.. py:data:: TIER_A
+   :type:  dict[str, str]
+
+.. py:data:: TIER_B
+   :type:  dict[str, str]
+
+.. py:data:: TIER_C
+   :type:  dict[str, str]
+
+.. py:data:: VOCABULARY
+   :type:  dict[str, str]
+

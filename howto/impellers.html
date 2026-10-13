@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+
+<html class="no-js" data-content_root="../" lang="en">
+<head><meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="light dark" name="color-scheme"/><meta content="width=device-width, initial-scale=1" name="viewport"/>
+<link href="../genindex.html" rel="index" title="Index"/><link href="../search.html" rel="search" title="Search"/><link href="diffusers.html" rel="next" title="Design a vaned diffuser"/><link href="area-preserving-helix.html" rel="prev" title="Hold the coolant area constant with a helix"/>
+<link as="image" href="../_static/pyskyfire_header.png" rel="prefetch"/>
+<!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+<title>Create an impeller scene and report - pyskyfire</title>
+<link href="../_static/pygments.css?v=d111a655" rel="stylesheet" type="text/css"/>
+<link href="../_static/styles/furo.css?v=7bdb33bb" rel="stylesheet" type="text/css"/>
+<link href="../_static/graphviz.css?v=4ae1632d" rel="stylesheet" type="text/css"/>
+<link href="../_static/sphinx-codeautolink.css?v=b2176991" rel="stylesheet" type="text/css"/>
+<link href="../_static/styles/furo-extensions.css?v=8dab3a3b" rel="stylesheet" type="text/css"/>
+<link href="../_static/custom.css?v=289cf0e7" rel="stylesheet" type="text/css"/>
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+<body>
+<script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+<svg style="display: none;" xmlns="http://www.w3.org/2000/svg">
+<symbol id="svg-toc" viewbox="0 0 24 24">
+<title>Contents</title>
+<svg fill="currentColor" stroke="currentColor" stroke-width="0" viewbox="0 0 1024 1024">
+<path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"></path>
+</svg>
+</symbol>
+<symbol id="svg-menu" viewbox="0 0 24 24">
+<title>Menu</title>
+<svg class="feather-menu" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<line x1="3" x2="21" y1="12" y2="12"></line>
+<line x1="3" x2="21" y1="6" y2="6"></line>
+<line x1="3" x2="21" y1="18" y2="18"></line>
+</svg>
+</symbol>
+<symbol id="svg-arrow-right" viewbox="0 0 24 24">
+<title>Expand</title>
+<svg class="feather-chevron-right" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<polyline points="9 18 15 12 9 6"></polyline>
+</svg>
+</symbol>
+<symbol id="svg-sun" viewbox="0 0 24 24">
+<title>Light mode</title>
+<svg class="feather-sun" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<circle cx="12" cy="12" r="5"></circle>
+<line x1="12" x2="12" y1="1" y2="3"></line>
+<line x1="12" x2="12" y1="21" y2="23"></line>
+<line x1="4.22" x2="5.64" y1="4.22" y2="5.64"></line>
+<line x1="18.36" x2="19.78" y1="18.36" y2="19.78"></line>
+<line x1="1" x2="3" y1="12" y2="12"></line>
+<line x1="21" x2="23" y1="12" y2="12"></line>
+<line x1="4.22" x2="5.64" y1="19.78" y2="18.36"></line>
+<line x1="18.36" x2="19.78" y1="5.64" y2="4.22"></line>
+</svg>
+</symbol>
+<symbol id="svg-moon" viewbox="0 0 24 24">
+<title>Dark mode</title>
+<svg class="icon-tabler-moon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 0h24v24H0z" fill="none" stroke="none"></path>
+<path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"></path>
+</svg>
+</symbol>
+<symbol id="svg-sun-with-moon" viewbox="0 0 24 24">
+<title>Auto light/dark, in light mode</title>
+<svg class="icon-custom-derived-from-feather-sun-and-tabler-moon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z" style="opacity: 50%"></path>
+<line x1="14.5" x2="14.5" y1="3.25" y2="1.25"></line>
+<line x1="14.5" x2="14.5" y1="15.85" y2="17.85"></line>
+<line x1="10.044" x2="8.63" y1="5.094" y2="3.68"></line>
+<line x1="19" x2="20.414" y1="14.05" y2="15.464"></line>
+<line x1="8.2" x2="6.2" y1="9.55" y2="9.55"></line>
+<line x1="20.8" x2="22.8" y1="9.55" y2="9.55"></line>
+<line x1="10.044" x2="8.63" y1="14.006" y2="15.42"></line>
+<line x1="19" x2="20.414" y1="5.05" y2="3.636"></line>
+<circle cx="14.5" cy="9.55" r="3.6"></circle>
+</svg>
+</symbol>
+<symbol id="svg-moon-with-sun" viewbox="0 0 24 24">
+<title>Auto light/dark, in dark mode</title>
+<svg class="icon-custom-derived-from-feather-sun-and-tabler-moon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"></path>
+<line style="opacity: 50%" x1="18" x2="18" y1="3.705" y2="2.5"></line>
+<line style="opacity: 50%" x1="18" x2="18" y1="11.295" y2="12.5"></line>
+<line style="opacity: 50%" x1="15.316" x2="14.464" y1="4.816" y2="3.964"></line>
+<line style="opacity: 50%" x1="20.711" x2="21.563" y1="10.212" y2="11.063"></line>
+<line style="opacity: 50%" x1="14.205" x2="13.001" y1="7.5" y2="7.5"></line>
+<line style="opacity: 50%" x1="21.795" x2="23" y1="7.5" y2="7.5"></line>
+<line style="opacity: 50%" x1="15.316" x2="14.464" y1="10.184" y2="11.036"></line>
+<line style="opacity: 50%" x1="20.711" x2="21.563" y1="4.789" y2="3.937"></line>
+<circle cx="18" cy="7.5" r="2.169" style="opacity: 50%"></circle>
+</svg>
+</symbol>
+<symbol id="svg-pencil" viewbox="0 0 24 24">
+<svg class="icon-tabler-pencil-code" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4"></path>
+<path d="M13.5 6.5l4 4"></path>
+<path d="M20 21l2 -2l-2 -2"></path>
+<path d="M17 17l-2 2l2 2"></path>
+</svg>
+</symbol>
+<symbol id="svg-eye" viewbox="0 0 24 24">
+<svg class="icon-tabler-eye-code" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 0h24v24H0z" fill="none" stroke="none"></path>
+<path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+<path d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008"></path>
+<path d="M20 21l2 -2l-2 -2"></path>
+<path d="M17 17l-2 2l2 2"></path>
+</svg>
+</symbol>
+</svg>
+<input aria-label="Toggle site navigation sidebar" class="sidebar-toggle" id="__navigation" name="__navigation" type="checkbox"/>
+<input aria-label="Toggle table of contents sidebar" class="sidebar-toggle" id="__toc" name="__toc" type="checkbox"/>
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+<div class="page">
+<header class="mobile-header">
+<div class="header-left">
+<label class="nav-overlay-icon" for="__navigation">
+<span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+</label>
+</div>
+<div class="header-center">
+<a href="../index.html"><div class="brand">pyskyfire</div></a>
+</div>
+<div class="header-right">
+<div class="theme-toggle-container theme-toggle-header">
+<button aria-label="Toggle Light / Dark / Auto color theme" class="theme-toggle">
+<svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+<svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+<svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+<svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+</button>
+</div>
+<label class="toc-overlay-icon toc-header-icon" for="__toc">
+<span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+</label>
+</div>
+</header>
+<aside class="sidebar-drawer">
+<div class="sidebar-container">
+<div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+<div class="sidebar-logo-container">
+<img alt="Logo" class="sidebar-logo" src="../_static/pyskyfire_header.png"/>
+</div>
+</a><form action="../search.html" class="sidebar-search-container" method="get" role="search">
+<input aria-label="Search" class="sidebar-search" name="q" placeholder="Search"/>
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Start Here</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/minimal-simulation.html">Minimal Simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/advanced-simulation.html">Engine-Cycle Simulation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mixture-ratio-optimisation.html">Optimise mixture ratio</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipes.html">Define and solve a pipe</a></li>
+<li class="toctree-l1"><a class="reference internal" href="annular-ducts.html">Define and solve an annular duct</a></li>
+<li class="toctree-l1"><a class="reference internal" href="orifices.html">Size and solve orifices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="injectors.html">Design and solve an injector</a></li>
+<li class="toctree-l1"><a class="reference internal" href="heat-exchangers.html">Build a path-based heat exchanger</a></li>
+<li class="toctree-l1"><a class="reference internal" href="volutes.html">Design and solve a volute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cross-sections.html">Define chamber and heat-exchanger cross sections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="area-preserving-helix.html">Hold the coolant area constant with a helix</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Create an impeller scene and report</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusers.html">Design a vaned diffuser</a></li>
+<li class="toctree-l1"><a class="reference internal" href="turbines.html">Design an axial turbine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3d-scenes.html">Assemble a 3D scene</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Validation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation/rl10a-3-3a.html">RL10A-3-3A</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Explanations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/capabilities.html">Capabilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/package-structure.html">Package Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/design-input-functions.html">Design-Input Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/channel-construction.html">Physical cooling-channel construction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/regenerative-cooling-explanation.html">Regenerative Cooling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/specific-impulse.html">Specific Impulse and Thrust Coefficient</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/moody-diagram.html">The Moody Diagram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanations/rao-nozzle.html">Rao Nozzle Contour Angles</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autoapi/pyskyfire/common/index.html">pyskyfire.common</a><input aria-label="Toggle navigation of pyskyfire.common" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/common/blade_surface/index.html">pyskyfire.common.blade_surface</a><input aria-label="Toggle navigation of pyskyfire.common.blade_surface" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/blade_surface/BladeSurface.html">pyskyfire.common.blade_surface.BladeSurface</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/common/constants/index.html">pyskyfire.common.constants</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/common/friction/index.html">pyskyfire.common.friction</a><input aria-label="Toggle navigation of pyskyfire.common.friction" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/friction/FrictionCorrelationWarning.html">pyskyfire.common.friction.FrictionCorrelationWarning</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/common/meridional/index.html">pyskyfire.common.meridional</a><input aria-label="Toggle navigation of pyskyfire.common.meridional" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/meridional/AnnulusEnd.html">pyskyfire.common.meridional.AnnulusEnd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/meridional/Clearance.html">pyskyfire.common.meridional.Clearance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/meridional/MeridionalPassage.html">pyskyfire.common.meridional.MeridionalPassage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/meridional/WallMotion.html">pyskyfire.common.meridional.WallMotion</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/common/momentum/index.html">pyskyfire.common.momentum</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/common/physics/index.html">pyskyfire.common.physics</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/common/results/index.html">pyskyfire.common.results</a><input aria-label="Toggle navigation of pyskyfire.common.results" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/results/Results.html">pyskyfire.common.results.Results</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/common/rotation/index.html">pyskyfire.common.rotation</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/common/section_geometry/index.html">pyskyfire.common.section_geometry</a><input aria-label="Toggle navigation of pyskyfire.common.section_geometry" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/section_geometry/SectionArc.html">pyskyfire.common.section_geometry.SectionArc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/section_geometry/SectionEllipseArc.html">pyskyfire.common.section_geometry.SectionEllipseArc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/section_geometry/SectionLine.html">pyskyfire.common.section_geometry.SectionLine</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/common/solids/index.html">pyskyfire.common.solids</a><input aria-label="Toggle navigation of pyskyfire.common.solids" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/solids/ConstantModel.html">pyskyfire.common.solids.ConstantModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/solids/Log10PolynomialModel.html">pyskyfire.common.solids.Log10PolynomialModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/solids/Material.html">pyskyfire.common.solids.Material</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/solids/PiecewiseModel.html">pyskyfire.common.solids.PiecewiseModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/solids/PolynomialModel.html">pyskyfire.common.solids.PolynomialModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/solids/PropertyModel.html">pyskyfire.common.solids.PropertyModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/solids/SumOfGaussiansModel.html">pyskyfire.common.solids.SumOfGaussiansModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/common/solids/TabulatedModel.html">pyskyfire.common.solids.TabulatedModel</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autoapi/pyskyfire/ducts/index.html">pyskyfire.ducts</a><input aria-label="Toggle navigation of pyskyfire.ducts" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/ducts/annular/index.html">pyskyfire.ducts.annular</a><input aria-label="Toggle navigation of pyskyfire.ducts.annular" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/annular/AnnularDuct.html">pyskyfire.ducts.annular.AnnularDuct</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/ducts/area_law/index.html">pyskyfire.ducts.area_law</a><input aria-label="Toggle navigation of pyskyfire.ducts.area_law" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/area_law/AreaLaw.html">pyskyfire.ducts.area_law.AreaLaw</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/area_law/ConstantAngularMomentum.html">pyskyfire.ducts.area_law.ConstantAngularMomentum</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/area_law/ConstantArea.html">pyskyfire.ducts.area_law.ConstantArea</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/area_law/VoluteInlet.html">pyskyfire.ducts.area_law.VoluteInlet</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/ducts/exit_cone/index.html">pyskyfire.ducts.exit_cone</a><input aria-label="Toggle navigation of pyskyfire.ducts.exit_cone" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/exit_cone/ExitCone.html">pyskyfire.ducts.exit_cone.ExitCone</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/exit_cone/ResolvedExitCone.html">pyskyfire.ducts.exit_cone.ResolvedExitCone</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/ducts/half_moon/index.html">pyskyfire.ducts.half_moon</a><input aria-label="Toggle navigation of pyskyfire.ducts.half_moon" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/half_moon/HalfMoonSection.html">pyskyfire.ducts.half_moon.HalfMoonSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/half_moon/InnerProfile.html">pyskyfire.ducts.half_moon.InnerProfile</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/ducts/manifold/index.html">pyskyfire.ducts.manifold</a><input aria-label="Toggle navigation of pyskyfire.ducts.manifold" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/manifold/Manifold.html">pyskyfire.ducts.manifold.Manifold</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/manifold/ManifoldGeometry.html">pyskyfire.ducts.manifold.ManifoldGeometry</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/ducts/manifold_law/index.html">pyskyfire.ducts.manifold_law</a><input aria-label="Toggle navigation of pyskyfire.ducts.manifold_law" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/manifold_law/ConstantVelocity.html">pyskyfire.ducts.manifold_law.ConstantVelocity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/manifold_law/ManifoldLaw.html">pyskyfire.ducts.manifold_law.ManifoldLaw</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/manifold_law/UniformArea.html">pyskyfire.ducts.manifold_law.UniformArea</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/ducts/orifice/index.html">pyskyfire.ducts.orifice</a><input aria-label="Toggle navigation of pyskyfire.ducts.orifice" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/orifice/OrificeCapacityError.html">pyskyfire.ducts.orifice.OrificeCapacityError</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/orifice/OrificeCorrelationWarning.html">pyskyfire.ducts.orifice.OrificeCorrelationWarning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/orifice/Orifice.html">pyskyfire.ducts.orifice.Orifice</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/orifice/OrificePlate.html">pyskyfire.ducts.orifice.OrificePlate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/orifice/OrificePlateResult.html">pyskyfire.ducts.orifice.OrificePlateResult</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/orifice/OrificeResult.html">pyskyfire.ducts.orifice.OrificeResult</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/ducts/path/index.html">pyskyfire.ducts.path</a><input aria-label="Toggle navigation of pyskyfire.ducts.path" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/path/Continuous.html">pyskyfire.ducts.path.Continuous</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/path/Path.html">pyskyfire.ducts.path.Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/path/PathNode.html">pyskyfire.ducts.path.PathNode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/path/PathPlacement.html">pyskyfire.ducts.path.PathPlacement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/path/PathStation.html">pyskyfire.ducts.path.PathStation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/path/RoundedBend.html">pyskyfire.ducts.path.RoundedBend</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/path/Straight.html">pyskyfire.ducts.path.Straight</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/ducts/pipe/index.html">pyskyfire.ducts.pipe</a><input aria-label="Toggle navigation of pyskyfire.ducts.pipe" class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" role="switch" type="checkbox"/><label for="toctree-checkbox-17"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/pipe/PipeCorrelationWarning.html">pyskyfire.ducts.pipe.PipeCorrelationWarning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/pipe/DisplayPath.html">pyskyfire.ducts.pipe.DisplayPath</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/pipe/DuctResult.html">pyskyfire.ducts.pipe.DuctResult</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/pipe/Pipe.html">pyskyfire.ducts.pipe.Pipe</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/ducts/port/index.html">pyskyfire.ducts.port</a><input aria-label="Toggle navigation of pyskyfire.ducts.port" class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" role="switch" type="checkbox"/><label for="toctree-checkbox-18"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/port/DomeSite.html">pyskyfire.ducts.port.DomeSite</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/port/Port.html">pyskyfire.ducts.port.Port</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/port/PortSite.html">pyskyfire.ducts.port.PortSite</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/port/RadialPort.html">pyskyfire.ducts.port.RadialPort</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/port/ResolvedPort.html">pyskyfire.ducts.port.ResolvedPort</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/port/ResolvedRadialPort.html">pyskyfire.ducts.port.ResolvedRadialPort</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/ducts/volute/index.html">pyskyfire.ducts.volute</a><input aria-label="Toggle navigation of pyskyfire.ducts.volute" class="toctree-checkbox" id="toctree-checkbox-19" name="toctree-checkbox-19" role="switch" type="checkbox"/><label for="toctree-checkbox-19"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/volute/VoluteConsistencyWarning.html">pyskyfire.ducts.volute.VoluteConsistencyWarning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/volute/Volute.html">pyskyfire.ducts.volute.Volute</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/volute/VoluteGeometry.html">pyskyfire.ducts.volute.VoluteGeometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/volute/VoluteResult.html">pyskyfire.ducts.volute.VoluteResult</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/ducts/volute_section/index.html">pyskyfire.ducts.volute_section</a><input aria-label="Toggle navigation of pyskyfire.ducts.volute_section" class="toctree-checkbox" id="toctree-checkbox-20" name="toctree-checkbox-20" role="switch" type="checkbox"/><label for="toctree-checkbox-20"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/volute_section/EllipticalSlottedSection.html">pyskyfire.ducts.volute_section.EllipticalSlottedSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/ducts/volute_section/VoluteSection.html">pyskyfire.ducts.volute_section.VoluteSection</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/index.html">pyskyfire.heat_exchanger</a><input aria-label="Toggle navigation of pyskyfire.heat_exchanger" class="toctree-checkbox" id="toctree-checkbox-21" name="toctree-checkbox-21" role="switch" type="checkbox"/><label for="toctree-checkbox-21"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/chamber/index.html">pyskyfire.heat_exchanger.chamber</a><input aria-label="Toggle navigation of pyskyfire.heat_exchanger.chamber" class="toctree-checkbox" id="toctree-checkbox-22" name="toctree-checkbox-22" role="switch" type="checkbox"/><label for="toctree-checkbox-22"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/chamber/ChamberInstallation.html">pyskyfire.heat_exchanger.chamber.ChamberInstallation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/chamber/VolumeChange.html">pyskyfire.heat_exchanger.chamber.VolumeChange</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/circuit/index.html">pyskyfire.heat_exchanger.circuit</a><input aria-label="Toggle navigation of pyskyfire.heat_exchanger.circuit" class="toctree-checkbox" id="toctree-checkbox-23" name="toctree-checkbox-23" role="switch" type="checkbox"/><label for="toctree-checkbox-23"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/circuit/ChamberGas.html">pyskyfire.heat_exchanger.circuit.ChamberGas</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/circuit/FlowConnection.html">pyskyfire.heat_exchanger.circuit.FlowConnection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/circuit/HeatExchangerCircuit.html">pyskyfire.heat_exchanger.circuit.HeatExchangerCircuit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/circuit/Inlet.html">pyskyfire.heat_exchanger.circuit.Inlet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/circuit/PrescribedGas.html">pyskyfire.heat_exchanger.circuit.PrescribedGas</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/circuit/ThermalLink.html">pyskyfire.heat_exchanger.circuit.ThermalLink</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/solver/index.html">pyskyfire.heat_exchanger.solver</a><input aria-label="Toggle navigation of pyskyfire.heat_exchanger.solver" class="toctree-checkbox" id="toctree-checkbox-24" name="toctree-checkbox-24" role="switch" type="checkbox"/><label for="toctree-checkbox-24"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/solver/CircuitResult.html">pyskyfire.heat_exchanger.solver.CircuitResult</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/solver/HeatExchanger.html">pyskyfire.heat_exchanger.solver.HeatExchanger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/solver/HeatExchangerResult.html">pyskyfire.heat_exchanger.solver.HeatExchangerResult</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/heat_exchanger/solver/WallResult.html">pyskyfire.heat_exchanger.solver.WallResult</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autoapi/pyskyfire/injector/index.html">pyskyfire.injector</a><input aria-label="Toggle navigation of pyskyfire.injector" class="toctree-checkbox" id="toctree-checkbox-25" name="toctree-checkbox-25" role="switch" type="checkbox"/><label for="toctree-checkbox-25"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/injector/element/index.html">pyskyfire.injector.element</a><input aria-label="Toggle navigation of pyskyfire.injector.element" class="toctree-checkbox" id="toctree-checkbox-26" name="toctree-checkbox-26" role="switch" type="checkbox"/><label for="toctree-checkbox-26"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/element/Element.html">pyskyfire.injector.element.Element</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/element/Hole.html">pyskyfire.injector.element.Hole</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/element/JetFlow.html">pyskyfire.injector.element.JetFlow</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/injector/impinging/index.html">pyskyfire.injector.impinging</a><input aria-label="Toggle navigation of pyskyfire.injector.impinging" class="toctree-checkbox" id="toctree-checkbox-27" name="toctree-checkbox-27" role="switch" type="checkbox"/><label for="toctree-checkbox-27"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/impinging/ImpingingDiagnostics.html">pyskyfire.injector.impinging.ImpingingDiagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/impinging/ImpingingElement.html">pyskyfire.injector.impinging.ImpingingElement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/impinging/Jet.html">pyskyfire.injector.impinging.Jet</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/injector/injector/index.html">pyskyfire.injector.injector</a><input aria-label="Toggle navigation of pyskyfire.injector.injector" class="toctree-checkbox" id="toctree-checkbox-28" name="toctree-checkbox-28" role="switch" type="checkbox"/><label for="toctree-checkbox-28"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/injector/ElementSet.html">pyskyfire.injector.injector.ElementSet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/injector/FeedCondition.html">pyskyfire.injector.injector.FeedCondition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/injector/FeedResult.html">pyskyfire.injector.injector.FeedResult</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/injector/Injector.html">pyskyfire.injector.injector.Injector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/injector/InjectorChecks.html">pyskyfire.injector.injector.InjectorChecks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/injector/InjectorHoles.html">pyskyfire.injector.injector.InjectorHoles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/injector/InjectorResult.html">pyskyfire.injector.injector.InjectorResult</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/injector/injector/SetResult.html">pyskyfire.injector.injector.SetResult</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autoapi/pyskyfire/regen/index.html">pyskyfire.regen</a><input aria-label="Toggle navigation of pyskyfire.regen" class="toctree-checkbox" id="toctree-checkbox-29" name="toctree-checkbox-29" role="switch" type="checkbox"/><label for="toctree-checkbox-29"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/regen/cad_geometry/index.html">pyskyfire.regen.cad_geometry</a><input aria-label="Toggle navigation of pyskyfire.regen.cad_geometry" class="toctree-checkbox" id="toctree-checkbox-30" name="toctree-checkbox-30" role="switch" type="checkbox"/><label for="toctree-checkbox-30"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/cad_geometry/PlanarArc.html">pyskyfire.regen.cad_geometry.PlanarArc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/cad_geometry/PlanarLine.html">pyskyfire.regen.cad_geometry.PlanarLine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/cad_geometry/TangentBezier.html">pyskyfire.regen.cad_geometry.TangentBezier</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/cad_geometry/TransverseConstruction.html">pyskyfire.regen.cad_geometry.TransverseConstruction</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_construction/index.html">pyskyfire.regen.channel_construction</a><input aria-label="Toggle navigation of pyskyfire.regen.channel_construction" class="toctree-checkbox" id="toctree-checkbox-31" name="toctree-checkbox-31" role="switch" type="checkbox"/><label for="toctree-checkbox-31"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_construction/ChannelConstruction.html">pyskyfire.regen.channel_construction.ChannelConstruction</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_height/index.html">pyskyfire.regen.channel_height</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_helpers/index.html">pyskyfire.regen.channel_helpers</a><input aria-label="Toggle navigation of pyskyfire.regen.channel_helpers" class="toctree-checkbox" id="toctree-checkbox-32" name="toctree-checkbox-32" role="switch" type="checkbox"/><label for="toctree-checkbox-32"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_helpers/SectionPlanes.html">pyskyfire.regen.channel_helpers.SectionPlanes</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_layout/index.html">pyskyfire.regen.channel_layout</a><input aria-label="Toggle navigation of pyskyfire.regen.channel_layout" class="toctree-checkbox" id="toctree-checkbox-33" name="toctree-checkbox-33" role="switch" type="checkbox"/><label for="toctree-checkbox-33"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_layout/AnalyticalLayoutError.html">pyskyfire.regen.channel_layout.AnalyticalLayoutError</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_layout/ChannelLayout.html">pyskyfire.regen.channel_layout.ChannelLayout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_layout/ResolvedChannel.html">pyskyfire.regen.channel_layout.ResolvedChannel</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_placement/index.html">pyskyfire.regen.channel_placement</a><input aria-label="Toggle navigation of pyskyfire.regen.channel_placement" class="toctree-checkbox" id="toctree-checkbox-34" name="toctree-checkbox-34" role="switch" type="checkbox"/><label for="toctree-checkbox-34"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_placement/ChannelKeepOut.html">pyskyfire.regen.channel_placement.ChannelKeepOut</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_placement/ChannelPlacement.html">pyskyfire.regen.channel_placement.ChannelPlacement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_placement/InternalPlacement.html">pyskyfire.regen.channel_placement.InternalPlacement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/channel_placement/SurfacePlacement.html">pyskyfire.regen.channel_placement.SurfacePlacement</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/regen/contour/index.html">pyskyfire.regen.contour</a><input aria-label="Toggle navigation of pyskyfire.regen.contour" class="toctree-checkbox" id="toctree-checkbox-35" name="toctree-checkbox-35" role="switch" type="checkbox"/><label for="toctree-checkbox-35"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/contour/Contour.html">pyskyfire.regen.contour.Contour</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/contour/ContourToroidalAerospike.html">pyskyfire.regen.contour.ContourToroidalAerospike</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/regen/coolant_properties/index.html">pyskyfire.regen.coolant_properties</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/regen/coupled_solver/index.html">pyskyfire.regen.coupled_solver</a><input aria-label="Toggle navigation of pyskyfire.regen.coupled_solver" class="toctree-checkbox" id="toctree-checkbox-36" name="toctree-checkbox-36" role="switch" type="checkbox"/><label for="toctree-checkbox-36"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/coupled_solver/BoundaryConditions.html">pyskyfire.regen.coupled_solver.BoundaryConditions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/coupled_solver/CoupledHeatExchangerPhysics.html">pyskyfire.regen.coupled_solver.CoupledHeatExchangerPhysics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/coupled_solver/FilmHeatFluxModel.html">pyskyfire.regen.coupled_solver.FilmHeatFluxModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/coupled_solver/RegenResult.html">pyskyfire.regen.coupled_solver.RegenResult</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/regen/cross_section/index.html">pyskyfire.regen.cross_section</a><input aria-label="Toggle navigation of pyskyfire.regen.cross_section" class="toctree-checkbox" id="toctree-checkbox-37" name="toctree-checkbox-37" role="switch" type="checkbox"/><label for="toctree-checkbox-37"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/cross_section/ChannelSection.html">pyskyfire.regen.cross_section.ChannelSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/cross_section/CrossSectionRounded.html">pyskyfire.regen.cross_section.CrossSectionRounded</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/cross_section/CrossSectionSquared.html">pyskyfire.regen.cross_section.CrossSectionSquared</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/cross_section/SectionProfiles.html">pyskyfire.regen.cross_section.SectionProfiles</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/regen/design_inputs/index.html">pyskyfire.regen.design_inputs</a><input aria-label="Toggle navigation of pyskyfire.regen.design_inputs" class="toctree-checkbox" id="toctree-checkbox-38" name="toctree-checkbox-38" role="switch" type="checkbox"/><label for="toctree-checkbox-38"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/design_inputs/DesignInputError.html">pyskyfire.regen.design_inputs.DesignInputError</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/design_inputs/DesignContext.html">pyskyfire.regen.design_inputs.DesignContext</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/regen/film_solver/index.html">pyskyfire.regen.film_solver</a><input aria-label="Toggle navigation of pyskyfire.regen.film_solver" class="toctree-checkbox" id="toctree-checkbox-39" name="toctree-checkbox-39" role="switch" type="checkbox"/><label for="toctree-checkbox-39"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/film_solver/GasEmittanceCalculator.html">pyskyfire.regen.film_solver.GasEmittanceCalculator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/film_solver/GaseousFilmResults.html">pyskyfire.regen.film_solver.GaseousFilmResults</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/film_solver/GaseousFilmSolver.html">pyskyfire.regen.film_solver.GaseousFilmSolver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/film_solver/GrissonFilmCoolingModel.html">pyskyfire.regen.film_solver.GrissonFilmCoolingModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/film_solver/LiquidFilmResults.html">pyskyfire.regen.film_solver.LiquidFilmResults</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/film_solver/LiquidFilmSolver.html">pyskyfire.regen.film_solver.LiquidFilmSolver</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/regen/outer_wall/index.html">pyskyfire.regen.outer_wall</a><input aria-label="Toggle navigation of pyskyfire.regen.outer_wall" class="toctree-checkbox" id="toctree-checkbox-40" name="toctree-checkbox-40" role="switch" type="checkbox"/><label for="toctree-checkbox-40"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/outer_wall/OuterWall.html">pyskyfire.regen.outer_wall.OuterWall</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/regen/thrust_chamber/index.html">pyskyfire.regen.thrust_chamber</a><input aria-label="Toggle navigation of pyskyfire.regen.thrust_chamber" class="toctree-checkbox" id="toctree-checkbox-41" name="toctree-checkbox-41" role="switch" type="checkbox"/><label for="toctree-checkbox-41"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/thrust_chamber/CoolingCircuit.html">pyskyfire.regen.thrust_chamber.CoolingCircuit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/thrust_chamber/FilmCooling.html">pyskyfire.regen.thrust_chamber.FilmCooling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/thrust_chamber/ThrustChamber.html">pyskyfire.regen.thrust_chamber.ThrustChamber</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/regen/thrust_chamber/Wall.html">pyskyfire.regen.thrust_chamber.Wall</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autoapi/pyskyfire/pump/index.html">pyskyfire.pump</a><input aria-label="Toggle navigation of pyskyfire.pump" class="toctree-checkbox" id="toctree-checkbox-42" name="toctree-checkbox-42" role="switch" type="checkbox"/><label for="toctree-checkbox-42"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/pump/_pyturbo/index.html">pyskyfire.pump._pyturbo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/pump/constants/index.html">pyskyfire.pump.constants</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/pump/diffuser/index.html">pyskyfire.pump.diffuser</a><input aria-label="Toggle navigation of pyskyfire.pump.diffuser" class="toctree-checkbox" id="toctree-checkbox-43" name="toctree-checkbox-43" role="switch" type="checkbox"/><label for="toctree-checkbox-43"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/diffuser/DiffuserChecks.html">pyskyfire.pump.diffuser.DiffuserChecks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/diffuser/DiffuserGeometry.html">pyskyfire.pump.diffuser.DiffuserGeometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/diffuser/DiffuserOutlet.html">pyskyfire.pump.diffuser.DiffuserOutlet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/diffuser/DiffuserResult.html">pyskyfire.pump.diffuser.DiffuserResult</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/diffuser/VanedDiffuser.html">pyskyfire.pump.diffuser.VanedDiffuser</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/pump/disk_friction/index.html">pyskyfire.pump.disk_friction</a><input aria-label="Toggle navigation of pyskyfire.pump.disk_friction" class="toctree-checkbox" id="toctree-checkbox-44" name="toctree-checkbox-44" role="switch" type="checkbox"/><label for="toctree-checkbox-44"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/disk_friction/DiskFriction.html">pyskyfire.pump.disk_friction.DiskFriction</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/pump/duty/index.html">pyskyfire.pump.duty</a><input aria-label="Toggle navigation of pyskyfire.pump.duty" class="toctree-checkbox" id="toctree-checkbox-45" name="toctree-checkbox-45" role="switch" type="checkbox"/><label for="toctree-checkbox-45"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/duty/PumpDuty.html">pyskyfire.pump.duty.PumpDuty</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/pump/geometry/index.html">pyskyfire.pump.geometry</a><input aria-label="Toggle navigation of pyskyfire.pump.geometry" class="toctree-checkbox" id="toctree-checkbox-46" name="toctree-checkbox-46" role="switch" type="checkbox"/><label for="toctree-checkbox-46"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/geometry/BladeSection.html">pyskyfire.pump.geometry.BladeSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/geometry/BladeSettings.html">pyskyfire.pump.geometry.BladeSettings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/geometry/ImpellerBladeDefinition.html">pyskyfire.pump.geometry.ImpellerBladeDefinition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/geometry/ImpellerGeometry.html">pyskyfire.pump.geometry.ImpellerGeometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/geometry/MeridionalContours.html">pyskyfire.pump.geometry.MeridionalContours</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/geometry/SplitterSettings.html">pyskyfire.pump.geometry.SplitterSettings</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/pump/impeller/index.html">pyskyfire.pump.impeller</a><input aria-label="Toggle navigation of pyskyfire.pump.impeller" class="toctree-checkbox" id="toctree-checkbox-47" name="toctree-checkbox-47" role="switch" type="checkbox"/><label for="toctree-checkbox-47"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/impeller/Impeller.html">pyskyfire.pump.impeller.Impeller</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/impeller/ImpellerDiagnostics.html">pyskyfire.pump.impeller.ImpellerDiagnostics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/impeller/ImpellerDimensions.html">pyskyfire.pump.impeller.ImpellerDimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/impeller/ImpellerVelocityTriangles.html">pyskyfire.pump.impeller.ImpellerVelocityTriangles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/impeller/OutletSlip.html">pyskyfire.pump.impeller.OutletSlip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/pump/impeller/VelocityTriangle.html">pyskyfire.pump.impeller.VelocityTriangle</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/pump/pump_cli/index.html">pyskyfire.pump.pump_cli</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/pump/utils/index.html">pyskyfire.pump.utils</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autoapi/pyskyfire/turbine/index.html">pyskyfire.turbine</a><input aria-label="Toggle navigation of pyskyfire.turbine" class="toctree-checkbox" id="toctree-checkbox-48" name="toctree-checkbox-48" role="switch" type="checkbox"/><label for="toctree-checkbox-48"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/turbine/_pyturbo/index.html">pyskyfire.turbine._pyturbo</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/turbine/axial/index.html">pyskyfire.turbine.axial</a><input aria-label="Toggle navigation of pyskyfire.turbine.axial" class="toctree-checkbox" id="toctree-checkbox-49" name="toctree-checkbox-49" role="switch" type="checkbox"/><label for="toctree-checkbox-49"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/turbine/axial/AxialTurbine.html">pyskyfire.turbine.axial.AxialTurbine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/turbine/axial/RowSettings.html">pyskyfire.turbine.axial.RowSettings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/turbine/axial/SectionProfile.html">pyskyfire.turbine.axial.SectionProfile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/turbine/axial/Stage.html">pyskyfire.turbine.axial.Stage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/turbine/axial/StageFlow.html">pyskyfire.turbine.axial.StageFlow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/turbine/axial/StationFlow.html">pyskyfire.turbine.axial.StationFlow</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/turbine/definition/index.html">pyskyfire.turbine.definition</a><input aria-label="Toggle navigation of pyskyfire.turbine.definition" class="toctree-checkbox" id="toctree-checkbox-50" name="toctree-checkbox-50" role="switch" type="checkbox"/><label for="toctree-checkbox-50"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/turbine/definition/BladeRow.html">pyskyfire.turbine.definition.BladeRow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/turbine/definition/FreeVortexTwist.html">pyskyfire.turbine.definition.FreeVortexTwist</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/turbine/definition/ThicknessDistribution.html">pyskyfire.turbine.definition.ThicknessDistribution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/turbine/definition/TurbineDefinition.html">pyskyfire.turbine.definition.TurbineDefinition</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/turbine/duty/index.html">pyskyfire.turbine.duty</a><input aria-label="Toggle navigation of pyskyfire.turbine.duty" class="toctree-checkbox" id="toctree-checkbox-51" name="toctree-checkbox-51" role="switch" type="checkbox"/><label for="toctree-checkbox-51"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/turbine/duty/TurbineDuty.html">pyskyfire.turbine.duty.TurbineDuty</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/turbine/geometry/index.html">pyskyfire.turbine.geometry</a><input aria-label="Toggle navigation of pyskyfire.turbine.geometry" class="toctree-checkbox" id="toctree-checkbox-52" name="toctree-checkbox-52" role="switch" type="checkbox"/><label for="toctree-checkbox-52"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/turbine/geometry/RowGeometry.html">pyskyfire.turbine.geometry.RowGeometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/turbine/geometry/TurbineGeometry.html">pyskyfire.turbine.geometry.TurbineGeometry</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autoapi/pyskyfire/thermo/index.html">pyskyfire.thermo</a><input aria-label="Toggle navigation of pyskyfire.thermo" class="toctree-checkbox" id="toctree-checkbox-53" name="toctree-checkbox-53" role="switch" type="checkbox"/><label for="toctree-checkbox-53"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/thermo/aerothermodynamics/index.html">pyskyfire.thermo.aerothermodynamics</a><input aria-label="Toggle navigation of pyskyfire.thermo.aerothermodynamics" class="toctree-checkbox" id="toctree-checkbox-54" name="toctree-checkbox-54" role="switch" type="checkbox"/><label for="toctree-checkbox-54"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/aerothermodynamics/Aerothermodynamics.html">pyskyfire.thermo.aerothermodynamics.Aerothermodynamics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/aerothermodynamics/CombustionGasState.html">pyskyfire.thermo.aerothermodynamics.CombustionGasState</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/thermo/duty/index.html">pyskyfire.thermo.duty</a><input aria-label="Toggle navigation of pyskyfire.thermo.duty" class="toctree-checkbox" id="toctree-checkbox-55" name="toctree-checkbox-55" role="switch" type="checkbox"/><label for="toctree-checkbox-55"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/duty/MachineDuty.html">pyskyfire.thermo.duty.MachineDuty</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/thermo/eos/index.html">pyskyfire.thermo.eos</a><input aria-label="Toggle navigation of pyskyfire.thermo.eos" class="toctree-checkbox" id="toctree-checkbox-56" name="toctree-checkbox-56" role="switch" type="checkbox"/><label for="toctree-checkbox-56"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/eos/CoolPropEOS.html">pyskyfire.thermo.eos.CoolPropEOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/eos/EquationOfState.html">pyskyfire.thermo.eos.EquationOfState</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/eos/Incompressible.html">pyskyfire.thermo.eos.Incompressible</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/thermo/fluid/index.html">pyskyfire.thermo.fluid</a><input aria-label="Toggle navigation of pyskyfire.thermo.fluid" class="toctree-checkbox" id="toctree-checkbox-57" name="toctree-checkbox-57" role="switch" type="checkbox"/><label for="toctree-checkbox-57"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/fluid/Fluid.html">pyskyfire.thermo.fluid.Fluid</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/thermo/nozzle_loss/index.html">pyskyfire.thermo.nozzle_loss</a><input aria-label="Toggle navigation of pyskyfire.thermo.nozzle_loss" class="toctree-checkbox" id="toctree-checkbox-58" name="toctree-checkbox-58" role="switch" type="checkbox"/><label for="toctree-checkbox-58"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/nozzle_loss/DeliveredPerformance.html">pyskyfire.thermo.nozzle_loss.DeliveredPerformance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/nozzle_loss/EfficiencyTable.html">pyskyfire.thermo.nozzle_loss.EfficiencyTable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/nozzle_loss/NozzleLoss.html">pyskyfire.thermo.nozzle_loss.NozzleLoss</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/thermo/state/index.html">pyskyfire.thermo.state</a><input aria-label="Toggle navigation of pyskyfire.thermo.state" class="toctree-checkbox" id="toctree-checkbox-59" name="toctree-checkbox-59" role="switch" type="checkbox"/><label for="toctree-checkbox-59"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/state/FluidCapability.html">pyskyfire.thermo.state.FluidCapability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/state/FluidState.html">pyskyfire.thermo.state.FluidState</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/state/FluidStateResolver.html">pyskyfire.thermo.state.FluidStateResolver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/state/SaturationState.html">pyskyfire.thermo.state.SaturationState</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/thermo/transport/index.html">pyskyfire.thermo.transport</a><input aria-label="Toggle navigation of pyskyfire.thermo.transport" class="toctree-checkbox" id="toctree-checkbox-60" name="toctree-checkbox-60" role="switch" type="checkbox"/><label for="toctree-checkbox-60"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/transport/FluidTransport.html">pyskyfire.thermo.transport.FluidTransport</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/thermo/transport/TransportProperties.html">pyskyfire.thermo.transport.TransportProperties</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autoapi/pyskyfire/network/index.html">pyskyfire.network</a><input aria-label="Toggle navigation of pyskyfire.network" class="toctree-checkbox" id="toctree-checkbox-61" name="toctree-checkbox-61" role="switch" type="checkbox"/><label for="toctree-checkbox-61"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/index.html">pyskyfire.network.blocks</a><input aria-label="Toggle navigation of pyskyfire.network.blocks" class="toctree-checkbox" id="toctree-checkbox-62" name="toctree-checkbox-62" role="switch" type="checkbox"/><label for="toctree-checkbox-62"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/DiffuserBlock.html">pyskyfire.network.blocks.DiffuserBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/FluidBlock.html">pyskyfire.network.blocks.FluidBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/InjectorBlock.html">pyskyfire.network.blocks.InjectorBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/MassFlowMergerBlock.html">pyskyfire.network.blocks.MassFlowMergerBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/MassFlowSplitterBlock.html">pyskyfire.network.blocks.MassFlowSplitterBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/OrificeBlock.html">pyskyfire.network.blocks.OrificeBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/PipeBlock.html">pyskyfire.network.blocks.PipeBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/PumpBlock.html">pyskyfire.network.blocks.PumpBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/RegenBlock.html">pyskyfire.network.blocks.RegenBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/SignalBlock.html">pyskyfire.network.blocks.SignalBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/SimpleDuctBlock.html">pyskyfire.network.blocks.SimpleDuctBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/TransmissionBlock.html">pyskyfire.network.blocks.TransmissionBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/TurbineBlock.html">pyskyfire.network.blocks.TurbineBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/blocks/VoluteBlock.html">pyskyfire.network.blocks.VoluteBlock</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/network/engine_network/index.html">pyskyfire.network.engine_network</a><input aria-label="Toggle navigation of pyskyfire.network.engine_network" class="toctree-checkbox" id="toctree-checkbox-63" name="toctree-checkbox-63" role="switch" type="checkbox"/><label for="toctree-checkbox-63"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/engine_network/EngineNetwork.html">pyskyfire.network.engine_network.EngineNetwork</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/network/engine_network/Station.html">pyskyfire.network.engine_network.Station</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/index.html">pyskyfire.viz</a><input aria-label="Toggle navigation of pyskyfire.viz" class="toctree-checkbox" id="toctree-checkbox-64" name="toctree-checkbox-64" role="switch" type="checkbox"/><label for="toctree-checkbox-64"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/backends/index.html">pyskyfire.viz.backends</a><input aria-label="Toggle navigation of pyskyfire.viz.backends" class="toctree-checkbox" id="toctree-checkbox-65" name="toctree-checkbox-65" role="switch" type="checkbox"/><label for="toctree-checkbox-65"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/backends/common/index.html">pyskyfire.viz.backends.common</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/backends/pyvista/index.html">pyskyfire.viz.backends.pyvista</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/backends/threejs/index.html">pyskyfire.viz.backends.threejs</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/components/index.html">pyskyfire.viz.components</a><input aria-label="Toggle navigation of pyskyfire.viz.components" class="toctree-checkbox" id="toctree-checkbox-66" name="toctree-checkbox-66" role="switch" type="checkbox"/><label for="toctree-checkbox-66"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/components/AnnularDuctComponent.html">pyskyfire.viz.components.AnnularDuctComponent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/components/DiffuserComponent.html">pyskyfire.viz.components.DiffuserComponent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/components/ImpellerComponent.html">pyskyfire.viz.components.ImpellerComponent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/components/ManifoldComponent.html">pyskyfire.viz.components.ManifoldComponent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/components/PipeComponent.html">pyskyfire.viz.components.PipeComponent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/components/ThrustChamberComponent.html">pyskyfire.viz.components.ThrustChamberComponent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/components/TurbineComponent.html">pyskyfire.viz.components.TurbineComponent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/components/VoluteComponent.html">pyskyfire.viz.components.VoluteComponent</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/core/index.html">pyskyfire.viz.core</a><input aria-label="Toggle navigation of pyskyfire.viz.core" class="toctree-checkbox" id="toctree-checkbox-67" name="toctree-checkbox-67" role="switch" type="checkbox"/><label for="toctree-checkbox-67"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/core/PlotBase.html">pyskyfire.viz.core.PlotBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/core/_Adder.html">pyskyfire.viz.core._Adder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/core/_Node.html">pyskyfire.viz.core._Node</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/engine_viz/index.html">pyskyfire.viz.engine_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.engine_viz" class="toctree-checkbox" id="toctree-checkbox-68" name="toctree-checkbox-68" role="switch" type="checkbox"/><label for="toctree-checkbox-68"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/engine_viz/Engine3DViewer.html">pyskyfire.viz.engine_viz.Engine3DViewer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/viz/heat_exchanger/index.html">pyskyfire.viz.heat_exchanger</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/heat_exchanger_component/index.html">pyskyfire.viz.heat_exchanger_component</a><input aria-label="Toggle navigation of pyskyfire.viz.heat_exchanger_component" class="toctree-checkbox" id="toctree-checkbox-69" name="toctree-checkbox-69" role="switch" type="checkbox"/><label for="toctree-checkbox-69"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/heat_exchanger_component/HeatExchangerComponent.html">pyskyfire.viz.heat_exchanger_component.HeatExchangerComponent</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/viz/impeller_viz/index.html">pyskyfire.viz.impeller_viz</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/injector_viz/index.html">pyskyfire.viz.injector_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.injector_viz" class="toctree-checkbox" id="toctree-checkbox-70" name="toctree-checkbox-70" role="switch" type="checkbox"/><label for="toctree-checkbox-70"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/injector_viz/InjectorComponent.html">pyskyfire.viz.injector_viz.InjectorComponent</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/lookup_tables/index.html">pyskyfire.viz.lookup_tables</a><input aria-label="Toggle navigation of pyskyfire.viz.lookup_tables" class="toctree-checkbox" id="toctree-checkbox-71" name="toctree-checkbox-71" role="switch" type="checkbox"/><label for="toctree-checkbox-71"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/lookup_tables/PlotMoodyDiagram.html">pyskyfire.viz.lookup_tables.PlotMoodyDiagram</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/lookup_tables/PlotThetaVsEpsilon.html">pyskyfire.viz.lookup_tables.PlotThetaVsEpsilon</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/network_viz/index.html">pyskyfire.viz.network_viz</a><input aria-label="Toggle navigation of pyskyfire.viz.network_viz" class="toctree-checkbox" id="toctree-checkbox-72" name="toctree-checkbox-72" role="switch" type="checkbox"/><label for="toctree-checkbox-72"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/network_viz/NetworkVisualizer.html">pyskyfire.viz.network_viz.NetworkVisualizer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/network_viz/_BlockSpec.html">pyskyfire.viz.network_viz._BlockSpec</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_common/index.html">pyskyfire.viz.plot_common</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_common" class="toctree-checkbox" id="toctree-checkbox-73" name="toctree-checkbox-73" role="switch" type="checkbox"/><label for="toctree-checkbox-73"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_common/PlotPTDiagram.html">pyskyfire.viz.plot_common.PlotPTDiagram</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_common/PlotResidualHistory.html">pyskyfire.viz.plot_common.PlotResidualHistory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_common/PlotStationProperty.html">pyskyfire.viz.plot_common.PlotStationProperty</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_ducts/index.html">pyskyfire.viz.plot_ducts</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_ducts" class="toctree-checkbox" id="toctree-checkbox-74" name="toctree-checkbox-74" role="switch" type="checkbox"/><label for="toctree-checkbox-74"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_ducts/PlotPipePressure.html">pyskyfire.viz.plot_ducts.PlotPipePressure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_ducts/PlotPipePressureLoss.html">pyskyfire.viz.plot_ducts.PlotPipePressureLoss</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_film_cooling/index.html">pyskyfire.viz.plot_film_cooling</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_film_cooling" class="toctree-checkbox" id="toctree-checkbox-75" name="toctree-checkbox-75" role="switch" type="checkbox"/><label for="toctree-checkbox-75"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_film_cooling/PlotFilmBoundaryLayer.html">pyskyfire.viz.plot_film_cooling.PlotFilmBoundaryLayer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_film_cooling/PlotFilmDryout.html">pyskyfire.viz.plot_film_cooling.PlotFilmDryout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_film_cooling/PlotFilmEffectiveWallHTC.html">pyskyfire.viz.plot_film_cooling.PlotFilmEffectiveWallHTC</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_film_cooling/PlotFilmEvaporationRate.html">pyskyfire.viz.plot_film_cooling.PlotFilmEvaporationRate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_film_cooling/PlotFilmHeatFlux.html">pyskyfire.viz.plot_film_cooling.PlotFilmHeatFlux</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_film_cooling/PlotFilmHeatTransferCoefficient.html">pyskyfire.viz.plot_film_cooling.PlotFilmHeatTransferCoefficient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_film_cooling/PlotFilmRadiativeFraction.html">pyskyfire.viz.plot_film_cooling.PlotFilmRadiativeFraction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_film_cooling/PlotFilmWallTemperature.html">pyskyfire.viz.plot_film_cooling.PlotFilmWallTemperature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_film_cooling/PlotGaseousFilmRadiation.html">pyskyfire.viz.plot_film_cooling.PlotGaseousFilmRadiation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_film_cooling/PlotGaseousFilmTemperatureGap.html">pyskyfire.viz.plot_film_cooling.PlotGaseousFilmTemperatureGap</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/index.html">pyskyfire.viz.plot_regen</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_regen" class="toctree-checkbox" id="toctree-checkbox-76" name="toctree-checkbox-76" role="switch" type="checkbox"/><label for="toctree-checkbox-76"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotChannelHeight.html">pyskyfire.viz.plot_regen.PlotChannelHeight</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotChannelWidth.html">pyskyfire.viz.plot_regen.PlotChannelWidth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotContour.html">pyskyfire.viz.plot_regen.PlotContour</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotCoolantArea.html">pyskyfire.viz.plot_regen.PlotCoolantArea</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotCoolantPhase.html">pyskyfire.viz.plot_regen.PlotCoolantPhase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotCoolantPressure.html">pyskyfire.viz.plot_regen.PlotCoolantPressure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotCoolantQuality.html">pyskyfire.viz.plot_regen.PlotCoolantQuality</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotCoolantTemperature.html">pyskyfire.viz.plot_regen.PlotCoolantTemperature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotHeatFlux.html">pyskyfire.viz.plot_regen.PlotHeatFlux</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotHeatTransferCoefficient.html">pyskyfire.viz.plot_regen.PlotHeatTransferCoefficient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotHydraulicDiameter.html">pyskyfire.viz.plot_regen.PlotHydraulicDiameter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotRadiusOfCurvature.html">pyskyfire.viz.plot_regen.PlotRadiusOfCurvature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotReynoldsNumber.html">pyskyfire.viz.plot_regen.PlotReynoldsNumber</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotSaturationMargin.html">pyskyfire.viz.plot_regen.PlotSaturationMargin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotTemperatureProfile.html">pyskyfire.viz.plot_regen.PlotTemperatureProfile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotThermalResistance.html">pyskyfire.viz.plot_regen.PlotThermalResistance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotVelocity.html">pyskyfire.viz.plot_regen.PlotVelocity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotWallLayers.html">pyskyfire.viz.plot_regen.PlotWallLayers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotWallTemperature.html">pyskyfire.viz.plot_regen.PlotWallTemperature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotdAdxCoolantArea.html">pyskyfire.viz.plot_regen.PlotdAdxCoolantArea</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotdAdxThermalCoolant.html">pyskyfire.viz.plot_regen.PlotdAdxThermalCoolant</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_regen/PlotdAdxThermalHotGas.html">pyskyfire.viz.plot_regen.PlotdAdxThermalHotGas</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_thermo/index.html">pyskyfire.viz.plot_thermo</a><input aria-label="Toggle navigation of pyskyfire.viz.plot_thermo" class="toctree-checkbox" id="toctree-checkbox-77" name="toctree-checkbox-77" role="switch" type="checkbox"/><label for="toctree-checkbox-77"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_thermo/PlotTransportProperty.html">pyskyfire.viz.plot_thermo.PlotTransportProperty</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/plot_thermo/PlotTransportPropertyField.html">pyskyfire.viz.plot_thermo.PlotTransportPropertyField</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/report/index.html">pyskyfire.viz.report</a><input aria-label="Toggle navigation of pyskyfire.viz.report" class="toctree-checkbox" id="toctree-checkbox-78" name="toctree-checkbox-78" role="switch" type="checkbox"/><label for="toctree-checkbox-78"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/report/Report.html">pyskyfire.viz.report.Report</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/report/Tab.html">pyskyfire.viz.report.Tab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/report/_Block.html">pyskyfire.viz.report._Block</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/sankey/index.html">pyskyfire.viz.sankey</a><input aria-label="Toggle navigation of pyskyfire.viz.sankey" class="toctree-checkbox" id="toctree-checkbox-79" name="toctree-checkbox-79" role="switch" type="checkbox"/><label for="toctree-checkbox-79"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/sankey/PlotMassFlowSankey.html">pyskyfire.viz.sankey.PlotMassFlowSankey</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/sankey/_FlowLink.html">pyskyfire.viz.sankey._FlowLink</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../autoapi/pyskyfire/viz/scene/index.html">pyskyfire.viz.scene</a><input aria-label="Toggle navigation of pyskyfire.viz.scene" class="toctree-checkbox" id="toctree-checkbox-80" name="toctree-checkbox-80" role="switch" type="checkbox"/><label for="toctree-checkbox-80"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/scene/Anchor.html">pyskyfire.viz.scene.Anchor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/scene/Component.html">pyskyfire.viz.scene.Component</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/scene/FieldData.html">pyskyfire.viz.scene.FieldData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/scene/MeshData.html">pyskyfire.viz.scene.MeshData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/scene/Scene.html">pyskyfire.viz.scene.Scene</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/scene/SceneNode.html">pyskyfire.viz.scene.SceneNode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../autoapi/pyskyfire/viz/scene/Transform.html">pyskyfire.viz.scene.Transform</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../autoapi/pyskyfire/viz/turbine_viz/index.html">pyskyfire.viz.turbine_viz</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<div class="main">
+<div class="content">
+<div class="article-container">
+<a class="back-to-top muted-link" href="#">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+</svg>
+<span>Back to top</span>
+</a>
+<div class="content-icon-container">
+<div class="view-this-page">
+<a class="muted-link" href="../_sources/howto/impellers.md.txt" title="View this page">
+<svg><use href="#svg-eye"></use></svg>
+<span class="visually-hidden">View this page</span>
+</a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+<button aria-label="Toggle Light / Dark / Auto color theme" class="theme-toggle">
+<svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+<svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+<svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+<svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+</button>
+</div>
+<label class="toc-overlay-icon toc-content-icon" for="__toc">
+<span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+</label>
+</div>
+<article id="furo-main-content" role="main">
+<section class="tex2jax_ignore mathjax_ignore" id="create-an-impeller-scene-and-report">
+<h1>Create an impeller scene and report<a class="headerlink" href="#create-an-impeller-scene-and-report" title="Link to this heading">¶</a></h1>
+<p>Install the geometry and visualization extras:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">'pyskyfire[impeller,viz]'</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Impeller</span></code> performs preliminary sizing and resolves physical blade inputs.
+<code class="docutils literal notranslate"><span class="pre">build_geometry()</span></code> calls pyTurbo Aero to construct the pressure and suction
+surfaces. <code class="docutils literal notranslate"><span class="pre">ImpellerComponent</span></code> places these surfaces in the regular scene API:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/pump/index.html#module-pyskyfire.pump"><span class="nn">pyskyfire.pump</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/pump/impeller/Impeller.html#pyskyfire.pump.impeller.Impeller"><span class="n">Impeller</span></a>
+<span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/index.html#module-pyskyfire.viz"><span class="nn">pyskyfire.viz</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/components/ImpellerComponent.html#pyskyfire.viz.components.ImpellerComponent"><span class="n">ImpellerComponent</span></a><span class="p">,</span> <a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/report/Report.html#pyskyfire.viz.report.Report"><span class="n">Report</span></a><span class="p">,</span> <a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/scene/Scene.html#pyskyfire.viz.scene.Scene"><span class="n">Scene</span></a>
+
+<a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/pump/impeller/Impeller.html#pyskyfire.pump.impeller.Impeller"><span class="n">impeller</span></a> <span class="o">=</span> <a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/pump/impeller/Impeller.html#pyskyfire.pump.impeller.Impeller"><span class="n">Impeller</span></a><span class="p">(</span>
+    <span class="n">Q</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">H</span><span class="o">=</span><span class="mf">100.</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
+    <span class="n">shaft_diameter</span><span class="o">=</span><span class="mf">0.020</span><span class="p">,</span> <span class="n">inlet_hub_diameter</span><span class="o">=</span><span class="mf">0.030</span><span class="p">,</span>
+    <span class="n">blade_count</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">blade_thickness</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">hydraulic_efficiency</span><span class="o">=</span><span class="mf">0.90</span><span class="p">,</span>
+    <span class="n">phi1</span><span class="o">=</span><span class="mf">0.20</span><span class="p">,</span> <span class="n">incidence_deg</span><span class="o">=</span><span class="mf">2.</span><span class="p">,</span> <span class="n">rho</span><span class="o">=</span><span class="mf">1000.</span><span class="p">,</span>
+<span class="p">)</span>
+<a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/pump/impeller/Impeller.html#pyskyfire.pump.impeller.Impeller.build_geometry"><span class="n">impeller</span><span class="o">.</span><span class="n">build_geometry</span></a><span class="p">()</span>
+
+<a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/scene/Scene.html#pyskyfire.viz.scene.Scene"><span class="n">scene</span></a> <span class="o">=</span> <a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/scene/Scene.html#pyskyfire.viz.scene.Scene"><span class="n">Scene</span></a><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Impeller"</span><span class="p">,</span> <span class="n">show_axes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/scene/Scene.html#pyskyfire.viz.scene.Scene.add"><span class="n">scene</span><span class="o">.</span><span class="n">add</span></a><span class="p">(</span><a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/components/ImpellerComponent.html#pyskyfire.viz.components.ImpellerComponent"><span class="n">ImpellerComponent</span></a><span class="p">(</span><a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/pump/impeller/Impeller.html#pyskyfire.pump.impeller.Impeller"><span class="n">impeller</span></a><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">"impeller"</span><span class="p">)</span>
+<a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/scene/Scene.html#pyskyfire.viz.scene.Scene.save_html"><span class="n">scene</span><span class="o">.</span><span class="n">save_html</span></a><span class="p">(</span><span class="s2">"impeller-scene.html"</span><span class="p">)</span>
+
+<a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/report/Report.html#pyskyfire.viz.report.Report"><span class="n">report</span></a> <span class="o">=</span> <a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/report/Report.html#pyskyfire.viz.report.Report"><span class="n">Report</span></a><span class="p">(</span><span class="s2">"Impeller design"</span><span class="p">)</span>
+<a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/report/Report.html#pyskyfire.viz.report.Report.add_tab"><span class="n">report</span><span class="o">.</span><span class="n">add_tab</span></a><span class="p">(</span><span class="s2">"Geometry"</span><span class="p">)</span><span class="o">.</span><a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/report/Tab.html#pyskyfire.viz.report.Tab.add_iframe"><span class="n">add_iframe</span></a><span class="p">(</span><a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/scene/Scene.html#pyskyfire.viz.scene.Scene.data_url"><span class="n">scene</span><span class="o">.</span><span class="n">data_url</span></a><span class="p">)</span>
+<a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/viz/report/Report.html#pyskyfire.viz.report.Report.save_html"><span class="n">report</span><span class="o">.</span><span class="n">save_html</span></a><span class="p">(</span><span class="s2">"impeller-report.html"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The complete runnable example is <code class="docutils literal notranslate"><span class="pre">examples/impeller/impeller_report.py</span></code>.
+It adds a design table, meridional plot, and blade-angle table to the report.
+It is designed at low specific speed with four full blades and one splitter
+per passage. Run it with <code class="docutils literal notranslate"><span class="pre">--screenshot</span></code> for a PNG preview. HTML generation
+does not need a display.</p>
+<section id="duty-sizing-and-supplied-efficiencies">
+<h2>Duty, sizing and supplied efficiencies<a class="headerlink" href="#duty-sizing-and-supplied-efficiencies" title="Link to this heading">¶</a></h2>
+<p>Use SI units with rotational speed in rpm and blade angles in degrees.
+<code class="docutils literal notranslate"><span class="pre">Q</span></code> is delivered volume flow and <code class="docutils literal notranslate"><span class="pre">H</span></code> is the total head at the impeller
+outlet: the head the pump delivers plus whatever the volute or diffuser after
+it loses. Alternatively use
+<code class="docutils literal notranslate"><span class="pre">Impeller.from_pressure_rise(mdot=...,</span> <span class="pre">rho=...,</span> <span class="pre">dp=...,</span> <span class="pre">n=...,</span> <span class="pre">**design_inputs)</span></code>,
+or size for a <code class="docutils literal notranslate"><span class="pre">PumpDuty</span></code> with <code class="docutils literal notranslate"><span class="pre">Impeller.from_duty(duty,</span> <span class="pre">**design_inputs)</span></code>.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">PumpDuty</span></code> states what the pump is asked to do, separately from how it is
+built. It can be written the way pumps are specified or the way an engine
+presents them, and stores the same thing either way:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/pump/index.html#module-pyskyfire.pump"><span class="nn">pyskyfire.pump</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/pump/duty/PumpDuty.html#pyskyfire.pump.duty.PumpDuty"><span class="n">PumpDuty</span></a>
+<span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/thermo/index.html#module-pyskyfire.thermo"><span class="nn">pyskyfire.thermo</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/thermo/eos/Incompressible.html#pyskyfire.thermo.eos.Incompressible"><span class="n">Incompressible</span></a>
+
+<a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/pump/duty/PumpDuty.html#pyskyfire.pump.duty.PumpDuty.from_head"><span class="n">PumpDuty</span><span class="o">.</span><span class="n">from_head</span></a><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">100.</span><span class="p">,</span> <span class="mi">10_000</span><span class="p">,</span> <span class="n">rho</span><span class="o">=</span><span class="mf">1000.</span><span class="p">)</span>          <span class="c1"># Q, H, n</span>
+<a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/pump/duty/PumpDuty.html#pyskyfire.pump.duty.PumpDuty.from_pressure_rise"><span class="n">PumpDuty</span><span class="o">.</span><span class="n">from_pressure_rise</span></a><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="mf">10.</span><span class="p">,</span> <span class="n">rho</span><span class="o">=</span><span class="mf">1000.</span><span class="p">,</span> <span class="n">dp</span><span class="o">=</span><span class="mf">9.8e5</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">10_000</span><span class="p">)</span>
+<a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/pump/duty/PumpDuty.html#pyskyfire.pump.duty.PumpDuty.from_states"><span class="n">PumpDuty</span><span class="o">.</span><span class="n">from_states</span></a><span class="p">(</span><span class="n">fluid</span><span class="o">=</span><span class="s2">"Methane"</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="mf">22.8</span><span class="p">,</span> <span class="n">p_in</span><span class="o">=</span><span class="mf">5e5</span><span class="p">,</span> <span class="n">T_in</span><span class="o">=</span><span class="mf">135.3</span><span class="p">,</span>
+                     <span class="n">p_out</span><span class="o">=</span><span class="mf">230e5</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">40_000</span><span class="p">)</span>                  <span class="c1"># real fluid</span>
+<a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/pump/duty/PumpDuty.html#pyskyfire.pump.duty.PumpDuty.from_stations"><span class="n">PumpDuty</span><span class="o">.</span><span class="n">from_stations</span></a><span class="p">(</span><span class="n">tank</span><span class="p">,</span> <span class="n">pump_out</span><span class="p">,</span> <span class="n">fluid</span><span class="o">=</span><span class="s2">"Methane"</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">40_000</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">fluid</span></code> is a CoolProp name, a <code class="docutils literal notranslate"><span class="pre">thermo.Fluid</span></code>, or any <code class="docutils literal notranslate"><span class="pre">thermo.EquationOfState</span></code>,
+such as <code class="docutils literal notranslate"><span class="pre">Incompressible(rho)</span></code>. <code class="docutils literal notranslate"><span class="pre">H</span></code> is the isentropic head: the enthalpy an
+ideal pump adds, over <code class="docutils literal notranslate"><span class="pre">g</span></code>. At constant density that is <code class="docutils literal notranslate"><span class="pre">Δp/(rho*g)</span></code>. For a
+real liquid it is a little less, because the liquid compresses on the way
+through; for methane pumped from 5 to 230 bar the difference is about 2 %. The
+duty also reports the isentropic outlet flow <code class="docutils literal notranslate"><span class="pre">Q_out</span></code> and the specific speed.</p>
+<p>Eye sizing retains <code class="docutils literal notranslate"><span class="pre">phi1</span> <span class="pre">=</span> <span class="pre">Cm1</span> <span class="pre">/</span> <span class="pre">Ueye</span></code>, solving annular continuity with a
+fixed wetted hub diameter. <code class="docutils literal notranslate"><span class="pre">d1</span></code> can override the computed eye diameter. The
+shaft diameter and wetted hub diameter are separate inputs; no shaft stress
+sizing is performed. <code class="docutils literal notranslate"><span class="pre">b2</span></code> defaults to Gülich’s mean outlet-width curve,
+Eq. (7.1).</p>
+<section id="slip-and-the-head-closure">
+<h3>Slip and the head closure<a class="headerlink" href="#slip-and-the-head-closure" title="Link to this heading">¶</a></h3>
+<p>The flow does not leave along the blades. Gülich’s Table 3.2 predicts the
+swirl it does leave with: a slip factor from the blade outlet angle, the blade
+count, the blade blockage and the inlet diameter, a modified form of Wiesner’s
+correlation. <code class="docutils literal notranslate"><span class="pre">outlet_slip()</span></code> evaluates it on its own. The outlet triangles
+carry that swirl, and <code class="docutils literal notranslate"><span class="pre">beta_flow_deg</span></code> is the flow angle it implies, below the
+blade angle <code class="docutils literal notranslate"><span class="pre">beta_metal_deg</span></code>.</p>
+<p>The design is closed on it. Exactly one quantity is solved so the predicted
+swirl is the swirl the head needs, <code class="docutils literal notranslate"><span class="pre">c_u2</span> <span class="pre">=</span> <span class="pre">g*H/(eta_h*u2)</span> <span class="pre">+</span> <span class="pre">u1*c_u1/u2</span></code>
+(Gülich Eq. T3.2.8):</p>
+<ul class="simple">
+<li><p>By default the blade outlet angle is solved, which is the order of Gülich’s
+own procedure. The outlet diameter comes from one of <code class="docutils literal notranslate"><span class="pre">psi</span></code>, <code class="docutils literal notranslate"><span class="pre">d2</span></code>, <code class="docutils literal notranslate"><span class="pre">u2</span></code> or a
+supplied <code class="docutils literal notranslate"><span class="pre">meridional</span></code>. With none of them it comes from Gülich’s head
+coefficient curve, Eq. (3.26), at <code class="docutils literal notranslate"><span class="pre">fT</span></code> (default 1.0; he finds 1.0 describes
+multistage pumps and 1.1 low-head single-stage volute pumps).</p></li>
+<li><p>Give <code class="docutils literal notranslate"><span class="pre">beta2_deg</span></code> and the outlet diameter is solved instead.</p></li>
+<li><p>Giving both over-specifies the wheel and is refused.</p></li>
+</ul>
+<p>Eq. (3.26) describes whole pumps: their delivered head at a stage efficiency.
+<code class="docutils literal notranslate"><span class="pre">H</span></code> and <code class="docutils literal notranslate"><span class="pre">hydraulic_efficiency</span></code> here are the impeller’s, so the same wheel sits
+higher in the band by roughly the ratio of the two efficiencies. That is the
+reason to move <code class="docutils literal notranslate"><span class="pre">fT</span></code> or give <code class="docutils literal notranslate"><span class="pre">psi</span></code> outright.</p>
+<p>At low specific speed the swirl a wheel can deliver has a broad, flat peak
+against the blade angle. A head above it cannot be had at any angle, and the
+error says what head coefficient can. The solved angle is always the one below
+the peak.</p>
+<p><code class="docutils literal notranslate"><span class="pre">blade_count</span></code> is an input. Gülich rejects empirical blade-count formulas as
+likely to violate the criteria that actually set it. Only full blades count
+toward slip; splitters are not in the correlation.</p>
+<p><code class="docutils literal notranslate"><span class="pre">impeller.diagnostics</span></code> reports what was solved, the resolved and correlated
+head coefficients, the mean-streamline slip prediction, the deviation angle
+(Gülich suggests at most 10 to 14 degrees) and the deceleration ratio
+<code class="docutils literal notranslate"><span class="pre">w2/w1</span></code> at the shroud (de Haller: at least 0.7). None of them is enforced.</p>
+</section>
+<section id="efficiencies">
+<h3>Efficiencies<a class="headerlink" href="#efficiencies" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">hydraulic_efficiency</span></code> is the impeller’s own, Gülich’s eta_h,La: the losses
+between its inlet and outlet. Each other loss is charged by the component it
+happens in, never lumped into one pump efficiency:</p>
+<ul class="simple">
+<li><p>the volute or diffuser, by its own block, from the head it is handed;</p></li>
+<li><p>disk friction on the wheel’s outer faces, by <code class="docutils literal notranslate"><span class="pre">pump.DiskFriction</span></code> (Gülich
+Table 3.6);</p></li>
+<li><p>bearings and shaft seals, by the pump block’s <code class="docutils literal notranslate"><span class="pre">mechanical_efficiency</span></code>;</p></li>
+<li><p>leakage, by <code class="docutils literal notranslate"><span class="pre">volumetric_efficiency</span></code>, which sets the internal flow to
+<code class="docutils literal notranslate"><span class="pre">Q</span> <span class="pre">/</span> <span class="pre">volumetric_efficiency</span></code>. Its default of 1 means no leakage.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">blade_power</span></code> is <code class="docutils literal notranslate"><span class="pre">rho</span> <span class="pre">*</span> <span class="pre">g</span> <span class="pre">*</span> <span class="pre">Q_internal</span> <span class="pre">*</span> <span class="pre">H</span> <span class="pre">/</span> <span class="pre">eta_h</span></code>, the work the blades do,
+or <code class="docutils literal notranslate"><span class="pre">None</span></code> without <code class="docutils literal notranslate"><span class="pre">rho</span></code>. <code class="docutils literal notranslate"><span class="pre">network.PumpBlock</span></code> combines the parts: its outlet is
+the impeller outlet, its shaft power is blade power plus disk friction over
+the mechanical efficiency, and the first two heat the fluid.</p>
+<p>For a typical efficiency, Gülich’s Fig. 3.33 splits the losses of pumps near
+<code class="docutils literal notranslate"><span class="pre">nq</span> <span class="pre">=</span> <span class="pre">15</span></code> into about 2 to 3.5 percent of the head in the impeller against 13 to
+18 percent in the collector, which puts eta_h,La near 0.97 where the whole
+stage is near 0.85.</p>
+<p>The efficiencies are supplied assumptions, not predictions. There is no
+cavitation assessment or impeller loss prediction. The generated geometry is a
+preliminary design for inspection.</p>
+</section>
+</section>
+<section id="design-controls-and-conventions">
+<h2>Design controls and conventions<a class="headerlink" href="#design-controls-and-conventions" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">blade_count</span></code>, <code class="docutils literal notranslate"><span class="pre">blade_thickness</span></code>, <code class="docutils literal notranslate"><span class="pre">hydraulic_efficiency</span></code>, <code class="docutils literal notranslate"><span class="pre">shaft_diameter</span></code>
+and <code class="docutils literal notranslate"><span class="pre">inlet_hub_diameter</span></code> are required design inputs. <code class="docutils literal notranslate"><span class="pre">beta2_deg</span></code> is solved
+unless given.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">beta1_deg=None</span></code> derives hub, midspan and tip inlet metal angles from the
+unblocked annular velocity triangles, with <code class="docutils literal notranslate"><span class="pre">incidence_deg</span></code> added. An explicit
+<code class="docutils literal notranslate"><span class="pre">beta1_deg</span></code> overrides this calculation. <code class="docutils literal notranslate"><span class="pre">inlet_prewhirl</span></code> specifies absolute
+circumferential inlet velocity in m/s, positive with rotation.</p></li>
+<li><p>Metal angles are measured from the backward circumferential direction toward
+the meridional direction: 90° is meridional. This implementation supports
+backward-swept blades. Incidence means metal angle minus relative flow angle.</p></li>
+<li><p>Span runs from hub (<code class="docutils literal notranslate"><span class="pre">span_fraction=0</span></code>) to blade tip (<code class="docutils literal notranslate"><span class="pre">span_fraction=1</span></code>).
+The three defining profiles are interpolated by pyTurbo across that span.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wrap_deg</span></code> is total circumferential sweep from leading to trailing edge,
+positive backward for rotation about +x. If omitted, it is estimated by
+integrating an interpolated metal-angle law along each meridional section.
+This integral sets the total wrap; pyTurbo constructs its own camber curve
+satisfying the endpoint controls.</p></li>
+<li><p>Sections are stacked on the trailing edge: it lies in one axial plane at
+<code class="docutils literal notranslate"><span class="pre">theta</span> <span class="pre">=</span> <span class="pre">0</span></code>, and the leading edge carries the spanwise wrap difference as
+sweep. Stacking rotates each section rigidly about the shaft, leaving metal
+angles, wrap and thickness unchanged.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BladeSettings.start</span></code> slants the leading edge when given a <code class="docutils literal notranslate"><span class="pre">(hub,</span> <span class="pre">tip)</span></code> pair
+of stations. Slant it: a hub streamline is much longer in <code class="docutils literal notranslate"><span class="pre">m'</span></code> than a tip
+streamline, because <code class="docutils literal notranslate"><span class="pre">dm'</span> <span class="pre">=</span> <span class="pre">dm/r</span></code> and the hub runs close to the axis, so a
+leading edge on one station makes the hub section wrap far further than the
+tip section. That difference ends up as leading-edge sweep. Starting the
+blade further downstream on the hub, as a blade development is normally
+drawn, evens the wrap out. In the example, <code class="docutils literal notranslate"><span class="pre">start=(0.2,</span> <span class="pre">0.01)</span></code> takes the
+spread from 65° to 6°.</p></li>
+<li><p>The inlet velocity triangle and the inlet metal angles are evaluated on the
+leading edge, not at the inlet plane, with <code class="docutils literal notranslate"><span class="pre">cm</span></code> from unblocked continuity
+through the leading edge. The component of the through-flow crossing that
+line is what counts, so a slanted edge passes less than the area it sweeps.
+Eye sizing still uses the inlet plane and <code class="docutils literal notranslate"><span class="pre">phi1</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tip_clearance</span></code> is a distance in metres along the paired hub-to-shroud span.
+It trims the blade-tip boundary while preserving the displayed flow shroud.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">blade_thickness</span></code> is the total physical section-normal <strong>body</strong> thickness in
+metres. Supply a float or a function requesting any subset of the named scalar
+arguments <code class="docutils literal notranslate"><span class="pre">chord_fraction</span></code>, <code class="docutils literal notranslate"><span class="pre">span_fraction</span></code>, <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">r</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">thickness</span><span class="p">(</span><span class="n">chord_fraction</span><span class="p">,</span> <span class="n">span_fraction</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mf">0.0015</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mf">0.30</span><span class="o">*</span><span class="n">span_fraction</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mf">0.20</span><span class="o">*</span><span class="n">chord_fraction</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">chord_fraction</span></code> is normalized conformal meridional distance, with <code class="docutils literal notranslate"><span class="pre">dm′</span> <span class="pre">=</span> <span class="pre">dm/r</span></code>,
+from main-blade leading edge (0) to trailing edge (1). <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">r</span></code> are in metres.
+Angle, incidence, prewhirl and wrap inputs also accept functions, with arguments
+<code class="docutils literal notranslate"><span class="pre">span_fraction</span></code>, <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">r</span></code>. Functions return a finite scalar and should be smooth.
+Angle and wrap functions are sampled at the three defining spans.</p>
+<p>Thickness is fitted to pyTurbo’s surface controls. Leading and trailing edges
+close, so the thickness tapers there. Body thickness is checked at the defining
+profiles; fits exceeding 20% relative error away from the edge closures are
+rejected. <code class="docutils literal notranslate"><span class="pre">geometry.thickness_max_relative_error</span></code> reports this fit error. A
+sharp or rapidly varying function is unsuitable for the current fitter.</p>
+<p>Optional <code class="docutils literal notranslate"><span class="pre">BladeSettings(start=0.05,</span> <span class="pre">end=0.98,</span> <span class="pre">trailing_edge="rounded",</span> <span class="pre">angle_law="cosine")</span></code> controls blade placement and wrap estimation. Start and
+end are fractions of the shared meridional station coordinate. <code class="docutils literal notranslate"><span class="pre">start</span></code> also
+accepts a <code class="docutils literal notranslate"><span class="pre">(hub,</span> <span class="pre">tip)</span></code> pair, which slants the leading edge; <code class="docutils literal notranslate"><span class="pre">start_hub</span></code> and
+<code class="docutils literal notranslate"><span class="pre">start_tip</span></code> always report both. A section can only begin on a span line, so a
+slant is a statement about which hub and shroud stations pair, and the passage
+is re-paired to carry that line: the hub keeps its stations and the shroud is
+resampled, then relaxed back to the original pairing downstream. A supplied
+<code class="docutils literal notranslate"><span class="pre">meridional</span></code> passage is re-paired the same way. Pairings that would push the
+shroud below the hub are rejected. Trailing edge
+can be <code class="docutils literal notranslate"><span class="pre">"rounded"</span></code> or <code class="docutils literal notranslate"><span class="pre">"cut"</span></code>; independent edge-radius inputs are not exposed
+because the supported upstream version does not reliably honor them.</p>
+<p>Optional <code class="docutils literal notranslate"><span class="pre">SplitterSettings(start=0.5,</span> <span class="pre">pitch_fraction=0.5,</span> <span class="pre">thickness_scale=1.0)</span></code>
+adds one splitter per main-blade passage. It follows the downstream main-blade
+camber, starting at the specified main-blade chord fraction. <code class="docutils literal notranslate"><span class="pre">pitch_fraction</span></code>
+places it circumferentially between main blades. Its thickness function uses
+the main-blade chord coordinate, multiplied by <code class="docutils literal notranslate"><span class="pre">thickness_scale</span></code>.</p>
+</section>
+<section id="meridional-passage-and-generated-representation">
+<h2>Meridional passage and generated representation<a class="headerlink" href="#meridional-passage-and-generated-representation" title="Link to this heading">¶</a></h2>
+<p>The default passage uses smooth quarter-ellipse hub and shroud curves with an
+axial inlet and radial outlet. <code class="docutils literal notranslate"><span class="pre">axial_length</span></code> sets the shroud’s axial extent;
+otherwise a preliminary dimension-based default is used. Supply
+<code class="docutils literal notranslate"><span class="pre">meridional=MeridionalContours(hub=hub_xr,</span> <span class="pre">shroud=shroud_xr)</span></code> for custom paired
+<code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">2)</span></code> arrays of <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">r)</span></code> stations. Both arrays must have the same length,
+positive passage width and monotone axial/radial coordinates. Their endpoints
+must match the sized inlet radii and, if <code class="docutils literal notranslate"><span class="pre">b2</span></code> is given, the outlet width; the
+outlet radius is taken from it and the blade angle solved. Pair stations
+across the passage; the shared station coordinate is normalized hub arc length.</p>
+<p><code class="docutils literal notranslate"><span class="pre">MeridionalContours</span></code> is the radial-impeller form of the shared
+<code class="docutils literal notranslate"><span class="pre">pyskyfire.common.MeridionalPassage</span></code>, so a passage also reports its <code class="docutils literal notranslate"><span class="pre">area()</span></code>
+and <code class="docutils literal notranslate"><span class="pre">hydraulic_diameter()</span></code> at each station and can record which wall stretches
+rotate (<code class="docutils literal notranslate"><span class="pre">WallMotion</span></code>) and where blades stop short of a wall (<code class="docutils literal notranslate"><span class="pre">Clearance</span></code>).
+The impeller does not fill those in yet.</p>
+<p><code class="docutils literal notranslate"><span class="pre">impeller.dimensions</span></code>, <code class="docutils literal notranslate"><span class="pre">impeller.velocity_triangles</span></code> and
+<code class="docutils literal notranslate"><span class="pre">impeller.blade_definition</span></code> are available before importing pyTurbo. Geometry
+generation is explicit and can be repeated at another resolution:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">geometry</span> <span class="o">=</span> <a class="sphinx-codeautolink-a" href="../autoapi/pyskyfire/pump/impeller/Impeller.html#pyskyfire.pump.impeller.Impeller.build_geometry"><span class="n">impeller</span><span class="o">.</span><span class="n">build_geometry</span></a><span class="p">(</span><span class="n">span_points</span><span class="o">=</span><span class="mi">33</span><span class="p">,</span> <span class="n">chord_points</span><span class="o">=</span><span class="mi">129</span><span class="p">)</span>
+<span class="n">geometry</span><span class="o">.</span><span class="n">export_npz</span><span class="p">(</span><span class="s2">"impeller-geometry.npz"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The geometry contains the hub and shroud curves plus one main blade and,
+optionally, one splitter. Each blade has pressure and suction arrays shaped
+<code class="docutils literal notranslate"><span class="pre">(span_points,</span> <span class="pre">chord_points,</span> <span class="pre">3)</span></code> in cylindrical <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">r,</span> <span class="pre">theta)</span></code> coordinates;
+theta is in radians. Cartesian conversion uses <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">r*cos(theta),</span> <span class="pre">r*sin(theta))</span></code>.
+The visualizer caps the blade ends and instances the blade mesh around the
+axis. Hub and shroud are flow boundaries, not a solid wheel or casing.</p>
+<p>The adapter targets <code class="docutils literal notranslate"><span class="pre">pyturbo-aero==1.3.8</span></code> and translates its angle, wrap,
+thickness and clearance conventions. This dependency is optional and imported
+only by <code class="docutils literal notranslate"><span class="pre">build_geometry()</span></code>. Native blade surface generation and the two old
+experimental impeller modules have been removed. Existing users should import
+<code class="docutils literal notranslate"><span class="pre">Impeller</span></code> from <code class="docutils literal notranslate"><span class="pre">pyskyfire.pump</span></code>, supply the required design inputs, and call
+<code class="docutils literal notranslate"><span class="pre">build_geometry()</span></code> before adding an impeller to a scene. Create a new <code class="docutils literal notranslate"><span class="pre">Impeller</span></code>
+when changing design inputs.</p>
+</section>
+</section>
+</article>
+</div>
+<footer>
+<div class="related-pages">
+<a class="next-page" href="diffusers.html">
+<div class="page-info">
+<div class="context">
+<span>Next</span>
+</div>
+<div class="title">Design a vaned diffuser</div>
+</div>
+<svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+</a>
+<a class="prev-page" href="area-preserving-helix.html">
+<svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+<div class="page-info">
+<div class="context">
+<span>Previous</span>
+</div>
+<div class="title">Hold the coolant area constant with a helix</div>
+</div>
+</a>
+</div>
+<div class="bottom-of-page">
+<div class="left-details">
+<div class="copyright">
+                Copyright © 2026, Ask Haugerud Hovik
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+</div>
+<div class="right-details">
+</div>
+</div>
+</footer>
+</div>
+<aside class="toc-drawer">
+<div class="toc-sticky toc-scroll">
+<div class="toc-title-container">
+<span class="toc-title">
+            On this page
+          </span>
+</div>
+<div class="toc-tree-container">
+<div class="toc-tree">
+<ul>
+<li><a class="reference internal" href="#">Create an impeller scene and report</a><ul>
+<li><a class="reference internal" href="#duty-sizing-and-supplied-efficiencies">Duty, sizing and supplied efficiencies</a><ul>
+<li><a class="reference internal" href="#slip-and-the-head-closure">Slip and the head closure</a></li>
+<li><a class="reference internal" href="#efficiencies">Efficiencies</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#design-controls-and-conventions">Design controls and conventions</a></li>
+<li><a class="reference internal" href="#meridional-passage-and-generated-representation">Meridional passage and generated representation</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
+<script src="../_static/doctools.js?v=fd6eb6e6"></script>
+<script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+<script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+<script defer="defer" src="https://unpkg.com/@popperjs/core@2"></script>
+<script defer="defer" src="https://unpkg.com/tippy.js@6"></script>
+<script defer="defer" src="../_static/tippy/howto/impellers.c582e9e5-6c31-42ea-a82d-98b133d59a7a.js"></script>
+<script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+<script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+</body>
+</html>

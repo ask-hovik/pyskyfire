@@ -1,0 +1,103 @@
+pyskyfire.ducts.port.RadialPort
+===============================
+
+.. py:class:: pyskyfire.ducts.port.RadialPort
+
+   Bases: :py:obj:`Port`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.port.RadialPort
+      :parts: 1
+      :private-bases:
+
+
+   
+   A straight stub leaving the dome a manifold's section is built on.
+
+   This is the chamber-manifold outlet. There is no swirl to take off
+   tangentially, so the duct runs straight from the dome to its flange. It is
+   aimed from the ellipse centre -- where the section's two axes cross, which
+   is a defined point in a way the curved surface is not -- and steered by a
+   single angle in the section's own plane.
+
+   :Parameters:
+
+       **length** : :class:`python:float`
+           How far the flange sits from the ellipse centre [m]. Measured from
+           there rather than from the surface, so it does not move when the angle
+           or the area law does; it must be long enough to put the whole flange
+           clear of the dome.
+
+       **angle** : :class:`python:float`, :obj:`optional`
+           Tilt in the section plane [rad], positive toward ``+z``, matching how
+           :meth:`~pyskyfire.ducts.half_moon.HalfMoonSection.meridional_frame`
+           reports the section's own lean. Zero leaves along whichever reference
+           was chosen.
+
+       **angle_reference** : {'normal', 'manifold_plane'}, :obj:`optional`
+           What the angle is measured from. ``'normal'`` is the way the section
+           faces, so zero points straight out of the dome however the wall happens
+           to lean there. ``'manifold_plane'`` is the plane the manifold rings,
+           so zero points straight out from the machine axis and the same number
+           gives the same hardware direction at every station.
+
+       **diameter** : :class:`python:float`, :obj:`optional`
+           Flange diameter outright [m]. May not exceed the room the dome leaves
+           across the stub, since a wider one would leave through the fillet.
+
+       **diameter_fraction** : :class:`python:float`, :obj:`optional`
+           Flange diameter as a fraction of that room, used when ``diameter`` is
+           not given. The default fills the dome nearly to its edge, leaving a
+           little metal at the corners.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   The angle both aims the stub and sizes it. How much room the dome leaves
+   across a tilted stub is not the ellipse's own semi-axis: it is how far the
+   part of the ellipse that is actually passage boundary reaches across the
+   direction chosen, which closes down as the stub turns toward the fillets.
+   The stub stays centred on the ray it was aimed along, so a tilted one is
+   sized by whichever side of it runs out of dome first; letting it shift off
+   that ray to take the room on the other side is a further freedom, not taken
+   here.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: resolve(site: PortSite) -> ResolvedRadialPort
+
+      
+      Place this port on a passage, given what the passage knows.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

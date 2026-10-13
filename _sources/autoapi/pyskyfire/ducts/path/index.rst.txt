@@ -1,0 +1,103 @@
+pyskyfire.ducts.path
+====================
+
+.. py:module:: pyskyfire.ducts.path
+
+.. autoapi-nested-parse::
+
+   Shared centerline construction, rigid placement, and transported frames.
+
+   Paths contain geometry only. Flow areas and fluid states belong to components.
+   All vectors use Cartesian coordinates and all angles are radians.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/ducts/path/Continuous
+   /autoapi/pyskyfire/ducts/path/Path
+   /autoapi/pyskyfire/ducts/path/PathNode
+   /autoapi/pyskyfire/ducts/path/PathPlacement
+   /autoapi/pyskyfire/ducts/path/PathStation
+   /autoapi/pyskyfire/ducts/path/RoundedBend
+   /autoapi/pyskyfire/ducts/path/Straight
+
+.. autoapisummary::
+
+   pyskyfire.ducts.path.Continuous
+   pyskyfire.ducts.path.Path
+   pyskyfire.ducts.path.PathNode
+   pyskyfire.ducts.path.PathPlacement
+   pyskyfire.ducts.path.PathStation
+   pyskyfire.ducts.path.RoundedBend
+   pyskyfire.ducts.path.Straight
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.ducts.path.generate_path_stations
+   pyskyfire.ducts.path.rotation_about_axis
+
+
+Module Contents
+---------------
+
+.. py:function:: generate_path_stations(nodes: Sequence[PathNode]) -> tuple[tuple[PathStation, ...], tuple[Straight | Continuous | RoundedBend, ...]]
+
+   
+   Resolve control vertices into physical stations and connections.
+
+   Interior direction changes must state their interpretation explicitly with
+   :class:`RoundedBend` or :class:`Continuous`. Rounded bends become one
+   lumped connection between tangent points. Continuous bends become one
+   connection carrying the exact arc length, center and normal.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: rotation_about_axis(axis, angle)
+
+   
+   Return a proper 3x3 rotation; ``angle`` is in radians.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

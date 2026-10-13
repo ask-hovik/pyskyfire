@@ -1,0 +1,7 @@
+pyskyfire.thermo.aerothermodynamics.CombustionGasState
+======================================================
+
+.. py:class:: pyskyfire.thermo.aerothermodynamics.CombustionGasState
+
+   .. py:method:: __repr__()
+

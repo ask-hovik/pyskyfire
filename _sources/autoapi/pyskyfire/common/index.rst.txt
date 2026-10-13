@@ -10,11 +10,15 @@ Submodules
 .. toctree::
    :maxdepth: 1
 
-   /autoapi/pyskyfire/common/blocks/index
+   /autoapi/pyskyfire/common/blade_surface/index
    /autoapi/pyskyfire/common/constants/index
-   /autoapi/pyskyfire/common/engine_network/index
-   /autoapi/pyskyfire/common/fluids/index
+   /autoapi/pyskyfire/common/friction/index
+   /autoapi/pyskyfire/common/meridional/index
+   /autoapi/pyskyfire/common/momentum/index
+   /autoapi/pyskyfire/common/physics/index
    /autoapi/pyskyfire/common/results/index
+   /autoapi/pyskyfire/common/rotation/index
+   /autoapi/pyskyfire/common/section_geometry/index
    /autoapi/pyskyfire/common/solids/index
 
 

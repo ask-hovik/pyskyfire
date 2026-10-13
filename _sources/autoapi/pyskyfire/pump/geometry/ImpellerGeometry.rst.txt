@@ -1,0 +1,60 @@
+pyskyfire.pump.geometry.ImpellerGeometry
+========================================
+
+.. py:class:: pyskyfire.pump.geometry.ImpellerGeometry
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: export_npz(path)
+
+      
+      Save sampled geometry without serializing callables or pyTurbo objects.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: rotation_sign
+      :type: float
+
+
+      
+      ``+1`` counterclockwise about ``+x``, ``-1`` clockwise.
+
+      Blade surfaces are already built in this sense. It is the pitch offset
+      between blades that still needs it, since stepping round the wheel has
+      to step the same way the wheel is mirrored.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

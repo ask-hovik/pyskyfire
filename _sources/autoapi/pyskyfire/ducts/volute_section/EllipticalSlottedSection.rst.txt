@@ -1,0 +1,261 @@
+pyskyfire.ducts.volute_section.EllipticalSlottedSection
+=======================================================
+
+.. py:class:: pyskyfire.ducts.volute_section.EllipticalSlottedSection(inlet_width, fillet_radius, throat_length=0.0, aspect_ratio=1.0, max_aspect_ratio=4.0)
+
+   Bases: :py:obj:`VoluteSection`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.volute_section.EllipticalSlottedSection
+      :parts: 1
+      :private-bases:
+
+
+   
+   An elliptical bore opening into a parallel-sided inlet slot.
+
+   This is the cast pump-volute shape: an elliptical passage fed through a
+   slot of fixed width ``inlet_width``, with the junction between each slot
+   wall and the bore rounded by a fillet of user-set radius. At the default
+   aspect ratio of one the ellipse is a circle, which is the common case.
+
+   :Parameters:
+
+       **inlet_width** : :class:`python:float`
+           Slot width ``b5`` [m].
+
+       **fillet_radius** : :class:`python:float`
+           Radius of the two wall-to-bore fillets [m]. Zero gives sharp corners.
+
+       **throat_length** : :class:`python:float`, :obj:`optional`
+           Length of straight parallel slot wall between the inlet plane and the
+           start of each fillet [m]. Defaults to zero, which starts the fillet at
+           the inlet plane.
+
+       **aspect_ratio** : :class:`python:float`, :obj:`optional`
+           Bore semi-axis across the slot divided by its semi-axis outward from
+           the inlet plane. One is a circle. Above one the bore is stretched
+           across the slot and squashed radially; below one it reaches further
+           out than it is wide. Defaults to one.
+
+       **max_aspect_ratio** : :class:`python:float`, :obj:`optional`
+           How far the aspect ratio may be pushed above its design value where
+           the area law asks for less area than ``size`` alone can give -- see
+           Notes. Defaults to four.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   ``size`` is the semi-axis across the slot, so it plays exactly the role the
+   bore radius does for a circle and the slot still fixes its floor at
+   ``inlet_width / 2``. Writing ``c`` for it, ``a = c / aspect`` for the
+   semi-axis outward from the inlet plane, ``b`` for the inlet width, ``r_f``
+   for the fillet radius and ``L`` for the throat length, each fillet is
+   placed by requiring it to be tangent to its slot wall and to the bore.
+
+   The fillets round a *reflex* corner -- the passage opens outward as it
+   leaves the slot -- so each fillet centre sits outside the passage at
+   ``v = +/- (b/2 + r_f)`` and touches the bore externally. Writing the
+   tangency point as the ellipse parameter ``t`` and the ellipse's outward
+   unit normal there as ``n(t)``, the fillet centre is ``E(t) + r_f*n(t)``,
+   and requiring its ``v`` to equal ``-(b/2 + r_f)`` fixes ``t`` alone::
+
+       c*sin(t) + r_f*sin(t) / (c*N(t)) + b/2 + r_f = 0
+       N(t) = sqrt(cos(t)**2/a**2 + sin(t)**2/c**2)
+
+   which is solved by bisection on ``t`` in ``(-pi, -pi/2)``, where the left
+   end is positive and the right end is ``b/2 - c <= 0``. The bore centre then
+   follows explicitly. For a circle this reduces exactly to the closed form
+   ``u_c = L + sqrt((c + r_f)**2 - (b/2 + r_f)**2)``.
+
+   Requiring ``size > b/2`` -- a bore at least as wide as the slot it is fed
+   through -- is enough for the construction to be well posed at any aspect
+   ratio.
+
+   A shaped volute wants a vanishing area at the tongue, and no section whose
+   bore must span the slot can shrink that far. The aspect ratio is the way
+   out: holding ``size`` at its floor and flattening the ellipse shrinks the
+   area roughly as ``1 / aspect`` without ever narrowing the bore below the
+   slot. :class:`~pyskyfire.ducts.Volute` uses that automatically, so the
+   passage near the tongue tracks the area law further than a circle could
+   before it has to give up and clip. ``max_aspect_ratio`` bounds how thin a
+   sliver that is allowed to produce.
+
+   The bore reaches inboard of the inlet plane when its centre sits closer to
+   that plane than its own outward semi-axis. Such a section is an
+   intermediate rather than a fully external volute, and it is reported
+   through :meth:`inboard_overhang` rather than rejected, since it is valid
+   geometry that may simply foul neighbouring hardware. Raising
+   ``throat_length`` pushes the bore back outboard.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _layout(size, aspect=None)
+
+      
+      Resolve bore semi-axes and centre, and both tangency angles.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _tangency(semi_u, semi_v, h)
+
+      
+      Ellipse parameter where each fillet touches the bore.
+
+      Solved numerically rather than in closed form because the offset curve
+      of an ellipse is not an ellipse. The bracket is fixed and its ends are
+      known to straddle the root: at ``t = -pi`` the residual is ``h > 0``,
+      and at ``t = -pi/2`` it is ``b/2 - c <= 0``. That second end is an
+      equality exactly when the bore has closed down onto the slot, and there
+      the residual meets zero tangentially -- a double root, which is why
+      this bisects rather than reaching for faster convergence.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: boundary(size, aspect=None)
+
+      
+      Counterclockwise boundary pieces for each size and aspect.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: fan_origin(size, aspect=None)
+
+      
+      The bore centre, which sees the whole boundary.
+
+      The area centroid does not, in general. A long throat drags it inboard
+      of where the fillets begin, and from inside the slot a line to a fillet
+      -- which lies beyond the slot wall it is tangent to -- leaves the
+      passage through that wall. The bore centre is always outboard of the
+      fillet tangency, so the whole boundary stays in view.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: inboard_overhang(size, aspect=None)
+
+      
+      How far the bore reaches inboard of the inlet plane [m].
+
+      Zero for a fully external volute, positive for an intermediate one.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: minimum_size
+      :type: float
+
+
+      
+      Half the inlet width, where the bore just spans the slot.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

@@ -1,0 +1,105 @@
+pyskyfire.turbine.axial.StationFlow
+===================================
+
+.. py:class:: pyskyfire.turbine.axial.StationFlow
+
+   
+   The flow at mean radius between two rows (or at either end).
+
+   Angles are radians from axial, positive in the rotation direction.
+   Relative quantities use the blade speed ``u``, which is the same at every
+   station; they only mean something next to a rotor.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:property:: alpha
+      :type: float
+
+
+      
+      Absolute flow angle.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: beta
+      :type: float
+
+
+      
+      Relative flow angle.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: c
+      :type: float
+
+
+
+   .. py:property:: mach
+      :type: float
+
+
+
+   .. py:property:: mach_relative
+      :type: float
+
+
+
+   .. py:property:: w
+      :type: float
+
+
+
+   .. py:property:: w_u
+      :type: float
+
+

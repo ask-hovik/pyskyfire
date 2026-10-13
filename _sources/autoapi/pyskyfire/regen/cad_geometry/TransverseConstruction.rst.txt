@@ -1,0 +1,7 @@
+pyskyfire.regen.cad_geometry.TransverseConstruction
+===================================================
+
+.. py:class:: pyskyfire.regen.cad_geometry.TransverseConstruction
+
+   .. py:method:: polygon(index, n_arc_points=8)
+

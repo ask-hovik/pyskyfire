@@ -1,0 +1,59 @@
+pyskyfire.turbine.axial
+=======================
+
+.. py:module:: pyskyfire.turbine.axial
+
+.. autoapi-nested-parse::
+
+   Meanline design of an axial turbine, from its duty to a :class:`TurbineDefinition`.
+
+   The design runs at mean radius, which is the same at every station, so blade
+   speed is too. Each stage is a stator and a rotor, and for each one you choose:
+
+   - a flow coefficient ``phi = c_x/u``, which sets the axial velocity through
+     that stage;
+   - either its reaction, the share of the stage's static enthalpy drop taken
+     in the rotor, or the swirl it leaves with. Given one, the other follows.
+
+   The work each stage does is its share of ``efficiency * Δh_s``, where the
+   isentropic head and its basis (total or static outlet) are the duty's. Euler's
+   equation then fixes how much the rotor turns the flow.
+
+   The losses matter to the design only through density. The entropy rise that
+   the efficiency implies is shared among the rows, evenly unless ``loss_split``
+   says otherwise. Each station's static state comes from its enthalpy and the
+   entropy accumulated so far, and continuity at that density gives the blade
+   height. Efficiency is taken as given, however it was arrived at.
+
+   Row settings then turn the triangles into blades, each kind of row with its
+   own section profile. Blade height and aspect ratio give the chord. Pitch-to-chord or a Zweifel coefficient gives the blade
+   count. Metal angles are the flow angles plus incidence and deviation. Across
+   the span each row follows a free vortex.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/turbine/axial/AxialTurbine
+   /autoapi/pyskyfire/turbine/axial/RowSettings
+   /autoapi/pyskyfire/turbine/axial/SectionProfile
+   /autoapi/pyskyfire/turbine/axial/Stage
+   /autoapi/pyskyfire/turbine/axial/StageFlow
+   /autoapi/pyskyfire/turbine/axial/StationFlow
+
+.. autoapisummary::
+
+   pyskyfire.turbine.axial.AxialTurbine
+   pyskyfire.turbine.axial.RowSettings
+   pyskyfire.turbine.axial.SectionProfile
+   pyskyfire.turbine.axial.Stage
+   pyskyfire.turbine.axial.StageFlow
+   pyskyfire.turbine.axial.StationFlow
+
+

@@ -1,0 +1,32 @@
+pyskyfire.injector.injector.InjectorHoles
+=========================================
+
+.. py:class:: pyskyfire.injector.injector.InjectorHoles
+
+   
+   Every hole of an injector, placed in the injector frame.
+
+   Arrays have one row per hole. ``set_name`` and ``element_index`` say
+   which element a hole belongs to; ``feeds`` and ``orifices`` are tuples
+   aligned with them. ``footprint`` is the radius of the hole's outline on
+   the face [m]: half its diameter, stretched by the inclination.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __len__()
+

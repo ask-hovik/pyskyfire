@@ -1,0 +1,96 @@
+pyskyfire.ducts.exit_cone.ExitCone
+==================================
+
+.. py:class:: pyskyfire.ducts.exit_cone.ExitCone
+
+   Bases: :py:obj:`pyskyfire.ducts.port.Port`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.exit_cone.ExitCone
+      :parts: 1
+      :private-bases:
+
+
+   
+   How a volute's outlet duct leaves, and what it grows into.
+
+
+   :Parameters:
+
+       **final_diameter** : :class:`python:float`
+           Diameter of the flange the duct delivers to [m], normally set by a
+           piping standard rather than by the volute.
+
+       **first_angle** : :class:`python:float` :obj:`or` {'tangential', 'radial'}, :obj:`optional`
+           Turn within the volute's plane, measured from tangential at the volute
+           outlet [rad]. ``'tangential'`` is zero and runs straight on;
+           ``'radial'`` turns until the flange points straight out from the
+           machine axis. A number must lie between the two, since a larger turn
+           would point the duct back inward.
+
+       **second_angle** : :class:`python:float`, :obj:`optional`
+           Elevation out of the volute's plane [rad], positive upward. Applies on
+           top of the first angle.
+
+       **arc_length_parameter** : :class:`python:float`, :obj:`optional`
+           Centreline length of the duct, as a multiple of the volute outlet
+           diameter. This is the distance the cross-section has to grow in, so it
+           must be at least one diameter.
+
+
+
+
+
+
+
+
+
+
+
+   .. rubric:: Notes
+
+   Exit-cone geometry reaches the loss analysis three ways.
+   :attr:`final_diameter` sets station 7 and, with the arc length, the angle
+   the cone opens out at -- which is most of what decides its diffusion loss.
+   The arc length also sets the wall area friction is charged over, and the
+   turn sets the bend loss.
+
+   That makes :attr:`arc_length_parameter` a real design variable rather than
+   a drawing detail: a longer duct opens out more gradually and recovers more
+   of the velocity head, at the cost of more wetted wall and, for a given
+   turn, a gentler bend. :meth:`~pyskyfire.ducts.VoluteResult.loss_breakdown`
+   reports the three apart so the trade can be seen.
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: resolve(site)
+
+      
+      Place this cone on a passage. See :class:`ResolvedExitCone`.
+
+      The arc length is a multiple of the bore the duct leaves from, so a
+      cone carries its length with it and takes its scale from wherever it
+      is fitted.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

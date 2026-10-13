@@ -1,0 +1,28 @@
+pyskyfire.viz.scene.MeshData
+============================
+
+.. py:class:: pyskyfire.viz.scene.MeshData
+
+   
+   Surface geometry in local Cartesian coordinates; indices describe triangles.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+

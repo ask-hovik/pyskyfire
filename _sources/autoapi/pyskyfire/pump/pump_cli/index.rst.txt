@@ -3,6 +3,13 @@ pyskyfire.pump.pump_cli
 
 .. py:module:: pyskyfire.pump.pump_cli
 
+.. autoapi-nested-parse::
+
+   Command-line preliminary impeller sizing, with explicit design inputs.
+
+   ..
+       !! processed by numpydoc !!
+
 
 Functions
 ---------

@@ -1,0 +1,36 @@
+pyskyfire.viz.components.AnnularDuctComponent
+=============================================
+
+.. py:class:: pyskyfire.viz.components.AnnularDuctComponent
+
+   
+   Display an :class:`~pyskyfire.ducts.AnnularDuct`.
+
+   The duct is drawn as its hub and shroud revolved about the local +x
+   shaft, with ``inlet`` and ``outlet`` anchors on the axis at its ends as a
+   turbine's are. The shroud is translucent so the hub shows. A pipe with a
+   core is drawn by :class:`PipeComponent`.
+
+   ``results`` is a :class:`~pyskyfire.ducts.DuctResult`, or a mapping of
+   field names to FieldData with one value per station (point) or per
+   interval (cell). Both walls carry the same fields.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: build()
+

@@ -1,0 +1,191 @@
+pyskyfire.thermo.eos.EquationOfState
+====================================
+
+.. py:class:: pyskyfire.thermo.eos.EquationOfState
+
+   Bases: :py:obj:`abc.ABC`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.thermo.eos.EquationOfState
+      :parts: 1
+      :private-bases:
+
+
+   
+   The state lookups a machine design asks of a fluid.
+
+   Every pressure is in Pa, temperature in K and specific enthalpy in
+   J kg⁻¹. Enthalpy is only ever compared with enthalpy from the same
+   equation of state, so its datum does not matter.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: entropy(state: pyskyfire.thermo.state.FluidState) -> float
+      :abstractmethod:
+
+
+      
+      Specific entropy of ``state`` [J kg⁻¹ K⁻¹], on this EOS's own datum.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: isentropic(state: pyskyfire.thermo.state.FluidState, p: float) -> pyskyfire.thermo.state.FluidState
+      :abstractmethod:
+
+
+      
+      The state reached from ``state`` by an isentropic process to ``p``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: speed_of_sound(state: pyskyfire.thermo.state.FluidState) -> float
+      :abstractmethod:
+
+
+      
+      Speed of sound in ``state`` [m s⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: state_hs(h: float, s: float) -> pyskyfire.thermo.state.FluidState
+      :abstractmethod:
+
+
+      
+      The state with specific enthalpy ``h`` and specific entropy ``s``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: state_pT(p: float, T: float) -> pyskyfire.thermo.state.FluidState
+      :abstractmethod:
+
+
+      
+      The state at pressure ``p`` and temperature ``T``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: state_ph(p: float, h: float) -> pyskyfire.thermo.state.FluidState
+      :abstractmethod:
+
+
+      
+      The state at pressure ``p`` and specific enthalpy ``h``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

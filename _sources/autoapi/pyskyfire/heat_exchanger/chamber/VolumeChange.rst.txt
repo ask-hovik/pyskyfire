@@ -1,0 +1,4 @@
+pyskyfire.heat_exchanger.chamber.VolumeChange
+=============================================
+
+.. py:class:: pyskyfire.heat_exchanger.chamber.VolumeChange

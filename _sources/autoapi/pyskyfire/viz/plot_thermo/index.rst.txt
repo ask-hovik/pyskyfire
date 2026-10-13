@@ -1,0 +1,71 @@
+pyskyfire.viz.plot_thermo
+=========================
+
+.. py:module:: pyskyfire.viz.plot_thermo
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   pyskyfire.viz.plot_thermo._PROP_INFO
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/viz/plot_thermo/PlotTransportProperty
+   /autoapi/pyskyfire/viz/plot_thermo/PlotTransportPropertyField
+
+.. autoapisummary::
+
+   pyskyfire.viz.plot_thermo.PlotTransportProperty
+   pyskyfire.viz.plot_thermo.PlotTransportPropertyField
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.viz.plot_thermo._iter_results
+   pyskyfire.viz.plot_thermo._visualization_x
+   pyskyfire.viz.plot_thermo.result_gas_x
+
+
+Module Contents
+---------------
+
+.. py:function:: _iter_results(results)
+
+.. py:function:: _visualization_x(at, *, x, results, nodes)
+
+.. py:function:: result_gas_x(results) -> numpy.ndarray
+
+   
+   Return the unique gas-side coordinates used by solved results.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: _PROP_INFO
+

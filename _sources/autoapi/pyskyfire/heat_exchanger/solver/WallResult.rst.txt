@@ -1,0 +1,27 @@
+pyskyfire.heat_exchanger.solver.WallResult
+==========================================
+
+.. py:class:: pyskyfire.heat_exchanger.solver.WallResult
+
+   
+   One physical wall patch, with temperatures at both fluid interfaces.
+
+   Heat rate [W] is positive from b (or prescribed gas) into a, summed across
+   the bank. Area [m²] is per copied channel. Indices identify finite volumes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

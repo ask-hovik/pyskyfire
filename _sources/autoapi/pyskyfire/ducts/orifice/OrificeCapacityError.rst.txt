@@ -1,0 +1,35 @@
+pyskyfire.ducts.orifice.OrificeCapacityError
+============================================
+
+.. py:exception:: pyskyfire.ducts.orifice.OrificeCapacityError(message: str, max_mass_flow: float)
+
+   Bases: :py:obj:`ValueError`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.orifice.OrificeCapacityError
+      :parts: 1
+      :private-bases:
+
+
+   
+   The inlet state cannot drive the requested mass flow through the orifice.
+
+   Either the flow chokes below the requested mass flow, or passing it would
+   need a discharge pressure below the searched floor. ``max_mass_flow`` is
+   the largest flow found [kg/s].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

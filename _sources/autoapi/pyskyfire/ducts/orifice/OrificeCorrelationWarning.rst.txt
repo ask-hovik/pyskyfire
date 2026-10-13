@@ -1,0 +1,32 @@
+pyskyfire.ducts.orifice.OrificeCorrelationWarning
+=================================================
+
+.. py:exception:: pyskyfire.ducts.orifice.OrificeCorrelationWarning
+
+   Bases: :py:obj:`RuntimeWarning`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.orifice.OrificeCorrelationWarning
+      :parts: 1
+      :private-bases:
+
+
+   
+   A discharge-coefficient correlation is used outside its documented range.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

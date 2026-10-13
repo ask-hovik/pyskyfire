@@ -1,0 +1,249 @@
+pyskyfire.turbine.duty.TurbineDuty
+==================================
+
+.. py:class:: pyskyfire.turbine.duty.TurbineDuty
+
+   Bases: :py:obj:`pyskyfire.thermo.duty.MachineDuty`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.turbine.duty.TurbineDuty
+      :parts: 1
+      :private-bases:
+
+
+   
+   What a turbine is asked to do. See :class:`~pyskyfire.thermo.MachineDuty`.
+
+   Build one with :meth:`from_states` or :meth:`from_stations`.
+
+
+   :Attributes:
+
+       **outlet_basis** : {'total', 'static'}
+           Whether the outlet pressure is total or static.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: blade_jet_ratio(diameter) -> float
+
+      
+      ``u/c0`` at ``diameter`` [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: blade_speed(diameter) -> float
+
+      
+      Blade speed [m s⁻¹] at ``diameter`` [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_states(*, fluid, mdot, p0_in, T0_in, p_out, n, outlet_basis='total')
+      :classmethod:
+
+
+      
+      A medium, a mass flow, the inlet total state and the outlet pressure.
+
+      ``fluid`` is a CoolProp name, a :class:`~pyskyfire.thermo.Fluid`, or
+      any :class:`~pyskyfire.thermo.EquationOfState`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: from_stations(st_in, st_out, *, fluid, n)
+      :classmethod:
+
+
+      
+      Two network stations, by their pressures and the inlet's T and mdot.
+
+      Network stations are total states, so the outlet basis is total. The
+      outlet station's temperature is not read: it is what the real
+      turbine's losses made of the flow.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: specific_diameter(diameter) -> float
+
+      
+      Dimensionless ``Ds = D*Δh_s**0.25/sqrt(Q_out)`` for a rotor of ``diameter`` [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: pressure_ratio
+      :type: float
+
+
+      
+      Inlet total pressure over outlet pressure.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: specific_speed
+      :type: float
+
+
+      
+      Dimensionless ``Ns = omega*sqrt(Q_out)/Δh_s**0.75``.
+
+      The flow is taken at the isentropic outlet, the convention of Balje's
+      charts and of turboflow.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: spouting_velocity
+      :type: float
+
+
+      
+      ``c0 = sqrt(2*Δh_s)`` [m s⁻¹], the speed the whole head would make.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

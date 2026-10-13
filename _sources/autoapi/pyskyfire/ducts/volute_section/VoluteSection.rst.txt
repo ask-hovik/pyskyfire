@@ -1,0 +1,364 @@
+pyskyfire.ducts.volute_section.VoluteSection
+============================================
+
+.. py:class:: pyskyfire.ducts.volute_section.VoluteSection(inlet_width, aspect_ratio=1.0, max_aspect_ratio=None)
+
+   Bases: :py:obj:`abc.ABC`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.volute_section.VoluteSection
+      :parts: 1
+      :private-bases:
+
+
+   
+   A volute cross-section family with a fixed inlet slot width.
+
+   Subclasses define a shape parameterised by a positive ``size`` and an
+   ``aspect``. All methods accept a scalar or a one-dimensional array of
+   sizes, and return matching arrays; ``aspect`` defaults to the family's own
+   :attr:`aspect_ratio` where it is not given.
+
+
+   :Attributes:
+
+       **inlet_width** : :class:`python:float`
+           Width of the inlet slot ``b5`` [m]. Fixed by the feeding hardware and
+           held constant as the section grows, which is the constraint that makes
+           the family one-parameter in ``size``.
+
+       **aspect_ratio** : :class:`python:float`
+           The shape the family takes at its design point.
+
+       **max_aspect_ratio** : :class:`python:float`
+           The flattest the family may be pushed when the area law asks for less
+           area than ``size`` alone can deliver. Equal to :attr:`aspect_ratio` for
+           a family with no second degree of freedom, which then simply has a
+           floor on the area it can produce.
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: _sizes(size, aspect=None)
+
+      
+      Broadcast ``size`` and ``aspect`` into a matching pair of arrays.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: area(size, aspect=None)
+
+      
+      Enclosed passage area [m^2].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: boundary(size, aspect=None)
+      :abstractmethod:
+
+
+      
+      Counterclockwise boundary pieces for each size and aspect.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: centroid_offset(size, aspect=None)
+
+      
+      Area-centroid distance outboard of the inlet plane [m].
+
+      The volute mean radius ``r_c`` of Aungier's design equation is the
+      inlet radius plus this offset.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: fan_origin(size, aspect=None)
+
+      
+      A point each section is star-shaped about, in ``(u, v)`` [m].
+
+      Every boundary point is visible from it, so a triangle fan to the
+      boundary is a valid triangulation of the section. Meshing uses this to
+      cap the ends of a swept passage. The default is the area centroid,
+      which is correct for a convex family; a section with a reentrant
+      boundary must override it.
+
+
+
+
+      :Returns:
+
+          :obj:`np.ndarray <numpy.ndarray>`
+              One origin per size [m, shape (N, 2)].
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: metrics(size, aspect=None)
+
+      
+      Return ``(area, centroid, lengths)`` for each size and aspect.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: perimeter(size, aspect=None, *, wetted=True)
+
+      
+      Boundary length [m].
+
+      With ``wetted`` set, the inlet slot mouth is excluded, since it is an
+      opening into the feeding passage rather than a wall.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: polygon(size, n_points=64, aspect=None)
+
+      
+      Sampled closed boundary for plotting.
+
+
+
+
+
+      :Returns:
+
+          :obj:`np.ndarray <numpy.ndarray>`
+              Boundary points in ``(u, v)`` [m, shape (N, M, 2)], one closed ring
+              per size.
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: radial_profile(size, angles, aspect=None, *, samples=720)
+
+      
+      Distance from :meth:`fan_origin` to the boundary at each angle [m].
+
+      The section is star-shaped about that origin, so the boundary is a
+      single-valued ``r(psi)`` about it. That is what lets an exit cone morph
+      a section into a circle: blend this radius toward a constant one.
+
+      :Parameters:
+
+          **size** : :class:`python:float` or :term:`numpy:array_like`
+              Section size, one per section.
+
+          **angles** : :term:`numpy:array_like`
+              Angles about the fan origin [rad], measured from the ``+u`` axis.
+              Taken modulo a full turn.
+
+          **samples** : :class:`python:int`, :obj:`optional`
+              Boundary samples per piece used to build the profile.
+
+
+
+      :Returns:
+
+          :obj:`np.ndarray <numpy.ndarray>`
+              Radii [m, shape (N, len(angles))].
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: maximum_size
+      :type: float
+
+
+      
+      Largest ``size`` the family can build [m].
+
+      Unbounded for a family that can simply keep growing. A section measured
+      against something finite -- a manifold's section has only so much
+      chamber wall to spread onto -- reports that limit here, so a law asking
+      for more area than exists is told so rather than being chased past the
+      end of the geometry.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: minimum_size
+      :type: float
+
+      :abstractmethod:
+
+
+      
+      Smallest ``size`` that still yields a valid section [m].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

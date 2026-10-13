@@ -1,0 +1,98 @@
+pyskyfire.ducts.area_law.ConstantAngularMomentum
+================================================
+
+.. py:class:: pyskyfire.ducts.area_law.ConstantAngularMomentum
+
+   Bases: :py:obj:`AreaLaw`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.area_law.ConstantAngularMomentum
+      :parts: 1
+      :private-bases:
+
+
+   
+   Size the passage to conserve the angular momentum it collects.
+
+   Imposing ``(r*C_u)_c = (r*C_u)_5`` together with mass conservation gives
+   Aungier's Eqs. 11-1 to 11-3, generalised by the sizing parameter in
+   Eq. 11-5::
+
+       A = theta * SP * r_c * b5 * tan(alpha5)
+
+   so the area divided by the centroid radius grows linearly with azimuth.
+   Because both ``A`` and ``r_c`` follow from the section size, this is
+   implicit in the size and is solved rather than evaluated.
+
+   :Parameters:
+
+       **SP** : :class:`python:float`, :obj:`optional`
+           Sizing parameter: the ratio of actual passage area to the area that
+           exactly conserves angular momentum. Defaults to ``1.0``, which is the
+           minimum-loss design -- Aungier's tangential-velocity loss (Eq. 5-107)
+           vanishes on both of its branches there. Values above one oversize the
+           volute deliberately, which costs a little loss at the design point in
+           exchange for tolerance to off-design operation; Aungier notes 1.0 to
+           1.2 as common practice, biased upward because undersizing is penalised
+           far more steeply than oversizing.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: residual(theta, area, centroid_radius, inlet_width, inlet)
+
+      
+      Return the signed miss at one azimuth.
+
+      Negative means the trial section is too small. Must increase with
+      section size so that the solver can bracket a root.
+
+      :Parameters:
+
+          **theta** : :class:`python:float`
+              Polar angle from the tongue [rad], increasing in the direction of
+              collection.
+
+          **area** : :class:`python:float`
+              Trial section area [m^2].
+
+          **centroid_radius** : :class:`python:float`
+              Radius of the trial section's area centroid [m].
+
+          **inlet_width** : :class:`python:float`
+              Inlet slot width ``b5`` [m].
+
+          **inlet** : :obj:`VoluteInlet`
+              Inlet flow conditions.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

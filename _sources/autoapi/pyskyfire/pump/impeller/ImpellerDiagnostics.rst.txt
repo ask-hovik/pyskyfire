@@ -1,0 +1,32 @@
+pyskyfire.pump.impeller.ImpellerDiagnostics
+===========================================
+
+.. py:class:: pyskyfire.pump.impeller.ImpellerDiagnostics
+
+   
+   How the closed design sits against Gülich's guidance. Nothing is enforced.
+
+   ``solved`` names what the head was closed on, ``"beta2"`` or ``"d2"``.
+   ``psi`` is the resolved head coefficient 2gH/u2² and ``psi_correlation``
+   what Eq. (3.26) proposes at this specific speed and ``fT``. ``slip`` is the
+   mean-streamline prediction. ``deviation_deg`` is beta2B minus the flow
+   angle, which Gülich suggests keeping below 10 to 14 degrees, and
+   ``deceleration_ratio`` is w2 over w1 at the shroud, whose de Haller limit
+   he puts at 0.7.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

@@ -1,0 +1,190 @@
+pyskyfire.regen.channel_helpers
+===============================
+
+.. py:module:: pyskyfire.regen.channel_helpers
+
+.. autoapi-nested-parse::
+
+   Shared geometric helpers for regenerative cooling-channel paths.
+
+   The regenerative model stores paths in cylindrical coordinates as
+   ``[axial_position, radius, angle]``.  This module turns those lightweight
+   arrays into Cartesian section planes only when a consumer needs them.  The
+   path a consumer passes in decides what the planes mean: CAD sections and
+   visualization frame themselves on the cross-section base point, not on the
+   coolant centroid.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/regen/channel_helpers/SectionPlanes
+
+.. autoapisummary::
+
+   pyskyfire.regen.channel_helpers.SectionPlanes
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pyskyfire.regen.channel_helpers.build_axis_normal_section_planes
+   pyskyfire.regen.channel_helpers.build_section_planes
+   pyskyfire.regen.channel_helpers.cylindrical_centerline_to_cartesian
+   pyskyfire.regen.channel_helpers.estimate_centerline_tangents
+   pyskyfire.regen.channel_helpers.local_section_axes
+   pyskyfire.regen.channel_helpers.rotate_cylindrical_centerline
+
+
+Module Contents
+---------------
+
+.. py:function:: build_axis_normal_section_planes(centerline: numpy.ndarray) -> SectionPlanes
+
+   
+   Build transverse planes with origins on the supplied path.
+
+   The normal is always engine +X, independent of coolant direction. The
+   first in-plane axis points radially away from the engine axis, so the
+   engine axis has local coordinates ``(-r, 0)`` in every plane.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: build_section_planes(centerline: numpy.ndarray) -> SectionPlanes
+
+   
+   Build section planes normal to a cylindrical path.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: cylindrical_centerline_to_cartesian(centerline: numpy.ndarray) -> numpy.ndarray
+
+   
+   Convert a cylindrical ``[x, r, theta]`` centerline to ``[x, y, z]``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: estimate_centerline_tangents(points: numpy.ndarray) -> numpy.ndarray
+
+   
+   Estimate Cartesian polyline tangents with centered differences.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: local_section_axes(point: numpy.ndarray, tangent: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray]
+
+   
+   Construct radial and circumferential axes perpendicular to ``tangent``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: rotate_cylindrical_centerline(centerline: numpy.ndarray, angle_rad: float) -> numpy.ndarray
+
+   
+   Return a copy of a cylindrical centerline rotated about the engine axis.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+

@@ -1,0 +1,60 @@
+pyskyfire.injector.injector
+===========================
+
+.. py:module:: pyskyfire.injector.injector
+
+.. autoapi-nested-parse::
+
+   An injector: sets of elements placed on the face, and the flow through them.
+
+   An :class:`Injector` is a list of :class:`ElementSet` objects. Each set is one
+   element type repeated at positions the user supplies as ``(r, θ)`` arrays,
+   however they were found. The injector holds no face outline or keep-out
+   regions: the positions are the only record of where elements are, and
+   :meth:`Injector.checks` reports what the injector itself can check.
+
+   Hydraulics are per feed. Every hole on one feed shares that feed's plenum
+   state and discharges to the same face pressure, and the ideal mass flux of an
+   :class:`~pyskyfire.ducts.Orifice` depends only on those two, so all the holes
+   on a feed run at one flux. A feed is therefore exactly one orifice with the
+   summed area and effective area (:meth:`Injector.equivalent_orifice`), and each
+   hole takes the share of the feed's flow its ``Cd·A`` sets. Holes on different
+   feeds never combine: a film ring fed at a higher pressure than the main
+   plenum is solved on its own.
+
+   :meth:`Injector.solve` answers either question per feed: the flow a plenum
+   pressure drives (``pressure`` given), or the plenum pressure a flow needs
+   (``mass_flow`` given). :meth:`Injector.solve_feed` is the engine network's
+   direction, plenum state and flow in, face pressure out.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/injector/injector/ElementSet
+   /autoapi/pyskyfire/injector/injector/FeedCondition
+   /autoapi/pyskyfire/injector/injector/FeedResult
+   /autoapi/pyskyfire/injector/injector/Injector
+   /autoapi/pyskyfire/injector/injector/InjectorChecks
+   /autoapi/pyskyfire/injector/injector/InjectorHoles
+   /autoapi/pyskyfire/injector/injector/InjectorResult
+   /autoapi/pyskyfire/injector/injector/SetResult
+
+.. autoapisummary::
+
+   pyskyfire.injector.injector.ElementSet
+   pyskyfire.injector.injector.FeedCondition
+   pyskyfire.injector.injector.FeedResult
+   pyskyfire.injector.injector.Injector
+   pyskyfire.injector.injector.InjectorChecks
+   pyskyfire.injector.injector.InjectorHoles
+   pyskyfire.injector.injector.InjectorResult
+   pyskyfire.injector.injector.SetResult
+
+

@@ -1,0 +1,32 @@
+pyskyfire.ducts.volute.VoluteConsistencyWarning
+===============================================
+
+.. py:exception:: pyskyfire.ducts.volute.VoluteConsistencyWarning
+
+   Bases: :py:obj:`RuntimeWarning`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.volute.VoluteConsistencyWarning
+      :parts: 1
+      :private-bases:
+
+
+   
+   Volute inputs are mutually inconsistent or outside a model's range.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

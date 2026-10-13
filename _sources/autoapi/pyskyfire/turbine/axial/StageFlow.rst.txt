@@ -1,0 +1,108 @@
+pyskyfire.turbine.axial.StageFlow
+=================================
+
+.. py:class:: pyskyfire.turbine.axial.StageFlow
+
+   
+   One stage's triangles: stator inlet (1), rotor inlet (2), rotor exit (3).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:property:: flow_coefficient
+      :type: float
+
+
+
+   .. py:property:: loading
+      :type: float
+
+
+      
+      ``Δh0/u²``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: reaction
+      :type: float
+
+
+      
+      Rotor share of the stage's static enthalpy drop.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: work
+      :type: float
+
+
+      
+      Euler work ``u*(c_u2 - c_u3)`` [J kg⁻¹].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

@@ -1,0 +1,183 @@
+pyskyfire.injector.injector.FeedResult
+======================================
+
+.. py:class:: pyskyfire.injector.injector.FeedResult
+
+   
+   The flow through every hole on one feed.
+
+   ``orifice`` is the result for the feed's equivalent orifice: its inlet
+   is the plenum and its outlet the face. ``set_mass_flows`` gives each
+   element set's share [kg/s]. ``fluid`` is the CoolProp name the feed
+   ran on, or None when its fluid named none.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: hole_mass_flow(orifice: pyskyfire.ducts.orifice.Orifice) -> float
+
+      
+      Mass flow through one hole on this feed [kg/s].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: mass_flow
+      :type: float
+
+
+      
+      Total mass flow of the feed [kg/s].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: mass_flux
+      :type: float
+
+
+      
+      Mass flow per unit effective area [kg/(m² s)].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: plenum_pressure
+      :type: float
+
+
+      
+      Plenum (inlet) pressure [Pa].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: pressure_drop
+      :type: float
+
+
+      
+      Drop from the plenum to the face [Pa].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: velocity
+      :type: float
+
+
+      
+      Ideal jet velocity, the same from every hole on the feed [m/s].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

@@ -1,0 +1,4 @@
+pyskyfire.pump.impeller.VelocityTriangle
+========================================
+
+.. py:class:: pyskyfire.pump.impeller.VelocityTriangle

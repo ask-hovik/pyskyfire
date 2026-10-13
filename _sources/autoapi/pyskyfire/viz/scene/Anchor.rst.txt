@@ -1,0 +1,33 @@
+pyskyfire.viz.scene.Anchor
+==========================
+
+.. py:class:: pyskyfire.viz.scene.Anchor
+
+   
+   Named coordinate frame. The +x axis is the outward port direction.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: from_direction(position, direction)
+      :classmethod:
+
+
+
+   .. py:property:: position
+

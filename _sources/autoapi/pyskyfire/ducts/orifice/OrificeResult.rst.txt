@@ -1,0 +1,58 @@
+pyskyfire.ducts.orifice.OrificeResult
+=====================================
+
+.. py:class:: pyskyfire.ducts.orifice.OrificeResult
+
+   
+   States and diagnostics of the flow through an orifice.
+
+   ``throat_state`` is the ideal isentropic state at the vena contracta and
+   ``velocity`` the ideal jet velocity there [m/s]. The real jet is slower by
+   the velocity coefficient, which the discharge coefficient includes but
+   does not separate out. ``outlet_state`` is at the discharge pressure with
+   the inlet enthalpy: the jet's kinetic energy has been dissipated.
+   ``choked`` is True when the discharge pressure lies below the pressure at
+   which the ideal mass flux peaks, so lowering it further adds no flow.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:property:: pressure_loss
+      :type: float
+
+
+      
+      Irreversible pressure loss from inlet to outlet [Pa].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

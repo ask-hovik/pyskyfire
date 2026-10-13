@@ -1,0 +1,48 @@
+pyskyfire.turbine.geometry
+==========================
+
+.. py:module:: pyskyfire.turbine.geometry
+
+.. autoapi-nested-parse::
+
+   Built turbine blades, and what can only be measured on them.
+
+   A :class:`TurbineGeometry` is what :meth:`TurbineDefinition.build_geometry`
+   returns: one :class:`RowGeometry` per row, and the passage they sit in. Each
+   row carries one blade's surfaces, which the scene repeats round the wheel,
+   and the numbers the drawing left to the built section:
+
+   - the throat: the shortest line from one blade's trailing edge to its
+     neighbour, at every span station. With the pitch it gives the gauging
+     angle ``acos(o/s)``, which is roughly where the flow leaves the row.
+     Setting that beside the angle the design asked for shows how well the
+     section does what was meant;
+   - the narrowest gap anywhere between neighbouring blades. Set it beside the
+     width the flow comes in through (``inlet_width``, the pitch times the
+     cosine of the inlet metal angle) and the throat it leaves through. A gap
+     narrower than both is a pinch: the flow speeds up into it and slows again
+     after, which costs loss. It chokes only if the flow there reaches sonic
+     speed. An impulse blade takes its flow in as steeply as it lets it out, so
+     its narrowest gap is usually at the inlet, and the throat alone is the
+     wrong yardstick for it;
+   - the maximum thickness the section actually has.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+
+   /autoapi/pyskyfire/turbine/geometry/RowGeometry
+   /autoapi/pyskyfire/turbine/geometry/TurbineGeometry
+
+.. autoapisummary::
+
+   pyskyfire.turbine.geometry.RowGeometry
+   pyskyfire.turbine.geometry.TurbineGeometry
+
+

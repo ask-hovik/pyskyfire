@@ -1,0 +1,79 @@
+pyskyfire.ducts.manifold_law.UniformArea
+========================================
+
+.. py:class:: pyskyfire.ducts.manifold_law.UniformArea
+
+   Bases: :py:obj:`ManifoldLaw`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.manifold_law.UniformArea
+      :parts: 1
+      :private-bases:
+
+
+   
+   Hold the passage area constant all the way round.
+
+   The plain toroidal manifold. It carries more dynamic head near the port
+   than at the dead point, since the same area passes a growing share of the
+   flow, so it relies on being oversized enough that the variation does not
+   reach the channels. That is the usual rule for a coolant manifold, and it
+   is why the parameter here is simply the area the designer chose.
+
+   :Parameters:
+
+       **area** : :class:`python:float`
+           Passage cross-sectional area [m^2].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: residual(collected, area)
+
+      
+      Return the signed miss at one station.
+
+      Negative means the trial section is too small. Must increase with
+      section area so that the solver can bracket a root.
+
+      :Parameters:
+
+          **collected** : :class:`python:float`
+              Fraction of the manifold's whole mass flow that has passed through
+              this station. Runs from zero at the dead point to ``1/branches`` at
+              the port, so a law never has to know how the ring is divided.
+
+          **area** : :class:`python:float`
+              Trial section area [m^2].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

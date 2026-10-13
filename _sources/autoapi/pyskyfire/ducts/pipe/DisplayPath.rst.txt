@@ -1,0 +1,86 @@
+pyskyfire.ducts.pipe.DisplayPath
+================================
+
+.. py:class:: pyskyfire.ducts.pipe.DisplayPath
+
+   
+   A refined centerline for drawing, never for pressure-loss marching.
+
+   ``points`` [m] and ``radius`` [m] describe the swept circular bore, and
+   ``core_radius`` [m] the core inside it, zero where there is none. The
+   path carries its own provenance so results can follow it: ``station`` is
+   the fractional :class:`PathStation` index of every point, and
+   ``connection`` is the originating connection index of every segment
+   between consecutive points.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:property:: connection_count
+      :type: int
+
+
+      
+      Number of source connections the path was refined from.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:property:: station_count
+      :type: int
+
+
+      
+      Number of source :class:`PathStation` objects the path came from.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

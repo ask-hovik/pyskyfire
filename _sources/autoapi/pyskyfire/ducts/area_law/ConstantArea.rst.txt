@@ -1,0 +1,88 @@
+pyskyfire.ducts.area_law.ConstantArea
+=====================================
+
+.. py:class:: pyskyfire.ducts.area_law.ConstantArea
+
+   Bases: :py:obj:`AreaLaw`
+
+   .. autoapi-inheritance-diagram:: pyskyfire.ducts.area_law.ConstantArea
+      :parts: 1
+      :private-bases:
+
+
+   
+   Hold the passage area uniform all the way around.
+
+   This is Aungier's "collector" rather than a volute. It collects the flow
+   without conserving angular momentum, so its sizing parameter is whatever
+   the chosen area happens to produce and its tangential-velocity loss is
+   correspondingly larger. Aungier's Eq. 5-108 additionally averages that loss
+   against a total loss of tangential head, because a uniform passage tries to
+   diffuse the entering flow to rest where collection begins.
+
+   :Parameters:
+
+       **area** : :class:`python:float`
+           Passage cross-sectional area [m^2], constant in azimuth.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: residual(theta, area, centroid_radius, inlet_width, inlet)
+
+      
+      Return the signed miss at one azimuth.
+
+      Negative means the trial section is too small. Must increase with
+      section size so that the solver can bracket a root.
+
+      :Parameters:
+
+          **theta** : :class:`python:float`
+              Polar angle from the tongue [rad], increasing in the direction of
+              collection.
+
+          **area** : :class:`python:float`
+              Trial section area [m^2].
+
+          **centroid_radius** : :class:`python:float`
+              Radius of the trial section's area centroid [m].
+
+          **inlet_width** : :class:`python:float`
+              Inlet slot width ``b5`` [m].
+
+          **inlet** : :obj:`VoluteInlet`
+              Inlet flow conditions.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+

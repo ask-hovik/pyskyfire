@@ -1,0 +1,36 @@
+pyskyfire.turbine.geometry.TurbineGeometry
+==========================================
+
+.. py:class:: pyskyfire.turbine.geometry.TurbineGeometry
+
+   
+   Every row's built blade, and the passage they stand in.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: row(name) -> RowGeometry
+
+
+   .. py:property:: rotation_sign
+      :type: float
+
+

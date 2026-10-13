@@ -1,0 +1,27 @@
+pyskyfire.heat_exchanger.circuit.FlowConnection
+===============================================
+
+.. py:class:: pyskyfire.heat_exchanger.circuit.FlowConnection
+
+   
+   An ideal series header: all outlet flow enters the next bank.
+
+   The banks must have the same number of copies and use the same fluid.
+   The header has no heat or fitting loss; connecting geometry is not swept.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!

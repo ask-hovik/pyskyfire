@@ -1,0 +1,39 @@
+pyskyfire.ducts.path.PathPlacement
+==================================
+
+.. py:class:: pyskyfire.ducts.path.PathPlacement
+
+   
+   Place the first path station and establish its section roll.
+
+   The rotation maps template coordinates into assembly coordinates. The
+   initial floor direction is expressed in assembly coordinates, points from
+   the passage centroid toward its floor, and is projected perpendicular to
+   the starting tangent. Frame columns are (floor-to-roof, lateral, tangent).
+   All subsequent section orientations use minimal-rotation transport.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+   .. py:method:: __post_init__()
+
+
+   .. py:method:: frames(path)
+
+
+   .. py:method:: place(path)
+
