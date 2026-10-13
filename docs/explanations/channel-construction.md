@@ -308,6 +308,39 @@ the selected stations; the final station is always retained. Onshape retains
 analytic arcs and uses all exported coolant stations. Neither Python tests nor
 the native mesh renderer execute Onshape's loft kernel.
 
+## Keep-outs
+
+A surface channel's angular pitch is by default an even share of the
+circumference among every occluding channel present at `x`. A
+`ChannelKeepOut` takes part of the circumference out of that share first:
+
+```text
+theta(x) = (2*pi - blocked(x)) / n_occ(x)
+blocked(x) = sum over keep-outs of count * width(x) / r(x)
+```
+
+Every channel in the span narrows by the same amount, not just the ones next
+to a sector. The one-dimensional passage model solves one representative
+channel per circuit, so that is the width it has to see. The wall a keep-out
+covers is booked to no channel. A circuit whose placement states its own
+`channel_angular_width` keeps it and ignores keep-outs.
+
+In the numerical layout each sector is a pinned obstacle. The packer cannot
+open room on its own. A sector several pitches wide appears on top of a fully
+packed row, and relaxing that pushes channels through one another. So each
+circuit crossing a keep-out is first turned by a constant phase, less than one
+pitch, that puts the sector centres between channels. Then at every station
+the channels between two sector centres are scaled linearly onto the free arc
+between their edges. Where a sector has no width that map is the identity, so
+the channels leave the nominal pattern continuously along the `taper`. The
+relaxation that follows measures bending and slope from this seated shape, so
+it does not pull the channels back into the keep-out.
+
+Sector counts join the layout's symmetry. Ten sectors on a 280-channel
+circuit make it gcd(280, 10) = 10 wedges, so 28 channels are laid out instead
+of one, and they come out slightly different from each other. Keep-outs are axial. A helical
+circuit winding across one would have to change order, and is not supported.
+
 ## Hot-wall export
 
 The advanced and RL10 entry points share the same exporter and version 8 JSON

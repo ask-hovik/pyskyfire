@@ -48,7 +48,13 @@ Tutorials are guided, runnable introductions to a complete workflow.
 Howtos guide you through achieving a specific goal. For example hoe to use pyskyfire to find an optimum mixture ratio: {doc}`Mixture ratio optimisation <howto/mixture-ratio-optimisation>`  
 
 * {doc}`Define and solve a pipe <howto/pipes>`
+* {doc}`Define and solve an annular duct <howto/annular-ducts>`
+* {doc}`Size and solve orifices <howto/orifices>`
+* {doc}`Design and solve an injector <howto/injectors>`
 * {doc}`Design and solve a volute <howto/volutes>`
+* {doc}`Design a vaned diffuser <howto/diffusers>`
+* {doc}`Design an axial turbine <howto/turbines>`
+* {doc}`Hold the coolant area constant with a helix <howto/area-preserving-helix>`
   Construct explicit pipe stations and connections, solve pressure loss independently, or use the same pipe in an engine network.
 
 ### Validation
@@ -90,12 +96,15 @@ The reference section is generated from the source code and documents the availa
 
 | Package                                                    | Purpose                                                                                                                   |
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| {doc}`pyskyfire.common <autoapi/pyskyfire/common/index>`   | Shared objects including solid-material models, result containers, stations, blocks, and engine-network infrastructure. |
+| {doc}`pyskyfire.common <autoapi/pyskyfire/common/index>`   | Shared building blocks including solid-material models, result containers, friction correlations, and blade and section geometry. |
 | {doc}`pyskyfire.thermo <autoapi/pyskyfire/thermo/index>`   | Fluid definitions, state resolution, transport properties, NASA CEA-based combustion and aerothermodynamics, and nozzle losses.         |
 | {doc}`pyskyfire.regen <autoapi/pyskyfire/regen/index>`     | Thrust-chamber geometry, cooling channels, wall models, regenerative cooling, and film cooling.                           |
-| {doc}`pyskyfire.ducts <autoapi/pyskyfire/ducts/index>`     | Shared duct friction, explicit pipe geometry, pressure-loss solving, and pipe-path generation.                            |
+| {doc}`pyskyfire.ducts <autoapi/pyskyfire/ducts/index>`     | Shared duct friction, explicit pipe and annular-duct geometry, pressure-loss solving, and pipe-path generation.          |
+| {doc}`pyskyfire.heat_exchanger <autoapi/pyskyfire/heat_exchanger/index>` | Path-based heat exchangers with prescribed gas or coupled fluid circuits. |
+| {doc}`pyskyfire.injector <autoapi/pyskyfire/injector/index>` | Injector element sets and the flow from each feed through them. |
 | {doc}`pyskyfire.pump <autoapi/pyskyfire/pump/index>`       | Pump and turbopump analysis utilities.                                                                                    |
 | {doc}`pyskyfire.turbine <autoapi/pyskyfire/turbine/index>` | Turbine models and utilities for engine-cycle calculations.                                                               |
+| {doc}`pyskyfire.network <autoapi/pyskyfire/network/index>` | Engine-network stations and blocks that connect components into a solvable cycle. |
 | {doc}`pyskyfire.viz <autoapi/pyskyfire/viz/index>`         | Plotting, reporting, pressure-temperature diagrams, and 3D engine visualisation.                                          |
 
 Use the reference when you need the exact inputs, outputs, methods, or inheritance structure of a class or function.
@@ -133,10 +142,16 @@ tutorials/advanced-simulation
 
 howto/mixture-ratio-optimisation
 howto/pipes
+howto/annular-ducts
+howto/orifices
+howto/injectors
 howto/heat-exchangers
 howto/volutes
 howto/cross-sections
+howto/area-preserving-helix
 howto/impellers
+howto/diffusers
+howto/turbines
 howto/3d-scenes
 ```
 
@@ -174,10 +189,12 @@ explanations/rao-nozzle
 autoapi/pyskyfire/common/index
 autoapi/pyskyfire/ducts/index
 autoapi/pyskyfire/heat_exchanger/index
+autoapi/pyskyfire/injector/index
 autoapi/pyskyfire/regen/index
 autoapi/pyskyfire/pump/index
 autoapi/pyskyfire/turbine/index
 autoapi/pyskyfire/thermo/index
+autoapi/pyskyfire/network/index
 autoapi/pyskyfire/viz/index
 
 ```

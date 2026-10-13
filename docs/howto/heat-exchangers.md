@@ -38,11 +38,14 @@ section varies. Section dimensions are independent of placement. The user
 controls whether adjacent copies meet without gaps or overlaps.
 
 `Path.from_nodes` accepts continuous bends on interior control nodes, for
-example `PathNode((0.1, 0, 0), bend=Continuous(radius=0.02, segments=12))`.
-Heat exchangers accept `Straight` and `Continuous` connections. Lumped
-`RoundedBend` connections remain available to pipes only. `refined(max_step)`
-sets the integration resolution; generated arcs retain exact length, curvature,
-and bend-plane geometry. Manually supplied continuous paths without arc-plane
+example `PathNode((0.1, 0, 0), bend=Continuous(radius=0.02))`, which becomes
+one arc connection. Heat exchangers accept `Straight` and `Continuous`
+connections. Lumped `RoundedBend` connections remain available to pipes only.
+`Path.from_curve` works too: it samples a spline or any other curve into
+exact arc connections (see [Route a pipe along a curve](pipes.md#route-a-pipe-along-a-curve)).
+Unlike a pipe, a heat exchanger does not add stations by itself:
+`refined(max_step)` sets its thermal integration resolution, and generated arcs
+retain exact length, curvature, and bend-plane geometry when split. Manually supplied continuous paths without arc-plane
 metadata should already resolve the intended geometry before refinement.
 
 ## Construct a channel bank
@@ -165,8 +168,14 @@ Internal turbulent convection uses
 [Gnielinski](https://ht.readthedocs.io/en/release/ht.conv_internal.html#ht.conv_internal.turbulent_Gnielinski).
 The straight Darcy factor is shared with the friction calculation; the coil
 friction multiplier is not automatically treated as a heat-transfer multiplier.
-Gnielinski's range is enforced. Below Re=2300, the default is Nu=3.66, with a
-linear transition to Gnielinski at Re=4000. **That laminar default is a circular,
+Gnielinski's range is enforced. Properties are bulk values, corrected for a
+heated fluid by Gnielinski's gas factor `(T_b/T_w)^0.45`, where `T_w` is the
+wall temperature at the fluid interface. It was fitted at moderate temperature
+ratios; a cryogen against a hot wall is an extrapolation. A cooled fluid is not
+corrected. Pass `property_correction=False` to a circuit for bulk properties.
+
+Below Re=2300, the default is Nu=3.66, with a linear transition to Gnielinski
+at Re=4000. **That laminar default is a circular,
 fully developed, constant-wall-temperature approximation.** For other boundary
 conditions, supply `laminar_nusselt=` or a `heat_transfer` callback accepting
 `Re, Pr, k, Dh, darcy_factor`. Hydraulic-diameter use in noncircular passages
@@ -191,3 +200,40 @@ Both produce interactive reports under `examples/heat_exchanger/output/`.
 includes swept geometry, total/per-channel flow, areas, fluid temperature,
 static pressure, velocity, both wall-interface temperatures, and energy balance.
 `result.walls` identifies each wall's surfaces and segment indices.
+
+## Put an exchanger and chamber in the same scene
+
+```python
+scene = psf.viz.Scene(color_by="T_coolant_wall", show_axes=True)
+chamber_node = scene.add(
+    psf.viz.ThrustChamberComponent(chamber, layout="analytical"), name="chamber",
+)
+for group in chamber_node.children:
+    for channel in group.children:
+        channel.opacity = 0.16
+scene.add(psf.viz.HeatExchangerComponent(installation, result), name="baffles")
+scene.save_html("baffle-scene.html")
+```
+
+Passing a `ChamberInstallation` uses its simulation transform automatically.
+A raw `HeatExchanger` instead uses assembly coordinates and supports ordinary
+`Scene.add(position=..., rotation=...)` placement. If the chamber itself has a
+scene transform, add the installed exchanger with `parent=chamber_node` so
+both move together. Explicit scene placement overrides the installation's root
+transform, and affects the drawing only.
+
+Each channel is drawn as its wetted passage, the surface the coolant touches,
+not the outer envelope of its walls. The adapter exposes fluid temperature,
+static pressure, velocity, enthalpy, and `T_coolant_wall`, the wall
+temperature at the wetted interface, in the field selector. `T_coolant_wall`
+uses contact-area averages on each exposed surface segment; inactive surfaces
+stay uncoloured. The opposite interface is not drawn; it remains in
+`result.walls`. Each copied channel has inlet/outlet anchors; root
+`circuit_N.inlet/outlet` anchors refer to the first copy.
+
+The baffle example writes `baffle-scene.html` and embeds the same scene in its
+report. It includes 96 unhelical squared chamber channels from injector to
+nozzle exit, shown transparently, and places the baffles 2 mm downstream of the
+injector datum in both the simulation and scene. Chamber cooling geometry is
+constructed for this example; the existing baffle thermal solve supplies the
+wall-temperature colours.

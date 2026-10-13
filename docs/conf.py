@@ -17,6 +17,8 @@ extensions = [
     "sphinx.ext.graphviz",
     "sphinx.ext.inheritance_diagram",
     "sphinx.ext.mathjax",
+    "sphinx_codeautolink",
+    "sphinx_tippy",
     # "sphinx.ext.autodoc.typehints",  # ← remove (or keep and set autodoc_typehints="none")
 ]
 
@@ -26,7 +28,10 @@ SRC  = os.path.join(ROOT, "src")
 autoapi_type  = "python"
 autoapi_dirs  = [os.path.join(SRC, "pyskyfire")]
 autoapi_root  = "autoapi"
-autoapi_add_toctree_entry = True
+# The index is Markdown, so AutoAPI cannot insert its own toctree entry; the
+# Reference toctree in index.md lists the subpackages instead. Add new
+# subpackages there, or their pages will be missing from the sidebar.
+autoapi_add_toctree_entry = False
 autoapi_keep_files = False
 autoapi_generate_api_docs = True
 autoapi_member_order = "groupwise"
@@ -69,12 +74,29 @@ myst_enable_extensions = [
     "dollarmath", 
     "amsmath",         
 ]
+# Generate heading ids so Markdown links like ``page.md#some-heading`` resolve.
+myst_heading_anchors = 3
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "numpy":  ("https://numpy.org/doc/stable/", None),
     "scipy":  ("https://docs.scipy.org/doc/scipy/", None),
 }
+
+# Code-block cross-references: names in example code link to their API page.
+# Concatenating blocks lets later fragments of a page reuse earlier imports, and
+# the preface covers literalinclude fragments that start below the import line.
+codeautolink_concat_default = True
+codeautolink_global_preface = "import pyskyfire as psf"
+# Tippy shows the hover preview; the browser's own title tooltip would double it.
+codeautolink_disable_link_titles = True
+
+# Hover previews for internal links, including the ones codeautolink adds.
+tippy_props = {"placement": "auto-start", "maxWidth": 600, "interactive": False}
+tippy_enable_mathjax = True
+# Wikipedia/DOI tips call external APIs during the build; keep builds offline.
+tippy_enable_wikitips = False
+tippy_enable_doitips = False
 
 graphviz_output_format = "svg"
 graphviz_dot_args = ["-Gbgcolor=transparent", "-Gtransparent=true"]
@@ -99,6 +121,15 @@ def skip_autoapi_members(app, what, name, obj, skip, options):
     if what == "method" and name.endswith(".__init__"):
         return True
     return skip
+
+def orphan_autoapi_index(app, docname, source):
+    """Mark AutoAPI's top-level pages as reachable by link only.
+
+    The Reference toctree in index.md lists the subpackages directly, so the
+    generated root and ``pyskyfire`` package pages sit outside every toctree.
+    """
+    if docname in (f"{autoapi_root}/index", f"{autoapi_root}/pyskyfire/index"):
+        source[0] = ":orphan:\n\n" + source[0]
 
 def copy_example_html_files(
     source: Path,
@@ -214,6 +245,35 @@ def copy_docs_artifacts(app) -> None:
         },
     )
 
+    copy_example_html_files(
+        source=repository_root / "examples" / "pipe" / "output",
+        destination=output_static / "howto-artifacts" / "pipes",
+        required_files={
+            "rounded-bend-path.html",
+            "rounded-bend-pipe.html",
+            "bend-comparison.html",
+            "flared-bend-pipe.html",
+            "pressure-loss-comparison.html",
+            "flared-pressure.html",
+            "flared-pressure-3d.html",
+            "spline-curvature.html",
+            "spline-pipe.html",
+            "manual-path.html",
+            "manual-curvature.html",
+            "tapered-stations.html",
+        },
+    )
+
+    copy_example_html_files(
+        source=repository_root / "examples" / "area_preserving_helix",
+        destination=(
+            output_static
+            / "howto-artifacts"
+            / "area-preserving-helix"
+        ),
+        required_files={"engine-3d.html"},
+    )
+
 
 def publish_validation_reports(app, exception) -> None:
     """Replace validation stubs with their standalone HTML reports."""
@@ -256,10 +316,59 @@ def publish_validation_reports(app, exception) -> None:
         shutil.copy2(standalone_dir / name, output_validation / name)
 
 
+def add_code_link_tips(app, exception) -> None:
+    """Give codeautolink's code-block links the same hover tips as prose links.
+
+    sphinx-tippy collects links while pages render, but codeautolink only
+    writes its links into the finished HTML at build-finished. This runs after
+    both, adds the code links to tippy's per-page data and rewrites the tips.
+    """
+
+    if exception is not None or app.builder.format != "html":
+        return
+
+    import posixpath
+    from bs4 import BeautifulSoup
+    import sphinx_tippy
+
+    pages = sphinx_tippy.get_tippy_data(app)["pages"]
+
+    # A link to a whole AutoAPI object page would otherwise only show the
+    # page title; show the object's signature and docstring summary instead.
+    for pagename, data in pages.items():
+        if pagename.startswith("autoapi/") and not pagename.endswith("/index"):
+            object_id = pagename.removeprefix("autoapi/").replace("/", ".")
+            if object_id in data["id_to_html"]:
+                data["id_to_html"][None] = data["id_to_html"][object_id]
+
+    for pagename, data in pages.items():
+        html_file = Path(app.outdir, pagename + ".html")
+        if not html_file.is_file():
+            continue
+
+        body = BeautifulSoup(html_file.read_text(encoding="utf8"), "html.parser")
+        page_parent = posixpath.dirname(pagename)
+        for anchor in body.select("a.sphinx-codeautolink-a[href]"):
+            path, _, target = anchor["href"].partition("#")
+            if not path.endswith(".html"):
+                continue
+            refpage = posixpath.normpath(posixpath.join(page_parent, path[:-5]))
+            if refpage in app.env.all_docs:
+                data["refs_in_page"].add((refpage, target or None))
+
+        sphinx_tippy.write_tippy_props_page(app, pagename, {}, {}, {})
+
+
 def setup(app):
     app.connect("autoapi-skip-member", skip_autoapi_members)
+    app.connect("source-read", orphan_autoapi_index)
     app.connect("builder-inited", copy_docs_artifacts)
     app.connect("build-finished", publish_validation_reports)
+    # Default priority is 500; codeautolink and sphinx-tippy must run first.
+    app.connect("build-finished", add_code_link_tips, priority=900)
+    # Hover tips typeset their math with MathJax, so every page needs it, not
+    # only the pages that contain equations themselves.
+    app.set_html_assets_policy("always")
 
 # Logo
 html_logo = "_static/pyskyfire_header.png"   # or .png

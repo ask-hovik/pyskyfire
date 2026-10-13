@@ -17,10 +17,8 @@ from pyskyfire.viz import ImpellerComponent, Report, Scene
 impeller = Impeller(
     Q=0.01, H=100., n=10_000,
     shaft_diameter=0.020, inlet_hub_diameter=0.030,
-    blade_count=6, beta2_deg=25., blade_thickness=0.001,
-    phi1=0.20, incidence_deg=2.,
-    volumetric_efficiency=0.97, hydraulic_efficiency=0.85,
-    mechanical_efficiency=0.98, rho=1000.,
+    blade_count=6, blade_thickness=0.001, hydraulic_efficiency=0.90,
+    phi1=0.20, incidence_deg=2., rho=1000.,
 )
 impeller.build_geometry()
 
@@ -42,31 +40,112 @@ does not need a display.
 ## Duty, sizing and supplied efficiencies
 
 Use SI units with rotational speed in rpm and blade angles in degrees.
-`Q` is delivered volume flow and `H` is delivered head. Alternatively use
-`Impeller.from_pressure_rise(mdot=..., rho=..., dp=..., n=..., **design_inputs)`.
+`Q` is delivered volume flow and `H` is the total head at the impeller
+outlet: the head the pump delivers plus whatever the volute or diffuser after
+it loses. Alternatively use
+`Impeller.from_pressure_rise(mdot=..., rho=..., dp=..., n=..., **design_inputs)`,
+or size for a `PumpDuty` with `Impeller.from_duty(duty, **design_inputs)`.
 
-The outlet diameter and width use the existing preliminary pressure-coefficient
-and width correlations. Eye sizing retains `phi1 = Cm1 / Ueye`, solving annular
-continuity with a fixed wetted hub diameter. `d1` can override the computed eye
-diameter. The shaft diameter and wetted hub diameter are separate inputs; no
-shaft stress sizing is performed.
+A `PumpDuty` states what the pump is asked to do, separately from how it is
+built. It can be written the way pumps are specified or the way an engine
+presents them, and stores the same thing either way:
 
-`volumetric_efficiency` sets the internal flow to `Q / volumetric_efficiency`.
-Its default of 1 means no leakage. Hydraulic and mechanical efficiencies are
-optional supplied values. With both and `rho`, `shaft_power` is
-`rho * g * Q * H / (eta_v * eta_h * eta_m)`. Otherwise it is `None`.
+```python
+from pyskyfire.pump import PumpDuty
+from pyskyfire.thermo import Incompressible
 
-These efficiencies do not constitute a performance solver. The outlet velocity
-triangle assumes blade-congruent flow without slip. Its Euler head and the
-hydraulic-efficiency-adjusted head are diagnostics in `velocity_triangles`;
-they are not forced to equal the requested head. There is currently no head
-closure iteration, blade blockage correction, cavitation assessment, or loss
-prediction. The generated geometry is a preliminary design for inspection.
+PumpDuty.from_head(0.01, 100., 10_000, rho=1000.)          # Q, H, n
+PumpDuty.from_pressure_rise(mdot=10., rho=1000., dp=9.8e5, n=10_000)
+PumpDuty.from_states(fluid="Methane", mdot=22.8, p_in=5e5, T_in=135.3,
+                     p_out=230e5, n=40_000)                  # real fluid
+PumpDuty.from_stations(tank, pump_out, fluid="Methane", n=40_000)
+```
+
+`fluid` is a CoolProp name, a `thermo.Fluid`, or any `thermo.EquationOfState`,
+such as `Incompressible(rho)`. `H` is the isentropic head: the enthalpy an
+ideal pump adds, over `g`. At constant density that is `Δp/(rho*g)`. For a
+real liquid it is a little less, because the liquid compresses on the way
+through; for methane pumped from 5 to 230 bar the difference is about 2 %. The
+duty also reports the isentropic outlet flow `Q_out` and the specific speed.
+
+Eye sizing retains `phi1 = Cm1 / Ueye`, solving annular continuity with a
+fixed wetted hub diameter. `d1` can override the computed eye diameter. The
+shaft diameter and wetted hub diameter are separate inputs; no shaft stress
+sizing is performed. `b2` defaults to Gülich's mean outlet-width curve,
+Eq. (7.1).
+
+### Slip and the head closure
+
+The flow does not leave along the blades. Gülich's Table 3.2 predicts the
+swirl it does leave with: a slip factor from the blade outlet angle, the blade
+count, the blade blockage and the inlet diameter, a modified form of Wiesner's
+correlation. `outlet_slip()` evaluates it on its own. The outlet triangles
+carry that swirl, and `beta_flow_deg` is the flow angle it implies, below the
+blade angle `beta_metal_deg`.
+
+The design is closed on it. Exactly one quantity is solved so the predicted
+swirl is the swirl the head needs, `c_u2 = g*H/(eta_h*u2) + u1*c_u1/u2`
+(Gülich Eq. T3.2.8):
+
+- By default the blade outlet angle is solved, which is the order of Gülich's
+  own procedure. The outlet diameter comes from one of `psi`, `d2`, `u2` or a
+  supplied `meridional`. With none of them it comes from Gülich's head
+  coefficient curve, Eq. (3.26), at `fT` (default 1.0; he finds 1.0 describes
+  multistage pumps and 1.1 low-head single-stage volute pumps).
+- Give `beta2_deg` and the outlet diameter is solved instead.
+- Giving both over-specifies the wheel and is refused.
+
+Eq. (3.26) describes whole pumps: their delivered head at a stage efficiency.
+`H` and `hydraulic_efficiency` here are the impeller's, so the same wheel sits
+higher in the band by roughly the ratio of the two efficiencies. That is the
+reason to move `fT` or give `psi` outright.
+
+At low specific speed the swirl a wheel can deliver has a broad, flat peak
+against the blade angle. A head above it cannot be had at any angle, and the
+error says what head coefficient can. The solved angle is always the one below
+the peak.
+
+`blade_count` is an input. Gülich rejects empirical blade-count formulas as
+likely to violate the criteria that actually set it. Only full blades count
+toward slip; splitters are not in the correlation.
+
+`impeller.diagnostics` reports what was solved, the resolved and correlated
+head coefficients, the mean-streamline slip prediction, the deviation angle
+(Gülich suggests at most 10 to 14 degrees) and the deceleration ratio
+`w2/w1` at the shroud (de Haller: at least 0.7). None of them is enforced.
+
+### Efficiencies
+
+`hydraulic_efficiency` is the impeller's own, Gülich's eta_h,La: the losses
+between its inlet and outlet. Each other loss is charged by the component it
+happens in, never lumped into one pump efficiency:
+
+- the volute or diffuser, by its own block, from the head it is handed;
+- disk friction on the wheel's outer faces, by `pump.DiskFriction` (Gülich
+  Table 3.6);
+- bearings and shaft seals, by the pump block's `mechanical_efficiency`;
+- leakage, by `volumetric_efficiency`, which sets the internal flow to
+  `Q / volumetric_efficiency`. Its default of 1 means no leakage.
+
+`blade_power` is `rho * g * Q_internal * H / eta_h`, the work the blades do,
+or `None` without `rho`. `network.PumpBlock` combines the parts: its outlet is
+the impeller outlet, its shaft power is blade power plus disk friction over
+the mechanical efficiency, and the first two heat the fluid.
+
+For a typical efficiency, Gülich's Fig. 3.33 splits the losses of pumps near
+`nq = 15` into about 2 to 3.5 percent of the head in the impeller against 13 to
+18 percent in the collector, which puts eta_h,La near 0.97 where the whole
+stage is near 0.85.
+
+The efficiencies are supplied assumptions, not predictions. There is no
+cavitation assessment or impeller loss prediction. The generated geometry is a
+preliminary design for inspection.
 
 ## Design controls and conventions
 
-- `blade_count`, `beta2_deg`, `blade_thickness`, `shaft_diameter` and
-  `inlet_hub_diameter` are required design inputs.
+- `blade_count`, `blade_thickness`, `hydraulic_efficiency`, `shaft_diameter`
+  and `inlet_hub_diameter` are required design inputs. `beta2_deg` is solved
+  unless given.
 - `beta1_deg=None` derives hub, midspan and tip inlet metal angles from the
   unblocked annular velocity triangles, with `incidence_deg` added. An explicit
   `beta1_deg` overrides this calculation. `inlet_prewhirl` specifies absolute
@@ -149,8 +228,15 @@ otherwise a preliminary dimension-based default is used. Supply
 `meridional=MeridionalContours(hub=hub_xr, shroud=shroud_xr)` for custom paired
 `(N, 2)` arrays of `(x, r)` stations. Both arrays must have the same length,
 positive passage width and monotone axial/radial coordinates. Their endpoints
-must match the sized inlet radii, outlet radius and outlet width. Pair stations
+must match the sized inlet radii and, if `b2` is given, the outlet width; the
+outlet radius is taken from it and the blade angle solved. Pair stations
 across the passage; the shared station coordinate is normalized hub arc length.
+
+`MeridionalContours` is the radial-impeller form of the shared
+`pyskyfire.common.MeridionalPassage`, so a passage also reports its `area()`
+and `hydraulic_diameter()` at each station and can record which wall stretches
+rotate (`WallMotion`) and where blades stop short of a wall (`Clearance`).
+The impeller does not fill those in yet.
 
 `impeller.dimensions`, `impeller.velocity_triangles` and
 `impeller.blade_definition` are available before importing pyTurbo. Geometry

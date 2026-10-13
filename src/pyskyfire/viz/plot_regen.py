@@ -1713,10 +1713,6 @@ class PlotRadiusOfCurvature(PlotBase):
             margin=dict(l=60, r=20, t=60, b=60),
         )
 
-# src/pyskyfire/viz/temperature_profile.py
-import numpy as np
-import plotly.graph_objects as go
-from .core import PlotBase
 
 class PlotTemperatureProfile(PlotBase):
     """

@@ -25,8 +25,9 @@ def build_impeller():
         shaft_diameter=0.012, inlet_hub_diameter=0.020,
         phi1=0.20, blade_count=4, beta2_deg=30.,
         blade_thickness=thickness, incidence_deg=2.,
-        volumetric_efficiency=0.97, hydraulic_efficiency=0.85,
-        mechanical_efficiency=0.98, rho=1000.,
+        # The outlet angle is fixed here, so the outlet diameter is what the
+        # head is closed on.
+        volumetric_efficiency=0.97, hydraulic_efficiency=0.85, rho=1000.,
         # A slanted leading edge: the blade starts well down the hub and up
         # in the eye at the tip, so both wrap by a comparable amount.
         blade_settings=BladeSettings(start=(0.2, 0.01), end=1.0),
@@ -68,10 +69,19 @@ def create_report(output_dir, *, screenshot=False):
         "Splitter start [main chord fraction]": impeller.blade_definition.splitter.start,
         "Internal flow [m³/s]": d.internal_flow,
         "Volumetric efficiency (supplied)": impeller.volumetric_efficiency,
-        "Hydraulic efficiency (supplied)": impeller.hydraulic_efficiency,
-        "Mechanical efficiency (supplied)": impeller.mechanical_efficiency,
-        "Shaft power from duty and supplied efficiencies [W]": impeller.shaft_power,
+        "Impeller hydraulic efficiency (supplied)": impeller.hydraulic_efficiency,
+        "Blade power [W]": impeller.blade_power,
     })
+    checks = impeller.diagnostics
+    design.add_table({
+        "Closed on": checks.solved,
+        "Head coefficient psi": checks.psi,
+        "Head coefficient from Eq. (3.26)": checks.psi_correlation,
+        "Slip factor gamma": checks.slip.slip_factor,
+        "Outlet swirl cu2 [m/s]": checks.slip.cu,
+        "Deviation angle [deg]": checks.deviation_deg,
+        "Deceleration ratio w2/w1": checks.deceleration_ratio,
+    }, caption="Closure and checks against Gülich's guidance")
     design.add_markdown("""
         This duty sits at low specific speed: a small, narrow wheel turning
         fast for a lot of head. Two things follow from that, and they pull the
@@ -88,11 +98,14 @@ def create_report(output_dir, *, screenshot=False):
         where the pitch has grown and the guidance is needed. Splitters follow
         the main-blade camber, so they add no independent angle inputs.
 
-        Sizing uses the preliminary head-coefficient and width correlations.
-        Inlet angles come from unblocked continuity through the leading edge
-        with zero prewhirl, plus 2° incidence. The outlet metal angle is a
-        design input. These calculations do not include a slip or loss
-        prediction. The efficiencies are supplied assumptions. Wrap is
+        The outlet metal angle is a design input here, so the outlet diameter
+        is solved: it is the one at which the swirl Gülich's slip correlation
+        predicts the blades leave is the swirl the head needs at the supplied
+        hydraulic efficiency. The width follows Gülich's mean correlation.
+        Only the four full blades count toward slip, which is why the
+        deviation angle comes out high. Inlet angles come from unblocked
+        continuity through the leading edge with zero prewhirl, plus 2°
+        incidence. The efficiencies are supplied assumptions. Wrap is
         estimated separately at each span; the slanted leading edge keeps the
         hub and tip values close together.
         The thickness function specifies body thickness; the blade edges close.

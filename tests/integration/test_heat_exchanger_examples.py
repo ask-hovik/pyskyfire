@@ -60,7 +60,28 @@ def test_baffles_are_paired_v_rings_and_straight_spokes_with_series_flow(tmp_pat
     assert all(
         np.isfinite([w.temperature_a, w.temperature_b]).all() for w in result.walls
     )
-    report = heat_exchanger_report(exchanger, result, installation=installation)
+    cooling = chamber.cooling_circuits[0]
+    assert cooling.direction == 1
+    assert cooling.n_channels == 96
+    assert cooling.cross_section.__class__.__name__ == "CrossSectionSquared"
+    np.testing.assert_allclose(cooling.helix_angle_vals, 0)
+    np.testing.assert_allclose(
+        cooling.reference_path[[0, -1], 0], chamber.contour.xs[[0, -1]]
+    )
+    scene = example.build_scene(chamber, installation, result)
+    assert [node.name for node in scene.nodes] == ["chamber", "baffles"]
+    assert len(scene.nodes[0].children[0].children) == 96
+    np.testing.assert_allclose(
+        scene.nodes[1].transform.matrix[:3, 3], installation.gas.position
+    )
+    assert scene.nodes[1].anchor("circuit_0.inlet").position[0] == pytest.approx(
+        chamber.contour.xs[0] + 0.002
+    )
+    assert all(node.opacity < 1 for node in scene.nodes[0].children[0].children)
+    scene.save_html(tmp_path / "baffle-scene.html")
+    report = heat_exchanger_report(
+        exchanger, result, installation=installation, scene=scene
+    )
     report.save_html(tmp_path / "baffles.html")
     assert (
         "Wall temperatures by exposed surface"

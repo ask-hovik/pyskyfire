@@ -115,11 +115,8 @@ class FilmCooling:
     Parameters
     ----------
     x_fraction : float
-        Signed axial fraction in [-1, 1], where:
-            -1 -> chamber start
-             0 -> throat
-            +1 -> nozzle exit
-        This is resolved to ``x`` by ``ThrustChamber``.
+        Signed axial fraction in [-1, 1], where -1 is the chamber start, 0 the
+        throat and +1 the nozzle exit. This is resolved to ``x`` by ``ThrustChamber``.
     coolant_mass_flow_rate : float
         Total coolant mass flow injected into the film [kg/s].
     film_injection_perimeter : float
@@ -183,6 +180,7 @@ class CoolingCircuit:
         roughness,
         hot_gas_surface_area_multiplier=1.0,
         *,
+        outer_walls=None,
         enable_fin: bool = True,
         rib_material=None,
     ):
@@ -206,6 +204,17 @@ class CoolingCircuit:
                 wall.bind_contour(contour)
         if not has_main:
             raise ValueError("A cooling circuit requires at least one main wall")
+
+        # Outer walls sit on the cold side, outboard of whatever exterior the
+        # channel section already presents. A squared channel's roof is that
+        # exterior; a rounded channel's tube already closes on itself, so its
+        # main material carries the wall the whole way round. Either way these
+        # layers are liners on the outside, and only add to the offset -- they
+        # never enter the channel-wall thickness the section is built from.
+        self.outer_walls = list(outer_walls or [])
+        for wall in self.outer_walls:
+            if hasattr(wall, "bind_contour"):
+                wall.bind_contour(contour)
 
         self._chamber = None
 
@@ -273,6 +282,7 @@ class CoolingCircuit:
         state.setdefault("reference_angle_origin_rad", None)
         state.setdefault("enable_fin", True)
         state.setdefault("rib_material", None)
+        state.setdefault("outer_walls", [])
         self.__dict__.update(state)
 
     # ---------------- basic getters ----------------
@@ -440,6 +450,13 @@ class CoolingCircuit:
     def hot_side_layer_thickness(self, x):
         """Return the combined thickness of explicitly marked hot-side liners."""
         return self._wall_thickness(x, role="liner")
+
+    def outer_wall_thickness(self, x):
+        """Return the combined thickness of the cold-side outer liners [m]."""
+        thickness = np.zeros_like(np.asarray(x, dtype=float))
+        for wall in self.outer_walls:
+            thickness = thickness + np.asarray(wall.thickness(x), dtype=float)
+        return float(thickness) if thickness.ndim == 0 else thickness
 
     # ---------------- profiles bundle ----------------
     def _prof(self, centerline: np.ndarray) -> SectionProfiles:
@@ -788,9 +805,13 @@ class ThrustChamber:
         h_cold_corr: float = 1.0,
         compute_gas: bool = True,
         film_cooling: FilmCooling | None = None,
+        keep_outs=None,
     ):
         self.contour = contour
         self.cooling_circuits = cooling_circuits
+        # Sectors of the channel layer reserved for something else; see
+        # ChannelKeepOut. Stored before the domains, which are cut at them.
+        self.keep_outs = tuple(keep_outs or ())
         self.combustion_transport = combustion_transport
         self.optimal_values = optimal_values
 
@@ -867,13 +888,45 @@ class ThrustChamber:
             frac = L_seg / L_tot
             n_here = max(MIN_NODES, int(round(self.n_nodes * frac)))
 
-            if x0 <= x1:
-                x_domain = np.linspace(x0, x1, n_here)
-            else:
+            lo, hi = sorted((x0, x1))
+            x_domain = self._with_keep_out_breakpoints(np.linspace(lo, hi, n_here))
+            if x0 > x1:
                 # reversed span: keep coolant marching direction by reversing
-                x_domain = np.linspace(x1, x0, n_here)[::-1]
+                x_domain = x_domain[::-1]
 
             circuit.set_x_domain(x_domain)
+
+    def _with_keep_out_breakpoints(self, x_domain):
+        """Put a station on every corner of a keep-out's width law.
+
+        Channel widths are interpolated between stations, so a keep-out edge
+        between two of them would be smeared over the whole interval, or
+        missed if it is shorter. The nearest station is moved onto a corner
+        when it is within a quarter spacing, so the grid stays even; otherwise
+        one is added.
+        """
+        x_domain = np.asarray(x_domain, float).copy()
+        if len(x_domain) < 2:
+            return x_domain
+        spacing = float(x_domain[1] - x_domain[0])
+        extra, moved = [], set()
+        for keep_out in getattr(self, "keep_outs", ()):
+            for corner in keep_out.breakpoints:
+                if not x_domain[0] < corner < x_domain[-1]:
+                    continue
+                nearest = int(np.argmin(np.abs(x_domain - corner)))
+                movable = 0 < nearest < len(x_domain) - 1 and nearest not in moved
+                if movable and abs(x_domain[nearest] - corner) < 0.25*spacing:
+                    x_domain[nearest] = corner
+                    moved.add(nearest)
+                else:
+                    extra.append(corner)
+        return np.unique(np.r_[x_domain, extra])
+
+    def blocked_angle(self, x) -> float:
+        """Angle of the channel layer kept clear by keep-outs at ``x`` [rad]."""
+        return float(sum(keep_out.blocked_angle(x, self.contour)
+                         for keep_out in getattr(self, "keep_outs", ())))
 
     def build_reference_paths(self):
         """Build the ideal-contour winding on a shared integration grid."""
@@ -917,10 +970,12 @@ class ThrustChamber:
         Compute wedge angle (theta) arrays used by cross-section analytics.
 
         Priority:
+
         1) If placement provides channel_angular_width(x), use it.
         2) If placement is 'internal' (non-occluding), use height as an angular-width proxy.
         3) Otherwise, default to an even packing among surface-occluding channels:
-           theta(x) = 2π / n_occ(x), where n_occ is provided by the circuit group.
+           theta(x) = (2π - blocked(x)) / n_occ(x), where n_occ is provided by
+           the circuit group and blocked(x) is what keep-outs reserve.
         """
         for circuit in self.cooling_circuits:
             xs = circuit.x_domain
@@ -951,14 +1006,17 @@ class ThrustChamber:
                     [p.helix_angle(x, self.contour, circuit) for x in xs],
                     dtype=float,
                 )
-                # print
-                angular_widths = np.where(
-                    n_occ > 0.0,
-                    2.0 * np.pi / n_occ,
-                    0.0,
+                free = 2.0 * np.pi - np.array(
+                    [self.blocked_angle(x) for x in xs], dtype=float
                 )
+                if np.any((n_occ > 0.0) & (free <= 0.0)):
+                    raise ValueError(
+                        f"{circuit.name}: keep-outs leave no circumference "
+                        "for the channels"
+                    )
+                angular_widths = np.where(n_occ > 0.0, free / np.maximum(n_occ, 1.0), 0.0)
                 local_sector = np.where(
-                    n_occ > 0.0, 2.0 * np.pi * np.cos(gamma) / n_occ, 0.0
+                    n_occ > 0.0, free * np.cos(gamma) / np.maximum(n_occ, 1.0), 0.0
                 )  # multiplying with cos gamma for helical implementation
 
             circuit.set_channel_angular_width(angular_widths)
@@ -970,6 +1028,32 @@ class ThrustChamber:
             xs = circuit.x_domain
             h = np.array([circuit.channel_height(x) for x in xs], dtype=float)
             circuit.set_channel_height(h)
+
+    def __getstate__(self):
+        """Leave the derived outer wall out; it rebuilds on demand."""
+        state = self.__dict__.copy()
+        state.pop("_outer_wall", None)
+        return state
+
+    @property
+    def outer_wall(self):
+        """Cold-side envelope of the channelled wall.
+
+        The counterpart to :attr:`contour`: where that one is the face the hot
+        gas sees, this is the outermost surface the channels and their walls
+        reach, which is what anything wrapped around the chamber has to sit
+        against. Measured on first use and then kept, since it follows from
+        geometry that is already resolved.
+
+        See :class:`~pyskyfire.regen.outer_wall.OuterWall` for the difference
+        between its ``envelope`` and ``equivalent`` radii.
+        """
+        cached = getattr(self, "_outer_wall", None)
+        if cached is None:
+            from .outer_wall import OuterWall
+            cached = OuterWall.from_chamber(self)
+            self._outer_wall = cached
+        return cached
 
     @property
     def coolant_volume(self) -> float:

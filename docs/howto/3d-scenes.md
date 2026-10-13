@@ -37,8 +37,8 @@ saved results without rerunning a simulation.
 
 `Scene.add()` builds a component and returns its root `SceneNode`. Nodes hold
 local transforms, children, anchors, optional meshes, and scalar fields. Their
-path IDs distinguish circuits, channels, hubs, shrouds, and blades, providing
-identity for future selection controls. Sibling names must be unique. A scene
+path IDs distinguish circuits, channels, hubs, shrouds, and blades, which is
+how the viewer's selections and groups refer to them. Sibling names must be unique. A scene
 can contain several instances of the same component, including overlapping
 components at the origin. No fluid-network connectivity is checked.
 
@@ -46,17 +46,21 @@ The scene uses renderer-independent NumPy meshes. Desktop output uses PyVista;
 standalone HTML uses bundled Three.js and TrackballControls with no network assets
 or Python server. HTML carries geometry, hierarchy, transforms, and original
 field values directly, rather than converting a VTK rendering window to glTF.
-The HTML viewer supports unconstrained trackball rotation, pan, zoom, and an
-`R` key that restores the initial view.
+The HTML viewer supports unconstrained trackball rotation, pan (right-drag, or
+Ctrl+drag on a trackpad), zoom, and an `R` key that restores the initial view.
+Parts take one default colour unless a component has a reason to set its own,
+such as the red of an inlet or outlet opening; `circuit_colors` on the chamber
+and heat exchanger and `colors` on the turbine paint parts apart when wanted.
 
 Clicking a part selects the top-level node that `scene.add()` created, so a
 click on one cooling channel identifies its whole thrust chamber. A box appears
-beside the click showing the node's name, its `kind` metadata, the `position=`
-and `rotation=` arguments that reproduce its placement, the fields it carries,
-and its anchors in scene coordinates. The angles use the same extrinsic xyz
-convention as `Transform`, so they can be pasted back into `scene.add()`
-verbatim. Click empty space or press `Esc` to dismiss the box. Selection is
-HTML-only; the desktop PyVista output has no picking.
+beside the click showing the node's name, its `kind` metadata, its fluid and
+tags, the `position=` and `rotation=` arguments that reproduce its placement,
+the fields it and its parts carry, and its anchors in scene coordinates. The
+angles use the same extrinsic xyz convention as `Transform`, so they can be
+pasted back into `scene.add()` verbatim. Drag the box by its heading; it stays
+where it is put. Click empty space, close the box, or press `Esc` to deselect.
+Selection is HTML-only; the desktop PyVista output has no picking.
 
 The legend carries a dropdown that recolors the scene by any field its
 components provide, plus a "None" entry that restores component colors. Every
@@ -83,6 +87,46 @@ shared seed geometry. Each physical channel retains its own node identity.
 The numerical layout remains the default. Analytical layout retains its
 existing restrictions; this change does not alter the layout solver, stride
 behavior, or mesh resolution defaults. Hot-wall construction is not included.
+
+## Selection and groups
+
+Shift+click adds a component to the selection, or removes it again, and the
+box then lists every selected part. Selected parts are tinted a calm blue,
+mixed in so a field's colours still show through. Right-click lists every part under the
+cursor, front to back: each component the cursor meets, its circuits and other
+named parts, and the channel or blade actually under the cursor (repeated
+channels, blades and vanes elsewhere are left out). Hovering an entry tints
+the part lightly, clicking selects it, and Shift+click adds it. This is
+how a circuit inside a chamber, or a pipe behind a volute, is reached.
+
+Any selection can be saved as a named group from the box. The groups panel
+lists those alongside groups the scene brings with it:
+
+- one per fluid, for every part a component recorded a fluid for from its
+  results. Pipes, annular ducts, volutes, injector feeds, cooling circuits
+  and heat-exchanger circuits record one when given a result solved with a
+  real fluid. The name is CoolProp's own, so `H2`, `HEOS::Hydrogen[1.000]`
+  and `Hydrogen` are one group. Impellers and turbines take plain fields
+  and record none.
+- one per tag, for parts labelled in the script:
+
+```python
+scene.add(psf.viz.PipeComponent(feed, feed_result), name="fuel_feed",
+          tags="turbine drive")
+scene.add(psf.viz.ThrustChamberComponent(chamber, cooling_data), name="chamber",
+          tags=["turbine drive", "regen"])
+```
+
+Tags survive regenerating the results, since the script writes them each
+time; `node.tags` can also label a part inside a component. Groups saved in
+the viewer are kept in the browser's local storage under the scene title,
+where the browser allows it; a report's embedded iframe does not.
+
+Clicking a group selects its members. The legend's range selector gives a
+group the colour scale to itself: its members are coloured over their own
+values and the rest of the scene fades back, so the pressure drop from a pump
+outlet through the regenerative circuit to a turbine inlet is not flattened by
+the span of every circuit in the engine.
 
 ## Cooling fields
 
@@ -172,20 +216,21 @@ result = pipe.solve(inlet_state=inlet, mass_flow=0.1, transport=transport)
 scene.add(psf.viz.PipeComponent(pipe, result), name="fuel_feed")
 ```
 
-A lumped `RoundedBend` is one connection between its two tangent points, so
-`Pipe.centerline` crosses the corner as a chord. For drawing, `PipeComponent`
-calls `Pipe.display_path(segments=...)`, which reopens each such bend into the
-arc its resolved `center` and `normal` describe. `segments` on the component
-sets that refinement, defaulting to 16. A `RoundedBend` built by hand without
-`center` and `normal` keeps its chord, because the bend plane is not
-recoverable from the loss model alone. `Continuous` connections are already
-physical arc stations, so their resolution stays with their own `segments`.
+A lumped `RoundedBend` is one connection between its two tangent points, and a
+generated `Continuous` arc of constant bore is one connection too, so
+`Pipe.centerline` crosses such a corner as a chord. For drawing, `PipeComponent`
+calls `Pipe.display_path(segments=...)`, which reopens each such connection
+into the arc its resolved `center` and `normal` describe. `segments` on the
+component sets the drawn sides per quarter turn, defaulting to 16. A bend built
+by hand without `center` and `normal` keeps its chord, because the bend plane
+is not recoverable from the loss model alone.
 
 Refinement is display-only. Lengths, losses, and every other solver quantity
 come from the stations and connections, which `display_path()` does not touch.
 
-Passing a `PipeResult` attaches its fields through `psf.viz.pipe_fields()`:
-`p_static`, `T_static`, `density`, and `velocity` per station, plus
+Passing a `DuctResult` attaches its fields through `psf.viz.duct_fields()`:
+`p_stagnation`, `p_static`, `T_stagnation`, `T_static`, `density`, `velocity`,
+`meridional_velocity`, and `swirl_velocity` per station, plus
 `pressure_loss`, `reynolds`, `darcy_factor`, and `loss_coefficient` per
 connection. Station names match the thrust chamber's, so one `color_by` spans a
 duct and a chamber. Per-connection values become cell fields on the rings
@@ -235,3 +280,11 @@ callers. Its `show` parameter now actually controls opening the desktop window.
 Replace factory calls with `Scene()` plus `scene.add(ThrustChamberComponent(...))`.
 Move `stride`, `n_arc_pts`, `layout`, and `circuit_colors` onto the component;
 keep `save_html()` and `data_url` on the scene and remove `close()` calls on it.
+
+## Heat exchangers inside chambers
+
+`HeatExchangerComponent(exchanger, results)` sweeps the exchanger's sections
+using its transported frames. Pass a `ChamberInstallation` as the first
+argument to retain the simulated chamber-relative placement. It supports the
+same `Scene.add` transforms, parent hierarchy and inlet/outlet anchors as other
+components. See [the combined baffle scene example](heat-exchangers.md#put-an-exchanger-and-chamber-in-the-same-scene).

@@ -1,80 +1,61 @@
 """Pump geometry contracts. Lengths are metres; cylindrical arrays are (x,r,theta).
 
-The shaft is +x. Positive shaft rotation is right-handed about +x, so a
-backward-swept blade has decreasing theta from leading to trailing edge.
+The shaft is +x, and which way it turns about that axis is named by the
+impeller's ``rotation``: counterclockwise means the right-handed sense about
++x, seen with the axis pointing at the viewer. A backward-swept blade has
+decreasing theta from leading to trailing edge in that sense, and a clockwise
+impeller is its mirror image, built by negating theta.
+
++x runs the way the flow does, from the inlet plane toward the back of the
+wheel, so counterclockwise here means counterclockwise seen from behind the
+wheel looking upstream. That anchor is a property of the impeller itself and
+does not move when the machine is repackaged.
+
+It is deliberately *not* the pump-industry convention of naming rotation as
+seen from the driver end. Which end the driver sits on is a packaging choice --
+a turbine can be mounted either side of a wheel -- so a driver-relative name
+silently changes meaning when the drive train is rearranged, which is the
+failure this vocabulary exists to prevent. Where a driver end is fixed and a
+nameplate is wanted, derive that label from this sense and the drive layout
+rather than the other way round.
+
+The sense is named about the impeller's own +x rather than about a world axis,
+so a placement that reverses +x also reverses the sense the impeller presents
+to whatever it discharges into. A volute collecting that discharge is named the
+same way about its own axis; see :mod:`pyskyfire.common.rotation`.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
 from scipy.interpolate import PchipInterpolator
 
-
-def frozen_array(value):
-    result = np.array(value, dtype=float, copy=True)
-    if not np.isfinite(result).all():
-        raise ValueError("Geometry must contain only finite coordinates")
-    result.setflags(write=False)
-    return result
-
-
-def cylindrical_to_cartesian(cyl):
-    a = np.asarray(cyl, dtype=float)
-    return np.stack((a[..., 0], a[..., 1]*np.cos(a[..., 2]),
-                     a[..., 1]*np.sin(a[..., 2])), axis=-1)
+from pyskyfire.common.blade_surface import BladeSurface, cylindrical_to_cartesian, frozen_array
+from pyskyfire.common.meridional import MeridionalPassage
+from pyskyfire.common.rotation import COUNTERCLOCKWISE, parse_rotation, rotation_sign
 
 
 @dataclass(frozen=True)
-class MeridionalContours:
-    """Matched hub/shroud stations, ordered inlet to outlet, in (x,r) metres.
+class MeridionalContours(MeridionalPassage):
+    """A radial impeller's passage: axial inlet, radial outlet, in (x,r) metres.
 
-    Each corresponding pair defines a span line. Both curves must have the
-    same number of points; independent resampling would lose that pairing.
+    The shared :class:`~pyskyfire.common.MeridionalPassage` with the checks
+    only a radial wheel satisfies: both walls rise monotonically in x and r,
+    and the hub runs axially downstream of the shroud.
     """
-    hub: np.ndarray
-    shroud: np.ndarray
 
     def __post_init__(self):
         for name in ("hub", "shroud"):
-            p = frozen_array(getattr(self, name))
-            if p.ndim != 2 or p.shape[1] != 2 or len(p) < 4:
+            p = np.asarray(getattr(self, name), dtype=float)
+            if p.ndim != 2 or p.shape[-1] != 2 or len(p) < 4:
                 raise ValueError("Meridional curves need shape (N,2), N >= 4")
             if np.any(p[:, 1] <= 0) or np.any(np.linalg.norm(np.diff(p, axis=0), axis=1) <= 0):
                 raise ValueError("Meridional curves need positive radii and distinct stations")
             if np.any(np.diff(p[:, 0]) < -1e-12) or np.any(np.diff(p[:, 1]) < -1e-12):
                 raise ValueError("This radial impeller requires nondecreasing axial coordinates and radii")
-            object.__setattr__(self, name, p)
-        if self.hub.shape != self.shroud.shape:
-            raise ValueError("Hub and shroud stations must be paired")
-        if np.any(self.shroud[:, 1] < self.hub[:, 1]-1e-12):
-            raise ValueError("Shroud radius must not be below hub radius")
+        super().__post_init__()
         if np.any(self.hub[:, 0] < self.shroud[:, 0]-1e-12):
             raise ValueError("Hub must be axially downstream of the shroud")
-        if np.any(np.linalg.norm(self.shroud-self.hub, axis=1) <= 1e-12):
-            raise ValueError("Hub and shroud must remain separated, including the outlet")
-
-    @property
-    def stations(self):
-        s = np.r_[0., np.cumsum(np.linalg.norm(np.diff(self.hub, axis=0), axis=1))]
-        return s/s[-1]
-
-    def sample(self, fraction, span_fraction):
-        h = PchipInterpolator(self.stations, self.hub)(fraction)
-        s = PchipInterpolator(self.stations, self.shroud)(fraction)
-        return h + np.asarray(span_fraction)[..., None]*(s-h)
-
-    def wall_tangents(self, fraction):
-        """Unit hub and shroud tangents at the ends of one span line."""
-        tangents = [PchipInterpolator(self.stations, wall).derivative()(fraction)
-                    for wall in (self.hub, self.shroud)]
-        return np.array([t/np.linalg.norm(t) for t in tangents])
-
-    def with_clearance(self, clearance):
-        gap = np.linalg.norm(self.shroud-self.hub, axis=1)
-        if clearance < 0 or np.any(gap <= clearance):
-            raise ValueError("tip_clearance must be nonnegative and smaller than the passage height")
-        return MeridionalContours(self.hub, self.shroud +
-                                  clearance/gap[:, None]*(self.hub-self.shroud))
 
     def with_leading_edge(self, hub_station, tip_station):
         """Re-pair the stations so one span line carries a slanted leading edge.
@@ -99,7 +80,7 @@ class MeridionalContours:
                 [0., hub_station, 1.], [0., tip_station, 1.])
         shroud = PchipInterpolator(s, self.shroud)(PchipInterpolator(*nodes)(s))
         try:
-            return MeridionalContours(self.hub, shroud)
+            return replace(self, shroud=shroud)
         except ValueError as error:
             raise ValueError(f"A leading edge slanted from hub station {hub_station:g} to tip "
                              f"station {tip_station:g} does not fit this passage: {error}") from None
@@ -182,24 +163,10 @@ class ImpellerBladeDefinition:
     settings: BladeSettings
     splitter: SplitterSettings | None
     tip_clearance: float
-
-
-@dataclass(frozen=True)
-class BladeSurface:
-    """One blade's closed-edge sides, (span, chord, 3), in (x,r,theta)."""
-    suction: np.ndarray
-    pressure: np.ndarray
+    rotation: str = COUNTERCLOCKWISE
 
     def __post_init__(self):
-        for name in ("suction", "pressure"):
-            p = frozen_array(getattr(self, name))
-            if p.ndim != 3 or p.shape[-1] != 3 or min(p.shape[:2]) < 2 or np.any(p[..., 1] <= 0):
-                raise ValueError("Blade surfaces need shape (span,chord,3) and positive radii")
-            object.__setattr__(self, name, p)
-        if self.suction.shape != self.pressure.shape:
-            raise ValueError("Blade surface shapes must match")
-        if not np.allclose(self.suction[:, [0, -1]], self.pressure[:, [0, -1]], atol=1e-9, rtol=0):
-            raise ValueError("Blade leading and trailing edges must close")
+        object.__setattr__(self, "rotation", parse_rotation(self.rotation))
 
 
 @dataclass(frozen=True)
@@ -212,6 +179,20 @@ class ImpellerGeometry:
     splitter_pitch_fraction: float = 0.5
     backend_version: str = ""
     thickness_max_relative_error: float = 0.0
+    rotation: str = COUNTERCLOCKWISE
+
+    def __post_init__(self):
+        object.__setattr__(self, "rotation", parse_rotation(self.rotation))
+
+    @property
+    def rotation_sign(self) -> float:
+        """``+1`` counterclockwise about ``+x``, ``-1`` clockwise.
+
+        Blade surfaces are already built in this sense. It is the pitch offset
+        between blades that still needs it, since stepping round the wheel has
+        to step the same way the wheel is mirrored.
+        """
+        return rotation_sign(self.rotation)
 
     def export_npz(self, path):
         """Save sampled geometry without serializing callables or pyTurbo objects."""
@@ -219,7 +200,8 @@ class ImpellerGeometry:
         data = dict(hub_curve=self.hub_curve, shroud_curve=self.shroud_curve,
                     suction=self.main_blade.suction, pressure=self.main_blade.pressure,
                     blade_count=self.blade_count, backend_version=self.backend_version,
-                    splitter_pitch_fraction=self.splitter_pitch_fraction)
+                    splitter_pitch_fraction=self.splitter_pitch_fraction,
+                    rotation=self.rotation)
         if self.splitter is not None:
             data.update(splitter_suction=self.splitter.suction, splitter_pressure=self.splitter.pressure)
         with out.open("wb") as f:

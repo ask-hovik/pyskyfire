@@ -25,3 +25,9 @@ the framework and convergence rather than establish a qualified baffle design.
 
 See [the API guide](../../docs/howto/heat-exchangers.md) for path placement,
 section dimensions, thermal links, pressure models, and current limitations.
+
+The baffle example also writes **output/baffle-scene.html**, an offline shared
+scene with 96 squared chamber cooling channels running from the injector to
+the nozzle exit. The chamber is translucent, exposing the baffles immediately
+downstream of the injector. The Geometry tab embeds this same scene; its field
+selector switches between wall temperatures and fluid properties.

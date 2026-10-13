@@ -2,21 +2,22 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+import re
 
+import CoolProp.CoolProp as CP
 import numpy as np
 
-from pyskyfire.ducts import DisplayPath, PipeResult
+from pyskyfire.ducts import AnnularDuct, DisplayPath, DuctResult
 from pyskyfire.regen.channel_construction import build_channel_construction
 from pyskyfire.regen.cad_geometry import transverse_construction
 from pyskyfire.regen.channel_layout import ChannelLayout, resolve_analytical_layout, resolve_numerical_layout
-from .scene import Anchor, FieldData, MeshData, SceneNode, Transform
+from pyskyfire.thermo.eos import fluid_name
+from .scene import DEFAULT_COLOR, Anchor, FieldData, MeshData, SceneNode, Transform
 
-__all__ = ["ThrustChamberComponent", "ImpellerComponent", "PipeComponent", "pipe_fields",
-           "VoluteComponent", "volute_fields"]
-
-_COLORS = ("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
-           "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf")
+__all__ = ["ThrustChamberComponent", "ImpellerComponent", "DiffuserComponent", "TurbineComponent",
+           "PipeComponent", "duct_fields", "AnnularDuctComponent",
+           "VoluteComponent", "volute_fields", "ManifoldComponent"]
 
 # Attribute, native axial grid, base SI label. No unit conversion is performed.
 _REGEN_FIELDS = {
@@ -56,6 +57,48 @@ def _end_anchors(centers, direction=1):
                 "outlet": Anchor.from_direction(centers[-1], centers[-1]-centers[-2])}
     return {"inlet": Anchor.from_direction(centers[-1], centers[-1]-centers[-2]),
             "outlet": Anchor.from_direction(centers[0], centers[0]-centers[1])}
+
+
+def _fluid_label(name):
+    """One name per fluid however CoolProp was asked for it, so groups match.
+
+    Drops the backend prefix and a pure fluid's unit fraction, as
+    ``thermo.Fluid`` writes them, then takes CoolProp's own name for an alias
+    such as ``H2``. A mixture is spelled by mass, as propellants are mixed,
+    rather than by the mole fractions CoolProp takes, so
+    ``Ethanol[0.610]&Water[0.390]`` reads ``Ethanol 80 wt% & Water 20 wt%``.
+    Fluids CoolProp does not know keep their spelling.
+    """
+    label = name.split("::", 1)[-1]
+    if "&" in label:
+        return _mass_label(label)
+    label = re.sub(r"\[\s*1(\.0*)?\s*\]$", "", label)
+    try:
+        label = CP.get_fluid_param_string(label, "name")
+    except ValueError:
+        pass
+    return label
+
+
+def _mass_label(mixture):
+    """A CoolProp ``A[x]&B[y]`` mole spelling as mass percentages."""
+    parts = [re.fullmatch(r"\s*([^\[\]]+?)\s*\[\s*([^\[\]]+?)\s*\]\s*", part) for part in mixture.split("&")]
+    if not all(parts):
+        return mixture
+    try:
+        names = [CP.get_fluid_param_string(part[1], "name") for part in parts]
+        masses = [float(part[2]) * CP.PropsSI("M", name) for part, name in zip(parts, names)]
+    except ValueError:
+        return mixture
+    total = sum(masses)
+    return " & ".join(f"{name} {100 * mass / total:.3g} wt%" for name, mass in zip(names, masses))
+
+
+def _carrying(metadata, fluid):
+    """Metadata noting the fluid a result was solved for, when it names one."""
+    if fluid is not None:
+        metadata["fluid"] = _fluid_label(fluid)
+    return metadata
 
 
 def _results_by_circuit(data, chamber):
@@ -117,6 +160,10 @@ class ThrustChamberComponent:
     constructed. ``circuit_N.inlet/outlet`` anchors refer to the first seed's
     first channel, at its end-section polygon centre, not a manifold port.
     Every channel also exposes its own inlet/outlet anchors.
+
+    A circuit with a result records its coolant's CoolProp name as
+    ``metadata["fluid"]``. ``circuit_colors`` paints each circuit apart;
+    without it every channel takes the default colour.
     """
 
     thrust_chamber: object
@@ -143,14 +190,15 @@ class ThrustChamberComponent:
             layout = resolve_numerical_layout(chamber)
         else:
             raise ValueError("layout must be 'numerical', 'analytical', or ChannelLayout")
-        palette = _COLORS if self.circuit_colors is None else self.circuit_colors
         root = SceneNode("chamber", metadata={"kind": "thrust_chamber"})
         groups = {}
         for seed in layout.channels:
             ci = seed.circuit_index
             circuit = chamber.cooling_circuits[ci]
             if ci not in groups:
-                groups[ci] = SceneNode(f"circuit_{ci}", metadata={"kind": "cooling_circuit", "label": circuit.name, "circuit_index": ci})
+                fluid = fluid_name(getattr(circuit, "coolant_transport", None)) if ci in results else None
+                groups[ci] = SceneNode(f"circuit_{ci}", metadata=_carrying(
+                    {"kind": "cooling_circuit", "label": circuit.name, "circuit_index": ci}, fluid))
                 root.children.append(groups[ci])
             construction = transverse_construction(build_channel_construction(circuit, seed.reference_path))
             count = len(construction.planes)
@@ -172,7 +220,8 @@ class ThrustChamberComponent:
             for instance in range(seed.pattern_count):
                 groups[ci].children.append(SceneNode(
                     f"seed_{seed.seed_index}_channel_{instance}", mesh=mesh, fields=dict(fields),
-                    anchors=dict(anchors), color=palette[ci % len(palette)],
+                    anchors=dict(anchors),
+                    color=DEFAULT_COLOR if self.circuit_colors is None else self.circuit_colors[ci],
                     transform=Transform(rotation=(instance*seed.pattern_angle_rad, 0, 0)),
                     metadata={"kind": "cooling_channel", "circuit_index": ci,
                               "seed_index": seed.seed_index, "instance_index": instance},
@@ -206,15 +255,20 @@ class ImpellerComponent:
             radius = np.asarray(curve)[:, 1, None]
             xyz = np.stack((x, radius*np.cos(angle), radius*np.sin(angle)), axis=-1)
             root.children.append(SceneNode(name, mesh=_surface(xyz), opacity=0.22))
-        for family, blade, phase, color in (("blade", g.main_blade, 0., "tomato"),
-                                             ("splitter", g.splitter, g.splitter_pitch_fraction, "goldenrod")):
+        for family, blade, phase in (("blade", g.main_blade, 0.),
+                                     ("splitter", g.splitter, g.splitter_pitch_fraction)):
             if blade is None:
                 continue
             mesh = _impeller_blade_mesh(blade)
+            # The blade is already built in the wheel's own sense, so stepping
+            # round to the next passage has to step that way too. It only shows
+            # on the splitter, which sits part of a pitch from the main blade;
+            # the main blades land on the same ring whichever way they step.
             for i in range(g.blade_count):
                 root.children.append(SceneNode(
-                    f"{family}_{i}", mesh=mesh, color=color,
-                    transform=Transform(rotation=((i+phase)*2*np.pi/g.blade_count, 0, 0)),
+                    f"{family}_{i}", mesh=mesh,
+                    transform=Transform(rotation=(
+                        g.rotation_sign*(i+phase)*2*np.pi/g.blade_count, 0, 0)),
                     metadata={"kind": family, "instance_index": i},
                 ))
         if self.results is not None:
@@ -229,6 +283,99 @@ class ImpellerComponent:
         return root
 
 
+@dataclass
+class DiffuserComponent:
+    """Display a built vaned diffuser: its two walls and every vane.
+
+    ``diffuser.build_geometry()`` must have been called. The diffuser is drawn
+    in the impeller's own frame, walls symmetric about the impeller outlet
+    mid-plane at local x = 0, so it takes the impeller's rotation and a
+    translation to that mid-plane. The ``outlet`` anchor is not a port: the
+    diffuser discharges radially all round into its volute.
+    """
+
+    diffuser: object
+    n_theta: int = 160
+
+    def build(self):
+        if not isinstance(self.n_theta, int) or self.n_theta < 3:
+            raise ValueError("n_theta must be an integer of at least 3")
+        g = self.diffuser.geometry
+        if g is None:
+            raise ValueError("Call diffuser.build_geometry() before adding it to a scene")
+        root = SceneNode("diffuser", metadata={"kind": "diffuser"})
+        for name, curve in (("hub", g.hub), ("shroud", g.shroud)):
+            theta = np.linspace(0, 2*np.pi, self.n_theta)
+            # The vane ends lie in the wall planes. Drawing the walls a hair
+            # outside them keeps the renderer from flickering between two
+            # coincident surfaces; the design geometry is untouched.
+            x, angle = np.meshgrid(1.01*np.asarray(curve)[:, 0], theta, indexing="ij")
+            radius = np.asarray(curve)[:, 1, None]
+            xyz = np.stack((x, radius*np.cos(angle), radius*np.sin(angle)), axis=-1)
+            root.children.append(SceneNode(name, mesh=_surface(xyz), opacity=0.22))
+        mesh = _impeller_blade_mesh(g.vane)
+        for i in range(g.vane_count):
+            root.children.append(SceneNode(
+                f"vane_{i}", mesh=mesh,
+                transform=Transform(rotation=(g.rotation_sign*i*2*np.pi/g.vane_count, 0, 0)),
+                metadata={"kind": "diffuser_vane", "instance_index": i},
+            ))
+        root.anchors = {"shaft": Anchor.from_direction((0, 0, 0), (1, 0, 0))}
+        return root
+
+
+@dataclass
+class TurbineComponent:
+    """Display a built turbine: its passage walls and every row's blades.
+
+    ``geometry`` is a :class:`~pyskyfire.turbine.TurbineGeometry`. Walls are
+    the passage revolved about the local +x shaft; each row's one built blade
+    is repeated round the wheel in the turbine's rotation sense. ``colors``
+    paints (stator, rotor) blades apart; without it every part takes the
+    default colour. Optional ``results`` maps part names
+    (hub, shroud, ``<row>_<i>``) to dictionaries of mesh-aligned FieldData.
+    ``inlet`` and ``outlet`` anchors sit on the axis at the passage ends,
+    pointing out of the turbine.
+    """
+
+    geometry: object
+    results: object = None
+    n_theta: int = 160
+    colors: tuple | None = None
+
+    def build(self):
+        if not isinstance(self.n_theta, int) or self.n_theta < 3:
+            raise ValueError("n_theta must be an integer of at least 3")
+        g = self.geometry
+        root = SceneNode("turbine", metadata={"kind": "turbine"})
+        for name in ("hub", "shroud"):
+            root.children.append(SceneNode(name, mesh=_surface(g.passage.surface(name, self.n_theta)),
+                                           opacity=0.22))
+        stator_color, rotor_color = (DEFAULT_COLOR,)*2 if self.colors is None else self.colors
+        for rg in g.rows:
+            mesh = _impeller_blade_mesh(rg.blade)
+            count = rg.row.blade_count
+            for i in range(count):
+                root.children.append(SceneNode(
+                    f"{rg.row.name}_{i}", mesh=mesh,
+                    color=rotor_color if rg.row.is_rotor else stator_color,
+                    transform=Transform(rotation=(g.rotation_sign*i*2*np.pi/count, 0, 0)),
+                    metadata={"kind": rg.row.kind, "row": rg.row.name, "instance_index": i},
+                ))
+        if self.results is not None:
+            known = {node.name: node for node in root.children}
+            for name, fields in self.results.items():
+                if name not in known:
+                    raise ValueError(f"Unknown turbine result part: {name}")
+                known[name].fields.update(fields)
+        inlet = (float(g.passage.hub[0, 0]), 0, 0)
+        outlet = (float(g.passage.hub[-1, 0]), 0, 0)
+        root.anchors = {"inlet": Anchor.from_direction(inlet, (-1, 0, 0)),
+                        "outlet": Anchor.from_direction(outlet, (1, 0, 0)),
+                        "shaft": Anchor.from_direction(inlet, (1, 0, 0))}
+        return root
+
+
 def _impeller_blade_mesh(blade):
     """Join closed-edge sides with shared vertices and cap the hub and tip.
 
@@ -236,7 +383,7 @@ def _impeller_blade_mesh(blade):
     the concave planform of a wrapped blade. These are blade solids for viewing;
     endwalls remain flow-path surfaces, not a manufacturing model of the wheel.
     """
-    from pyskyfire.pump.geometry import cylindrical_to_cartesian
+    from pyskyfire.common.blade_surface import cylindrical_to_cartesian
     ss = cylindrical_to_cartesian(blade.suction)
     ps = cylindrical_to_cartesian(blade.pressure)
     ring = np.concatenate((ss, ps[:, -2:0:-1]), axis=1)
@@ -263,17 +410,21 @@ def _impeller_blade_mesh(blade):
     return MeshData(p, faces)
 
 
-# PipeResult attribute, field name, base SI units, label. Station arrays carry
+# DuctResult attribute, field name, base SI units, label. Station arrays carry
 # one value per PathStation; connection arrays one per connection. Names match
 # the thrust chamber's where the quantity is the same, so one ``color_by`` can
 # span a duct and a chamber. No unit conversion is performed.
-_PIPE_STATION_FIELDS = {
-    "p": ("p_static", "Pa", "Static pressure"),
-    "T": ("T_static", "K", "Static temperature"),
+_DUCT_STATION_FIELDS = {
+    "p_stagnation": ("p_stagnation", "Pa", "Stagnation pressure"),
+    "p_static": ("p_static", "Pa", "Static pressure"),
+    "T_stagnation": ("T_stagnation", "K", "Stagnation temperature"),
+    "T_static": ("T_static", "K", "Static temperature"),
     "density": ("density", "kg/m³", "Density"),
     "velocity": ("velocity", "m/s", "Velocity"),
+    "meridional_velocity": ("meridional_velocity", "m/s", "Through-flow velocity"),
+    "swirl_velocity": ("swirl_velocity", "m/s", "Swirl velocity"),
 }
-_PIPE_CONNECTION_FIELDS = {
+_DUCT_INTERVAL_FIELDS = {
     "pressure_loss": ("pressure_loss", "Pa", "Connection pressure loss"),
     "reynolds": ("reynolds", "1", "Reynolds number"),
     "darcy_factor": ("darcy_factor", "1", "Darcy friction factor"),
@@ -281,21 +432,22 @@ _PIPE_CONNECTION_FIELDS = {
 }
 
 
-def pipe_fields(result):
-    """Adapt a :class:`~pyskyfire.ducts.PipeResult` into scene fields.
+def duct_fields(result):
+    """Adapt a :class:`~pyskyfire.ducts.DuctResult` into scene fields.
 
-    Station quantities become point fields and connection quantities become
-    cell fields, both in the base SI units the solver already works in. NaN is
-    retained where a connection does not define a quantity, such as the Darcy
-    factor of a lumped bend. :class:`PipeComponent` maps either association
-    onto its swept mesh.
+    Station quantities become point fields and interval (connection)
+    quantities become cell fields, both in the base SI units the solver
+    already works in. NaN is retained where an interval does not define a
+    quantity, such as the Darcy factor of a lumped bend. :class:`PipeComponent`
+    and :class:`AnnularDuctComponent` map either association onto their
+    meshes.
     """
-    if not isinstance(result, PipeResult):
-        raise TypeError("pipe_fields expects a ducts.PipeResult")
+    if not isinstance(result, DuctResult):
+        raise TypeError("duct_fields expects a ducts.DuctResult")
     fields = {name: FieldData(getattr(result, attribute), units, label)
-              for attribute, (name, units, label) in _PIPE_STATION_FIELDS.items()}
+              for attribute, (name, units, label) in _DUCT_STATION_FIELDS.items()}
     fields.update({name: FieldData(getattr(result, attribute), units, label, "cell")
-                   for attribute, (name, units, label) in _PIPE_CONNECTION_FIELDS.items()})
+                   for attribute, (name, units, label) in _DUCT_INTERVAL_FIELDS.items()})
     return fields
 
 
@@ -325,29 +477,82 @@ def _mapped_pipe_field(f, path, n_theta):
     return FieldData(np.repeat(f.values[path.connection], 2*n_theta), f.units, f.label, "cell")
 
 
+def _ring_frames(p):
+    """Ring centres and two unit vectors spanning each ring's plane, transported along ``p``."""
+    legs = np.diff(p, axis=0)
+    lengths = np.linalg.norm(legs, axis=1)
+    if (lengths <= 0).any():
+        raise ValueError("Pipe centerline must not contain consecutive duplicate points")
+    direction = legs / lengths[:, None]
+    tangent = np.vstack((direction[0], direction[:-1]+direction[1:], direction[-1]))
+    norms = np.linalg.norm(tangent, axis=1)
+    if (norms < 1e-10).any():
+        raise ValueError("Pipe centerline must not reverse at a station")
+    tangent /= norms[:, None]
+    frames = []
+    u = None
+    for axis in tangent:
+        if u is None:
+            u = np.cross(axis, np.eye(3)[np.argmin(np.abs(axis))])
+        else:
+            u = u - np.dot(u, axis)*axis
+            if np.linalg.norm(u) < 1e-10:
+                u = np.cross(axis, np.eye(3)[np.argmin(np.abs(axis))])
+        u = u/np.linalg.norm(u)
+        frames.append((u, np.cross(axis, u)))
+    return frames
+
+
+def _rings(p, frames, radius, n_theta):
+    theta = np.linspace(0, 2*np.pi, n_theta, endpoint=False)
+    return [center + r*(np.cos(theta)[:, None]*u + np.sin(theta)[:, None]*v)
+            for center, (u, v), r in zip(p, frames, radius, strict=True)]
+
+
+def _spans(present):
+    """Point ranges ``(first, last)`` covering every segment with a core at either end."""
+    segment = present[:-1] | present[1:]
+    spans, start = [], None
+    for index, on in enumerate(segment):
+        if on and start is None:
+            start = index
+        if not on and start is not None:
+            spans.append((start, index))
+            start = None
+    if start is not None:
+        spans.append((start, len(segment)))
+    return spans
+
+
 @dataclass
 class PipeComponent:
     """Display an explicitly defined pipe; never route or modify a solver model.
 
     The pipe supplies its own geometry. A :class:`~pyskyfire.ducts.Pipe` offers
-    ``display_path(segments=...)``, which opens its lumped rounded bends into
-    arcs for drawing without touching the solved model; ``segments`` sets that
-    refinement. Any other object is read through ``centerline``, an (N,3)
+    ``display_path(segments=...)``, which opens its rounded and continuous bend
+    connections into arcs for drawing without touching the solved model;
+    ``segments`` sets the drawn sides per quarter turn. Any other object is read through ``centerline``, an (N,3)
     Cartesian polyline in metres, and ``radius``, a positive scalar or one
     radius per station, and is drawn exactly as supplied. The local frame is
     the frame of those coordinates (no implicit recentering).
 
-    ``results`` is a :class:`~pyskyfire.ducts.PipeResult`, or a mapping of field
-    names to FieldData: point-associated with one value per station, or
+    A pipe with a core is drawn as a ``"core"`` surface, one per stretch the
+    core runs along, inside a translucent ``"bore"`` of ``opacity``, both
+    children of the returned node, which carries the bore's end anchors.
+
+    ``results`` is a :class:`~pyskyfire.ducts.DuctResult`, or a mapping of
+    field names to FieldData: point-associated with one value per station, or
     cell-associated with one value per connection. Station values are
     interpolated along refined bends and repeated around each ring; connection
-    values fill the rings spanning that connection.
+    values fill the rings spanning that connection. Every surface carries the
+    same fields.
     """
 
     pipe: object
     results: object = None
     n_theta: int = 16
     segments: int = 16
+    opacity: float = 0.35
 
     def build(self):
         if not isinstance(self.n_theta, int) or self.n_theta < 3:
@@ -359,36 +564,84 @@ class PipeComponent:
         radius = path.radius
         if not np.isfinite(radius).all() or (radius <= 0).any():
             raise ValueError("Pipe radii must be finite and positive")
-        legs = np.diff(p, axis=0)
-        lengths = np.linalg.norm(legs, axis=1)
-        if (lengths <= 0).any():
-            raise ValueError("Pipe centerline must not contain consecutive duplicate points")
-        direction = legs / lengths[:, None]
-        tangent = np.vstack((direction[0], direction[:-1]+direction[1:], direction[-1]))
-        norms = np.linalg.norm(tangent, axis=1)
-        if (norms < 1e-10).any():
-            raise ValueError("Pipe centerline must not reverse at a station")
-        tangent /= norms[:, None]
-        theta = np.linspace(0, 2*np.pi, self.n_theta, endpoint=False)
-        rings = []
-        u = None
-        for center, axis, r in zip(p, tangent, radius, strict=True):
-            if u is None:
-                u = np.cross(axis, np.eye(3)[np.argmin(np.abs(axis))])
-            else:
-                u = u - np.dot(u, axis)*axis
-                if np.linalg.norm(u) < 1e-10:
-                    u = np.cross(axis, np.eye(3)[np.argmin(np.abs(axis))])
-            u /= np.linalg.norm(u)
-            v = np.cross(axis, u)
-            rings.append(center+r*(np.cos(theta)[:, None]*u+np.sin(theta)[:, None]*v))
-        results = pipe_fields(self.results) if isinstance(self.results, PipeResult) else self.results
+        frames = _ring_frames(p)
+        n = self.n_theta
+        solved = isinstance(self.results, DuctResult)
+        fluid = self.results.fluid if solved else None
+        results = duct_fields(self.results) if solved else self.results
+        fields = {name: _mapped_pipe_field(f, path, n) for name, f in (results or {}).items()}
+        bore = _surface(_rings(p, frames, radius, n), closed=True)
+        anchors = _end_anchors(p)
+        core = path.core_radius
+        if not np.any(core > 0.0):
+            return SceneNode("pipe", mesh=bore, fields=fields, anchors=anchors,
+                             metadata=_carrying({"kind": "pipe"}, fluid))
+        root = SceneNode("pipe", anchors=anchors, metadata=_carrying({"kind": "pipe"}, fluid))
+        rings = _rings(p, frames, core, n)
+        for number, (first, last) in enumerate(_spans(core > 0.0)):
+            # A span's points are a block of n rows per ring, and its
+            # segments a block of 2n cells per ring pair.
+            span = {name: FieldData(f.values[first*n:(last + 1)*n] if f.association == "point"
+                                    else f.values[2*n*first:2*n*last],
+                                    f.units, f.label, f.association)
+                    for name, f in fields.items()}
+            root.children.append(SceneNode("core" if number == 0 else f"core_{number + 1}",
+                                           mesh=_surface(rings[first:last + 1], closed=True),
+                                           fields=span, metadata={"kind": "pipe_wall"}))
+        root.children.append(SceneNode("bore", mesh=bore, fields=dict(fields), opacity=self.opacity,
+                                       metadata={"kind": "pipe_wall"}))
+        return root
+
+
+@dataclass
+class AnnularDuctComponent:
+    """Display an :class:`~pyskyfire.ducts.AnnularDuct`.
+
+    The duct is drawn as its hub and shroud revolved about the local +x
+    shaft, with ``inlet`` and ``outlet`` anchors on the axis at its ends as a
+    turbine's are. The shroud is translucent so the hub shows. A pipe with a
+    core is drawn by :class:`PipeComponent`.
+
+    ``results`` is a :class:`~pyskyfire.ducts.DuctResult`, or a mapping of
+    field names to FieldData with one value per station (point) or per
+    interval (cell). Both walls carry the same fields.
+    """
+
+    duct: object
+    results: object = None
+    n_theta: int = 64
+    opacity: float = 0.35
+
+    def build(self):
+        if not isinstance(self.n_theta, int) or self.n_theta < 3:
+            raise ValueError("n_theta must be an integer of at least 3")
+        if not isinstance(self.duct, AnnularDuct):
+            raise TypeError("duct must be a ducts.AnnularDuct")
+        solved = isinstance(self.results, DuctResult)
+        fluid = self.results.fluid if solved else None
+        results = duct_fields(self.results) if solved else self.results
+        stations = len(self.duct.s)
         fields = {}
-        if results is not None:
-            for name, f in results.items():
-                fields[name] = _mapped_pipe_field(f, path, self.n_theta)
-        return SceneNode("pipe", mesh=_surface(rings, closed=True), fields=fields,
-                         anchors=_end_anchors(p), metadata={"kind": "pipe"})
+        for name, f in (results or {}).items():
+            if f.association == "point":
+                if len(f.values) != stations:
+                    raise ValueError("Annular duct point fields must have one value per station")
+                fields[name] = FieldData(np.repeat(f.values, self.n_theta), f.units, f.label)
+            else:
+                if len(f.values) != stations - 1:
+                    raise ValueError("Annular duct cell fields must have one value per interval")
+                # _surface emits two triangles per open ring segment.
+                fields[name] = FieldData(np.repeat(f.values, 2*(self.n_theta - 1)), f.units, f.label, "cell")
+        root = SceneNode("annular_duct", metadata=_carrying({"kind": "annular_duct"}, fluid))
+        for name in ("hub", "shroud"):
+            root.children.append(SceneNode(name, mesh=_surface(self.duct.surface(name, self.n_theta)),
+                                           fields=dict(fields),
+                                           opacity=self.opacity if name == "shroud" else 1.0))
+        inlet = (float(self.duct.mean_line[0, 0]), 0, 0)
+        outlet = (float(self.duct.mean_line[-1, 0]), 0, 0)
+        root.anchors = {"inlet": Anchor.from_direction(inlet, (-1, 0, 0)),
+                        "outlet": Anchor.from_direction(outlet, (1, 0, 0))}
+        return root
 
 
 # Per-station quantities a volute passage can be coloured by. Bore radius and
@@ -564,8 +817,9 @@ class VoluteComponent:
             closing_ring, closing_origin = rings[-1], origins[-1]
         walls.append(_fan(rings[0], origins[0], outward=True))
 
+        fluid = None if self.results is None or isinstance(self.results, Mapping) else self.results.fluid
         root = SceneNode("volute", anchors=_volute_anchors(volute),
-                         metadata={"kind": "volute"})
+                         metadata=_carrying({"kind": "volute"}, fluid))
         passage = SceneNode("passage", mesh=_merge(walls),
                             fields=self._wall_fields(stations, mouth, len(exit_rings)),
                             metadata={"kind": "volute-passage"})
@@ -630,3 +884,159 @@ def _volute_anchors(volute):
     centre = _volute_fan_origins(volute)[-1]
     tangential = np.array([-np.sin(geometry.theta[-1]), np.cos(geometry.theta[-1]), 0.0])
     return {"inlet": inlet, "outlet": Anchor.from_direction(centre, tangential)}
+
+
+@dataclass
+class ManifoldComponent:
+    """Display a resolved distributing or collecting manifold.
+
+    The manifold supplies its own geometry through ``sweep(n_points=...)``,
+    already placed on the wall it was built against, and the local frame is
+    that frame: the machine axis is +z and the dead point sits at azimuth zero.
+    A split manifold sweeps the whole ring, both branches together.
+
+    Three child nodes come back, so the opening can be told apart from the
+    walls at a glance:
+
+    ``passage``
+        Every wall of the cavity, and the cutwater face where a single-branch
+        ring meets itself. This is what carries the fields.
+    ``passage``
+        Every wall: the dome, the stub's own tube, the chamber-facing face
+        outside the slit, and the cutwater where a single-branch ring meets
+        itself. This is what carries the fields.
+    ``slit``
+        The strip of the chamber-facing face reserved for the cooling channels
+        to break out through. A reservation rather than modelled geometry --
+        the breakout itself is CAD work -- so what is drawn is where it has
+        been kept clear. A section that reserves nothing gives an ``opening``
+        instead, its whole face being a real hole.
+    ``outlet``
+        The flange the stub ends on, where there is one.
+
+    ``opening_color`` paints only those faces, red by default: the places flow
+    crosses the boundary, not the walls that carry it there. They hold no
+    fields, so they keep that colour whichever field the scene is coloured by,
+    rather than disappearing into the scale.
+
+    ``results`` is a mapping of field names to point-associated FieldData, one
+    value per swept station of the resolved ring -- which for a split manifold
+    is both branches, not one.
+
+    ``n_points`` samples each boundary piece of the section. ``n_stations``
+    refines the ring in azimuth for drawing, which is the direction a manifold
+    facets in first, and leaves the resolved design alone; values on the
+    resolved grid are read between its stations onto the refined mesh. ``None``
+    draws the ring exactly as it was resolved.
+    """
+
+    manifold: object
+    results: object = None
+    n_points: int = 16
+    port_points: int = 9
+    n_stations: int | None = None
+    opening_color: str = "red"
+
+    def build(self):
+        if not isinstance(self.n_points, int) or self.n_points < 2:
+            raise ValueError("n_points must be an integer of at least 2")
+        manifold = self.manifold
+        # polygon() repeats its first point to close the loop; a swept mesh
+        # wraps that seam itself, so drop it rather than emit degenerate faces.
+        rings = np.asarray(manifold.sweep(n_points=self.n_points,
+                                          n_stations=self.n_stations),
+                           dtype=float)[:, :-1]
+        if rings.ndim != 3 or rings.shape[2] != 3 or not np.isfinite(rings).all():
+            raise ValueError("Manifold sweep must be finite with shape (N,M,3)")
+        stations, width = rings.shape[:2]
+
+        # The section says which of its boundary pieces faces the machine it
+        # serves, rather than closing the passage.
+        index = manifold.section.opening_index
+        if index == 0:
+            face, walls = rings[:, :self.n_points], rings[:, self.n_points:]
+        elif index == -1:
+            face, walls = rings[:, -self.n_points:], rings[:, :-self.n_points]
+        else:
+            raise ValueError(
+                "a section's opening must be its first or last boundary piece "
+                f"for a manifold to sweep it apart; this one reports {index}")
+
+        meshes = [_surface(walls, closed=False)]
+        # One station index per vertex of each mesh, so fields laid out per
+        # station can be spread over a merged wall of mixed widths.
+        order = [np.repeat(np.arange(stations), width - self.n_points)]
+        openings = []
+
+        if hasattr(manifold.section, "slit_boundary"):
+            # A section measured against a wall meets it everywhere; only the
+            # slit is open. The rest of that face is metal, so it joins the
+            # walls rather than being painted as a hole.
+            for strip in manifold.sweep_margins(self.n_points, self.n_stations):
+                meshes.append(_surface(np.asarray(strip, dtype=float), closed=False))
+                order.append(np.repeat(np.arange(stations), self.n_points))
+            openings.append(SceneNode(
+                "slit",
+                mesh=_surface(np.asarray(manifold.sweep_slit(self.n_points,
+                                                            self.n_stations),
+                                         dtype=float), closed=False),
+                color=self.opening_color, metadata={"kind": "manifold-slit"}))
+        else:
+            openings.append(SceneNode(
+                "opening", mesh=_surface(face, closed=False),
+                color=self.opening_color, metadata={"kind": "manifold-opening"}))
+
+        root = SceneNode("manifold", metadata={"kind": "manifold"})
+        if manifold.port_geometry is not None:
+            duct = manifold.port_geometry
+            stub = np.asarray(manifold.sweep_port(n_points=self.n_points,
+                                                  n_stations=self.port_points),
+                              dtype=float)
+            # The stub's wall is wall; only the flange it ends on is an opening.
+            meshes.append(_surface(stub, closed=True))
+            order.append(np.full(stub.shape[0]*stub.shape[1], stations - 1))
+            openings.append(SceneNode(
+                "outlet", mesh=_fan(stub[-1], duct.end, outward=True),
+                color=self.opening_color, metadata={"kind": "manifold-outlet"}))
+            root.anchors = {"port": Anchor.from_direction(duct.end,
+                                                          duct.end_direction)}
+
+        if manifold.branches == 1:
+            # A ring running one way round meets itself at full size, so the
+            # step there is a wall: the cutwater.
+            meshes.append(_fan(rings[0], manifold.fan_origins(self.n_stations)[0],
+                               outward=True))
+            order.append(np.full(width + 1, 0))
+
+        root.children = [
+            SceneNode("passage", mesh=_merge(meshes),
+                      fields=self._wall_fields(stations, np.concatenate(order)),
+                      metadata={"kind": "manifold-passage"}),
+            *openings,
+        ]
+        return root
+
+    def _wall_fields(self, stations, order):
+        """Field values laid out to match the merged wall mesh's vertices."""
+        results = self.results
+        if results is None:
+            return {}
+        if not isinstance(results, Mapping):
+            raise TypeError(
+                "manifold results must be a mapping of field names to "
+                "FieldData; there is no loss model to adapt yet")
+        # Values belong to the ring the law was resolved on; a mesh refined for
+        # drawing reads between them, the way a pipe's do along an opened bend.
+        resolved = self.manifold.sweep_stations()
+        fields = {}
+        for name, field in results.items():
+            if field.association != "point" or len(field.values) != resolved:
+                raise ValueError(
+                    "Manifold fields must be point-associated, one value per "
+                    "swept station of the resolved ring")
+            values = np.asarray(field.values, dtype=float)
+            if stations != resolved:
+                values = np.interp(np.linspace(0.0, 1.0, stations),
+                                   np.linspace(0.0, 1.0, resolved), values)
+            fields[name] = replace(field, values=values[order])
+        return fields

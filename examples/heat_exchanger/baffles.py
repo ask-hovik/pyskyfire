@@ -32,14 +32,28 @@ def build_baffles(nodes=24):
         R_3f=0.3,
     )
     contour = psf.regen.Contour(xs, rs, name="Prescribed hydrogen / oxygen chamber")
-    chamber = psf.regen.ThrustChamber(
-        contour=contour, cooling_circuits=[], combustion_transport=gas
-    )
     coolant = psf.thermo.FluidTransport(
         psf.thermo.Fluid(type="fuel", propellants=["Hydrogen"], fractions=[1.0])
     )
     metal = psf.common.Material(
         "Demonstration copper", k=psf.common.ConstantModel(250.0)
+    )
+    chamber_cooling = psf.regen.CoolingCircuit(
+        name="Chamber cooling",
+        contour=contour,
+        cross_section=psf.regen.CrossSectionSquared(sidewall_half_thickness=0.0005),
+        span=[-1.0, 1.0],
+        placement=psf.regen.SurfacePlacement(n_channel_positions=96, helix_angle=0.0),
+        channel_height=0.003,
+        walls=[psf.regen.Wall(metal, thickness=0.001)],
+        coolant_transport=coolant,
+        roughness=2e-6,
+    )
+    chamber = psf.regen.ThrustChamber(
+        contour=contour,
+        cooling_circuits=[chamber_cooling],
+        combustion_transport=gas,
+        n_nodes=100,
     )
     thickness = 0.0004
     wall = psf.regen.Wall(metal, thickness)
@@ -47,7 +61,7 @@ def build_baffles(nodes=24):
     height = 0.003
     ring_count = 48
     length = min(0.12, 0.30 * abs(float(xs[0])))
-    x0 = float(xs[0]) + 0.002
+    x0 = 0.002  # injector datum; +x points downstream
     inner_radius = 0.45 * contour.r_c
     outer_radius = inner_radius + 0.008
     lean = 0.002
@@ -181,8 +195,30 @@ def build_baffles(nodes=24):
     }
     # Prescribed exterior coefficient deliberately makes the demonstration
     # reproducible. Gas driving temperatures still come from the CEA solution.
-    installation = chamber.install_heat_exchanger(exchanger, coefficient=1000.0)
+    installation = chamber.install_heat_exchanger(
+        exchanger, position=(float(xs[0]), 0.0, 0.0), coefficient=1000.0
+    )
     return chamber, installation, inlets
+
+
+def build_scene(chamber, installation, result=None):
+    """Use the simulation placement for the baffles in the chamber scene."""
+    scene = psf.viz.Scene(
+        title="Cooled chamber and injector baffles",
+        color_by="T_coolant_wall" if result is not None else None,
+        show_axes=True,
+    )
+    chamber_node = scene.add(
+        psf.viz.ThrustChamberComponent(chamber, layout="analytical", stride=2),
+        name="chamber",
+    )
+    for group in chamber_node.children:
+        for channel in group.children:
+            channel.opacity = 0.16
+    scene.add(
+        psf.viz.HeatExchangerComponent(installation, result, samples=4), name="baffles"
+    )
+    return scene
 
 
 def main(output_dir=None, nodes=24):
@@ -190,15 +226,21 @@ def main(output_dir=None, nodes=24):
     result = installation.solve(inlets)
     output_dir = Path(output_dir or Path(__file__).parent / "output")
     output_dir.mkdir(parents=True, exist_ok=True)
+    scene = build_scene(chamber, installation, result)
+    scene.save_html(output_dir / "baffle-scene.html")
     report = psf.viz.heat_exchanger_report(
         installation.exchanger,
         result,
         title="Cooled ring and spoke baffles",
         installation=installation,
+        scene=scene,
     )
     report.add_tab("Assumptions").add_markdown(
         "The ring pair forms a shallow revolved V. Each radial spoke has two straight banks joined by an ideal series header. "
         "All sections are squared: arced ring floors/roofs and rectangular spokes. "
+        "The scene includes 96 straight chamber cooling channels from injector to nozzle exit, "
+        "shown transparently. Their geometry is constructed without a separate chamber-cooling solve. "
+        "Baffles start 2 mm downstream of the injector in both simulation and scene. "
         "A fixed exterior coefficient of 1000 W/m²/K is used with CEA recovery temperature. "
         "Symmetric rib enhancement is enabled. Metal conductivity is fixed at 250 W/m/K. "
         "Header geometry, header losses, radiation, and gas-flow feedback are omitted. "

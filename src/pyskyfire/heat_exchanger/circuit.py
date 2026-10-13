@@ -62,6 +62,11 @@ class HeatExchangerCircuit:
     Path stations anchor the passage area centroid. The local section +u axis
     points floor-to-roof. One thermal solution represents all identical copies;
     prescribed boundaries are checked for equality across placements.
+
+    The default internal coefficient is Gnielinski with bulk properties,
+    corrected for a heated fluid by ``(T_b/T_w)^0.45``. ``property_correction=False``
+    leaves the bulk-property value uncorrected. Neither applies to a supplied
+    ``heat_transfer`` callback.
     """
 
     def __init__(
@@ -78,6 +83,7 @@ class HeatExchangerCircuit:
         roughness=0.0,
         heat_transfer=None,
         laminar_nusselt=3.66,
+        property_correction=True,
     ):
         if not isinstance(path, Path):
             raise TypeError("path must be a ducts.Path")
@@ -143,6 +149,7 @@ class HeatExchangerCircuit:
         if np.any(self.roughness < 0):
             raise ValueError("roughness must be nonnegative")
         self.heat_transfer, self.laminar_nusselt = heat_transfer, laminar_nusselt
+        self.property_correction = bool(property_correction)
 
     @property
     def n_channels(self):

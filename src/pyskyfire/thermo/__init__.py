@@ -20,6 +20,8 @@ from .state import (
     FluidStateResolver,
     probe_fluid,
 )
+from .eos import EquationOfState, Incompressible, CoolPropEOS, as_equation_of_state, fluid_name
+from .duty import MachineDuty
 from .nozzle_loss import (
     EfficiencyTable,
     NozzleLoss,
@@ -37,6 +39,12 @@ __all__ = [
     "FluidCapability",
     "SaturationState",
     "probe_fluid",
+    "EquationOfState",
+    "Incompressible",
+    "CoolPropEOS",
+    "as_equation_of_state",
+    "fluid_name",
+    "MachineDuty",
     "PHASE_LIQUID",
     "PHASE_TWO_PHASE",
     "PHASE_VAPOUR",

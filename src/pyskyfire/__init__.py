@@ -8,7 +8,8 @@ Subpackages:
     pump    - Pump design and performance calculations.
     turbine - Turbine design and analysis.
     thermo  - Fluid properties, state resolution and chemical equilibrium
-    ducts   - Duct hydraulics: friction and pressure drop
+    ducts   - Duct hydraulics: friction, pressure drop and orifices
+    injector - Injector elements and the flow from each feed through them
     viz     - Visualisation
 """
 
@@ -29,9 +30,10 @@ from . import turbine
 from . import common
 from . import network
 from . import heat_exchanger
+from . import injector
 
 
-__all__ = ["regen", "pump", "turbine", "common", "network", "thermo", "ducts", "heat_exchanger"]
+__all__ = ["regen", "pump", "turbine", "common", "network", "thermo", "ducts", "heat_exchanger", "injector"]
 
 
 def __getattr__(name: str):

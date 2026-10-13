@@ -82,7 +82,9 @@ def make_params():
         # Materials
         copper=psf.common.solids.GRCop42,
 
-        # Pump parameters
+        # Pump parameters. This cycle carries no volute, disk friction or
+        # bearing model, so the impeller's hydraulic efficiency is the only
+        # loss the pumps are charged and stands in for all of them.
         eta_pump_fu=0.72,
         n_fu=50000,  # rpm
         eta_pump_ox_stage1=0.76,
@@ -546,7 +548,7 @@ def engine_sizer(params, thrust_chamber):
             load_fraction=1.0,
             p_base=params["p_c"],
             input_p=params["p_tank_fu"],
-            eta=params["eta_pump_fu"],
+            hydraulic_efficiency=params["eta_pump_fu"],
             n=params["n_fu"],
             medium=fuel_medium,
         )
@@ -675,7 +677,7 @@ def engine_sizer(params, thrust_chamber):
             p_base=params["p_c"],
             input_p=params["p_tank_ox"],
             n=params["n_ox"],
-            eta=params["eta_pump_ox_stage1"],
+            hydraulic_efficiency=params["eta_pump_ox_stage1"],
             medium=ox_medium,
         )
     )
@@ -721,7 +723,7 @@ def engine_sizer(params, thrust_chamber):
             p_base=0.0,
             input_p=0.0,
             n=params["n_ox"],
-            eta=params["eta_pump_ox_stage2"],
+            hydraulic_efficiency=params["eta_pump_ox_stage2"],
             medium=ox_medium,
         )
     )

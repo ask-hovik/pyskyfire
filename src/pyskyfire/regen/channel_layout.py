@@ -29,6 +29,7 @@ __all__ = [
     "ResolvedChannel",
     "circular_pattern",
     "collect_channels",
+    "collect_keep_outs",
     "gcd_list",
     "redistribute_channels",
     "resolve_analytical_layout",
@@ -141,13 +142,20 @@ def gcd_list(integers) -> int:
 
 
 def wedge_info(thrust_chamber) -> tuple[int, float, list[int]]:
-    """Return the numerical layout's symmetry and circuit channel counts."""
+    """Return the numerical layout's symmetry and circuit channel counts.
+
+    Keep-out sector counts join the symmetry, since every wedge has to hold
+    the same share of them, but are not listed among the channel counts.
+    """
 
     counts = [
         int(circuit.placement.n_channel_positions)
         for circuit in thrust_chamber.cooling_circuits
     ]
-    symmetry_count = gcd_list(counts)
+    keep_out_counts = [
+        keep_out.count for keep_out in getattr(thrust_chamber, "keep_outs", ())
+    ]
+    symmetry_count = gcd_list(counts + keep_out_counts)
     wedge_angle = TWO_PI / symmetry_count
     return symmetry_count, wedge_angle, counts
 
@@ -202,6 +210,28 @@ def collect_channels(thrust_chamber, *, jitter_divisor: float = 100.0):
     return centerlines_out, angular_widths_out, circuit_ids_out, metadata
 
 
+def collect_keep_outs(thrust_chamber, symmetry_count: int):
+    """Collect the keep-out sectors in the numerical symmetry wedge.
+
+    Returns their centerlines and angular widths, sampled at the corners of
+    each width law so that linear interpolation reproduces it exactly.
+    """
+
+    centerlines_out = []
+    angular_widths_out = []
+    contour = thrust_chamber.contour
+    for keep_out in getattr(thrust_chamber, "keep_outs", ()):
+        base = keep_out.centerline(contour)
+        widths = np.array(
+            [keep_out.sector_angle(x, contour) for x in base[:, 0]], dtype=float
+        )
+        unique_count = keep_out.count // symmetry_count
+        for centerline in circular_pattern(base, keep_out.count)[:unique_count]:
+            centerlines_out.append(centerline)
+            angular_widths_out.append(widths.copy())
+    return centerlines_out, angular_widths_out
+
+
 def tile_centerlines(
     centerlines_subset,
     angular_widths_subset,
@@ -244,14 +274,32 @@ def redistribute_channels(
     recorder: list | None = None,
     endpoint_slope0=None,
     endpoint_slopeN=None,
+    fixed=None,
+    shape_offsets=None,
 ):
     """Relax channel angles so they pack without overlap.
 
     This is the existing visualization solver, now shared by visualization and
-    external exporters through :func:`resolve_numerical_layout`.
+    external exporters through :func:`resolve_numerical_layout`. Entries
+    flagged in ``fixed`` push on their neighbours but never move; keep-outs
+    enter this way. ``shape_offsets`` holds, per entry, an angular detour
+    the bending and slope terms treat as straight, so a channel already
+    bent around a keep-out is not pulled back into it.
     """
 
     channel_count = len(centerlines)
+    if fixed is None:
+        fixed = [False] * channel_count
+    if len(fixed) != channel_count:
+        raise ValueError("fixed must match the number of centerlines")
+    if shape_offsets is None:
+        shape_offsets = [None] * channel_count
+    if len(shape_offsets) != channel_count:
+        raise ValueError("shape_offsets must match the number of centerlines")
+    shape_offsets = [
+        np.zeros(len(centerline)) if offset is None else np.asarray(offset, float)
+        for centerline, offset in zip(centerlines, shape_offsets, strict=True)
+    ]
     x_values = [centerline[:, 0] for centerline in centerlines]
     radii = [centerline[:, 1] for centerline in centerlines]
     angles = [centerline[:, 2].copy() for centerline in centerlines]
@@ -286,12 +334,15 @@ def redistribute_channels(
 
     def apply_hard_endpoint_slopes() -> None:
         for index in range(channel_count):
+            if fixed[index]:
+                continue
             slope_start = endpoint_slope0[index]
             slope_end = endpoint_slopeN[index]
             if slope_start is None and slope_end is None:
                 continue
 
             angle = angles[index]
+            offset = shape_offsets[index]
             axial = x_values[index]
             if angle.size < 2:
                 continue
@@ -300,9 +351,11 @@ def redistribute_channels(
             if abs(delta_start) < 1.0e-14 or abs(delta_end) < 1.0e-14:
                 continue
             if slope_start is not None:
-                angle[0] = angle[1] - float(slope_start) * delta_start
+                angle[0] = (angle[1] - offset[1] + offset[0]
+                            - float(slope_start) * delta_start)
             if slope_end is not None:
-                angle[-1] = angle[-2] + float(slope_end) * delta_end
+                angle[-1] = (angle[-2] - offset[-2] + offset[-1]
+                             + float(slope_end) * delta_end)
 
     master_x = np.unique(np.concatenate(x_values))
     master_count = master_x.size
@@ -401,6 +454,8 @@ def redistribute_channels(
                     forces_master[second, station_index] += k_pack * overlap
 
         for index in range(channel_count):
+            if fixed[index]:
+                continue
             force = np.interp(
                 x_values[index],
                 master_x,
@@ -409,9 +464,10 @@ def redistribute_channels(
                 right=0.0,
             )
             angle = angles[index]
+            shape = angle - shape_offsets[index]
             laplacian = np.zeros_like(angle)
             if angle.size > 2:
-                laplacian[1:-1] = angle[:-2] - 2.0 * angle[1:-1] + angle[2:]
+                laplacian[1:-1] = shape[:-2] - 2.0 * shape[1:-1] + shape[2:]
             if angle.size > 1:
                 laplacian[0] = 0.0
                 laplacian[-1] = 0.0
@@ -424,7 +480,7 @@ def redistribute_channels(
                         f"desired_slope[{index}] must match its centerline length"
                     )
                 segment_dx = np.diff(x_values[index])
-                slope = np.diff(angle) / (segment_dx + 1.0e-16)
+                slope = np.diff(shape) / (segment_dx + 1.0e-16)
                 desired_segment = 0.5 * (desired[:-1] + desired[1:])
                 error = slope - desired_segment
                 gradient = np.zeros_like(angle)
@@ -449,6 +505,88 @@ def redistribute_channels(
         result[:, 2] = angles[index]
         resolved.append(result)
     return resolved
+
+
+def _seat_around_keep_outs(
+    centerlines,
+    circuit_ids,
+    obstacles,
+    obstacle_widths,
+    counts,
+    period: float,
+):
+    """Open room at each keep-out before the packer relaxes the rest.
+
+    Relaxation alone cannot do this: a sector several pitches wide appears on
+    top of a fully packed row, and the packer would push channels through one
+    another. So each circuit crossing a keep-out is first turned by a constant
+    phase, less than one pitch, that puts the keep-out centre between two of
+    its channels rather than on one. Then, at every station, each stretch of
+    channels between two keep-out centres is scaled linearly onto the free
+    arc between their edges. Where a keep-out has no width the map is the
+    identity, so channels leave the nominal pattern smoothly along a taper.
+    """
+
+    if not obstacles:
+        return centerlines
+    spans = [(obstacle[0, 0], obstacle[-1, 0]) for obstacle in obstacles]
+    seated = [centerline.copy() for centerline in centerlines]
+
+    turned = {}
+    for circuit_index in sorted(set(circuit_ids)):
+        seeds = [
+            index for index, owner in enumerate(circuit_ids) if owner == circuit_index
+        ]
+        axial = seated[seeds[0]][:, 0]
+        low, high = min(axial[0], axial[-1]), max(axial[0], axial[-1])
+        crossing = [
+            index
+            for index, (start, end) in enumerate(spans)
+            if start < high and end > low
+        ]
+        if not crossing:
+            continue
+        obstacle = obstacles[crossing[0]]
+        middle = float(np.clip(0.5 * sum(spans[crossing[0]]), low, high))
+        order = np.argsort(axial)
+        seed_angle = float(np.interp(middle, axial[order], seated[seeds[0]][order, 2]))
+        pitch = TWO_PI / counts[circuit_index]
+        turned[circuit_index] = (obstacle[0, 2] - 0.5 * pitch - seed_angle) % pitch
+        # The seeds are laid on the exact pitch from the first one. The
+        # tie-breaking jitter grows with each seed's index, and would carry
+        # the last of them into the keep-out; the first keeps its share, which
+        # still separates this circuit from any other.
+        first = seated[seeds[0]][:, 2].copy()
+        for position, index in enumerate(seeds):
+            seated[index][:, 2] = first + position * pitch + turned[circuit_index]
+
+    for centerline in seated:
+        for station, x in enumerate(centerline[:, 0]):
+            active = [
+                (obstacle[0, 2] % period, 0.5 * float(np.interp(x, obstacle[:, 0], width)))
+                for obstacle, width, (start, end) in zip(
+                    obstacles, obstacle_widths, spans, strict=True
+                )
+                if start <= x <= end
+            ]
+            if not active:
+                continue
+            active.sort()
+            centres = np.array([centre for centre, _ in active])
+            halves = np.array([half for _, half in active])
+            angle = centerline[station, 2]
+            phase = angle % period
+            after = int(np.searchsorted(centres, phase, side="right")) - 1
+            start_centre = centres[after]
+            start_half = halves[after]
+            end_centre = centres[(after + 1) % len(centres)]
+            end_half = halves[(after + 1) % len(centres)]
+            nominal = (end_centre - start_centre) % period or period
+            free = nominal - start_half - end_half
+            offset = (phase - start_centre) % period
+            mapped = start_half + offset * free / nominal
+            centerline[station, 2] = angle + (mapped - offset)
+    return seated
 
 
 def _placement_slope_data(thrust_chamber, centerlines, circuit_ids):
@@ -486,25 +624,46 @@ def resolve_numerical_layout(thrust_chamber, **solver_options) -> ChannelLayout:
         centerlines,
         circuit_ids,
     )
+    # Keep-outs ride along as pinned obstacles and are dropped afterwards.
+    obstacles, obstacle_widths = collect_keep_outs(thrust_chamber, metadata["g"])
+    channel_count = len(centerlines)
+    padding = [None] * len(obstacles)
+    metadata["keep_out_sectors"] = len(obstacles)
+    period = metadata["wedge_angle"] if metadata["g"] > 1 else TWO_PI
+    seated = _seat_around_keep_outs(
+        centerlines,
+        circuit_ids,
+        obstacles,
+        obstacle_widths,
+        metadata["n_list"],
+        period,
+    )
+    detours = [
+        after[:, 2] - before[:, 2]
+        for before, after in zip(centerlines, seated, strict=True)
+    ]
+    centerlines = seated
     options = {
         "k_pack": 2.0,
         "k_bend": 0.1,
         "k_slope": 0.05,
-        "desired_slope": desired_slopes,
         "dt": 0.15,
         "tol": 1.0e-5,
         "max_iters": 800,
         "gamma_damp": 0.4,
         "wedge_angle": metadata["wedge_angle"] if metadata["g"] > 1 else None,
-        "endpoint_slope0": slope_starts,
-        "endpoint_slopeN": slope_ends,
+        "endpoint_slope0": slope_starts + padding,
+        "endpoint_slopeN": slope_ends + padding,
+        "desired_slope": desired_slopes + padding,
+        "fixed": [False] * channel_count + [True] * len(obstacles),
+        "shape_offsets": detours + padding,
     }
     options.update(solver_options)
     resolved = redistribute_channels(
-        centerlines,
-        widths,
+        centerlines + obstacles,
+        widths + obstacle_widths,
         **options,
-    )
+    )[:channel_count]
 
     seed_numbers: dict[int, int] = {}
     channels = []
@@ -663,6 +822,10 @@ def resolve_analytical_layout(
     circuits = thrust_chamber.cooling_circuits
     if not circuits:
         return ChannelLayout("analytical", (), {"groups": []})
+    if getattr(thrust_chamber, "keep_outs", ()):
+        raise AnalyticalLayoutError(
+            "Channels can only bend around keep-outs in the numerical layout"
+        )
     for circuit in circuits:
         if circuit.reference_path is None or len(circuit.reference_path) == 0:
             raise AnalyticalLayoutError(

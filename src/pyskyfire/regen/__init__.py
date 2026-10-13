@@ -5,6 +5,7 @@ from .channel_helpers import *
 from .channel_construction import *
 from .channel_layout import *
 from .contour import *
+from .outer_wall import *
 from .coolant_properties import *
 from .coupled_solver import *
 from .film_solver import *

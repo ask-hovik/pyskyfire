@@ -8,8 +8,11 @@ import numpy as np
 
 # internal imports
 from pyskyfire.network.engine_network import Station
+from pyskyfire.ducts.orifice import Orifice, OrificePlate
 from pyskyfire.ducts.pipe import Pipe
 from pyskyfire.ducts.volute import Volute
+from pyskyfire.injector import Injector
+from pyskyfire.pump.impeller import G0
 from pyskyfire.thermo.state import FluidState, PHASE_UNKNOWN
 from pyskyfire.regen.coupled_solver import (
     BoundaryConditions,
@@ -188,10 +191,19 @@ class SignalBlock(ABC):
 
 
 class PumpBlock(FluidBlock):
-    """Centrifugal/positive-displacement pump model (lumped).
+    """Pump stage charged component by component.
 
     The block raises inlet pressure to meet a target set by the load
     (sum of downstream pressure drops) and computes shaft power and outlet state.
+
+    Each loss is charged once, where it happens. The outlet is the impeller
+    outlet, so a volute or diffuser after it is its own block and its loss is
+    part of the load. The blades do ``g*H/eta_h`` of work on every kilogram,
+    with ``hydraulic_efficiency`` the impeller's own. Disk friction on the
+    outside of the wheel is added on top, and both end up as heat in the
+    fluid. The mechanical efficiency then covers bearings and shaft seals,
+    whose heat leaves through the housing rather than the flow. No leakage is
+    modelled yet: every kilogram through the impeller is delivered.
 
     Parameters
     ----------
@@ -210,11 +222,15 @@ class PumpBlock(FluidBlock):
     load_fraction : float
         Fraction of total load to apply in this pump (0..1).
     n : float
-        Rotational speed (metadata).
-    eta : float
-        Pump efficiency (0..1).
+        Rotational speed [rpm].
+    hydraulic_efficiency : float
+        The impeller's hydraulic efficiency, eta_h,La (0..1].
     medium : str
         CoolProp fluid string.
+    mechanical_efficiency : float, optional
+        Bearings and shaft seals (0..1]. Default 1.
+    disk_friction : pyskyfire.pump.DiskFriction, optional
+        Friction on the wheel's outer faces, evaluated at the inlet state.
 
     Attributes
     ----------
@@ -229,7 +245,12 @@ class PumpBlock(FluidBlock):
         Consumes power to satisfy aggregate shaft load.
     """
 
-    def __init__(self, name, st_in, st_out, overcome, p_base, input_p, load_fraction, n, eta, medium):
+    def __init__(self, name, st_in, st_out, overcome, p_base, input_p, load_fraction, n,
+                 hydraulic_efficiency, medium, *, mechanical_efficiency=1.0, disk_friction=None):
+        for label, value in (("hydraulic_efficiency", hydraulic_efficiency),
+                             ("mechanical_efficiency", mechanical_efficiency)):
+            if not 0 < value <= 1:
+                raise ValueError(f"{label} must lie in (0, 1]")
 
         self.overcome      = overcome
         self.load_fraction = load_fraction
@@ -237,7 +258,9 @@ class PumpBlock(FluidBlock):
         
         self.name = name
         self.n = n
-        self.eta = eta
+        self.hydraulic_efficiency = hydraulic_efficiency
+        self.mechanical_efficiency = mechanical_efficiency
+        self.disk_friction = disk_friction
 
         self.input_p = input_p
         super().__init__(medium)
@@ -251,6 +274,38 @@ class PumpBlock(FluidBlock):
         self.signal_inputs = []
         self.signal_outputs  = [f"P_{name}"]
 
+    def _evaluate(self, stations, signals):
+        st_i = stations[self.st_in]           # Station object from upstream
+        p_in = st_i.p
+        T_in = st_i.T
+        mdot_in = st_i.mdot                      # now taken from the station!
+
+        dp_total = sum(signals[f"dp_{blk_name}"] for blk_name in self.overcome) + self.p_base - self.input_p
+        p_target = stations[self.st_in].p + self.load_fraction * dp_total
+
+        # offset T by slight amount to avoid saturation line.
+        rho_in   = CP.PropsSI('Dmass', 'T', T_in-1e-3, 'P', p_in,  self.medium)
+        h_in     = CP.PropsSI('Hmass','T', T_in-1e-3, 'P', p_in,  self.medium)
+
+        w_ideal  = (p_target - p_in) / rho_in           # J/kg, g*H
+        w_blade  = w_ideal / self.hydraulic_efficiency  # J/kg, g*H_th
+        P_blade  = mdot_in * w_blade
+        P_disk   = 0.0
+        if self.disk_friction is not None:
+            mu_in = CP.PropsSI('V', 'T', T_in-1e-3, 'P', p_in, self.medium)
+            P_disk = self.disk_friction.power(rho=rho_in, mu=mu_in, n=self.n)
+
+        # Blade work and disk friction both stay in the fluid; the bearings'
+        # share of the shaft power leaves through the housing.
+        h_out    = h_in + (P_blade + P_disk) / mdot_in
+        T_out    = CP.PropsSI('T', 'P', p_target, 'Hmass', h_out, self.medium)
+        P_shaft  = (P_blade + P_disk) / self.mechanical_efficiency
+
+        return Station(p_target, T_out, mdot_in), dict(
+            shaft_power=P_shaft, blade_power=P_blade, disk_friction_power=P_disk,
+            mechanical_loss=P_shaft - P_blade - P_disk, head=w_ideal / G0,
+            theoretical_head=w_blade / G0, hydraulic_efficiency=self.hydraulic_efficiency,
+            mechanical_efficiency=self.mechanical_efficiency, inlet_density=rho_in)
 
     def compute(self, stations, signals):
         """Compute outlet state and required pump power.
@@ -267,7 +322,7 @@ class PumpBlock(FluidBlock):
         stations_out : dict[str, Station]
             ``{st_out: Station}`` with updated pressure and temperature.
         signals_out : dict[str, float]
-            ``{f"P_{name}": float}`` required pump power [W].
+            ``{f"P_{name}": float}`` required shaft power [W].
 
         Raises
         ------
@@ -279,33 +334,12 @@ class PumpBlock(FluidBlock):
         Temperature property calls are offset by ``1e-3 K`` to avoid
         saturation-line singularities in CoolProp.
         """
+        outlet, result = self._evaluate(stations, signals)
+        return {self.st_out: outlet}, {f"P_{self.name}": result["shaft_power"]}
 
-        st_i = stations[self.st_in]           # Station object from upstream
-        p_in = st_i.p
-        T_in = st_i.T
-        mdot_in = st_i.mdot                      # now taken from the station!
-
-        dp_total = sum(signals[f"dp_{blk_name}"] for blk_name in self.overcome) + self.p_base - self.input_p
-        p_target = stations[self.st_in].p + self.load_fraction * dp_total
-        #print(f"p_target: {p_target}")
-
-
-
-        rho_in   = CP.PropsSI('Dmass', 'T', T_in-1e-3, 'P', p_in,  self.medium) # offset T by slight amount to avoid saturation line. 
-        h_in     = CP.PropsSI('Hmass','T', T_in-1e-3, 'P', p_in,  self.medium)
-
-        w_ideal  = (p_target - p_in) / rho_in          # J/kg
-        dh_act   =  w_ideal / self.eta                 # J/kg      (η is 0–1)
-
-        h_out    = h_in + dh_act
-        T_out    = CP.PropsSI('T', 'P', p_target, 'Hmass', h_out, self.medium)
-
-        P_pump   = mdot_in * dh_act                    # W
-
-        stations_out = {self.st_out: Station(p_target, T_out, mdot_in)}
-        signals_out  = {f"P_{self.name}": P_pump}
-
-        return stations_out, signals_out
+    def post_process(self, stations, signals):
+        """The shaft power split by where it went, at the converged state."""
+        return self._evaluate(stations, signals)[1]
 
     
 class RegenBlock(FluidBlock):
@@ -833,11 +867,14 @@ class PipeBlock(FluidBlock):
     st_in, st_out : str
         Inlet and outlet network station keys.
     pipe : pyskyfire.ducts.Pipe
-        Physical pipe model.
+        Physical pipe model, with or without a core.
     transport : object
         Fluid-property provider accepted by :meth:`Pipe.solve`.
     friction_model : {'native', 'fluids'}, optional
         Distributed-friction backend. Default ``'fluids'``.
+    inlet_swirl : float, optional
+        Swirl at the inlet mean radius [m/s], as :meth:`Pipe.solve` takes it.
+        Network stations carry no swirl, so it is fixed here. Default 0.
     """
 
     def __init__(
@@ -848,6 +885,7 @@ class PipeBlock(FluidBlock):
         pipe: Pipe,
         transport,
         friction_model: str = "fluids",
+        inlet_swirl: float = 0.0,
     ):
         if not isinstance(pipe, Pipe):
             raise TypeError("pipe must be a pyskyfire.ducts.Pipe")
@@ -858,6 +896,7 @@ class PipeBlock(FluidBlock):
         self.pipe = pipe
         self.transport = transport
         self.friction_model = friction_model
+        self.inlet_swirl = float(inlet_swirl)
         super().__init__(getattr(transport, "fluid", type(transport).__name__))
 
         self.station_inputs = [st_in]
@@ -880,6 +919,7 @@ class PipeBlock(FluidBlock):
             inlet_state=inlet_state,
             mass_flow=station.mdot,
             transport=self.transport,
+            inlet_swirl=self.inlet_swirl,
             friction_model=self.friction_model,
         )
 
@@ -891,8 +931,8 @@ class PipeBlock(FluidBlock):
         inlet = stations[self.st_in]
         result = self._solve(inlet)
         outlet = Station(
-            p=float(result.p[-1]),
-            T=float(result.T[-1]),
+            p=float(result.p_stagnation[-1]),
+            T=float(result.T_stagnation[-1]),
             mdot=inlet.mdot,
         )
         return {self.st_out: outlet}, {self.dp_key: result.total_pressure_loss}
@@ -901,6 +941,162 @@ class PipeBlock(FluidBlock):
         """Return the detailed pipe result at the converged inlet condition."""
         return self._solve(stations[self.st_in])
 
+
+class OrificeBlock(FluidBlock):
+    """Engine-network adapter for one :class:`Orifice` or :class:`OrificePlate`.
+
+    The contained restriction remains independently usable through its own
+    ``solve``. This block only translates network stations into that public
+    API and emits the outlet station and the ``dp_<name>`` loss signal. The
+    signal is the irreversible loss: the whole drop for an orifice, and the
+    permanent loss after recovery for a plate.
+
+    Parameters
+    ----------
+    name : str
+        Block name used for the pressure-loss signal.
+    st_in, st_out : str
+        Inlet and outlet network station keys.
+    orifice : pyskyfire.ducts.Orifice or pyskyfire.ducts.OrificePlate
+        Physical restriction.
+    fluid : str or Fluid or EquationOfState
+        The fluid, as :func:`~pyskyfire.thermo.eos.as_equation_of_state` reads it.
+    viscosity : float, optional
+        Passed to :meth:`OrificePlate.solve`; only a plate uses it.
+
+    Notes
+    -----
+    The flow is adiabatic, so the outlet carries the inlet enthalpy.
+    """
+
+    def __init__(self, name: str, st_in: str, st_out: str, orifice, fluid,
+                 viscosity: float | None = None):
+        if not isinstance(orifice, (Orifice, OrificePlate)):
+            raise TypeError("orifice must be a pyskyfire.ducts.Orifice or OrificePlate")
+        if viscosity is not None and not isinstance(orifice, OrificePlate):
+            raise ValueError("viscosity is only used by an OrificePlate")
+
+        self.name = name
+        self.st_in = st_in
+        self.st_out = st_out
+        self.orifice = orifice
+        self.fluid = fluid
+        self.viscosity = viscosity
+        super().__init__(getattr(fluid, "fluid", fluid if isinstance(fluid, str) else repr(fluid)))
+
+        self.station_inputs = [st_in]
+        self.station_outputs = [st_out]
+        self.signal_inputs = []
+        self.dp_key = f"dp_{name}"
+        self.signal_outputs = [self.dp_key]
+
+    def _solve(self, station: Station):
+        inlet_state = FluidState(
+            T=station.T,
+            p=station.p,
+            h=float("nan"),
+            quality=float("nan"),
+            rho=float("nan"),
+            phase=PHASE_UNKNOWN,
+            T_sat=float("nan"),
+        )
+        kwargs = {} if self.viscosity is None else {"viscosity": self.viscosity}
+        return self.orifice.solve(inlet_state=inlet_state, mass_flow=station.mdot,
+                                  fluid=self.fluid, **kwargs)
+
+    def compute(
+        self,
+        stations: Dict[str, "Station"],
+        signals: Dict[str, float],
+    ) -> tuple[Dict[str, "Station"], Dict[str, float]]:
+        inlet = stations[self.st_in]
+        result = self._solve(inlet)
+        outlet = Station(
+            p=float(result.outlet_state.p),
+            T=float(result.outlet_state.T),
+            mdot=inlet.mdot,
+        )
+        return {self.st_out: outlet}, {self.dp_key: result.pressure_loss}
+
+    def post_process(self, stations, signals):
+        """Return the detailed orifice result at the converged inlet condition."""
+        return self._solve(stations[self.st_in])
+
+
+class InjectorBlock(FluidBlock):
+    """Engine-network adapter for one feed of an :class:`~pyskyfire.injector.Injector`.
+
+    An injector with several feeds (a main fuel plenum, a film ring and an
+    oxidizer plenum, say) takes one block per feed, each with its own plenum
+    station. The block hands the plenum station and its mass flow to
+    :meth:`Injector.solve_feed` and emits the face station and the
+    ``dp_<name>`` pressure drop from plenum to face.
+
+    Parameters
+    ----------
+    name : str
+        Block name used for the pressure-loss signal.
+    st_in, st_out : str
+        Plenum and face station keys.
+    injector : pyskyfire.injector.Injector
+        The injector.
+    feed : hashable
+        Which of the injector's feeds this block carries.
+    fluid : str or Fluid or EquationOfState
+        The fluid, as :func:`~pyskyfire.thermo.eos.as_equation_of_state` reads it.
+
+    Notes
+    -----
+    The flow is adiabatic, so the face station carries the plenum enthalpy.
+    """
+
+    def __init__(self, name: str, st_in: str, st_out: str, injector, feed, fluid):
+        if not isinstance(injector, Injector):
+            raise TypeError("injector must be a pyskyfire.injector.Injector")
+        if feed not in injector.feeds:
+            raise ValueError(f"{feed!r} is not a feed of this injector")
+
+        self.name = name
+        self.st_in = st_in
+        self.st_out = st_out
+        self.injector = injector
+        self.feed = feed
+        self.fluid = fluid
+        super().__init__(getattr(fluid, "fluid", fluid if isinstance(fluid, str) else repr(fluid)))
+
+        self.station_inputs = [st_in]
+        self.station_outputs = [st_out]
+        self.signal_inputs = []
+        self.dp_key = f"dp_{name}"
+        self.signal_outputs = [self.dp_key]
+
+    def _solve(self, station: Station):
+        inlet_state = FluidState(
+            T=station.T,
+            p=station.p,
+            h=float("nan"),
+            quality=float("nan"),
+            rho=float("nan"),
+            phase=PHASE_UNKNOWN,
+            T_sat=float("nan"),
+        )
+        return self.injector.solve_feed(self.feed, inlet_state=inlet_state,
+                                        mass_flow=station.mdot, fluid=self.fluid)
+
+    def compute(
+        self,
+        stations: Dict[str, "Station"],
+        signals: Dict[str, float],
+    ) -> tuple[Dict[str, "Station"], Dict[str, float]]:
+        inlet = stations[self.st_in]
+        result = self._solve(inlet)
+        face = result.orifice.outlet_state
+        outlet = Station(p=float(face.p), T=float(face.T), mdot=inlet.mdot)
+        return {self.st_out: outlet}, {self.dp_key: result.pressure_drop}
+
+    def post_process(self, stations, signals):
+        """Return the feed result at the converged plenum condition."""
+        return self._solve(stations[self.st_in])
 
 class VoluteBlock(FluidBlock):
     """Engine-network adapter for one :class:`Volute` or collector.
@@ -1007,6 +1203,64 @@ class VoluteBlock(FluidBlock):
 
     def post_process(self, stations, signals):
         """Return the detailed volute result at the converged inlet condition."""
+        return self._solve(stations[self.st_in])
+
+
+class DiffuserBlock(FluidBlock):
+    """Engine-network adapter for one :class:`~pyskyfire.pump.VanedDiffuser`.
+
+    Sits between a pump block, whose outlet is the impeller outlet, and the
+    volute that collects the diffuser's discharge. It hands the network's
+    inlet station to :meth:`VanedDiffuser.solve` and emits the outlet station
+    and a ``dp_<name>`` loss signal. The geometry is resolved when the
+    diffuser is designed, so the network may iterate the operating point
+    freely. The diffuser is adiabatic; the outlet carries the inlet
+    temperature, as a volute's does.
+
+    Parameters
+    ----------
+    name : str
+        Block name used for the pressure-loss signal.
+    st_in, st_out : str
+        Inlet and outlet network station keys.
+    diffuser : pyskyfire.pump.VanedDiffuser
+        The designed diffuser.
+    transport : object
+        Fluid-property provider with ``get_rho`` and ``get_mu``.
+    """
+
+    def __init__(self, name, st_in, st_out, diffuser, transport):
+        from pyskyfire.pump.diffuser import VanedDiffuser
+        if not isinstance(diffuser, VanedDiffuser):
+            raise TypeError("diffuser must be a pyskyfire.pump.VanedDiffuser")
+        self.name = name
+        self.st_in = st_in
+        self.st_out = st_out
+        self.diffuser = diffuser
+        self.transport = transport
+        super().__init__(getattr(transport, "fluid", type(transport).__name__))
+        self.station_inputs = [st_in]
+        self.station_outputs = [st_out]
+        self.signal_inputs = []
+        self.dp_key = f"dp_{name}"
+        self.signal_outputs = [self.dp_key]
+
+    def _solve(self, station: Station):
+        inlet_state = FluidState(
+            T=station.T, p=station.p, h=float("nan"), quality=float("nan"),
+            rho=float("nan"), phase=PHASE_UNKNOWN, T_sat=float("nan"),
+        )
+        return self.diffuser.solve(inlet_state=inlet_state, mass_flow=station.mdot,
+                                   transport=self.transport)
+
+    def compute(self, stations, signals):
+        inlet = stations[self.st_in]
+        result = self._solve(inlet)
+        outlet = Station(p=float(result.states[-1].p), T=inlet.T, mdot=inlet.mdot)
+        return {self.st_out: outlet}, {self.dp_key: result.total_pressure_loss}
+
+    def post_process(self, stations, signals):
+        """Return the detailed diffuser result at the converged inlet condition."""
         return self._solve(stations[self.st_in])
 
 

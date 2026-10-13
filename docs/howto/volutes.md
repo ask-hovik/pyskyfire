@@ -68,22 +68,35 @@ outputs in here.
 ```python
 inlet = psf.ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
 
-volute = psf.ducts.Volute(section, inlet)
+volute = psf.ducts.Volute(
+    section, inlet, psf.ducts.ConstantAngularMomentum(), rotation="ccw"
+)
 ```
+
+Both the area law and the rotation are stated rather than defaulted. The area
+law decides what kind of hardware this is, and the rotation decides which way
+the passage winds -- counterclockwise seen from `+z`, with the axis pointing at
+the viewer. It has to match the sense of the machine feeding the volute once
+both are placed in the assembly, because a volute wound against the incoming
+swirl collects the flow backwards. Like tilt, it mirrors where the passage sits
+and changes nothing in the loss analysis.
 
 An inlet plane need not be radial. A pump whose discharge points a little
 downward, or a manifold sitting against a sloping nozzle wall, has a tilt:
 
 ```python
-volute = psf.ducts.Volute(section, inlet, tilt=math.radians(45.0))
+volute = psf.ducts.Volute(
+    section, inlet, psf.ducts.ConstantAngularMomentum(),
+    rotation="ccw", tilt=math.radians(45.0),
+)
 ```
 
 Tilt is constant around the circumference and rotates the section plane
 rigidly, so it decides where the passage sits in space and changes nothing in
 the loss analysis.
 
-The default area law conserves the angular momentum being collected, which is
-Aungier's method of choice. Geometry is resolved when the volute is built, so
+`ConstantAngularMomentum` conserves the angular momentum being collected, which
+is Aungier's method of choice. Geometry is resolved when the volute is built, so
 one volute can afterwards be solved at several operating points:
 
 ```python
@@ -134,19 +147,40 @@ result.loss_breakdown()   # coefficients by mechanism
 result.pressure_loss      # [Pa]
 ```
 
-The four loss coefficients are all referred to the inlet velocity head, so the
-total pressure loss is `omega_total * rho * C_5**2 / 2`:
+Every loss coefficient is referred to the inlet velocity head, so the total
+pressure loss is `omega_total * rho * C_5**2 / 2`:
 
 | Mechanism | What it charges |
 | --- | --- |
 | `meridional` | The through-slot velocity head, which becomes swirl in the passage and is never recovered |
 | `tangential` | Departure from conserved angular momentum between inlet and collection plane |
 | `friction` | Wall shear over the mean spiral path |
-| `exit_cone` | The change of velocity delivering to the round pipe |
+| `exit_cone` | Diffusing the flow down to the round pipe's velocity |
+| `exit_friction` | Wall shear along the exit-cone duct |
+| `exit_bend` | Turning the exit-cone duct |
+
+The last three need an attached `ExitCone`; the last two are zero without one,
+since there is then no duct to charge them against.
 
 The meridional term is usually the largest, and nothing the volute does can
 change it — it is set by `C_m` at the inlet. Reducing it is a job for the pump
 and diffuser design upstream.
+
+### Pressure along the passage
+
+```python
+result.stagnation_pressure()    # one value per azimuthal station [Pa]
+result.static_pressure()
+result.exit_cone_pressures(9)   # (stagnation, static) along the duct
+```
+
+Aungier's analysis is lumped: it charges one coefficient per mechanism between
+the inlet and the collection plane and says nothing about where round the
+volute each is spent. Spreading them linearly with azimuth is an assumption
+made so the passage can be plotted and coloured at all, not a result of the
+model — the endpoints are what it actually pins down. The exit cone is on
+firmer ground, since its losses really are spent between two stations the model
+resolves.
 
 ## Sizing parameter
 
@@ -162,7 +196,7 @@ undersizing is penalised far more steeply than oversizing.
 
 ```python
 volute = psf.ducts.Volute(
-    section, inlet, psf.ducts.ConstantAngularMomentum(SP=1.15)
+    section, inlet, psf.ducts.ConstantAngularMomentum(SP=1.15), rotation="ccw"
 )
 ```
 
@@ -176,7 +210,8 @@ describes that duct:
 
 ```python
 volute = psf.ducts.Volute(
-    section, inlet,
+    section, inlet, psf.ducts.ConstantAngularMomentum(),
+    rotation="ccw",
     exit_cone=psf.ducts.ExitCone(
         final_diameter=0.050,
         first_angle="radial",       # or "tangential", or a number
@@ -203,11 +238,34 @@ full-collection plane, and `Volute.solve()` then needs an explicit
 `exit_diameter`; with one attached, the flange diameter is stated once and used
 for both the geometry and the loss analysis's station 7.
 
-`ExitCone` geometry does not feed back into the loss analysis beyond that
-diameter. Aungier's exit-cone loss (Eq. 5-110) is already a lumped allowance
-for the whole transition, including the turn out of the volute's log-spiral
-path, so a tangential duct and a radial one at the same flange diameter are
-charged the same loss here, whatever their length or how sharply they turn.
+The duct's geometry reaches the loss analysis three ways, reported apart as
+`exit_cone`, `exit_friction` and `exit_bend`:
+
+```python
+result.loss_breakdown()
+# {'meridional': ..., 'tangential': ..., 'friction': ...,
+#  'exit_cone': ..., 'exit_friction': ..., 'exit_bend': ...}
+```
+
+A widening cone is a conical diffuser, and the angle it opens out at is most
+of what decides its loss — so `final_diameter` and `arc_length_parameter`
+together set `exit_cone`, through the Rennels correlation. A flange narrower
+than the passage feeding it is a contraction instead, and takes the matching
+Rennels correlation for one; contractions are much the cheaper of the two,
+since nothing separates on the way in. The arc length also sets the wall
+friction is charged over, and the turn sets the bend loss.
+
+That makes `arc_length_parameter` a genuine design variable with an optimum in
+it. Lengthening the duct opens the cone out more gradually and recovers more
+of the velocity head, but adds wetted wall; spreading a given turn over more
+duct likewise trades bend loss for friction. Too short and the cone stops
+diffusing and starts dumping.
+
+A volute with no exit cone has no cone angle to resolve, and its flange is
+charged Aungier's Eq. 5-110 instead — the Borda-Carnot loss of a sudden
+expansion, which is what an unresolved transition deserves. The Rennels
+correlation approaches the same value as the included angle opens toward 180
+degrees, so the two agree where they should.
 
 ## Visualise it
 
@@ -238,7 +296,9 @@ plane — `examples/volute/volute_report.py` does this.
 Swap the area law for a uniform passage — the unshaped manifold:
 
 ```python
-volute = psf.ducts.Volute(section, inlet, psf.ducts.ConstantArea(area=7.8e-4))
+volute = psf.ducts.Volute(
+    section, inlet, psf.ducts.ConstantArea(area=7.8e-4), rotation="ccw"
+)
 ```
 
 A collector tries to diffuse the entering flow toward rest where collection

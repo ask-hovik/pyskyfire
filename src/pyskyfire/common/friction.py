@@ -49,6 +49,7 @@ __all__ = [
     "ReDh_laminar",
     "ReDh_turbulent",
     "darcy_friction_factor",
+    "annulus_laminar_factor",
     "curvature_multiplier",
     "friction_pressure_gradient",
     "resolve_friction_model",
@@ -151,9 +152,9 @@ def resolve_friction_model(model):
 # ---------------------------------------------------------------------------
 
 
-def _native_laminar(ReDh):
-    """Return the laminar Darcy friction factor ``64/Re``."""
-    return 64.0 / ReDh
+def _native_laminar(ReDh, laminar_factor=1.0):
+    """Return the laminar Darcy friction factor ``64/Re``, scaled for the section."""
+    return laminar_factor * 64.0 / ReDh
 
 
 def _native_turbulent(ReDh, Dh, roughness):
@@ -183,13 +184,13 @@ def _native_turbulent(ReDh, Dh, roughness):
     return 1.0 / inverse_sqrt_f**2
 
 
-def _native_darcy(ReDh, Dh, roughness):
+def _native_darcy(ReDh, Dh, roughness, laminar_factor=1.0):
     """Composite laminar-turbulent Darcy factor with a linear transition."""
     if ReDh < ReDh_laminar:
-        return _native_laminar(ReDh)
+        return _native_laminar(ReDh, laminar_factor)
 
     if ReDh < ReDh_turbulent:
-        f_laminar = _native_laminar(ReDh)
+        f_laminar = _native_laminar(ReDh, laminar_factor)
         f_turbulent = _native_turbulent(ReDh, Dh, roughness)
         return np.interp(
             ReDh,
@@ -227,7 +228,7 @@ def _native_curvature(Re, Dh, R_curv, roughness=0.0):
 # ---------------------------------------------------------------------------
 
 
-def _fluids_darcy(ReDh, Dh, roughness):
+def _fluids_darcy(ReDh, Dh, roughness, laminar_factor=1.0):
     """Return a smoothly transitioned ``fluids`` straight-duct Darcy factor.
 
     Uses the exact laminar factor through ``Re=2040``, Clamond's
@@ -241,11 +242,11 @@ def _fluids_darcy(ReDh, Dh, roughness):
     relative_roughness = 0.0 if not roughness else roughness / Dh
     weight = transition_weight(ReDh, _FLUIDS_STRAIGHT_RE_CRITICAL)
     if weight == 0.0:
-        return float(fluids.friction.friction_laminar(ReDh))
+        return laminar_factor * float(fluids.friction.friction_laminar(ReDh))
     turbulent = float(fluids.friction.Clamond(ReDh, relative_roughness))
     if weight == 1.0:
         return turbulent
-    laminar = float(fluids.friction.friction_laminar(ReDh))
+    laminar = laminar_factor * float(fluids.friction.friction_laminar(ReDh))
     return (1.0 - weight) * laminar + weight * turbulent
 
 
@@ -335,7 +336,37 @@ _DARCY_BACKENDS = {"native": _native_darcy, "fluids": _fluids_darcy}
 _CURVATURE_BACKENDS = {"native": _native_curvature, "fluids": _fluids_curvature}
 
 
-def darcy_friction_factor(ReDh, Dh, roughness=0.0, *, model="native"):
+def annulus_laminar_factor(radius_ratio):
+    """Return a concentric annulus' laminar ``f*Re`` relative to a pipe's 64.
+
+    The exact fully developed solution on the hydraulic diameter
+    ``2*(r_o - r_i)`` is ``f*Re = 64*(1-k)**2 / (1 + k**2 + (1-k**2)/ln k)``
+    with ``k = r_i/r_o``. It runs from 1 for a pipe (``k = 0``) to 1.5 for
+    parallel plates (``k -> 1``). Turbulent friction on the same hydraulic
+    diameter differs from a pipe's by only a few percent and is not corrected.
+
+    Parameters
+    ----------
+    radius_ratio : float
+        Inner over outer radius, in ``[0, 1]``.
+
+    Returns
+    -------
+    float
+        Multiplier on the laminar ``64/Re``.
+    """
+    k = float(radius_ratio)
+    if not np.isfinite(k) or not 0.0 <= k <= 1.0:
+        raise ValueError("radius_ratio must be in [0, 1]")
+    if k == 0.0:
+        return 1.0
+    if k > 1.0 - 1.0e-3:
+        # The closed form cancels catastrophically here; its limit is 3/2.
+        return 1.5
+    return float((1.0 - k)**2 / (1.0 + k**2 + (1.0 - k**2)/np.log(k)))
+
+
+def darcy_friction_factor(ReDh, Dh, roughness=0.0, *, model="native", laminar_factor=1.0):
     """Return the Darcy friction factor for a straight duct.
 
     Parameters
@@ -349,13 +380,19 @@ def darcy_friction_factor(ReDh, Dh, roughness=0.0, *, model="native"):
         smooth. Default 0.
     model : {'native', 'fluids'}, optional
         Backend to evaluate. Default ``'native'``.
+    laminar_factor : float, optional
+        Multiplier on the laminar branch's ``64/Re`` for a non-circular
+        section, such as :func:`annulus_laminar_factor`. Default 1.
 
     Returns
     -------
     float
         Darcy friction factor (dimensionless).
     """
-    return _DARCY_BACKENDS[resolve_friction_model(model)](ReDh, Dh, roughness)
+    laminar_factor = float(laminar_factor)
+    if not np.isfinite(laminar_factor) or laminar_factor <= 0.0:
+        raise ValueError("laminar_factor must be finite and positive")
+    return _DARCY_BACKENDS[resolve_friction_model(model)](ReDh, Dh, roughness, laminar_factor)
 
 
 def curvature_multiplier(ReDh, Dh, R_curv, *, roughness=0.0, model="native"):

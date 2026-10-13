@@ -27,6 +27,11 @@ angle still leaves in the plane through the machine axis and the flange.
 The two together fix the flange's normal, and with the arc length they fix the
 whole duct. A purely tangential outlet has nothing to turn through, so it runs
 straight.
+
+Tangential means the direction the collected flow is travelling, so it reverses
+with the volute's rotation sense and a clockwise volute's duct leaves the other
+way round. Radial and the elevation do not reverse: they are fixed by the
+machine axis rather than by which way the flow runs round it.
 """
 
 from __future__ import annotations
@@ -38,6 +43,7 @@ import numpy as np
 from scipy.optimize import brentq
 
 from .path import _rotate
+from .port import Port, PortSite, ResolvedPort, _STRAIGHT_TOLERANCE
 
 __all__ = [
     "ExitCone",
@@ -47,12 +53,9 @@ __all__ = [
 #: Directions the first angle may name instead of a number.
 NAMED_ANGLES = ("tangential", "radial")
 
-#: Below this turn the duct is treated as straight rather than as a huge arc.
-_STRAIGHT_TOLERANCE = 1.0e-9
-
 
 @dataclass(frozen=True)
-class ExitCone:
+class ExitCone(Port):
     """How a volute's outlet duct leaves, and what it grows into.
 
     Parameters
@@ -76,11 +79,17 @@ class ExitCone:
 
     Notes
     -----
-    Exit-cone geometry does not feed back into the loss analysis. Aungier's
-    exit cone loss is already a lumped allowance for this whole transition,
-    including the turn out of the volute's log-spiral path, so charging a
-    separate bend loss on top of it would count the same loss twice. Only
-    :attr:`final_diameter` reaches the analysis, as station 7.
+    Exit-cone geometry reaches the loss analysis three ways.
+    :attr:`final_diameter` sets station 7 and, with the arc length, the angle
+    the cone opens out at -- which is most of what decides its diffusion loss.
+    The arc length also sets the wall area friction is charged over, and the
+    turn sets the bend loss.
+
+    That makes :attr:`arc_length_parameter` a real design variable rather than
+    a drawing detail: a longer duct opens out more gradually and recovers more
+    of the velocity head, at the cost of more wetted wall and, for a given
+    turn, a gentler bend. :meth:`~pyskyfire.ducts.VoluteResult.loss_breakdown`
+    reports the three apart so the trade can be seen.
     """
 
     final_diameter: float
@@ -121,18 +130,30 @@ class ExitCone:
                 "needs at least one outlet diameter to grow in")
         object.__setattr__(self, "arc_length_parameter", parameter)
 
+    def resolve(self, site):
+        """Place this cone on a passage. See :class:`ResolvedExitCone`.
+
+        The arc length is a multiple of the bore the duct leaves from, so a
+        cone carries its length with it and takes its scale from wherever it
+        is fitted.
+        """
+        return resolve_exit_cone(
+            self, start=site.start, outlet_diameter=site.outlet_diameter,
+            max_section_radius=site.max_section_radius, sign=site.sign,
+        )
+
 
 @dataclass(frozen=True)
-class ResolvedExitCone:
+class ResolvedExitCone(ResolvedPort):
     """An exit cone placed in machine coordinates.
+
+    Everything a duct has in common with any other is on
+    :class:`~pyskyfire.ducts.port.ResolvedPort`; what a cone adds is the pair
+    of angles it was steered by, and where round the volute they carried it.
+    ``start_direction`` is tangential at the volute outlet.
 
     Attributes
     ----------
-    start, end : np.ndarray
-        Centres of the volute outlet and of the flange [m, shape (3,)].
-    start_direction, end_direction : np.ndarray
-        Unit normals there [shape (3,)]. ``start_direction`` is tangential at
-        the volute outlet.
     first_angle, second_angle : float
         The resolved turn within the volute's plane and the elevation [rad].
     radial_angle : float
@@ -141,86 +162,12 @@ class ResolvedExitCone:
         bound on it otherwise.
     end_azimuth : float
         Azimuth the flange ends up at, measured from the volute outlet [rad].
-    arc_length, turn_angle, bend_radius : float
-        Centreline length [m], total turn [rad], and centreline bend radius
-        [m], which is infinite for a straight duct.
-    outlet_diameter, final_diameter : float
-        Volute outlet bore diameter and flange diameter [m].
     """
 
-    start: np.ndarray
-    end: np.ndarray
-    start_direction: np.ndarray
-    end_direction: np.ndarray
     first_angle: float
     second_angle: float
     radial_angle: float
     end_azimuth: float
-    arc_length: float
-    turn_angle: float
-    bend_radius: float
-    outlet_diameter: float
-    final_diameter: float
-
-    @property
-    def is_straight(self) -> bool:
-        return not math.isfinite(self.bend_radius)
-
-    def frames(self, n_stations=17, *, start_frame=None):
-        """Centreline points and a non-twisting cross-section frame.
-
-        Parameters
-        ----------
-        start_frame : tuple of np.ndarray, optional
-            Override for the frame at the volute outlet, as ``(u0, v0)`` unit
-            vectors perpendicular to :attr:`start_direction`. Defaults to
-            :meth:`_start_frame`, the untilted ``(radial, axial)`` pair. A
-            volute with a tilted section passes its own tilted section-plane
-            basis here instead, so the duct's first ring is bit-identical to
-            the volute's own last one rather than merely tangent to the same
-            curve at different points along it.
-
-        Returns
-        -------
-        points, u, v : np.ndarray
-            Centreline [m, shape (N,3)] and two unit vectors spanning each
-            station's cross-section plane [shape (N,3)]. The arc is planar, so
-            rotating the starting frame about the arc's own axis carries it
-            along without twist, whatever that starting frame is.
-        """
-        n_stations = int(n_stations)
-        if n_stations < 2:
-            raise ValueError("n_stations must be at least two")
-        fraction = np.linspace(0.0, 1.0, n_stations)
-        u0, v0 = self._start_frame() if start_frame is None else start_frame
-        if self.is_straight:
-            points = self.start + np.outer(fraction * self.arc_length,
-                                           self.start_direction)
-            return points, np.tile(u0, (n_stations, 1)), np.tile(v0, (n_stations, 1))
-        axis = self._axis()
-        centre = self.start + self.bend_radius * np.cross(axis, self.start_direction)
-        spoke = self.start - centre
-        points = np.array([centre + _rotate(spoke, axis, angle)
-                           for angle in fraction * self.turn_angle])
-        u = np.array([_rotate(u0, axis, angle) for angle in fraction * self.turn_angle])
-        v = np.array([_rotate(v0, axis, angle) for angle in fraction * self.turn_angle])
-        return points, u, v
-
-    def _axis(self):
-        axis = np.cross(self.start_direction, self.end_direction)
-        return axis / np.linalg.norm(axis)
-
-    def _start_frame(self):
-        """The volute's own section frame, which spans the outlet plane.
-
-        A volute section lies in the plane through the machine axis, so its
-        normal is the tangential direction the duct starts along. Reusing it
-        means the duct's first ring is exactly the volute's last one.
-        """
-        axial = np.array([0.0, 0.0, 1.0])
-        radial = np.cross(self.start_direction, axial)
-        radial /= np.linalg.norm(radial)
-        return radial, axial
 
 
 def _direction(first, second, tangential, radial, axial):
@@ -241,7 +188,8 @@ def _place(start, start_direction, end_direction, arc_length):
     return centre + _rotate(start - centre, axis, turn), turn, bend_radius
 
 
-def resolve_exit_cone(cone, *, start, outlet_diameter, max_section_radius):
+def resolve_exit_cone(cone, *, start, outlet_diameter, max_section_radius,
+                      sign=1.0):
     """Place an :class:`ExitCone` on a volute's full-collection plane.
 
     Parameters
@@ -255,6 +203,12 @@ def resolve_exit_cone(cone, *, start, outlet_diameter, max_section_radius):
     max_section_radius : float
         Largest distance from the outlet centre to the volute section boundary
         [m]. Used to reject a bend tight enough to fold the duct into itself.
+    sign : float, optional
+        Rotation sense of the volute the duct leaves, from
+        :func:`~pyskyfire.common.rotation.rotation_sign`. Tangential means the
+        direction the collected flow is travelling, so it reverses with the
+        sense; radial and the elevation do not, being fixed by the machine
+        axis rather than by which way the flow goes round it.
 
     Returns
     -------
@@ -264,7 +218,8 @@ def resolve_exit_cone(cone, *, start, outlet_diameter, max_section_radius):
     if start.shape != (3,) or not np.isfinite(start).all():
         raise ValueError("start must be a finite (3,) point")
     azimuth = math.atan2(start[1], start[0])
-    tangential = np.array([-math.sin(azimuth), math.cos(azimuth), 0.0])
+    tangential = sign * np.array(
+        [-math.sin(azimuth), math.cos(azimuth), 0.0])
     radial = np.array([math.cos(azimuth), math.sin(azimuth), 0.0])
     axial = np.array([0.0, 0.0, 1.0])
     arc_length = cone.arc_length_parameter * outlet_diameter

@@ -151,7 +151,7 @@ A ≈ h * [(pi * cos(gamma) / n) * (2 * r_base + h) - 2 * sidewall_half_thicknes
 ```
 
 so with the channel height, rib width and channel count fixed, the coolant area
-is constant exactly when `cos(gamma) * (2 * r_base + h)` is. Anchoring that
+is roughly constant when `cos(gamma) * (2 * r_base + h)` is. Anchoring that
 product at one station pins the helix there and opens it out as the radius
 grows, instead of letting the passage swell with the wall it wraps:
 
@@ -169,6 +169,10 @@ that it closes over a fixed `height` rather than taking `h`, because the
 placement is shared; a single-circuit placement can take `h` directly. Where
 the channel count changes — under an overlapping return pass, say — the pitch
 changes with it and no helix law can hold the area across that step.
+The formula treats the wall as a cylinder, so on steep helices and sloping
+walls it can miss the computed area by several percent.
+{doc}`../howto/area-preserving-helix` root-finds the helix angle against the
+computed area instead.
 
 A roughness that grows with the channel it roughens, which is a tier C
 dependency and therefore only legal in a slot that is evaluated last:

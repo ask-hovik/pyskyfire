@@ -131,3 +131,10 @@ test_sankey.py
 # ------------------------------------------------------------------------------
 #  END
 # ------------------------------------------------------------------------------
+
+# Private local engine projects
+/projects/
+
+# Onshape export of the RL10 channels: over GitHub's 100 MB limit;
+# regenerate with validation/RL10/export_onshape.py
+/validation/RL10/RL10-cooling-channels.json

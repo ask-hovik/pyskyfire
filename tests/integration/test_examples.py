@@ -95,6 +95,14 @@ def test_mixture_ratio_optimisation_example(tmp_path: Path) -> None:
     )
 
 
+def test_area_preserving_helix_example(tmp_path: Path) -> None:
+    run_example(
+        "examples/area_preserving_helix/area_preserving_helix.py",
+        tmp_path / "area-preserving-helix",
+        ("engine-3d.html",),
+    )
+
+
 def test_boiling_example(tmp_path: Path) -> None:
     run_example(
         "examples/boiling/boiling_sim.py",

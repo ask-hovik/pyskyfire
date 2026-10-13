@@ -11,6 +11,10 @@ from scipy.spatial.transform import Rotation
 
 __all__ = ["Scene", "SceneNode", "MeshData", "FieldData", "Transform", "Anchor", "Component"]
 
+#: Every part's colour unless a component has a reason to set its own, such as
+#: the red of an inlet or outlet opening.
+DEFAULT_COLOR = "lightsteelblue"
+
 
 class Transform:
     """Rigid local-to-parent transform, using column vectors.
@@ -125,7 +129,12 @@ class FieldData:
 
 @dataclass
 class SceneNode:
-    """A selectable part or group, independent of the renderer's actor layout."""
+    """A selectable part or group, independent of the renderer's actor layout.
+
+    ``tags`` are free-form labels. The HTML viewer offers every tag as a group
+    of the nodes carrying it, as it does every ``metadata["fluid"]`` a
+    component recorded from its results.
+    """
 
     name: str
     mesh: MeshData | None = None
@@ -133,10 +142,11 @@ class SceneNode:
     children: list[SceneNode] = field(default_factory=list)
     anchors: dict[str, Anchor] = field(default_factory=dict)
     transform: Transform = field(default_factory=Transform)
-    color: str = "lightsteelblue"
+    color: str = DEFAULT_COLOR
     opacity: float = 1.0
     visible: bool = True
     metadata: dict = field(default_factory=dict)
+    tags: set[str] = field(default_factory=set)
     _parent: SceneNode | None = field(default=None, init=False, repr=False)
 
     @property
@@ -166,6 +176,10 @@ class Scene:
     It is a one-time placement calculation, with no fluid-network constraints.
     Explicit placement and anchor placement are mutually exclusive.
 
+    ``tags`` labels the added node, a string or an iterable of them. Nodes
+    sharing a tag appear together as one group in the HTML viewer, so a
+    grouping written into the script survives regenerating the results.
+
     ``show_axes`` adds a corner orientation triad marking the scene axes
     (x red, y green, z blue). It is an orientation cue only, not a measuring
     grid: it carries no ticks and does not indicate the origin or scale.
@@ -179,7 +193,7 @@ class Scene:
         self.nodes = []
 
     def add(self, component, *, name=None, transform=None, position=None,
-            rotation=None, parent=None, anchor=None, attach_to=None):
+            rotation=None, parent=None, anchor=None, attach_to=None, tags=()):
         if transform is not None and (position is not None or rotation is not None):
             raise ValueError("transform and position/rotation overconstrain placement")
         attached = anchor is not None or attach_to is not None
@@ -196,6 +210,7 @@ class Scene:
             raise ValueError("Component.build() must return a fresh hierarchy")
         if name is not None:
             node.name = name
+        node.tags.update((tags,) if isinstance(tags, str) else tags)
         siblings = self.nodes if parent is None else parent.children
         if any(n.name == node.name for n in siblings):
             raise ValueError(f"Duplicate scene name: {node.name}")
@@ -221,6 +236,8 @@ class Scene:
                 raise TypeError("transform must be a Transform")
             if not np.isfinite(n.opacity) or not 0 <= n.opacity <= 1:
                 raise ValueError("opacity must lie between zero and one")
+            if isinstance(n.tags, str) or not all(isinstance(t, str) and t for t in n.tags):
+                raise ValueError("tags must be a collection of nonempty strings")
             if len({c.name for c in n.children}) != len(n.children):
                 raise ValueError("Sibling names must be unique")
             for f in n.fields.values():

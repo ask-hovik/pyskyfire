@@ -7,6 +7,8 @@ import sys
 
 import pytest
 
+import pyskyfire as psf
+
 
 def test_volute_example_creates_a_scene_and_a_report(tmp_path):
     pytest.importorskip("plotly")
@@ -41,9 +43,22 @@ def test_the_example_designs_two_radial_volutes_and_one_inclined():
     assert [round(math.degrees(case.volute.tilt)) for case in cases] == [0, 0, 45]
     assert len({case.volute.inlet.alpha for case in cases}) == 3
     for case in cases:
-        assert case.result.SP == pytest.approx(1.0, rel=2e-4)
+        assert case.result.SP == pytest.approx(1.0, rel=1e-3)
         assert case.result.omega_tangential == pytest.approx(0.0, abs=1e-6)
         assert case.result.pressure_loss > 0.0
+
+        # SP misses unity only by the density change across the volute. The
+        # example sets C_m from the inlet density, while the solver evaluates
+        # density at the mean pressure, and that difference is the whole of it
+        # -- so the drift grows with the pressure drop rather than signalling a
+        # sizing error. Pinning the cause catches a real drift that a loose
+        # tolerance alone would wave through.
+        transport = psf.thermo.FluidTransport(
+            psf.thermo.Fluid(case.name, [case.fluid], [1.0]))
+        inlet_density = transport.get_rho(case.T, case.p)
+        assert abs(1.0 - case.result.SP) == pytest.approx(
+            abs(1.0 - case.result.density/inlet_density), rel=1e-6, abs=1e-12
+        )
     # The manifold's inlet is the steepest, so it needs the largest passage.
     assert cases[2].result.A_6 > cases[1].result.A_6 > cases[0].result.A_6
 

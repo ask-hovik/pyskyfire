@@ -23,17 +23,21 @@ import numpy as np
 import plotly.graph_objects as go
 
 import pyskyfire as psf
-from pyskyfire.ducts import EllipticalSlottedSection, ExitCone, Volute, VoluteInlet
+from pyskyfire.ducts import (ConstantAngularMomentum, EllipticalSlottedSection,
+                             ExitCone, Volute, VoluteInlet)
 from pyskyfire.thermo.state import PHASE_UNKNOWN, FluidState
 from pyskyfire.viz import Report, Scene, VoluteComponent
 
 # Categorical slots, validated for colour-vision deficiency against a light
 # surface. Series identity is also carried by the legend and by the tables.
 SERIES = ("#2a78d6", "#eb6834", "#1baf7a")
+# The categorical theme's first six slots, in its own fixed order.
 MECHANISM_COLORS = {"meridional": "#2a78d6", "tangential": "#eb6834",
-                    "friction": "#1baf7a", "exit_cone": "#eda100"}
+                    "friction": "#1baf7a", "exit_cone": "#eda100",
+                    "exit_friction": "#e87ba4", "exit_bend": "#008300"}
 MECHANISM_LABELS = {"meridional": "Meridional dump", "tangential": "Tangential dump",
-                    "friction": "Skin friction", "exit_cone": "Exit cone"}
+                    "friction": "Skin friction", "exit_cone": "Exit cone diffusion",
+                    "exit_friction": "Duct friction", "exit_bend": "Duct bend"}
 
 
 @dataclass
@@ -72,7 +76,8 @@ class Case:
 
 def design(name, note, *, fluid, T, p, mass_flow, inlet_radius, inlet_width,
            swirl_velocity, fillet_radius, throat_length, exit_cone,
-           aspect_ratio=1.0, max_aspect_ratio=4.0, tilt=0.0, roughness=6.3e-6):
+           area_law=None, rotation="ccw", aspect_ratio=1.0,
+           max_aspect_ratio=4.0, tilt=0.0, roughness=6.3e-6):
     """Size a volute for a duty and solve it at that duty.
 
     The meridional velocity is not a free input: the mass flow has to pass
@@ -88,6 +93,8 @@ def design(name, note, *, fluid, T, p, mass_flow, inlet_radius, inlet_width,
                                  aspect_ratio=aspect_ratio,
                                  max_aspect_ratio=max_aspect_ratio),
         VoluteInlet(radius=inlet_radius, C_m=meridional, C_u=swirl_velocity),
+        area_law if area_law is not None else ConstantAngularMomentum(),
+        rotation=rotation,
         exit_cone=exit_cone,
         tilt=tilt,
         n_stations=121,
@@ -174,23 +181,30 @@ def build_scene(case, color=None):
 
 
 def loss_figure(cases):
-    """Grouped bars: each mechanism's share of the inlet velocity head."""
+    """Stacked bars: what each case's total loss is made of.
+
+    Stacked rather than grouped because the six terms sum to the total that
+    matters, and because two of them are legitimately zero in some cases --
+    a grouped zero reads as a missing series, a stacked one simply has no
+    height while the total stays honest.
+    """
     figure = go.Figure()
     for key, label in MECHANISM_LABELS.items():
         figure.add_bar(
             name=label, x=[case.name for case in cases],
             y=[case.result.loss_breakdown()[key] for case in cases],
-            marker_color=MECHANISM_COLORS[key], marker_line_width=0,
+            marker_color=MECHANISM_COLORS[key],
+            # A thin surface-coloured gap keeps adjacent segments apart.
+            marker_line=dict(color="white", width=2),
         )
     figure.update_layout(
-        barmode="group", bargap=0.35, bargroupgap=0.08,
+        barmode="stack", bargap=0.45,
         title="Loss coefficients, referred to the inlet velocity head",
         yaxis_title="Loss coefficient ω [-]", template="plotly_white",
         legend_title_text="Mechanism",
-        # Every tangential bar is zero, so the slot would otherwise read as a
-        # missing series rather than a designed-out loss.
         annotations=[dict(
-            text="Tangential dump is zero in all three: sizing at SP = 1 removes it",
+            text="Tangential dump is zero throughout: sizing at SP = 1 removes it. "
+                 "A straight duct has no bend to charge.",
             xref="paper", yref="paper", x=0.0, y=1.06, showarrow=False,
             xanchor="left", font=dict(size=12, color="#52514e"),
         )],
@@ -288,6 +302,44 @@ def tongue_section_figure(case):
         yaxis_scaleanchor="x", template="plotly_white",
     )
     figure.update_xaxes(gridcolor="#e8e8e6", zerolinecolor="#d0d0cd")
+    figure.update_yaxes(gridcolor="#e8e8e6", zerolinecolor="#d0d0cd")
+    return figure
+
+
+def pressure_figure(cases):
+    """Stagnation and static pressure round the passage and out the duct.
+
+    Plotted as a change from each volute's own inlet, since the three sit at
+    different supply pressures and it is the drop that is being compared.
+    """
+    figure = go.Figure()
+    for case, color in zip(cases, SERIES, strict=True):
+        result = case.result
+        supply = result.states[0].p
+        azimuth = np.degrees(result.geometry.theta)
+        duct_stagnation, duct_static = result.exit_cone_pressures(13)
+        # The duct has no azimuth of its own; lay it out past the revolution so
+        # the whole path reads left to right.
+        duct_azimuth = 360.0 + np.linspace(0.0, 60.0, len(duct_stagnation))
+        figure.add_scatter(
+            x=np.concatenate((azimuth, duct_azimuth)),
+            y=(np.concatenate((result.stagnation_pressure(), duct_stagnation)) - supply)/1e5,
+            name=f"{case.name} — stagnation", mode="lines",
+            line=dict(color=color, width=2),
+        )
+        figure.add_scatter(
+            x=np.concatenate((azimuth, duct_azimuth)),
+            y=(np.concatenate((result.static_pressure(), duct_static)) - supply)/1e5,
+            name=f"{case.name} — static", mode="lines",
+            line=dict(color=color, width=2, dash="dot"),
+        )
+    figure.add_vline(x=360.0, line=dict(color="#d0d0cd", width=1, dash="dash"))
+    figure.update_layout(
+        title="Pressure along the passage and out through the exit cone",
+        xaxis_title="Azimuth from the tongue [deg] — past 360°, along the duct",
+        yaxis_title="Change from the inlet [bar]", template="plotly_white",
+    )
+    figure.update_xaxes(dtick=60, gridcolor="#e8e8e6")
     figure.update_yaxes(gridcolor="#e8e8e6", zerolinecolor="#d0d0cd")
     return figure
 
@@ -548,6 +600,24 @@ def create_report(output_dir, *, screenshot=False):
 
     loss_tab = report.add_tab("Losses")
     loss_tab.add_figure(loss_figure(cases))
+    loss_tab.add_figure(pressure_figure(cases))
+    loss_tab.add_markdown("""
+        Stagnation pressure only ever falls; static pressure is the part of it
+        left over after the local velocity head. It starts at the tongue equal
+        to the stagnation pressure, because nothing has been collected there
+        and nothing is moving, dips where the passage runs fastest just past
+        the tongue, and climbs back as the flow slows on its way out.
+
+        Past 360° the curves follow the exit-cone duct, where static pressure
+        recovers again wherever the duct diffuses. Read the volute half with
+        its model in mind: Aungier charges one lumped coefficient per mechanism
+        across the whole passage and says nothing about where round the volute
+        each is spent, so spreading them linearly with azimuth is an assumption
+        made so the passage can be plotted and coloured at all. The endpoints
+        are what the analysis actually fixes. The duct half is on firmer
+        ground, since its losses genuinely are spent between two stations the
+        model resolves.
+    """)
     loss_tab.add_markdown("## Performance\n\n"
                           + markdown_table(cases, performance_rows(cases)))
     loss_tab.add_markdown("""
@@ -575,15 +645,23 @@ def create_report(output_dir, *, screenshot=False):
         and also pays an exit-cone term because its passage decelerates the flow
         well below the speed the exit pipe carries.
 
-        That exit-cone *loss* is a name collision worth being explicit about.
-        It is Aungier's Eq. 5-110, a single coefficient set by the velocity
-        change from the full-collection plane to the flange — it knows nothing
-        about which way the duct points. The exit-cone *duct* on the Design tab
-        is the actual bent geometry carrying the flow there; the only number
-        that crosses from one to the other is the flange diameter itself, which
-        sets the flange velocity `C₇` that Eq. 5-110 uses. A radial duct and a
-        tangential one at the same flange diameter are charged exactly the same
-        loss here, whatever their length or how sharply they turn to get there.
+        The exit cone is charged three ways. **Exit cone diffusion** is the
+        Rennels conical loss, set by the angle the cone tapers at — so the
+        flange diameter and the arc length decide it together, not the area
+        ratio alone. The manifold's flange is narrower than its passage, so it
+        contracts rather than diffuses, and is charged the contraction
+        correlation instead: much the cheaper of the two, since nothing
+        separates on the way in. **Duct friction** and **duct bend** come from
+        the same resolved geometry on the Design tab, and are what make a
+        radial outlet cost more than a tangential one at the same flange
+        diameter.
+
+        That leaves the arc length parameter buying two trades at once.
+        Lengthening the duct shallows the cone and recovers more of the
+        velocity head, at the cost of more wetted wall; it also spreads a given
+        turn over more duct, trading the bend term for the friction term. Both
+        have an optimum in them, and neither is visible if the diffusion term
+        is written as a function of area ratio alone.
     """)
 
     report_path = output_dir / "volute-report.html"

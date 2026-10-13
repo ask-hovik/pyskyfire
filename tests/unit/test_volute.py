@@ -9,6 +9,9 @@ import pytest
 from pyskyfire import ducts
 from pyskyfire.thermo import FluidState, PHASE_UNKNOWN
 
+#: The shaped volute, which most of these tests exercise.
+SHAPED = ducts.ConstantAngularMomentum()
+
 
 class ConstantTransport:
     def __init__(self, rho=1000.0, mu=1.0e-3):
@@ -42,7 +45,7 @@ def pump_volute(SP=1.0, area_law=None):
     inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
     if area_law is None:
         area_law = ducts.ConstantAngularMomentum(SP=SP)
-    volute = ducts.Volute(section, inlet, area_law)
+    volute = ducts.Volute(section, inlet, area_law, rotation="ccw")
     mass_flow = (
         1000.0 * inlet.C_m * 2.0 * math.pi * inlet.radius * section.inlet_width
     )
@@ -294,8 +297,8 @@ def test_tilt_rotates_the_section_plane_without_changing_the_analysis():
     """Tilt is placement: it moves the passage but not a single loss scalar."""
     section = ducts.EllipticalSlottedSection(0.012, 0.003, 0.002)
     inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
-    flat = ducts.Volute(section, inlet)
-    tilted = ducts.Volute(section, inlet, tilt=math.radians(45.0))
+    flat = ducts.Volute(section, inlet, SHAPED, rotation="ccw")
+    tilted = ducts.Volute(section, inlet, SHAPED, rotation="ccw", tilt=math.radians(45.0))
     assert np.allclose(flat.geometry.area, tilted.geometry.area)
     mass_flow = 1000.0 * inlet.C_m * 2.0 * math.pi * inlet.radius * section.inlet_width
     assert solve(tilted, mass_flow).pressure_loss == pytest.approx(
@@ -354,7 +357,7 @@ def test_an_attached_exit_cone_supplies_the_default_exit_diameter():
     section = ducts.EllipticalSlottedSection(0.012, 0.003, 0.002)
     inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
     cone = ducts.ExitCone(final_diameter=0.05, first_angle="radial")
-    volute = ducts.Volute(section, inlet, exit_cone=cone, n_stations=61)
+    volute = ducts.Volute(section, inlet, SHAPED, rotation="ccw", exit_cone=cone, n_stations=61)
     mass_flow = 1000.0 * inlet.C_m * 2.0 * math.pi * inlet.radius * section.inlet_width
 
     defaulted = solve(volute, mass_flow, exit_diameter=None)
@@ -396,7 +399,7 @@ def test_sweep_exit_cone_starts_at_the_volute_outlet_and_ends_at_the_flange():
     inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
     cone = ducts.ExitCone(final_diameter=0.05, first_angle="radial",
                           arc_length_parameter=3.0)
-    volute = ducts.Volute(section, inlet, exit_cone=cone, n_stations=61)
+    volute = ducts.Volute(section, inlet, SHAPED, rotation="ccw", exit_cone=cone, n_stations=61)
 
     n_points = 48
     rings = volute.sweep_exit_cone(n_points=n_points, n_stations=13)
@@ -428,7 +431,7 @@ def test_a_tangential_exit_cone_produces_a_straight_swept_duct():
     section = ducts.EllipticalSlottedSection(0.012, 0.003, 0.002)
     inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
     cone = ducts.ExitCone(final_diameter=0.05, first_angle="tangential")
-    volute = ducts.Volute(section, inlet, exit_cone=cone, n_stations=61)
+    volute = ducts.Volute(section, inlet, SHAPED, rotation="ccw", exit_cone=cone, n_stations=61)
     assert volute.exit_geometry.is_straight
 
     n_stations = 9
@@ -452,7 +455,7 @@ def test_sweep_exit_cone_matches_a_tilted_volutes_own_section_frame():
     inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
     cone = ducts.ExitCone(final_diameter=0.05, first_angle="radial",
                           second_angle=math.radians(15), arc_length_parameter=2.5)
-    volute = ducts.Volute(section, inlet, exit_cone=cone,
+    volute = ducts.Volute(section, inlet, SHAPED, rotation="ccw", exit_cone=cone,
                           tilt=math.radians(45.0), n_stations=61)
 
     n_points = 24
@@ -510,10 +513,10 @@ def test_the_volute_flattens_toward_the_tongue_instead_of_clipping():
     inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
     circle = ducts.Volute(
         ducts.EllipticalSlottedSection(0.012, 0.003, 0.002, max_aspect_ratio=1.0),
-        inlet, n_stations=181)
+        inlet, SHAPED, rotation="ccw", n_stations=181)
     ellipse = ducts.Volute(
         ducts.EllipticalSlottedSection(0.012, 0.003, 0.002, max_aspect_ratio=4.0),
-        inlet, n_stations=181)
+        inlet, SHAPED, rotation="ccw", n_stations=181)
 
     # Flattening buys a materially shorter clipped run at the tongue.
     assert ellipse.geometry.tongue_clip_angle < circle.geometry.tongue_clip_angle
@@ -546,7 +549,7 @@ def test_flattening_is_monotone_and_continuous_into_the_design_aspect():
     def aspect_at(n_stations):
         section = ducts.EllipticalSlottedSection(0.012, 0.003, 0.002,
                                                  max_aspect_ratio=4.0)
-        return ducts.Volute(section, inlet, n_stations=n_stations).geometry.aspect
+        return ducts.Volute(section, inlet, SHAPED, rotation="ccw", n_stations=n_stations).geometry.aspect
 
     coarse, fine = aspect_at(181), aspect_at(721)
     # Never flattens further as the passage opens out, and lands on design.
@@ -561,7 +564,7 @@ def test_an_oblong_design_aspect_still_flattens_from_its_own_shape():
     volute = ducts.Volute(
         ducts.EllipticalSlottedSection(0.012, 0.003, 0.002,
                                        aspect_ratio=2.0, max_aspect_ratio=6.0),
-        inlet, n_stations=121)
+        inlet, SHAPED, rotation="ccw", n_stations=121)
     assert volute.geometry.aspect.min() == pytest.approx(2.0)
     assert volute.geometry.aspect.max() == pytest.approx(6.0)
     assert volute.geometry.flattened.any()
@@ -578,7 +581,7 @@ def test_a_family_that_cannot_flatten_clips_exactly_as_before():
     inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
     volute = ducts.Volute(
         ducts.EllipticalSlottedSection(0.012, 0.003, 0.002, max_aspect_ratio=1.0),
-        inlet, n_stations=121)
+        inlet, SHAPED, rotation="ccw", n_stations=121)
     assert not volute.geometry.flattened.any()
     assert np.allclose(volute.geometry.aspect, 1.0)
     clipped = volute.geometry.clipped
@@ -591,10 +594,226 @@ def test_the_sizing_law_still_holds_wherever_it_was_not_clipped():
     inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
     section = ducts.EllipticalSlottedSection(0.012, 0.003, 0.002,
                                              max_aspect_ratio=4.0)
-    geometry = ducts.Volute(section, inlet, n_stations=181).geometry
+    geometry = ducts.Volute(section, inlet, SHAPED, rotation="ccw", n_stations=181).geometry
     live = ~geometry.clipped
     target = (geometry.theta[live] * geometry.centroid_radius[live]
               * section.inlet_width * inlet.tan_alpha)
     assert geometry.area[live] == pytest.approx(target, rel=1e-6)
     # Which includes the flattened run, not just the sized one.
     assert (geometry.flattened & live).any()
+
+
+# -- exit-cone duct losses and pressure --------------------------------------
+
+
+def with_cone(cone, **kwargs):
+    section = ducts.EllipticalSlottedSection(0.012, 0.003, 0.002)
+    inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
+    volute = ducts.Volute(section, inlet, SHAPED, rotation="ccw", exit_cone=cone, n_stations=61, **kwargs)
+    mass_flow = 1000.0 * inlet.C_m * 2.0 * math.pi * inlet.radius * section.inlet_width
+    return volute, solve(volute, mass_flow, exit_diameter=None)
+
+
+def test_a_volute_without_an_exit_cone_is_charged_no_duct_loss():
+    volute, mass_flow = pump_volute()
+    result = solve(volute, mass_flow)
+    assert result.omega_exit_friction == 0.0
+    assert result.omega_exit_bend == 0.0
+
+
+def test_a_straight_duct_is_charged_friction_but_no_bend():
+    _, result = with_cone(ducts.ExitCone(0.05, "tangential", arc_length_parameter=2.0))
+    assert result.omega_exit_friction > 0.0
+    assert result.omega_exit_bend == 0.0
+
+
+def test_duct_friction_grows_with_its_length():
+    _, short = with_cone(ducts.ExitCone(0.05, "tangential", arc_length_parameter=2.0))
+    _, long = with_cone(ducts.ExitCone(0.05, "tangential", arc_length_parameter=6.0))
+    # Three times the duct, near enough three times the friction. Only near
+    # enough: lengthening a cone also shallows it, and the correlation charges
+    # friction over the sloped wall rather than a cylinder of the mean bore.
+    assert long.omega_exit_friction == pytest.approx(
+        3.0 * short.omega_exit_friction, rel=0.05
+    )
+
+
+def test_a_turning_duct_is_charged_a_bend_loss():
+    _, straight = with_cone(ducts.ExitCone(0.05, "tangential", arc_length_parameter=2.5))
+    _, turning = with_cone(ducts.ExitCone(0.05, "radial", arc_length_parameter=2.5))
+    assert turning.omega_exit_bend > 0.0
+    assert turning.pressure_loss > straight.pressure_loss
+
+
+def test_a_gentler_bend_costs_less_to_turn_and_more_to_rub():
+    """Spreading the same turn over more duct trades bend loss for friction."""
+    _, tight = with_cone(ducts.ExitCone(0.05, "radial", arc_length_parameter=2.5))
+    _, gentle = with_cone(ducts.ExitCone(0.05, "radial", arc_length_parameter=5.0))
+    assert gentle.omega_exit_bend < tight.omega_exit_bend
+    assert gentle.omega_exit_friction > tight.omega_exit_friction
+
+
+def test_a_gentler_cone_diffuses_at_lower_loss():
+    """The angle the cone opens out at is most of what decides its loss.
+
+    The whole point of spending duct length on a diffuser, and the reason the
+    diffusion term cannot be a function of the area ratio alone.
+    """
+    _, abrupt = with_cone(ducts.ExitCone(0.05, "tangential", arc_length_parameter=1.0))
+    _, gentle = with_cone(ducts.ExitCone(0.05, "tangential", arc_length_parameter=6.0))
+    assert gentle.omega_exit_cone < abrupt.omega_exit_cone
+    # Even an abrupt cone beats dumping the passage straight into the flange.
+    assert abrupt.omega_exit_cone < ((abrupt.C_6 - abrupt.C_7) / abrupt.C_5) ** 2
+
+
+def test_a_narrowing_cone_is_charged_as_a_contraction():
+    """A flange narrower than the passage speeds the flow up, which is cheap.
+
+    Borda-Carnot is not merely angle-blind here, it is the wrong shape of
+    formula: it is derived for a flow that separates on expanding, and nothing
+    separates on the way into a contraction.
+    """
+    _, result = with_cone(ducts.ExitCone(0.025, "tangential", arc_length_parameter=2.0))
+    assert result.C_7 > result.C_6
+    borda = ((result.C_6 - result.C_7) / result.C_5) ** 2
+    assert result.omega_exit_cone < 0.1 * borda
+
+
+def test_a_gentler_contraction_costs_less_to_squeeze_through():
+    _, abrupt = with_cone(ducts.ExitCone(0.025, "tangential", arc_length_parameter=2.0))
+    _, gentle = with_cone(ducts.ExitCone(0.025, "tangential", arc_length_parameter=6.0))
+    assert gentle.omega_exit_cone < abrupt.omega_exit_cone
+
+
+def test_without_a_cone_the_flange_is_charged_aungiers_dump_loss():
+    """No cone to resolve, so Eq. 5-110's sudden expansion is the right model."""
+    volute, mass_flow = pump_volute()
+    result = solve(volute, mass_flow)
+    assert result.omega_exit_cone == pytest.approx(
+        ((result.C_6 - result.C_7) / result.C_5) ** 2
+    )
+
+
+def test_the_loss_breakdown_sums_to_the_total():
+    _, result = with_cone(ducts.ExitCone(0.05, "radial", arc_length_parameter=2.5))
+    assert result.omega_total == pytest.approx(sum(result.loss_breakdown().values()))
+
+
+def test_stagnation_pressure_spans_exactly_the_collection_loss():
+    volute, mass_flow = pump_volute()
+    result = solve(volute, mass_flow)
+    stagnation = result.stagnation_pressure()
+    assert stagnation[0] == pytest.approx(result.states[0].p)
+    assert np.all(np.diff(stagnation) <= 1e-9)
+    # The passage carries every loss except the exit cone's.
+    assert result.states[0].p - stagnation[-1] == pytest.approx(result.collection_loss())
+
+
+def test_static_pressure_is_highest_at_the_still_tongue():
+    volute, mass_flow = pump_volute()
+    result = solve(volute, mass_flow)
+    static = result.static_pressure()
+    velocity = result.collected_velocity()
+    # Nothing collected yet, so nothing is moving and none of the head is lost.
+    assert static[0] == pytest.approx(result.states[0].p)
+    assert np.argmax(static) == 0
+    # Lowest where the passage runs fastest, which is just past the tongue.
+    assert np.argmin(static) == np.argmax(velocity)
+
+
+def test_exit_cone_pressure_lands_on_the_solved_outlet():
+    _, result = with_cone(ducts.ExitCone(0.05, "radial", arc_length_parameter=2.5))
+    stagnation, static = result.exit_cone_pressures(7)
+    assert stagnation[0] == pytest.approx(result.stagnation_pressure()[-1])
+    assert stagnation[-1] == pytest.approx(result.states[1].p)
+    assert np.all(np.diff(stagnation) <= 1e-9)
+    # A diffusing duct trades stagnation pressure for static pressure.
+    assert result.C_7 < result.C_6
+    assert static[-1] > static[0]
+
+
+# -- rotation sense ------------------------------------------------------
+
+
+def rotation_pair(**kwargs):
+    """The same volute wound each way."""
+    section = ducts.EllipticalSlottedSection(
+        inlet_width=0.012, fillet_radius=0.003, throat_length=0.002
+    )
+    inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
+    return tuple(
+        ducts.Volute(section, inlet, SHAPED, rotation=sense, n_stations=41, **kwargs)
+        for sense in ("ccw", "cw")
+    )
+
+
+def test_rotation_mirrors_the_passage_and_leaves_the_sizing_untouched():
+    ccw, cw = rotation_pair()
+    # The area law is solved in the azimuth alone, so the passage it sizes is
+    # the same hardware either way round.
+    for field in ("theta", "size", "aspect", "area", "centroid_radius"):
+        assert np.allclose(getattr(ccw.geometry, field),
+                           getattr(cw.geometry, field))
+    mirrored = cw.sweep(n_points=24).copy()
+    mirrored[..., 1] *= -1.0
+    assert ccw.sweep(n_points=24) == pytest.approx(mirrored, abs=1e-15)
+
+
+def test_rotation_costs_no_pressure_the_way_tilt_does_not():
+    ccw, cw = rotation_pair()
+    mass_flow = 1000.0 * 6.0 * 2.0 * math.pi * 0.060 * 0.012
+    assert solve(cw, mass_flow).pressure_loss == pytest.approx(
+        solve(ccw, mass_flow).pressure_loss, rel=1e-12
+    )
+
+
+def test_a_clockwise_exit_cone_turns_the_same_amount_the_other_way():
+    cone = ducts.ExitCone(final_diameter=0.05, first_angle="radial",
+                          arc_length_parameter=3.0)
+    ccw, cw = rotation_pair(exit_cone=cone)
+    # Every scalar the loss model reads is a turn or a length, and mirroring
+    # changes neither.
+    for field in ("first_angle", "radial_angle", "turn_angle", "bend_radius",
+                  "arc_length", "end_azimuth"):
+        assert getattr(cw.exit_geometry, field) == pytest.approx(
+            getattr(ccw.exit_geometry, field), rel=1e-12
+        )
+    for field in ("end", "end_direction", "start_direction"):
+        expected = np.array(getattr(ccw.exit_geometry, field)) * [1.0, -1.0, 1.0]
+        assert getattr(cw.exit_geometry, field) == pytest.approx(expected, abs=1e-15)
+
+
+def test_a_clockwise_duct_still_stitches_onto_its_own_volute():
+    cone = ducts.ExitCone(final_diameter=0.05, first_angle="radial",
+                          arc_length_parameter=3.0)
+    for volute in rotation_pair(exit_cone=cone, tilt=math.radians(30.0)):
+        last = volute.sweep(n_points=24)[-1, :-1]
+        first = volute.sweep_exit_cone(n_points=24, n_stations=9)[0]
+        assert first == pytest.approx(last, abs=1e-12)
+
+
+@pytest.mark.parametrize("sense", ["cw", "CW", "Clockwise", " clockwise "])
+def test_clockwise_is_spelled_however_the_designer_spells_it(sense):
+    section = ducts.EllipticalSlottedSection(inlet_width=0.012, fillet_radius=0.003)
+    inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
+    volute = ducts.Volute(section, inlet, SHAPED, rotation=sense, n_stations=9)
+    assert volute.rotation == "clockwise"
+
+
+def test_an_unrecognised_rotation_is_refused():
+    section = ducts.EllipticalSlottedSection(inlet_width=0.012, fillet_radius=0.003)
+    inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
+    with pytest.raises(ValueError, match="rotation must be one of"):
+        ducts.Volute(section, inlet, SHAPED, rotation="widdershins", n_stations=9)
+
+
+def test_the_area_law_and_the_rotation_are_both_stated_not_defaulted():
+    section = ducts.EllipticalSlottedSection(inlet_width=0.012, fillet_radius=0.003)
+    inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
+    # A shaped volute and a uniform collector are different hardware, and which
+    # way a volute winds has to match the machine feeding it, so neither is a
+    # sensible default to fall back on.
+    with pytest.raises(TypeError):
+        ducts.Volute(section, inlet, rotation="ccw")
+    with pytest.raises(TypeError):
+        ducts.Volute(section, inlet, SHAPED)

@@ -64,6 +64,7 @@ src/pyskyfire/
 ├── turbine/
 ├── heat_exchanger/
 ├── ducts/
+├── injector/
 └── viz/
 ```
 
@@ -97,6 +98,8 @@ The top-level file `src/pyskyfire/__init__.py` marks `pyskyfire` as a Python pac
 | `physics.py` | Shared heat-transfer functions: Bartz, Colburn, Gnielinski and recovery temperature. |
 | `friction.py` | Shared Darcy factors and continuous-curvature corrections. |
 | `momentum.py` | Shared reversible acceleration pressure change. |
+| `blade_surface.py` | Defines `BladeSurface`, one blade's suction and pressure sides in cylindrical coordinates, shared by impellers and turbines. |
+| `meridional.py` | Defines `MeridionalPassage`, the wetted flow path of a turbomachine or annular duct as paired hub and shroud curves, with `WallMotion` (which wall stretches rotate) and `Clearance` (where blades stand off a wall). |
 | `constants.py` | Stores shared constants that may be used across modules. Keeping constants in one place avoids repeating the same numbers throughout the code. |
 | `__init__.py` | Re-exports selected objects from the `common` subpackage so they are easier to import. |
 
@@ -147,9 +150,11 @@ wall temperatures, coolant temperatures, pressure losses, heat fluxes
 | `fluid.py` | Defines `Fluid` for propellant and coolant mixtures, including component names, composition fractions, and mass or mole basis. |
 | `transport.py` | Defines `FluidTransport` and `TransportProperties`. Properties such as density, heat capacity, viscosity, conductivity, and Prandtl number can be constants or functions of temperature and pressure. |
 | `state.py` | Defines `FluidStateResolver`, the resolved `FluidState`, `FluidCapability`, and `SaturationState`; `probe_fluid` detects the available fluid capabilities. |
+| `eos.py` | Defines the `EquationOfState` interface a machine design reads a fluid through, with `Incompressible` (constant density) and `CoolPropEOS` (a real fluid). |
+| `duty.py` | Defines `MachineDuty`, the head, flows and speed asked of a turbomachine, which `pump.PumpDuty` and `turbine.TurbineDuty` build on. |
 | `aerothermodynamics.py` | Defines `Aerothermodynamics` and `CombustionGasState`. It computes and stores CEA-based hot-gas properties along the chamber/nozzle contour for the regenerative-cooling solver. |
 | `nozzle_loss.py` | Defines `NozzleLoss` for nozzle performance-loss calculations. |
-| `__init__.py` | Publicly exports `Fluid`, `FluidTransport`, `TransportProperties`, `FluidStateResolver`, `FluidState`, `FluidCapability`, `SaturationState`, `probe_fluid`, `Aerothermodynamics`, `CombustionGasState`, and `NozzleLoss`. |
+| `__init__.py` | Publicly exports `Fluid`, `FluidTransport`, `TransportProperties`, `FluidStateResolver`, `FluidState`, `FluidCapability`, `SaturationState`, `probe_fluid`, `EquationOfState`, `Incompressible`, `CoolPropEOS`, `MachineDuty`, `Aerothermodynamics`, `CombustionGasState`, and `NozzleLoss`. |
 
 #### Thermo migration (unreleased)
 
@@ -183,25 +188,39 @@ have changed. Compatibility with those files is not guaranteed.
 ### `pyskyfire.ducts`
 
 `ducts` holds duct hydraulics that no single component owns: the friction
-physics shared by cooling channels and piping, explicit pipe geometry, and
-volute and collector manifolds. It depends only on `common` for planar section
+physics shared by cooling channels and piping, explicit pipe geometry,
+annular ducts, and volute and collector manifolds. It depends only on `common` for planar section
 primitives and on `thermo` for fluid state records, and it imports from neither
 `regen` nor `network`, so cooling channels, turbopump hardware and engine-cycle
 adapters can all build on it without a circular import.
 
 | Module | Role |
 |---|---|
-| `path.py` | Shared path nodes, stations, connections, rigid placement, and transported frames. |
+| `path.py` | Shared path nodes, stations, connections, sampling of curves into paths (`Path.from_curve`), rigid placement, and transported frames. |
 | `common.friction` (imported) | Geometry-agnostic friction correlations shared with regen and heat exchangers. |
-| `pipe.py` | Explicit pipe geometry and its pressure-loss marching solver. |
+| `pipe.py` | Explicit pipe geometry, with an optional core, and the loss march every duct shares: friction, bends, area change, and swirl. Returns a `DuctResult`. |
+| `annular.py` | Annular ducts about the shaft (`AnnularDuct`, on `common.MeridionalPassage`), solved by the shared march. |
+| `orifice.py` | Orifices (round, annular, slot) discharging into a volume, with isentropic flow that chokes and cavitates, and ISO 5167 orifice plates in a pipe. |
 | `volute_section.py` | Volute cross-section families: an elliptical bore at fixed inlet slot width, sized by one parameter and reshaped by a second. |
 | `area_law.py` | Rules relating azimuth to passage size: conservation of angular momentum for a shaped volute, uniform area for a collector. |
 | `exit_cone.py` | The duct carrying a volute's collected flow to its pipe flange, at any angle between tangential and radial and any elevation out of the volute's own plane. |
 | `volute.py` | Volute geometry generation and Aungier's one-dimensional loss analysis. |
 
+### `pyskyfire.injector`
+
+`injector` holds injector hardware and the flow through it. It depends on
+`ducts`, whose `Orifice` is every hole, and on `thermo`; the engine network
+adapts it through `network.InjectorBlock`. Each element type is its own class.
+
+| Module | Role |
+|---|---|
+| `element.py` | `Element`, the base every element type implements: its holes, placed in the element's frame, and its mixing diagnostics. |
+| `impinging.py` | `Jet` and `ImpingingElement`: jets aimed at a common point, covering like and unlike doublets, triplets and pentads. |
+| `injector.py` | `ElementSet` (one element type at supplied face positions), `Injector`, and the per-feed hydraulics: each feed solved as one equivalent orifice, for either the flow or the plenum pressure. |
+
 ### `pyskyfire.pump` / `pyskyfire.turbine`
 
-The `pump` and `turbine` subpackages contain tools for turbopumps. They are both under development, and currently the pyskyfire package works fine without them. In the future, these packages will generate pump and turbine geometries (volute manifolds now live in `pyskyfire.ducts`), and expose other turbopump-relevant properties such as eigenfrequencies of the turbopump assembly. 
+The `pump` and `turbine` subpackages contain tools for turbopumps. They are both under development, and currently the pyskyfire package works fine without them. `pump` sizes radial impellers and generates their blade geometry. `turbine` designs axial turbines at mean radius (`AxialTurbine`), describes them as hardware (`TurbineDefinition`, `BladeRow`) and generates their blades. `pump.PumpDuty` and `turbine.TurbineDuty` state what each machine is asked to do. Volute manifolds live in `pyskyfire.ducts`, and the meridional passage both machine types share lives in `pyskyfire.common`.
 
 ### `pyskyfire.viz`
 
@@ -216,7 +235,7 @@ The `pump` and `turbine` subpackages contain tools for turbopumps. They are both
 | `plot_common.py` | Shared plotting utilities used by several plotting modules. |
 | `engine_viz.py` | 3D engine and cooling-channel visualisation tools. This includes geometry-oriented views of cooling circuits and engine structure. |
 | `impeller_viz.py` | Visualisation tools for pump and impeller geometry. |
-| `components.py` | Adapts engineering objects — thrust chambers, impellers, pipes, volutes — into scene hierarchies. |
+| `components.py` | Adapts engineering objects — thrust chambers, impellers, pipes, annular ducts, volutes — into scene hierarchies. |
 | `report.py` | Report-generation helpers for collecting plots, tables, and simulation summaries. |
 | `lookup_tables.py` | Lookup-table support used by plotting or reporting workflows. |
 | `__init__.py` | Re-exports selected visualisation functions and classes for easier imports. |

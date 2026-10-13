@@ -5,7 +5,11 @@ import numpy as np
 import pytest
 from pyskyfire import common, ducts, regen, thermo, heat_exchanger as hx
 from pyskyfire.heat_exchanger import solver
-from pyskyfire.common.physics import nusselt_gnielinski, h_internal
+from pyskyfire.common.physics import (
+    gnielinski_temperature_correction,
+    h_internal,
+    nusselt_gnielinski,
+)
 
 
 class ConstantTransport:
@@ -74,6 +78,57 @@ def test_gnielinski_reference_and_laminar_branch():
         nusselt_gnielinski(100, 1, 0.02)
 
 
+def test_gnielinski_temperature_correction_heats_only():
+    assert gnielinski_temperature_correction(200.0, 800.0) == pytest.approx(0.25**0.45)
+    assert gnielinski_temperature_correction(800.0, 200.0) == 1.0
+    bulk = h_internal(1e5, 1.2, 0.1, 0.01, 0.0185)
+    hot = h_internal(1e5, 1.2, 0.1, 0.01, 0.0185, bulk_temperature=200, wall_temperature=800)
+    assert hot == pytest.approx(bulk * 0.25**0.45)
+    # Laminar Nu is left alone.
+    assert h_internal(
+        100, 7, 0.6, 0.01, 0.64, bulk_temperature=200, wall_temperature=800
+    ) == pytest.approx(3.66 * 0.6 / 0.01)
+    with pytest.raises(ValueError, match="both"):
+        h_internal(1e5, 1.2, 0.1, 0.01, 0.0185, wall_temperature=800)
+
+
+def test_default_coefficient_uses_converged_wetted_wall_temperature(constant_fluid):
+    c = circuit(count=4)
+    c.heat_transfer = None
+    result = hx.HeatExchanger([c]).solve(
+        {"a": hx.Inlet(300, 2e6, 0.1)}, boundaries={"a": hx.PrescribedGas(900, 5000)}
+    )
+    r = result.circuits["a"]
+    walls = solver._wetted_wall_temperatures("a", len(c.s) - 1, result.walls)
+    bulk = solver.midpoint(r.T)
+    assert np.all(walls > bulk)
+    expected = [
+        h_internal(Re, 7.0, 0.6, Dh, fd, bulk_temperature=Tb, wall_temperature=Tw)
+        for Re, Dh, fd, Tb, Tw in zip(
+            r.reynolds, solver.midpoint(c.diameter), r.darcy_factor, bulk, walls
+        )
+    ]
+    assert r.heat_transfer_coefficient == pytest.approx(expected, rel=1e-6)
+
+
+def test_bulk_properties_can_be_requested(constant_fluid):
+    c = circuit(count=4)
+    c.heat_transfer, c.property_correction = None, False
+    r = (
+        hx.HeatExchanger([c])
+        .solve(
+            {"a": hx.Inlet(300, 2e6, 0.1)},
+            boundaries={"a": hx.PrescribedGas(900, 5000)},
+        )
+        .circuits["a"]
+    )
+    expected = [
+        h_internal(Re, 7.0, 0.6, Dh, fd)
+        for Re, Dh, fd in zip(r.reynolds, solver.midpoint(c.diameter), r.darcy_factor)
+    ]
+    assert r.heat_transfer_coefficient == pytest.approx(expected, rel=1e-6)
+
+
 def test_pipe_and_exchanger_share_exact_path_and_placement():
     c = circuit()
     p = ducts.Pipe(c.path, diameter=0.01)
@@ -89,7 +144,7 @@ def test_transported_frame_straight_and_generated_arc():
     path = ducts.Path.from_nodes(
         [
             ducts.PathNode((0, 0, 0)),
-            ducts.PathNode((1, 0, 0), bend=ducts.Continuous(0.2, segments=8)),
+            ducts.PathNode((1, 0, 0), bend=ducts.Continuous(0.2)),
             ducts.PathNode((1, 1, 0)),
         ]
     )
@@ -329,3 +384,35 @@ def test_fin_conductivity_follows_wall_temperature(constant_fluid, monkeypatch):
     )
     assert np.min(observed[-1]) > 3.1
     assert abs(result.energy_balance_error) < 0.01
+
+
+def _linear_segment(J, c):
+    J, c = np.asarray(J, float), np.asarray(c, float)
+    return lambda x: (J @ np.asarray(x, float) + c, None)
+
+
+def test_segment_outlet_converges_in_a_few_evaluations_on_a_contractive_map():
+    J, c = [[0.05, 0.02], [-0.03, 0.04]], [1.0, 2.0]
+    x, _, evaluations = solver._segment_outlet(_linear_segment(J, c), (0.0, 0.0), np.ones(2))
+    np.testing.assert_allclose(x, np.linalg.solve(np.eye(2) - np.asarray(J), c), rtol=1e-9)
+    # The half-step iteration this replaces needed ~30 here.
+    assert evaluations <= 6
+
+
+def test_segment_outlet_falls_back_to_half_steps_where_a_trial_cannot_be_evaluated():
+    # Substitution overshoots by 150 % and lands where the map refuses to go;
+    # the half step does not.
+    def G(x):
+        if x[0] > 1.3:
+            raise ValueError("outside the fluid's range")
+        return np.array([2.5 - 1.5 * x[0], 0.0]), None
+
+    x, _, _ = solver._segment_outlet(G, (0.0, 0.0), np.ones(2))
+    np.testing.assert_allclose(x, (1.0, 0.0), atol=1e-9)
+
+
+def test_segment_outlet_reports_no_fixed_point():
+    x, _, evaluations = solver._segment_outlet(
+        lambda x: (np.asarray(x, float) + 1.0, None), (0.0, 0.0), np.ones(2))
+    assert x is None
+    assert evaluations >= solver.SEGMENT_EVALUATIONS

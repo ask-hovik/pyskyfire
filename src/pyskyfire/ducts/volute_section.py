@@ -34,12 +34,15 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 import numpy as np
+from scipy.optimize import brentq
 
 from pyskyfire.common.section_geometry import SectionArc, SectionEllipseArc, SectionLine
 
 __all__ = [
     "VoluteSection",
     "EllipticalSlottedSection",
+    "section_frames",
+    "solve_section_size",
 ]
 
 
@@ -91,6 +94,107 @@ def _closed_boundary_metrics(pieces):
     return area, moment / area[:, None], np.stack(lengths, axis=1)
 
 
+def solve_section_size(section, residual):
+    """The smallest section of a family satisfying an area law.
+
+    Works down three regimes as the law asks for less and less area, and is
+    shared by every passage that sizes a section this way -- a volute closing
+    on its tongue and a manifold closing on its dead point face the same
+    problem, because both laws want zero area somewhere no section can deliver.
+
+    Away from that point the design aspect ratio can hold the law, and only the
+    size is solved for. Closer in, the law wants less area than even the
+    smallest section at that aspect: the passage can never be narrower than the
+    opening feeding it, so the size has bottomed out. Flattening is the way past
+    that -- holding the size at its floor and stretching the section across the
+    opening shrinks its area without narrowing the passage -- so the aspect
+    ratio is solved for instead, up to the family's limit. Only when the
+    flattest allowed section is still too big does the law get clipped, and it
+    is clipped to that flattest section rather than to the design-aspect one,
+    which is as close to the law as the family can get.
+
+    Parameters
+    ----------
+    section : VoluteSection
+        The family being sized.
+    residual : callable
+        ``residual(size, aspect)``, negative where the trial section is too
+        small and increasing with size.
+
+    Returns
+    -------
+    size, aspect, clipped
+    """
+    design = section.aspect_ratio
+    ceiling = section.max_aspect_ratio
+    minimum = section.minimum_size
+
+    if residual(minimum, design) < 0.0:
+        ceiling_size = section.maximum_size
+        high = min(max(minimum*2.0, minimum + section.inlet_width), ceiling_size)
+        for _ in range(60):
+            if residual(high, design) > 0.0:
+                break
+            if high >= ceiling_size:
+                raise RuntimeError(
+                    f"the area law wants more area than this section can build. "
+                    f"At its largest, {ceiling_size:g} m, it still falls short; "
+                    "give the section more room to grow onto, or ask the law "
+                    "for less area")
+            high = min(high*2.0, ceiling_size)
+        else:
+            raise RuntimeError(
+                "could not bracket a section size; the area law does not "
+                "appear to be satisfiable by this section")
+        size = brentq(residual, minimum, high, args=(design,),
+                      xtol=1e-14, rtol=1e-12)
+        return size, design, False
+
+    if ceiling > design and residual(minimum, ceiling) < 0.0:
+        aspect = brentq(lambda value: residual(minimum, value), design, ceiling,
+                        xtol=1e-12, rtol=1e-12)
+        return minimum, aspect, False
+
+    return minimum, ceiling, True
+
+
+def section_frames(theta, *, tilt=0.0, sign=1.0):
+    """Bases of the section planes at one or more azimuths about ``+z``.
+
+    A section lies in the plane through the machine axis at its azimuth, so the
+    ``(u, v)`` coordinates it is measured in map to a radial and an axial
+    direction there, rotated together by ``tilt``.
+
+    ``sign`` is the rotation sense from
+    :func:`~pyskyfire.common.rotation.rotation_sign`: ``+1`` winds
+    counterclockwise about ``+z`` as azimuth increases, ``-1`` clockwise. It
+    mirrors where each section sits without touching the section's own shape,
+    since the mirror plane contains the axis and so maps every section plane to
+    another one.
+
+    ``tilt`` stays absolute under that mirror: which axial way a discharge
+    points is a packaging choice independent of which way the machine spins.
+
+    Returns
+    -------
+    radial, u_hat, v_hat : np.ndarray
+        Unit vectors [shape (N, 3)], where ``radial`` locates the inlet and the
+        other two span the section plane.
+    """
+    theta = np.atleast_1d(np.asarray(theta, dtype=float))
+    radial = np.column_stack(
+        (np.cos(theta), sign * np.sin(theta), np.zeros_like(theta)))
+    axial = np.zeros_like(radial)
+    axial[:, 2] = 1.0
+    # Tilt may vary station to station: a manifold's section leans with the
+    # wall it sits on, where a volute's holds one inclination all the way round.
+    tilt = np.broadcast_to(np.atleast_1d(np.asarray(tilt, dtype=float)),
+                           theta.shape)[:, None]
+    u_hat = np.cos(tilt) * radial + np.sin(tilt) * axial
+    v_hat = -np.sin(tilt) * radial + np.cos(tilt) * axial
+    return radial, u_hat, v_hat
+
+
 class VoluteSection(ABC):
     """A volute cross-section family with a fixed inlet slot width.
 
@@ -113,6 +217,12 @@ class VoluteSection(ABC):
         a family with no second degree of freedom, which then simply has a
         floor on the area it can produce.
     """
+
+    #: Which boundary piece is the opening the flow enters or leaves through,
+    #: rather than a wall. A volute section is closed by its slot mouth, so the
+    #: opening is the last piece; a manifold section leads with the chamber
+    #: wall it reserves, so that family overrides this.
+    opening_index = -1
 
     def __init__(self, inlet_width, aspect_ratio=1.0, max_aspect_ratio=None):
         inlet_width = float(inlet_width)
@@ -137,6 +247,18 @@ class VoluteSection(ABC):
     @abstractmethod
     def minimum_size(self) -> float:
         """Smallest ``size`` that still yields a valid section [m]."""
+
+    @property
+    def maximum_size(self) -> float:
+        """Largest ``size`` the family can build [m].
+
+        Unbounded for a family that can simply keep growing. A section measured
+        against something finite -- a manifold's section has only so much
+        chamber wall to spread onto -- reports that limit here, so a law asking
+        for more area than exists is told so rather than being chased past the
+        end of the geometry.
+        """
+        return float("inf")
 
     @abstractmethod
     def boundary(self, size, aspect=None):
@@ -288,8 +410,8 @@ class EllipticalSlottedSection(VoluteSection):
         the area law asks for less area than ``size`` alone can give -- see
         Notes. Defaults to four.
 
-    Geometry
-    --------
+    Notes
+    -----
     ``size`` is the semi-axis across the slot, so it plays exactly the role the
     bore radius does for a circle and the slot still fixes its floor at
     ``inlet_width / 2``. Writing ``c`` for it, ``a = c / aspect`` for the
@@ -316,8 +438,6 @@ class EllipticalSlottedSection(VoluteSection):
     through -- is enough for the construction to be well posed at any aspect
     ratio.
 
-    Notes
-    -----
     A shaped volute wants a vanishing area at the tongue, and no section whose
     bore must span the slot can shrink that far. The aspect ratio is the way
     out: holding ``size`` at its floor and flattening the ellipse shrinks the

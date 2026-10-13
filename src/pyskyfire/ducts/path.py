@@ -58,13 +58,14 @@ class Continuous:
 
     ``radius`` is the exact centerline radius when known. If omitted on a
     manually supplied layout, :class:`Path` estimates it transparently from
-    neighboring station triples using Menger curvature. ``segments`` controls
-    circular-arc generation when this object is attached to a :class:`PathNode`.
-    Generated local connections carry their exact arc ``length``.
+    neighboring station triples using Menger curvature. Attached to a
+    :class:`PathNode`, it rounds that corner with a circular arc of ``radius``,
+    which the generator emits as one connection carrying its exact arc
+    ``length``, ``center`` and ``normal``. A constant-section arc needs no
+    further stations; :class:`Pipe` adds them where its section varies.
     """
 
     radius: float | None = None
-    segments: int = 16
     length: float | None = None
     center: tuple[float, float, float] | None = None
     normal: tuple[float, float, float] | None = None
@@ -72,12 +73,6 @@ class Continuous:
     def __post_init__(self):
         if self.radius is not None:
             object.__setattr__(self, "radius", _positive(self.radius, name="radius"))
-        if (
-            isinstance(self.segments, bool)
-            or not isinstance(self.segments, int)
-            or self.segments < 1
-        ):
-            raise ValueError("segments must be a positive integer")
         if self.length is not None:
             object.__setattr__(self, "length", _positive(self.length, name="length"))
         if (self.center is None) != (self.normal is None):
@@ -249,13 +244,21 @@ def _rotate(vector: np.ndarray, axis: np.ndarray, angle: float) -> np.ndarray:
     )
 
 
-def _bend_arc(start, end, bend: RoundedBend, segments: int) -> list[np.ndarray]:
-    """Points along a resolved rounded bend, excluding its starting station."""
+def _arc_angle(connection) -> float:
+    """Turn angle [rad] of a resolved arc connection."""
+    if isinstance(connection, RoundedBend):
+        return connection.angle
+    return connection.length / connection.radius
+
+
+def _bend_arc(start, end, bend, segments: int) -> list[np.ndarray]:
+    """Points along a resolved arc connection, excluding its starting station."""
     center = np.asarray(bend.center)
     normal = np.asarray(bend.normal)
     radial = np.asarray(start, dtype=float) - center
+    angle = _arc_angle(bend)
     arc = [
-        center + _rotate(radial, normal, bend.angle * step / segments)
+        center + _rotate(radial, normal, angle * step / segments)
         for step in range(1, segments + 1)
     ]
     tolerance = 1.0e-6 * max(bend.radius, float(np.linalg.norm(radial)))
@@ -280,8 +283,8 @@ def generate_path_stations(
 
     Interior direction changes must state their interpretation explicitly with
     :class:`RoundedBend` or :class:`Continuous`. Rounded bends become one
-    lumped connection between tangent points. Continuous bends become a
-    circular arc discretized according to ``Continuous.segments``.
+    lumped connection between tangent points. Continuous bends become one
+    connection carrying the exact arc length, center and normal.
     """
     nodes = tuple(nodes)
     if len(nodes) < 2:
@@ -362,23 +365,85 @@ def generate_path_stations(
             )
             append_station(geometry.tangent_out, resolved)
         else:
-            radial_start = geometry.tangent_in - geometry.center
-            segment_angle = geometry.angle / node.bend.segments
-            segment_length = node.bend.radius * segment_angle
-            for segment in range(1, node.bend.segments + 1):
-                radial = _rotate(radial_start, geometry.normal, segment * segment_angle)
-                point = geometry.center + radial
-                connection = Continuous(
-                    radius=node.bend.radius,
-                    segments=1,
-                    length=segment_length,
-                    center=tuple(geometry.center),
-                    normal=tuple(geometry.normal),
-                )
-                append_station(point, connection)
+            connection = Continuous(
+                radius=node.bend.radius,
+                length=node.bend.radius * geometry.angle,
+                center=tuple(geometry.center),
+                normal=tuple(geometry.normal),
+            )
+            append_station(geometry.tangent_out, connection)
 
     append_station(nodes[-1].position, Straight())
     return tuple(stations), tuple(connections)
+
+
+# Uniform parameter intervals sampled before adaptive halving begins. A feature
+# that turns and returns within one of them can be missed.
+_CURVE_INITIAL_INTERVALS = 16
+
+
+def _evaluate_curve(curve, t: np.ndarray) -> np.ndarray:
+    """Evaluate a curve-like object at parameters ``t``, returning ``(len(t), 3)``.
+
+    The curve is first called with the whole array, as SciPy splines and
+    vectorized functions expect, and otherwise once per parameter value. Planar
+    ``(len(t), 2)`` results are taken to lie in the x-y plane.
+    """
+    t = np.asarray(t, dtype=float)
+
+    def checked(points):
+        points = np.asarray(points, dtype=float)
+        if points.shape == (len(t), 2):
+            points = np.column_stack((points, np.zeros(len(t))))
+        return points if points.shape == (len(t), 3) else None
+
+    error = None
+    try:
+        points = checked(curve(t))
+    except Exception as exc:  # noqa: BLE001 -- retried point by point below
+        points, error = None, exc
+    if points is None:
+        try:
+            points = checked([np.asarray(curve(float(x)), dtype=float).ravel() for x in t])
+        except Exception as exc:
+            raise TypeError(
+                "curve must be callable on a parameter value or an array of them"
+            ) from (error or exc)
+    if points is None:
+        raise ValueError(
+            "curve must return points of shape (len(t), 3) or (len(t), 2) for an "
+            "array t, or one 2D or 3D point for a scalar t; wrap other forms, "
+            "such as splev output, as lambda t: np.array(splev(t, tck)).T"
+        )
+    if not np.isfinite(points).all():
+        raise ValueError("curve returned a non-finite point")
+    return points
+
+
+def _half_turn(start, middle, end) -> np.ndarray:
+    """Angle [rad] between the two half-chords of each interval."""
+    u, v = middle - start, end - middle
+    return np.arctan2(np.linalg.norm(np.cross(u, v), axis=1), np.einsum("ij,ij->i", u, v))
+
+
+def _circle_connection(start, middle, end):
+    """The circular arc through three points, as one connection.
+
+    Straight when the points are collinear. Otherwise a :class:`Continuous`
+    carrying the circle's exact radius, arc length, center, and normal.
+    """
+    a, b = start - end, middle - end
+    normal = np.cross(a, b)
+    twice_area = np.linalg.norm(normal)
+    if twice_area <= 1.0e-12 * np.linalg.norm(a) * np.linalg.norm(b):
+        return Straight()
+    center = end + np.cross(np.dot(a, a) * b - np.dot(b, b) * a, normal) / (2.0 * twice_area**2)
+    radius = float(np.linalg.norm(start - center))
+    chord = float(np.linalg.norm(end - start))
+    angle = 2.0 * math.asin(min(1.0, chord / (2.0 * radius)))
+    turn = np.cross(middle - start, end - middle)
+    return Continuous(radius=radius, length=radius * angle, center=tuple(center),
+                      normal=tuple(turn / np.linalg.norm(turn)))
 
 
 def _menger_radius(a, b, c) -> float:
@@ -457,6 +522,72 @@ class Path:
     @classmethod
     def from_nodes(cls, nodes):
         return cls(*generate_path_stations(nodes))
+
+    @classmethod
+    def from_curve(cls, curve, t_span, *, max_turn: float = math.radians(5.0)):
+        """Sample a curve-like object into stations, as finely as its bends need.
+
+        ``curve`` is anything that maps a parameter ``t`` to a point: called
+        with an array of parameters it returns points of shape ``(len(t), 3)``,
+        or it returns one point per scalar ``t``. SciPy's ``CubicSpline``,
+        ``make_interp_spline`` and ``PchipInterpolator`` qualify as they are, and
+        so does a plain function. Planar points ``(len(t), 2)`` lie in the x-y
+        plane. ``t_span`` is the ``(start, end)`` parameter range to follow.
+
+        Sampling is adaptive. Any interval whose curve turns by more than
+        ``max_turn`` [rad] is halved, so stations crowd into tight bends and
+        stay sparse along straight stretches. Each interval then becomes the
+        circular arc through its two stations and the curve's own midpoint: a
+        :class:`Continuous` carrying that arc's radius, length, center, and
+        normal, or a :class:`Straight` where the three are collinear.
+
+        Raises
+        ------
+        ValueError
+            If the curve has a corner, a sharp turn no amount of halving
+            resolves, or does not advance between two parameter values.
+        """
+        start_t, end_t = (float(x) for x in t_span)
+        if not np.isfinite([start_t, end_t]).all() or start_t == end_t:
+            raise ValueError("t_span must be two distinct finite parameter values")
+        max_turn = float(max_turn)
+        if not 0.0 < max_turn <= math.pi / 2:
+            raise ValueError("max_turn must be between 0 and pi/2 radians")
+        smallest = 1.0e-9 * abs(end_t - start_t)
+
+        t = np.linspace(start_t, end_t, _CURVE_INITIAL_INTERVALS + 1)
+        points = _evaluate_curve(curve, t)
+        while True:
+            mid_t = 0.5 * (t[:-1] + t[1:])
+            middle = _evaluate_curve(curve, mid_t)
+            # Turn inside each interval, and across each station between the
+            # half-chords on either side, which is where a corner that falls
+            # exactly on a sample would otherwise hide.
+            split = 2.0 * _half_turn(points[:-1], middle, points[1:]) > max_turn
+            across = 2.0 * _half_turn(middle[:-1], points[1:-1], middle[1:]) > max_turn
+            split[:-1] |= across
+            split[1:] |= across
+            if not split.any():
+                break
+            if np.any(np.abs(np.diff(t))[split] < smallest):
+                where = mid_t[split][0]
+                raise ValueError(
+                    f"curve has a corner near t={where:g} that a pipe cannot follow; "
+                    "round it with a bend or smooth the curve"
+                )
+            order = np.argsort(np.concatenate((t, mid_t[split])), kind="stable")
+            t = np.concatenate((t, mid_t[split]))[order]
+            points = np.concatenate((points, middle[split]))[order]
+
+        chords = np.linalg.norm(np.diff(points, axis=0), axis=1)
+        if np.any(chords <= _GEOMETRY_TOL):
+            where = mid_t[np.argmax(chords <= _GEOMETRY_TOL)]
+            raise ValueError(f"curve does not advance near t={where:g}")
+        connections = [
+            _circle_connection(a, m, b)
+            for a, m, b in zip(points[:-1], middle, points[1:])
+        ]
+        return cls(tuple(PathStation(tuple(point)) for point in points), connections)
 
     @property
     def centerline(self):
@@ -545,7 +676,7 @@ class Path:
                     PathStation(tuple(points[i + 1] if j == count else point))
                 )
                 connections.append(
-                    replace(c, length=length / count, segments=1)
+                    replace(c, length=length / count)
                     if isinstance(c, Continuous)
                     else c
                 )

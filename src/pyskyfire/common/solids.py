@@ -340,9 +340,10 @@ class PiecewiseModel(PropertyModel):
 
     def _find_neighbors(self, T: float) -> Tuple[Optional[int], Optional[int]]:
         """
-        Return indices (i_left, i_right) of nearest segments such that:
-          end[i_left] <= T <= start[i_right], with end[i_left] < start[i_right].
-        If not found on one side, that index is None.
+        Return indices (i_left, i_right) of nearest segments such that
+        ``end[i_left] <= T <= start[i_right]``, with
+        ``end[i_left] < start[i_right]``. If not found on one side, that index
+        is None.
         """
         # Left candidate: segment with maximum end <= T
         left_candidates = np.where(self._ends <= T)[0]
@@ -669,44 +670,97 @@ Inconel625 = Material(
 Typical use: hot-section hardware, manifolds, and fasteners. Density ~8.44 g/cc.
 """
 
-# --------
-# GRCop-42
-# --------
+# --------------------------------------------------
+# GRCop-42 and GRCop-84, laser powder bed fusion (AM)
+# --------------------------------------------------
 
-# Monokrousos 2024 sum-of-Gaussians (1–1300 K)
-k42_mono = SumOfGaussiansModel(params=[
-    (1.404e4,  6.796,  4.891),
-    (1.302e4, 12.82,   7.552),
-    (4.556e3, 24.51,  15.08 ),
-    (7.45e2, -3807.0, 5431.0),
-])
+# Chen et al., "Thermophysical properties of additively manufactured (AM)
+# GRCop-42 and GRCop-84", Materials Today Communications 36 (2023) 106665,
+# doi:10.1016/j.mtcomm.2023.106665. Laser-flash conductivity of eight GRCop-42
+# and two GRCop-84 L-PBF builds, from several vendors and machines, measured
+# from 25 to 700 °C. The GRCop-42 builds fall within about ±4 % of their mean;
+# the two GRCop-84 builds differ by about 6 %.
+#
+# Only 298-973 K is measured. Below it, k is held at its 298 K value: a
+# Wiedemann-Franz/Matthiessen model fits the measured range to 2 % in two
+# different ways that disagree by 25 % at 120 K, so the data cannot say which
+# way it goes. Above it, k continues linearly with the slope at 973 K up to
+# the solidus.
 
-# ---- GRCop-42: Chen 2023 measured AM correlation (≈295–973 K) ----
-# Placeholder: implement with the exact equation from the paper.
-# For now, treat as tabulated if you only have digitized points:
-#T_chen = np.array([300, 400, 600, 800, 900, 973], float)  # example anchors
-#k_chen = np.array([~340, ~350, ~360, ~330, ~310, ~300], float)  # replace with the paper’s values
-#k42_chen = TabulatedModel(Ts=T_chen, Ys=k_chen)
+def _grcop_k(coeffs_per_kK, T_solidus):
+    """Conductivity [W/m·K] from a cubic in T/1000 fitted over 298-973 K."""
+    c0, c1, c2, c3 = coeffs_per_kK
+    measured = PolynomialModel(coeffs=[c0, c1/1e3, c2/1e6, c3/1e9])
+    T_lo, T_hi = 298.15, 973.15
+    k_lo, k_hi = float(measured(T_lo)), float(measured(T_hi))
+    slope = (c1 + 2*c2*T_hi/1e3 + 3*c3*(T_hi/1e3)**2)/1e3
+    return PiecewiseModel(
+        segments=[
+            (10.0, T_lo, ConstantModel(k_lo)),
+            (T_lo, T_hi, measured),
+            (T_hi, T_solidus, PolynomialModel(coeffs=[k_hi - slope*T_hi, slope])),
+        ],
+        range_policy="warn_clip",
+    )
 
-# ---- Piecewise: favor measured AM segment where available; else use Monokrousos ----
-#k_GRCop42 = PiecewiseModel(
-#    segments=[
-#        (1.0,     300.0,  k42_mono),
-#        (300.0,   973.0,  k42_chen),  # measured correlation once you plug it in
-#        (973.0,  1300.0,  k42_mono),
-#    ],
-#    blend=30.0,
-#    range_policy="warn_clip"
-#)
 
-GRCop42 = Material(
-    name="GRCop-42",
-    k=k42_mono,
+def _grcop_alpha(strain_coeffs):
+    """Instantaneous CTE [1/K], the derivative of a thermal-strain cubic in (T - 273).
+
+    Chen et al. fit strain over 20-1000 °C; their printed CTE equations are
+    garbled, so the CTE is taken from the strain fit instead.
+    """
+    derivative = np.polynomial.Polynomial(strain_coeffs).deriv()
+    in_kelvin = derivative(np.polynomial.Polynomial([-273.0, 1.0]))
+    return PiecewiseModel(
+        segments=[(293.15, 1273.15, PolynomialModel(coeffs=list(in_kelvin.coef)))],
+        range_policy="warn_clip",
+    )
+
+
+# GRCop-42: Chen Eq. 3, the mean of all eight builds (the paper prints its
+# linear term as "0.97x"). Solidus 1040 °C.
+k_GRCop42_AM = _grcop_k([329.14, 0.97, 4.17, -39.86], T_solidus=1313.15)
+
+GRCop42_AM = Material(
+    name="GRCop-42 (AM)",
+    k=k_GRCop42_AM,
     E=ConstantModel(130e9),       # ~129.7 GPa typical RT; vendor/AM data
-    alpha=ConstantModel(15.5e-6), # representative RT CTE; Chen et al. measure full curve
+    alpha=_grcop_alpha([-5.89e-4, 1.51e-5, 6.28e-9, -1.88e-12]),  # Chen Eq. 9
     nu=ConstantModel(0.34),       # commonly reported/used value
     rho=ConstantModel(8890.0)     # theoretical density; AM parts ~8790 kg/m^3 after HIP
 )
+"""GRCop-42 built by laser powder bed fusion, from Chen et al. (2023).
+
+Conductivity is measured over 298-973 K, held constant below and extended
+linearly above to the solidus. About 85 % of pure copper at room temperature.
+"""
+
+# GRCop-84: Chen give no conductivity equation, only the two builds in their
+# Fig. 2(b). Those were digitised at the eight test temperatures and their
+# mean fitted by a cubic in T/1000 like Eq. 3 (largest residual 0.8 W/m·K).
+# Solidus 1080 °C.
+T_GRCop84 = np.array([25.0, 100.0, 200.0, 300.0, 400.0, 500.0, 600.0, 700.0]) + 273.15
+k_GRCop84_builds = np.array([
+    [308.6, 304.7, 303.2, 300.5, 296.6, 292.3, 285.9, 275.4],   # GRCop-84-1
+    [291.3, 288.4, 287.5, 285.2, 281.7, 277.1, 271.3, 262.1],   # GRCop-84-2
+])
+k_GRCop84_AM = _grcop_k([319.011, -106.155, 174.029, -121.201], T_solidus=1353.15)
+
+GRCop84_AM = Material(
+    name="GRCop-84 (AM)",
+    k=k_GRCop84_AM,
+    alpha=_grcop_alpha([-6.92e-4, 1.59e-5, 1.63e-9, 1.58e-12]),  # Chen Eq. 10
+)
+"""GRCop-84 built by laser powder bed fusion, from Chen et al. (2023).
+
+Conductivity is the mean of two builds over 298-973 K, held constant below
+and extended linearly above to the solidus. Modulus, Poisson's ratio and
+density are not given by the source and are left unset.
+"""
+
+#: Kept for existing scripts; it is the AM model.
+GRCop42 = GRCop42_AM
 
 ZirconiumOxide = Material(
     name = "Zirconium Oxide",
@@ -714,10 +768,75 @@ ZirconiumOxide = Material(
     rho     = ConstantModel(5600)
 )
 
-TEOS = Material(
-    name = "TEOS",
-    k = ConstantModel(0.5) # Somewhere in the range of 0.5 - 1?
+# ---------------------------------------
+# Silica deposit (dense vitreous silica)
+# ---------------------------------------
+
+# Carwile and Hoge, "Thermal Conductivity of Vitreous Silica: Selected Values",
+# U.S. Army Natick Laboratories, Technical Report 67-7-PR (1966), DTIC AD0636276.
+# A critical review of the published data from 30 to 2100 K.
+#
+# 80-660 K is their Table 1, the recommended master curve, given in
+# millical/(cm s K) and converted here with 1 millical/(cm s K) = 0.4184 W/(m K).
+# They put it within ±7 % between 150 and 450 K, widening to ±15 % at 660 K.
+#
+# 850-1960 K is the dashed "without radiation (estimated)" curve of their
+# Fig. 3, digitised here. They derive it by holding k/cp at its 473-623 K value
+# and scaling by Sosman's heat capacity, and call it "a rough but reasonable
+# estimate". The measured data at those temperatures lie higher because heat
+# radiates through clear centimetre-thick samples. That radiative part grows
+# with sample thickness and does not apply to a layer tens of microns thick.
+# 660-850 K is a straight line between the two.
+T_vitreous_silica = np.array(
+    [
+        80.0, 100.0, 120.0, 140.0, 160.0, 180.0, 200.0, 220.0, 240.0,
+        260.0, 280.0, 300.0, 320.0, 340.0, 360.0, 380.0, 400.0, 420.0,
+        440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0,
+        620.0, 640.0, 660.0,
+        850.0, 900.0, 1000.0, 1100.0, 1200.0, 1300.0, 1400.0, 1450.0,
+        1500.0, 1600.0, 1700.0, 1800.0, 1900.0, 1960.0,
+    ],
+    dtype=float,
 )
+k_vitreous_silica_values = 0.4184 * np.array(
+    [
+        1.31, 1.61, 1.88, 2.12, 2.33, 2.52, 2.69, 2.84, 2.97,
+        3.09, 3.19, 3.28, 3.36, 3.43, 3.50, 3.56, 3.61, 3.66,
+        3.72, 3.77, 3.83, 3.88, 3.93, 3.99, 4.04, 4.10, 4.15,
+        4.20, 4.24, 4.28,
+        4.55, 4.59, 4.69, 4.78, 4.83, 4.90, 4.91, 4.97,
+        5.09, 5.33, 5.50, 5.67, 5.76, 5.82,
+    ],
+    dtype=float,
+)
+k_vitreous_silica = PiecewiseModel(
+    segments=[
+        (
+            T_vitreous_silica[0],
+            T_vitreous_silica[-1],
+            TabulatedModel(Ts=T_vitreous_silica, Ys=k_vitreous_silica_values),
+        )
+    ],
+    range_policy="warn_clip",
+)
+
+SilicaDeposit = Material(
+    name="Silica deposit (dense vitreous SiO2)",
+    k=k_vitreous_silica,
+)
+"""Silica laid down on the hot wall by a silicon fuel additive such as TEOS.
+
+Conductivity is that of dense vitreous silica without radiative transfer, from
+Carwile and Hoge (1966): 1.37 W/m·K at 300 K, 1.79 W/m·K at 660 K and about
+2.1 W/m·K at 1500 K. Below 660 K it is measured; above, it is their estimate.
+
+No measured conductivity of an additive-formed deposit was found. Such a
+deposit is likely porous and then conducts less than this. Only the thermal
+resistance ``t/k`` of the layer enters the solve, so read its thickness as the
+thickness of dense silica with the same resistance, and calibrate it against a
+measured drop in heat load. Use it as a ``role="liner"`` wall ahead of the
+chamber wall. Density is left unset, since a porous deposit's is not known.
+"""
 
 
 # -------------------------

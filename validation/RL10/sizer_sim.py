@@ -245,7 +245,7 @@ def build_blocks(params, thrust_chamber):
         load_fraction=params["stage1_load_fraction"],
         p_base=params["p_c"],
         input_p=params["p_tank_fu"],
-        eta=params["eta_pump_fu"],
+        hydraulic_efficiency=params["eta_pump_fu"],
         n=params["n_fu"],
         medium=fu,
     ))
@@ -269,7 +269,7 @@ def build_blocks(params, thrust_chamber):
         load_fraction=1.0 - params["stage1_load_fraction"],
         p_base=params["p_c"],
         input_p=params["p_tank_fu"],
-        eta=params["eta_pump_fu"],
+        hydraulic_efficiency=params["eta_pump_fu"],
         n=params["n_fu"],
         medium=fu,
     ))
@@ -379,7 +379,7 @@ def build_blocks(params, thrust_chamber):
         load_fraction=1.0,
         p_base=params["p_c"],
         input_p=params["p_tank_ox"],
-        eta=params["eta_pump_ox"],
+        hydraulic_efficiency=params["eta_pump_ox"],
         n=params["n_ox"],
         medium=ox,
     ))

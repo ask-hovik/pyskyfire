@@ -13,7 +13,7 @@ from pyskyfire.regen.channel_layout import ChannelLayout, ResolvedChannel
 from pyskyfire.regen.cross_section import CrossSectionSquared, CrossSectionRounded
 from pyskyfire.viz import (
     Anchor, FieldData, ImpellerComponent, MeshData, PipeComponent, Scene,
-    SceneNode, ThrustChamberComponent, Transform, VoluteComponent, pipe_fields,
+    SceneNode, ThrustChamberComponent, Transform, VoluteComponent, duct_fields,
     volute_fields,
 )
 from pyskyfire.viz.backends.threejs import scene_payload
@@ -195,6 +195,9 @@ class ConstantTransport:
     def get_mu(self, T, p):
         return 1.0e-3
 
+    def get_cp(self, T, p):
+        return 4180.0
+
 
 def solved_bent_pipe():
     from pyskyfire.thermo import PHASE_UNKNOWN, FluidState
@@ -228,8 +231,8 @@ def test_pipe_result_becomes_station_point_fields_and_connection_cell_fields():
     root = PipeComponent(pipe, result, n_theta=8, segments=4).build()
     path = pipe.display_path(segments=4)
 
-    assert set(pipe_fields(result)) == set(root.fields)
-    for name in ("p_static", "T_static", "density", "velocity"):
+    assert set(duct_fields(result)) == set(root.fields)
+    for name in ("p_stagnation", "p_static", "T_stagnation", "T_static", "density", "velocity"):
         assert root.fields[name].association == "point"
         assert len(root.fields[name].values) == len(root.mesh.points)
     for name in ("pressure_loss", "reynolds", "darcy_factor", "loss_coefficient"):
@@ -238,7 +241,7 @@ def test_pipe_result_becomes_station_point_fields_and_connection_cell_fields():
 
     # Station values land on their own stations; the bend interpolates between.
     pressure = root.fields["p_static"].values.reshape(-1, 8)[:, 0]
-    np.testing.assert_allclose(pressure[[0, 1, 5, 6]], result.p, rtol=1e-12)
+    np.testing.assert_allclose(pressure[[0, 1, 5, 6]], result.p_static, rtol=1e-12)
     assert np.all(np.diff(pressure) <= 0)
     # A lumped bend defines no Darcy factor, and the NaN survives the mapping.
     darcy = root.fields["darcy_factor"].values.reshape(-1, 2*8)[:, 0]
@@ -252,8 +255,8 @@ def test_pipe_fields_reject_wrong_association_lengths():
         PipeComponent(pipe, {"p": FieldData([1., 2.], "Pa", "P")}).build()
     with pytest.raises(ValueError, match="one value per pipe connection"):
         PipeComponent(pipe, {"p": FieldData([1., 2.], "Pa", "P", "cell")}).build()
-    with pytest.raises(TypeError, match="PipeResult"):
-        pipe_fields(result.stations)
+    with pytest.raises(TypeError, match="DuctResult"):
+        duct_fields(result.stations)
 
 
 def test_solver_pipe_shares_a_color_field_with_a_chamber():
@@ -263,7 +266,7 @@ def test_solver_pipe_shares_a_color_field_with_a_chamber():
     scene.add(ThrustChamberComponent(chamber, chamber_result, layout=layout), name="chamber")
     duct = scene.add(PipeComponent(pipe, result), name="feed", position=(0, 0, 1))
     limits = scene_payload(scene)["style"]["limits"]
-    assert limits[0] <= float(result.p.min()) and limits[1] >= float(result.p.max())
+    assert limits[0] <= float(result.p_static.min()) and limits[1] >= float(result.p_static.max())
     assert duct.metadata["kind"] == "pipe"
 
 
@@ -272,7 +275,7 @@ def test_impeller_can_share_scene_with_channels_and_pipe():
     from pyskyfire.pump import Impeller
     imp = Impeller(Q=0.01, H=100, n=10000, shaft_diameter=0.02,
                    inlet_hub_diameter=0.03, blade_count=6, beta2_deg=25,
-                   blade_thickness=0.0015)
+                   blade_thickness=0.0015, hydraulic_efficiency=0.85)
     imp.build_geometry(span_points=5, chord_points=33)
     scene = Scene()
     pump = scene.add(ImpellerComponent(imp, n_theta=12), position=(1, 2, 3))
@@ -395,7 +398,8 @@ def test_a_field_with_inconsistent_units_is_not_offered():
 def volute_case(tilt=0.0):
     section = ducts.EllipticalSlottedSection(0.012, 0.003, throat_length=0.002)
     inlet = ducts.VoluteInlet(radius=0.060, C_m=6.0, C_u=45.0)
-    return ducts.Volute(section, inlet, tilt=tilt, n_stations=25)
+    return ducts.Volute(section, inlet, ducts.ConstantAngularMomentum(),
+                        rotation="ccw", tilt=tilt, n_stations=25)
 
 
 def _mesh_area(mesh):
@@ -420,10 +424,13 @@ def test_volute_component_separates_its_openings_from_its_walls():
     assert inlet.color == outlet.color == "red"
     assert passage.color != "red"
 
-    # The slot mouth is the strip of inlet-radius wall the flow enters through.
-    section = volute.section
-    expected = section.inlet_width * 2*np.pi*volute.inlet.radius
-    assert _mesh_area(inlet.mesh) == pytest.approx(expected, rel=1e-3)
+    # The slot mouth is the strip of inlet-radius wall the flow enters through:
+    # the slot width times the swept circumference, which the mesh resolves as
+    # an inscribed polygon on the volute's own station count.
+    segments = len(volute.geometry.theta) - 1
+    expected = (volute.section.inlet_width
+                * 2*segments*volute.inlet.radius*np.sin(np.pi/segments))
+    assert _mesh_area(inlet.mesh) == pytest.approx(expected, rel=1e-9)
 
 
 def test_volute_opening_colour_is_configurable():
@@ -464,3 +471,82 @@ def test_volute_component_rejects_mismatched_field_lengths():
     bad = {"junk": FieldData(np.zeros(3), "1", "Junk")}
     with pytest.raises(ValueError, match="one value per station"):
         VoluteComponent(volute, bad, n_points=8).build()
+
+
+class NamedTransport(ConstantTransport):
+    def __init__(self, fluid):
+        self.fluid = fluid
+
+
+def test_tags_label_added_nodes_and_travel_to_the_viewer():
+    scene = Scene()
+    feed = scene.add(PipeComponent(pipe()), name="feed", tags="fuel path")
+    ret = scene.add(PipeComponent(pipe()), name="return", tags=["fuel path", "hot"],
+                    position=(0, 0, 1))
+    ret.children.append(SceneNode("liner", tags={"hot"}))
+    assert feed.tags == {"fuel path"}
+    payload = scene_payload(scene)
+    assert [node["tags"] for node in payload["nodes"]] == [["fuel path"], ["fuel path", "hot"]]
+    with pytest.raises(ValueError, match="tags"):
+        scene.add(PipeComponent(pipe()), name="bad", tags=["", "x"])
+    assert [node.name for node in scene.nodes] == ["feed", "return"]
+
+
+def test_solved_components_record_the_fluid_they_carry():
+    from pyskyfire.thermo import PHASE_UNKNOWN, FluidState, Fluid
+    state = FluidState(T=300., p=2e6, h=np.nan, quality=np.nan, rho=np.nan,
+                       phase=PHASE_UNKNOWN, T_sat=np.nan)
+    duct = bent_pipe()
+    # thermo.Fluid spells a pure fluid as a one-part HEOS mixture; an alias
+    # such as H2 names the same fluid, so both land in one group.
+    hydrogen = NamedTransport(Fluid("pure", ["Hydrogen"], [1.0]).coolprop_string())
+    solved = duct.solve(inlet_state=state, mass_flow=0.1, transport=hydrogen)
+    assert solved.fluid == "HEOS::Hydrogen[1.000]"
+    assert PipeComponent(duct, solved).build().metadata["fluid"] == "Hydrogen"
+    alias = duct.solve(inlet_state=state, mass_flow=0.1, transport=NamedTransport("H2"))
+    assert PipeComponent(duct, alias).build().metadata["fluid"] == "Hydrogen"
+    # Constant properties, or fields given by hand, name no fluid.
+    _, unnamed = solved_bent_pipe()
+    assert unnamed.fluid is None
+    assert "fluid" not in PipeComponent(duct, unnamed).build().metadata
+    assert "fluid" not in PipeComponent(duct, duct_fields(solved)).build().metadata
+
+    chamber, layout, result = chamber_case()
+    chamber.cooling_circuits[0].coolant_transport = NamedTransport("Methane")
+    root = ThrustChamberComponent(chamber, result, layout=layout).build()
+    assert root.children[0].metadata["fluid"] == "Methane"
+    assert "fluid" not in ThrustChamberComponent(chamber, layout=layout).build().children[0].metadata
+
+
+def test_mixtures_are_labelled_by_mass():
+    from pyskyfire.thermo import Fluid
+    from pyskyfire.viz.components import _fluid_label
+    # thermo.Fluid hands CoolProp mole fractions; the label reads by mass again.
+    ethalox = Fluid("fuel", ["Ethanol", "Water"], [0.8, 0.2]).coolprop_string()
+    assert ethalox == "HEOS::Ethanol[0.610]&Water[0.390]"
+    assert _fluid_label(ethalox) == "Ethanol 80 wt% & Water 20 wt%"
+    # Unknown components keep the spelling they came with.
+    assert _fluid_label("HEOS::Foo[0.5]&Water[0.5]") == "Foo[0.5]&Water[0.5]"
+
+
+def test_parts_take_the_default_colour_unless_given_one():
+    from pyskyfire.viz.scene import DEFAULT_COLOR
+    chamber, layout, _ = chamber_case()
+    channel = ThrustChamberComponent(chamber, layout=layout).build().children[0].children[0]
+    assert channel.color == DEFAULT_COLOR
+    painted = ThrustChamberComponent(chamber, layout=layout, circuit_colors=["red"]).build()
+    assert painted.children[0].children[0].color == "red"
+
+
+def test_repeated_channels_share_their_field_values_in_the_page():
+    chamber, layout, result = chamber_case()
+    scene = Scene(color_by="p_static")
+    scene.add(ThrustChamberComponent(chamber, result, layout=layout), name="chamber")
+    payload = scene_payload(scene)
+    channels = payload["nodes"][0]["children"][0]["children"]
+    assert len(channels) == 6
+    # Six channels from one seed carry one copy of each field's values.
+    refs = {channel["fields"]["p_static"]["values"] for channel in channels}
+    assert len(refs) == 1 and len(payload["values"]) == len(channels[0]["fields"])
+    values = payload["values"][refs.pop()]
+    assert len(values) == len(scene.nodes[0].children[0].children[0].mesh.points)

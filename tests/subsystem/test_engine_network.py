@@ -56,6 +56,10 @@ def test_network_collects_detailed_pipe_result(capsys) -> None:
         def get_mu(T, p):
             return 1.0e-3
 
+        @staticmethod
+        def get_cp(T, p):
+            return 4180.0
+
     pipe = Pipe(
         [PathStation((0, 0, 0)), PathStation((1, 0, 0))],
         [Straight()],
@@ -72,7 +76,7 @@ def test_network_collects_detailed_pipe_result(capsys) -> None:
     assert network.stations["out"].p < network.stations["in"].p
     assert network.signals["dp_feed"] > 0.0
     result = network.block_results["feed"]
-    assert result.p[-1] == pytest.approx(network.stations["out"].p)
+    assert result.p_stagnation[-1] == pytest.approx(network.stations["out"].p)
     capsys.readouterr()
 
 

@@ -41,13 +41,16 @@ import fluids
 import numpy as np
 from scipy.optimize import brentq
 
+from pyskyfire.thermo.eos import fluid_name
 from pyskyfire.thermo.state import FluidState
 
-from .area_law import AreaLaw, ConstantAngularMomentum, VoluteInlet
-from .exit_cone import ExitCone, resolve_exit_cone
+from .area_law import AreaLaw, VoluteInlet
+from .port import Port, PortSite
 from pyskyfire.common.friction import darcy_friction_factor
+from pyskyfire.common.rotation import parse_rotation, rotation_sign
 from .pipe import _property, _state
-from .volute_section import VoluteSection
+from .volute_section import (VoluteSection, section_frames,
+                             solve_section_size)
 
 __all__ = [
     "Volute",
@@ -59,6 +62,10 @@ __all__ = [
 #: Relative mass-flow mismatch above which the inlet velocities are reported as
 #: inconsistent with the mass flow being solved.
 _CONSISTENCY_TOLERANCE = 0.01
+
+#: Relative flange-to-passage diameter change below which the exit cone is
+#: treated as untapered rather than as a diffuser or a contraction.
+_TRANSITION_TOLERANCE = 1.0e-6
 
 
 class VoluteConsistencyWarning(RuntimeWarning):
@@ -136,15 +143,19 @@ class VoluteResult:
     SP : float
         Realised sizing parameter, ``r5*C_u5 / (r6*C6)`` (Aungier Eq. 5-106).
         Unity is the minimum-loss value.
-    omega_meridional, omega_tangential, omega_friction, omega_exit_cone : float
+    omega_meridional, omega_tangential, omega_friction : float
         Loss coefficients from Aungier Eqs. 5-105, 5-107 (with 5-108 applied
-        for a collector), 5-109 and 5-110.
+        for a collector) and 5-109.
+    omega_exit_cone : float
+        The area change into the flange. The Rennels conical diffuser or
+        contraction correlation according to which way the cone tapers, and
+        Aungier's Eq. 5-110 where there is no cone to resolve. See
+        :meth:`loss_breakdown`.
     omega_exit_friction, omega_exit_bend : float
         Wall friction along the exit-cone duct, and the loss of turning it.
         Both are zero without an attached
         :class:`~pyskyfire.ducts.ExitCone`, since there is then no duct to
-        charge them against. See :meth:`loss_breakdown` on how they sit
-        alongside Aungier's own exit-cone term.
+        charge them against.
     omega_total : float
         Their sum.
     pressure_loss : float
@@ -163,6 +174,8 @@ class VoluteResult:
         resolved [kg/m^3].
     states : tuple of FluidState
         Inlet and discharge states.
+    fluid : str or None
+        The CoolProp name the transport carried, or None when it named none.
     """
 
     geometry: VoluteGeometry
@@ -187,10 +200,11 @@ class VoluteResult:
     mass_flow: float
     density: float
     states: tuple
+    fluid: str | None = None
 
     @property
     def total_pressure_loss(self) -> float:
-        """Alias matching :class:`~pyskyfire.ducts.pipe.PipeResult`."""
+        """Alias matching :class:`~pyskyfire.ducts.DuctResult`."""
         return self.pressure_loss
 
     def collected_velocity(self):
@@ -274,18 +288,12 @@ class VoluteResult:
     def loss_breakdown(self) -> dict:
         """Loss coefficients by mechanism, for reporting.
 
-        ``exit_cone`` is Aungier's Eq. 5-110, which charges the velocity change
-        between the collection plane and the flange and knows nothing of the
-        duct's length or how sharply it turns. ``exit_friction`` and
-        ``exit_bend`` add exactly those two, from the resolved duct geometry.
-
-        The split is not perfectly clean. Aungier notes Eq. 5-110 is
-        deliberately pessimistic -- "substantially greater" than Weber and
-        Koronowski's -- precisely because the flow entering the exit cone is
-        distorted and swirling, so some allowance for the turn is already
-        buried in it. Summing all three is therefore conservative rather than
-        additive-from-first-principles. They are reported separately so that
-        can be seen rather than hidden.
+        The three exit terms are disjoint. ``exit_cone`` is the area change
+        into the flange, ``exit_friction`` the wall shear along the duct, and
+        ``exit_bend`` the cost of turning it. Where the cone tapers either
+        way, the first two are the two halves of one Rennels coefficient --
+        evaluated at the real friction factor and at zero -- rather than two
+        correlations that might overlap.
         """
         return {
             "meridional": self.omega_meridional,
@@ -307,12 +315,24 @@ class Volute:
         equation.
     inlet : VoluteInlet
         Inlet radius and velocity components.
-    area_law : AreaLaw, optional
-        How the passage grows with azimuth. Defaults to
-        :class:`~pyskyfire.ducts.area_law.ConstantAngularMomentum` at ``SP=1``,
-        the minimum-loss shaped volute.
-    exit_cone : ExitCone, optional
-        The duct carrying the collected flow to its pipe flange. When given,
+    area_law : AreaLaw
+        How the passage grows with azimuth.
+        :class:`~pyskyfire.ducts.area_law.ConstantAngularMomentum` is the
+        shaped volute and :class:`~pyskyfire.ducts.area_law.ConstantArea` the
+        uniform collector. It is stated rather than defaulted because the two
+        are different pieces of hardware, sized by different rules and costing
+        different amounts of pressure, and which one a design uses should be
+        readable from the design.
+    rotation : {'ccw', 'counterclockwise', 'cw', 'clockwise'}
+        Which way the passage winds as it collects, counterclockwise seen from
+        ``+z`` with the axis pointing at the viewer. This must match the sense
+        the machine feeding the volute spins in, once both are placed: a volute
+        wound against the incoming swirl collects the flow backwards. Nothing
+        in the loss analysis changes with it -- like :attr:`tilt`, it mirrors
+        where the passage sits without touching any scalar the model uses.
+    exit_cone : Port, optional
+        The duct carrying the collected flow to its pipe flange, normally an
+        :class:`~pyskyfire.ducts.exit_cone.ExitCone`. When given,
         its final diameter is what :meth:`solve` uses for station 7, so the
         flange size is stated once. Without one the volute stops at the
         full-collection plane and ``solve`` needs an explicit ``exit_diameter``.
@@ -331,19 +351,18 @@ class Volute:
     Geometry is resolved on construction and is independent of the operating
     point, so one volute can be solved at several mass flows.
 
-    Tilt rotates the section plane rigidly, so it changes where the passage
-    sits in space but leaves every scalar in the loss analysis unchanged. It
-    matters for packaging and for :meth:`sweep`, not for pressure loss.
+    Tilt rotates the section plane rigidly, and rotation mirrors the whole
+    passage about a plane through the axis, so both change where the passage
+    sits in space but leave every scalar in the loss analysis unchanged. They
+    matter for packaging and for :meth:`sweep`, not for pressure loss.
     """
 
-    def __init__(self, section, inlet, area_law=None, *, exit_cone=None,
+    def __init__(self, section, inlet, area_law, *, rotation, exit_cone=None,
                  tilt=0.0, n_stations=181):
         if not isinstance(section, VoluteSection):
             raise TypeError("section must be a VoluteSection")
         if not isinstance(inlet, VoluteInlet):
             raise TypeError("inlet must be a VoluteInlet")
-        if area_law is None:
-            area_law = ConstantAngularMomentum()
         if not isinstance(area_law, AreaLaw):
             raise TypeError("area_law must be an AreaLaw")
         n_stations = int(n_stations)
@@ -356,10 +375,12 @@ class Volute:
         self.section = section
         self.inlet = inlet
         self.area_law = area_law
+        self.rotation = parse_rotation(rotation)
         self.tilt = tilt
+        self._sign = rotation_sign(self.rotation)
         self.geometry = self._resolve(n_stations)
-        if exit_cone is not None and not isinstance(exit_cone, ExitCone):
-            raise TypeError("exit_cone must be an ExitCone")
+        if exit_cone is not None and not isinstance(exit_cone, Port):
+            raise TypeError("exit_cone must be a Port, such as an ExitCone")
         self.exit_cone = exit_cone
         self.exit_geometry = None if exit_cone is None else self._resolve_exit(exit_cone)
 
@@ -371,24 +392,22 @@ class Volute:
         """
         local = self.section.fan_origin(self.geometry.size[-1:],
                                         self.geometry.aspect[-1:])[0]
-        theta = float(self.geometry.theta[-1])
-        radial = np.array([math.cos(theta), math.sin(theta), 0.0])
-        axial = np.array([0.0, 0.0, 1.0])
-        u_hat = math.cos(self.tilt)*radial + math.sin(self.tilt)*axial
-        v_hat = -math.sin(self.tilt)*radial + math.cos(self.tilt)*axial
-        return self.inlet.radius*radial + local[0]*u_hat + local[1]*v_hat
+        radial, u_hat, v_hat = section_frames(
+            self.geometry.theta[-1], tilt=self.tilt, sign=self._sign)
+        return (self.inlet.radius*radial[0]
+                + local[0]*u_hat[0] + local[1]*v_hat[0])
 
     def _resolve_exit(self, exit_cone):
         size = self.geometry.size[-1:]
         aspect = self.geometry.aspect[-1:]
         angles = np.linspace(0.0, 2.0*math.pi, 361, endpoint=False)
-        return resolve_exit_cone(
-            exit_cone,
+        return exit_cone.resolve(PortSite(
             start=self.outlet_center(),
             outlet_diameter=2.0*float(size[0]),
             max_section_radius=float(
                 self.section.radial_profile(size, angles, aspect).max()),
-        )
+            sign=self._sign,
+        ))
 
     def sweep_exit_cone(self, n_points=64, n_stations=17):
         """The exit-cone duct swept into machine coordinates.
@@ -430,13 +449,10 @@ class Volute:
         psi = np.arctan2(offset[:, 1], offset[:, 0])
         start_radius = np.linalg.norm(offset, axis=-1)
 
-        theta = float(self.geometry.theta[-1])
-        radial = np.array([math.cos(theta), math.sin(theta), 0.0])
-        axial = np.array([0.0, 0.0, 1.0])
-        u_hat = math.cos(self.tilt)*radial + math.sin(self.tilt)*axial
-        v_hat = -math.sin(self.tilt)*radial + math.cos(self.tilt)*axial
+        _, u_hat, v_hat = section_frames(
+            self.geometry.theta[-1], tilt=self.tilt, sign=self._sign)
 
-        points, u, v = cone.frames(n_stations, start_frame=(u_hat, v_hat))
+        points, u, v = cone.frames(n_stations, start_frame=(u_hat[0], v_hat[0]))
         fraction = np.linspace(0.0, 1.0, len(points))
         blend = fraction**2 * (3.0 - 2.0*fraction)
         radius = ((1.0 - blend)[:, None]*start_radius[None, :]
@@ -452,6 +468,8 @@ class Volute:
         station's section is placed in the plane through the axis at its
         azimuth, rotated about the local tangential direction by
         :attr:`tilt`, with the slot mouth centred on the inlet radius.
+        Azimuth advances toward ``+y`` for a counterclockwise volute and
+        toward ``-y`` for a clockwise one.
 
         Parameters
         ----------
@@ -466,12 +484,8 @@ class Volute:
         """
         ring = self.section.polygon(self.geometry.size, n_points=n_points,
                                     aspect=self.geometry.aspect)
-        theta = self.geometry.theta
-        radial = np.column_stack((np.cos(theta), np.sin(theta), np.zeros_like(theta)))
-        axial = np.zeros_like(radial)
-        axial[:, 2] = 1.0
-        u_hat = math.cos(self.tilt) * radial + math.sin(self.tilt) * axial
-        v_hat = -math.sin(self.tilt) * radial + math.cos(self.tilt) * axial
+        radial, u_hat, v_hat = section_frames(
+            self.geometry.theta, tilt=self.tilt, sign=self._sign)
         origin = self.inlet.radius * radial
         u, v = ring[..., 0], ring[..., 1]
         return (origin[:, None, :]
@@ -489,61 +503,24 @@ class Volute:
             self.section.inlet_width, self.inlet,
         )
 
-    def _solve_size(self, theta, minimum):
+    def _solve_size(self, theta):
         """The smallest section satisfying the area law at ``theta``.
 
-        Returns ``(size, aspect, clipped)``, working down three regimes as the
-        tongue is approached and the law asks for less and less area.
-
-        Away from the tongue the design aspect ratio can hold the law, and only
-        the size is solved for. Closer in, the law wants less area than even
-        the smallest section at that aspect: the bore can never be narrower
-        than the slot feeding it, so the size has bottomed out. Flattening is
-        the way past that -- holding the size at its floor and stretching the
-        section across the slot shrinks its area without narrowing the bore --
-        so the aspect ratio is solved for instead, up to the family's limit.
-        Only when the flattest allowed section is still too big does the law
-        get clipped, and it is clipped to that flattest section rather than to
-        the design-aspect one, which is as close to the law as the family can
-        get.
+        The three regimes are the same ones a manifold works through, so the
+        cascade itself is shared; what a volute supplies is its own residual.
         """
-        design = self.section.aspect_ratio
-        ceiling = self.section.max_aspect_ratio
-
-        if self._residual(minimum, theta, design) < 0.0:
-            high = max(minimum * 2.0, minimum + self.section.inlet_width)
-            for _ in range(60):
-                if self._residual(high, theta, design) > 0.0:
-                    break
-                high *= 2.0
-            else:
-                raise RuntimeError(
-                    f"could not bracket a section size at theta={theta:g} rad; "
-                    "the area law does not appear to be satisfiable by this "
-                    "section"
-                )
-            size = brentq(self._residual, minimum, high, args=(theta, design),
-                          xtol=1e-14, rtol=1e-12)
-            return size, design, False
-
-        if ceiling > design and self._residual(minimum, theta, ceiling) < 0.0:
-            aspect = brentq(
-                lambda value: self._residual(minimum, theta, value),
-                design, ceiling, xtol=1e-12, rtol=1e-12,
-            )
-            return minimum, aspect, False
-
-        return minimum, ceiling, True
+        return solve_section_size(
+            self.section,
+            lambda size, aspect: self._residual(size, theta, aspect))
 
     def _resolve(self, n_stations):
         theta = np.linspace(0.0, 2.0 * math.pi, n_stations)
-        minimum = self.section.minimum_size
         sizes = np.empty(n_stations)
         aspects = np.empty(n_stations)
         clipped = np.zeros(n_stations, dtype=bool)
         for index, angle in enumerate(theta):
             sizes[index], aspects[index], clipped[index] = self._solve_size(
-                float(angle), minimum)
+                float(angle))
         area, centroid, _ = self.section.metrics(sizes, aspects)
         return VoluteGeometry(
             theta=theta,
@@ -557,33 +534,76 @@ class Volute:
     # -- performance ------------------------------------------------------
 
     def _exit_cone_losses(self, rho, mu, C_5, C_6, C_7, roughness, friction_model):
-        """Wall friction and bend loss of the exit-cone duct.
+        """Diffusion, wall friction and bend loss of the exit-cone duct.
 
-        Both are referred to the inlet velocity head, like every other
-        coefficient here, and both are zero without an attached exit cone.
+        All three are referred to the inlet velocity head, like every other
+        coefficient here.
 
-        The duct's area varies along its length, from the volute's outlet
-        section to the flange, so friction is charged at the mean of the two
-        velocity heads over the mean of the two hydraulic diameters rather
-        than integrated -- a duct one or two diameters long does not earn a
-        marching solution. The bend uses the same ``fluids`` correlation the
-        pipe solver uses for a rounded bend, at the duct's own centreline
-        radius and turn.
+        An exit cone is a conical transition, and how gradually it opens out
+        or closes in is most of what decides its loss. Aungier's Eq. 5-110
+        charges the whole velocity head change, ``(C_6 - C_7)**2``, which is
+        the Borda-Carnot loss of a *sudden* expansion and carries no angle
+        dependence at all: it returns the same loss for a duct that opens out
+        over three degrees as for one that dumps straight into the pipe. That
+        is a fair model only when there is no cone to speak of, so it is kept
+        for exactly that case, and the matching Rennels correlation is used
+        whenever there is a real cone to resolve. The diffuser branch
+        approaches the same Borda-Carnot value as the included angle opens
+        toward 180 degrees, so the two agree where they should.
+
+        A flange narrower than the passage feeding it is a contraction rather
+        than a diffuser, and a much cheaper one -- Borda-Carnot is not merely
+        angle-blind there but the wrong shape of formula, since it is derived
+        for a flow that separates on expanding. Both directions take their own
+        Rennels correlation, which is why the coefficient is referred to
+        whichever end is the faster: the passage for a diffuser, the flange
+        for a contraction.
+
+        Rennels carries its own wall-friction term either way, so friction is
+        not charged again separately. Evaluating the correlation twice, once
+        at the real friction factor and once at zero, splits its coefficient
+        into the transition and friction parts the breakdown reports. As the
+        cone flattens toward a plain tube that friction term tends to
+        ``darcy * length / diameter``, which is what the untapered branch
+        charges, so the two meet without a step. The bend uses the same
+        ``fluids`` correlation the pipe solver uses for a rounded bend, at the
+        duct's own centreline radius and turn.
         """
         cone = self.exit_geometry
         if cone is None:
-            return 0.0, 0.0
+            return ((C_6 - C_7) / C_5) ** 2, 0.0, 0.0
 
         entry = math.sqrt(4.0 * self.geometry.area[-1] / math.pi)
-        diameter = 0.5 * (entry + cone.final_diameter)
+        final = cone.final_diameter
+        diameter = 0.5 * (entry + final)
         velocity = 0.5 * (C_6 + C_7)
         reynolds = rho * velocity * diameter / mu
         darcy = darcy_friction_factor(reynolds, diameter, roughness,
                                       model=friction_model)
-        friction = darcy * (cone.arc_length / diameter) * (velocity / C_5) ** 2
+
+        if abs(final - entry) > entry * _TRANSITION_TOLERANCE:
+            if final > entry:
+                correlation = fluids.fittings.diffuser_conical
+                head = (C_6 / C_5) ** 2
+            else:
+                correlation = fluids.fittings.contraction_conical
+                head = (C_7 / C_5) ** 2
+            included = 2.0 * math.atan(0.5 * abs(final - entry) / cone.arc_length)
+            # Both correlations take the upstream bore first, whichever is wider.
+            shape = dict(Di1=entry, Di2=final,
+                         angle=math.degrees(included), method="Rennels")
+            change = correlation(fd=0.0, **shape)
+            total = correlation(fd=darcy, **shape)
+            transition = change * head
+            friction = (total - change) * head
+        else:
+            # A flange the passage already matches: no area change to charge,
+            # just the wall the flow rubs along on its way there.
+            transition = 0.0
+            friction = darcy * (cone.arc_length / diameter) * (velocity / C_5) ** 2
 
         if cone.is_straight:
-            return friction, 0.0
+            return transition, friction, 0.0
         ratio = cone.bend_radius / diameter
         if ratio < 0.5:
             warnings.warn(
@@ -598,7 +618,7 @@ class Volute:
             rc=cone.bend_radius, Re=reynolds, roughness=roughness,
             method="Miller",
         ) * (velocity / C_5) ** 2
-        return friction, bend
+        return transition, friction, bend
 
     def solve(
         self,
@@ -694,13 +714,9 @@ class Volute:
             ) / 4.0
             omega_sf = 4.0 * c_f * (C_6 / C_5) ** 2 * path_length / d_H
 
-            # Eq. 5-110.
-            omega_ec = ((C_6 - C_7) / C_5) ** 2
-
-            # The duct that carries the flow to the flange: its own wall
-            # friction and, where it turns, its bend loss. Aungier's Eq. 5-110
-            # above charges only the velocity change and is blind to both.
-            omega_ef, omega_eb = self._exit_cone_losses(
+            # The duct that carries the flow to the flange: its diffusion,
+            # its own wall friction, and where it turns, its bend loss.
+            omega_ec, omega_ef, omega_eb = self._exit_cone_losses(
                 rho, mu, C_5, C_6, C_7, roughness, friction_model)
 
             omega_total = omega_m + omega_u + omega_sf + omega_ec + omega_ef + omega_eb
@@ -749,4 +765,5 @@ class Volute:
             mass_flow=mass_flow,
             density=rho,
             states=(_state(T_in, p_in, rho), _state(T_in, p_out, rho)),
+            fluid=fluid_name(transport),
         )

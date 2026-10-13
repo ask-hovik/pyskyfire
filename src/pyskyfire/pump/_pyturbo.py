@@ -9,6 +9,8 @@ import warnings
 
 import numpy as np
 
+from pyskyfire.common.rotation import rotation_sign
+
 from .geometry import BladeSurface, ImpellerGeometry, cylindrical_to_cartesian
 from .impeller import design_value
 
@@ -95,12 +97,16 @@ def build_geometry(definition, *, span_points, chord_points):
     # thickness and the meridional passage are untouched, and the leading edge
     # carries the spanwise wrap difference as sweep.
     stack = model.mainblade.ss_cyl_pts[:,-1,2].copy()
+    # pyTurbo builds in the counterclockwise sense. A clockwise wheel is the
+    # mirror image, so negating theta after stacking reverses it without
+    # touching the meridional passage, the metal angles or the thickness law.
+    sign = rotation_sign(definition.rotation)
 
     def stacked(blade):
         sides = []
         for cyl in (blade.ss_cyl_pts, blade.ps_cyl_pts):
             shifted = np.array(cyl, dtype=float)
-            shifted[:,:,2] -= stack[:,None]
+            shifted[:,:,2] = sign*(shifted[:,:,2] - stack[:,None])
             sides.append(shifted)
         return BladeSurface(*sides)
 
@@ -162,4 +168,4 @@ def build_geometry(definition, *, span_points, chord_points):
     return ImpellerGeometry(definition.meridional.hub, definition.meridional.shroud,
                             main, definition.blade_count, splitter,
                             0.5 if definition.splitter is None else definition.splitter.pitch_fraction,
-                            installed, max_error)
+                            installed, max_error, definition.rotation)

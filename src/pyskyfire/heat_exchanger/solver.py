@@ -128,7 +128,86 @@ def _single_phase(resolver, h, p):
     return state
 
 
-def _march(circuit, inlet, heat, resolver, friction_model):
+#: Largest scaled change a segment's outlet may still show when it is accepted.
+SEGMENT_TOLERANCE = 1e-10
+#: Evaluations of the segment map allowed before the march gives up.
+SEGMENT_EVALUATIONS = 60
+
+
+def _segment_outlet(G, x0, scale):
+    """Outlet ``(p, h)`` of one segment, the fixed point ``x = G(x)``.
+
+    ``G(x)`` returns the pressure and enthalpy the segment's friction,
+    acceleration and energy balance imply for a trial outlet ``x``, plus
+    whatever it computed on the way, which is returned for the accepted ``x``.
+    ``scale`` makes both components of order one.
+
+    ``G`` depends on ``x`` only through the outlet and midpoint density and
+    velocity, so it is strongly contractive in practice: plain substitution
+    already gains an order of magnitude a step. Broyden's method, the secant
+    method in two unknowns, is used on ``F(x) = G(x) - x``, starting from
+    ``B = -I`` so the first step is plain substitution. Any step that does not
+    reduce the largest scaled component of ``F``, or that lands on a state the
+    map cannot evaluate, is replaced by the half step ``x + F/2`` and the
+    Jacobian estimate is restarted. That is the fixed damped iteration this
+    replaces, kept for segments where ``G`` is not contractive.
+
+    Returns ``(x, extras, evaluations)``, or ``None`` for ``x`` if
+    :data:`SEGMENT_EVALUATIONS` evaluations did not converge.
+    """
+    y = np.asarray(x0, float) / scale
+    target, extras = G(y * scale)
+    F = target / scale - y
+    B = -np.eye(2)
+    evaluations = 1
+    while evaluations < SEGMENT_EVALUATIONS:
+        size = float(np.max(np.abs(F)))
+        if size < SEGMENT_TOLERANCE:
+            return y * scale, extras, evaluations
+        step = -np.linalg.solve(B, F)
+        try:
+            trial_target, trial_extras = G((y + step) * scale)
+            evaluations += 1
+            trial_F = trial_target / scale - (y + step)
+            accepted = float(np.max(np.abs(trial_F))) < size
+        except (ValueError, RuntimeError):
+            evaluations += 1
+            accepted = False
+        if accepted:
+            B += np.outer(trial_F - F - B @ step, step) / float(step @ step)
+        else:
+            step = 0.5 * F
+            trial_target, trial_extras = G((y + step) * scale)
+            evaluations += 1
+            trial_F = trial_target / scale - (y + step)
+            B = -np.eye(2)
+        y, F, extras = y + step, trial_F, trial_extras
+    if float(np.max(np.abs(F))) < SEGMENT_TOLERANCE:
+        return y * scale, extras, evaluations
+    return None, extras, evaluations
+
+
+def _wetted_wall_temperatures(name, n_segments, walls):
+    """Area-averaged wall temperature at the fluid interface of each segment.
+
+    NaN where the segment has no wall result yet.
+    """
+    sums, areas = np.zeros(n_segments), np.zeros(n_segments)
+    for w in walls:
+        if w.circuit_a == name:
+            i, T = w.segment_a, w.temperature_a
+        elif w.circuit_b == name:
+            i, T = w.segment_b, w.temperature_b
+        else:
+            continue
+        sums[i] += T * w.area
+        areas[i] += w.area
+    return np.divide(sums, areas, out=np.full(n_segments, np.nan), where=areas > 0)
+
+
+def _march(circuit, inlet, heat, resolver, friction_model, wall_temperatures=None):
+    """March one bank. ``wall_temperatures`` are per-segment wetted-wall
+    temperatures for the Gnielinski property correction; NaN or None skips it."""
     mdot = inlet.mass_flow / circuit.n_channels
     first = _single_phase(resolver, resolver.enthalpy(inlet.T, inlet.p), inlet.p)
     states = [first]
@@ -143,8 +222,9 @@ def _march(circuit, inlet, heat, resolver, friction_model):
     for i, length in enumerate(circuit.path.lengths):
         up, u0 = states[-1], velocity[-1]
         h_total = up.h + u0 * u0 / 2 + heat[i] / mdot
-        p1, h1 = up.p, h_total - u0 * u0 / 2
-        for sweep in range(60):
+
+        def segment(x, i=i, length=length, up=up, u0=u0, h_total=h_total):
+            p1, h1 = x
             if p1 <= 0:
                 raise RuntimeError(
                     f"{circuit.name}: pressure fell below zero at segment {i}"
@@ -163,27 +243,38 @@ def _march(circuit, inlet, heat, resolver, friction_model):
             )
             loss = factor * length / diameters[i] * mid.rho * u * u / 2
             acceleration = acceleration_pressure_drop(up.rho, u0, down.rho, u1)
-            target_p = up.p - loss - acceleration
-            target_h = h_total - u1 * u1 / 2
-            error = max(
-                abs(target_p - p1) / max(up.p, 1),
-                abs(target_h - h1) / max(abs(h_total), 1),
-            )
-            if error < 1e-10:
-                break
-            p1 = 0.5 * p1 + 0.5 * target_p
-            h1 = 0.5 * h1 + 0.5 * target_h
-        else:
+            target = np.array([up.p - loss - acceleration, h_total - u1 * u1 / 2])
+            return target, (down, u1, mid, Re, fd, factor, loss, acceleration)
+
+        scale = np.array([max(up.p, 1.0), max(abs(h_total), 1.0)])
+        x, extras, _ = _segment_outlet(
+            segment, (up.p, h_total - u0 * u0 / 2), scale
+        )
+        if x is None:
             raise RuntimeError(
                 f"{circuit.name}: pressure/energy iteration failed at segment {i}; reduce step or flow speed"
             )
+        down, u1, mid, Re, fd, factor, loss, acceleration = extras
         k = _property(circuit.transport, "k", mid.T, mid.p)
         Pr = _property(circuit.transport, "Pr", mid.T, mid.p)
         # Gnielinski receives the straight Darcy factor; coil friction is not
         # implicitly reused as an unvalidated heat-transfer enhancement.
         if circuit.heat_transfer is None:
+            wall_T = None if wall_temperatures is None else wall_temperatures[i]
+            corrected = (
+                circuit.property_correction
+                and wall_T is not None
+                and np.isfinite(wall_T)
+            )
             htc = h_internal(
-                Re, Pr, k, diameters[i], fd, laminar_nusselt=circuit.laminar_nusselt
+                Re,
+                Pr,
+                k,
+                diameters[i],
+                fd,
+                laminar_nusselt=circuit.laminar_nusselt,
+                bulk_temperature=mid.T if corrected else None,
+                wall_temperature=wall_T if corrected else None,
             )
         else:
             htc = float(
@@ -413,8 +504,16 @@ class HeatExchanger:
                         )
                 else:
                     inlet = inlets[name]
+                # Wall temperatures lag one coupling iteration; convergence
+                # requires them to stop moving, so the final coefficients use
+                # the final walls.
                 results[name] = _march(
-                    c, inlet, heat[name], resolvers[name][0], friction_model
+                    c,
+                    inlet,
+                    heat[name],
+                    resolvers[name][0],
+                    friction_model,
+                    _wetted_wall_temperatures(name, len(c.s) - 1, previous_walls),
                 )
             candidate, walls = self._exchange(results, boundaries, previous_walls)
             scale = max(1.0, max(float(np.max(np.abs(q))) for q in candidate.values()))

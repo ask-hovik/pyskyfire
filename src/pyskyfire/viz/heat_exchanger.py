@@ -79,7 +79,7 @@ def plot_heat_exchanger_geometry(exchanger, *, installation=None):
 
 
 def heat_exchanger_report(
-    exchanger, result, *, title="Heat exchanger", installation=None
+    exchanger, result, *, title="Heat exchanger", installation=None, scene=None
 ):
     """Create a Report with geometry, fluid states, wall temperatures, and balance."""
     report = Report(title)
@@ -99,7 +99,12 @@ def heat_exchanger_report(
             "Gas temperature and chemistry are prescribed. Volume is summed over nonoverlapping channel envelopes, including the coolant passages. Ideal series headers are not included in the swept volume."
         )
     geom = report.add_tab("Geometry")
-    geom.add_figure(plot_heat_exchanger_geometry(exchanger, installation=installation))
+    if scene is None:
+        geom.add_figure(
+            plot_heat_exchanger_geometry(exchanger, installation=installation)
+        )
+    else:
+        geom.add_iframe(scene.data_url, caption="Chamber and heat exchanger")
     for name, r in result.circuits.items():
         tab = report.add_tab(name)
         c = r.circuit

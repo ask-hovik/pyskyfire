@@ -41,6 +41,7 @@ _LAYOUT_VERSION = 1
 
 _BLOCK_TITLES = {
     "PumpBlock": "Pump",
+    "DiffuserBlock": "Vaned diffuser",
     "TurbineBlock": "Turbine",
     "RegenBlock": "Regen cooling",
     "SimpleDuctBlock": "Duct",

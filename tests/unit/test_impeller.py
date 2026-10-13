@@ -5,14 +5,15 @@ import sys
 import numpy as np
 import pytest
 
-from pyskyfire.pump import Impeller, MeridionalContours, SplitterSettings
+from pyskyfire.pump import Impeller, MeridionalContours, SplitterSettings, outlet_slip
 from pyskyfire.pump.geometry import cylindrical_to_cartesian
+from pyskyfire.pump.impeller import G0, pressure_coefficient
 
 
 def design(**changes):
     args = dict(Q=0.01, H=100., n=10000., shaft_diameter=0.02,
-                inlet_hub_diameter=0.03, blade_count=6, beta2_deg=25.,
-                blade_thickness=0.0015)
+                inlet_hub_diameter=0.03, blade_count=6,
+                blade_thickness=0.0015, hydraulic_efficiency=0.85)
     args.update(changes)
     return Impeller(**args)
 
@@ -62,17 +63,91 @@ def test_meridional_passage_stays_open_and_preserves_end_dimensions():
         MeridionalContours(mer.hub, bad)
 
 
-def test_supplied_efficiencies_and_pressure_rise_constructor():
+def test_pressure_rise_constructor_and_blade_power():
     imp = Impeller.from_pressure_rise(mdot=10, rho=1000, dp=980665, n=10000,
-        shaft_diameter=.02, inlet_hub_diameter=.03, blade_count=6, beta2_deg=25,
-        blade_thickness=.0015, volumetric_efficiency=.97,
-        hydraulic_efficiency=.85, mechanical_efficiency=.98)
+        shaft_diameter=.02, inlet_hub_diameter=.03, blade_count=6,
+        blade_thickness=.0015, volumetric_efficiency=.97, hydraulic_efficiency=.85)
     assert imp.Q == pytest.approx(.01)
     assert imp.H == pytest.approx(100)
-    assert imp.overall_efficiency == pytest.approx(.97*.85*.98)
-    assert imp.shaft_power == pytest.approx(980665*.01/(.97*.85*.98))
-    assert design().shaft_power is None
-    assert design().velocity_triangles.hydraulic_head is None
+    # Every kilogram through the wheel, leakage included, takes g*H/eta_h.
+    assert imp.blade_power == pytest.approx(980665*.01/(.97*.85))
+    assert design().blade_power is None
+
+
+def test_slip_follows_gulich_table_3_2_by_hand():
+    beta, z, d2, b2, u2, Q, e, d1m = 25., 6, .2, .012, 100., .02, .003, .08
+    s = outlet_slip(beta2_deg=beta, blade_count=z, d2=d2, b2=b2, u2=u2, flow=Q,
+                    blade_thickness=e, d1m=d1m)
+    b = np.radians(beta)
+    tau = 1/(1-e*z/(np.pi*d2*np.sin(b)))
+    gamma = .98*(1-np.sqrt(np.sin(b))/z**.7)
+    cm = Q/(np.pi*d2*b2)
+    assert np.exp(-8.16*np.sin(b)/z) > d1m/d2       # k_w = 1 here
+    assert s.diameter_correction == 1.
+    assert s.blockage == pytest.approx(tau)
+    assert s.slip_factor == pytest.approx(gamma)
+    assert s.cu == pytest.approx(u2*(gamma-cm*tau/(u2*np.tan(b))))
+    # A leading edge reaching past the limiting ratio lowers the slip factor.
+    wide = outlet_slip(beta2_deg=beta, blade_count=z, d2=d2, b2=b2, u2=u2, flow=Q,
+                       blade_thickness=e, d1m=.9*d2)
+    limit = np.exp(-8.16*np.sin(b)/z)
+    assert wide.diameter_correction == pytest.approx(1-((.9-limit)/(1-limit))**3)
+    assert wide.slip_factor < s.slip_factor
+    with pytest.raises(ValueError, match="fill the whole outlet"):
+        outlet_slip(beta2_deg=1., blade_count=z, d2=d2, b2=b2, u2=u2, flow=Q,
+                    blade_thickness=.05, d1m=d1m)
+
+
+def test_solved_outlet_angle_makes_the_head():
+    imp = design()
+    t = imp.velocity_triangles
+    # The slip prediction and the head agree by construction.
+    assert t.hydraulic_head == pytest.approx(imp.H, rel=1e-8)
+    assert imp.diagnostics.solved == "beta2"
+    # With nothing else given, d2 comes from Eq. (3.26) at fT = 1.
+    assert imp.dimensions.psi == pytest.approx(pressure_coefficient(imp.dimensions.nq))
+    assert imp.diagnostics.psi_correlation == pytest.approx(imp.dimensions.psi)
+    mean = t.outlet[1]
+    assert mean.cu == pytest.approx(imp.diagnostics.slip.cu)
+    assert mean.cu < mean.u-mean.cm/np.tan(np.radians(mean.beta_metal_deg))
+    assert mean.beta_flow_deg < mean.beta_metal_deg
+    assert imp.diagnostics.deviation_deg == pytest.approx(mean.beta_metal_deg-mean.beta_flow_deg)
+    assert imp.diagnostics.deceleration_ratio == pytest.approx(mean.w/t.inlet[-1].w)
+    # The solved angle is the one the blades are drawn with.
+    assert all(s.beta2_deg == pytest.approx(mean.beta_metal_deg)
+               for s in imp.blade_definition.sections)
+    # A different band factor, or an outright size, moves the wheel.
+    assert design(fT=1.1).dimensions.d2 < imp.dimensions.d2
+    for size in (dict(d2=.16), dict(u2=np.pi*10000*.16/60), dict(psi=2*G0*100/(np.pi*10000*.16/60)**2)):
+        assert design(**size).dimensions.d2 == pytest.approx(.16)
+
+
+def test_given_outlet_angle_solves_the_outlet_diameter():
+    imp = design(beta2_deg=25.)
+    assert imp.diagnostics.solved == "d2"
+    assert imp.velocity_triangles.hydraulic_head == pytest.approx(imp.H, rel=1e-8)
+    assert imp.velocity_triangles.outlet[1].beta_metal_deg == 25.
+    # Solving the angle at that diameter lands back on 25 degrees.
+    back = design(d2=imp.dimensions.d2)
+    assert back.velocity_triangles.outlet[1].beta_metal_deg == pytest.approx(25., abs=1e-6)
+    # A less efficient impeller needs more work, so a larger wheel.
+    assert design(beta2_deg=25., hydraulic_efficiency=.7).dimensions.d2 > imp.dimensions.d2
+
+
+def test_a_head_beyond_the_slip_peak_is_reported_with_what_can_be_had():
+    with pytest.raises(ValueError, match=r"reaches at most psi = [\d.]+"):
+        design(psi=1.6)
+
+
+@pytest.mark.parametrize("changes, message", [
+    ({"beta2_deg": 25., "d2": .16}, "over-specify"),
+    ({"psi": 1., "d2": .16}, "psi and d2"),
+    ({"hydraulic_efficiency": 0}, "hydraulic_efficiency"),
+    ({"blade_count": 2}, "blade_count"),
+])
+def test_closure_inputs_are_checked(changes, message):
+    with pytest.raises(ValueError, match=message):
+        design(**changes)
 
 
 @pytest.mark.parametrize("changes, message", [
@@ -82,6 +157,7 @@ def test_supplied_efficiencies_and_pressure_rise_constructor():
     ({"d1":.5}, "requires"), ({"d1":.02}, "requires"),
     ({"volumetric_efficiency":1.1}, "volumetric_efficiency"),
     ({"hydraulic_efficiency":np.nan}, "hydraulic_efficiency"),
+    ({"b2":0}, "b2"),
     ({"blade_thickness":0}, "blade_thickness"),
     ({"blade_thickness":lambda unknown: 1.}, "unknown argument"),
     ({"blade_thickness":lambda: [1,2]}, "finite scalar"),
@@ -99,7 +175,7 @@ def test_sizing_does_not_import_optional_backend_or_plotting():
 import sys
 from pyskyfire.pump import Impeller
 i = Impeller(Q=.01,H=100,n=10000,shaft_diameter=.02,inlet_hub_diameter=.03,
-             blade_count=6,beta2_deg=25,blade_thickness=.0015)
+             blade_count=6,beta2_deg=25,blade_thickness=.0015,hydraulic_efficiency=.85)
 assert i.geometry is None
 assert not {'pyturbo', 'matplotlib.pyplot', 'plotly', 'pyvista'} & sys.modules.keys()
 """
@@ -229,7 +305,9 @@ def test_sections_stack_on_a_radial_trailing_edge():
 def test_slanted_leading_edge_repairs_the_passage_and_evens_the_wrap():
     from pyskyfire.pump import BladeSettings
     plain = design(beta2_deg=35.)
-    slanted = design(beta2_deg=35., blade_settings=BladeSettings(start=(.34, .05)))
+    # Same outlet, so the passages compare station for station; the slanted
+    # edge moves the mean inlet diameter, so its angle is re-solved there.
+    slanted = design(d2=plain.dimensions.d2, blade_settings=BladeSettings(start=(.34, .05)))
     assert slanted.blade_definition.settings.start == (.34, .05)
     assert BladeSettings().start == (.05, .05)
     straight, slant = (imp.blade_definition.meridional for imp in (plain, slanted))
@@ -293,3 +371,39 @@ def test_leading_edge_slant_must_fit_the_passage():
     from pyskyfire.pump import BladeSettings
     with pytest.raises(ValueError, match="does not fit this passage"):
         design(blade_settings=BladeSettings(start=(.95, .01)))
+
+
+def test_a_clockwise_wheel_is_the_mirror_of_a_counterclockwise_one():
+    """Rotation mirrors the blades and leaves the duty alone.
+
+    Every velocity triangle is a magnitude in the rotating frame, so a wheel
+    that turns the other way does the same hydraulic work; only where its metal
+    sits in space changes.
+    """
+    inputs = dict(Q=0.02, H=800.0, n=30000.0, shaft_diameter=0.012,
+                  inlet_hub_diameter=0.016, blade_count=6, beta2_deg=30.0,
+                  blade_thickness=0.0012, hydraulic_efficiency=0.85)
+    ccw = Impeller(**inputs, rotation="ccw")
+    cw = Impeller(**inputs, rotation="CW")
+
+    assert ccw.rotation == "counterclockwise"
+    assert cw.rotation == "clockwise"
+    assert cw.velocity_triangles == ccw.velocity_triangles
+
+    a = ccw.build_geometry(span_points=5, chord_points=33)
+    b = cw.build_geometry(span_points=5, chord_points=33)
+    assert a.rotation_sign == 1.0 and b.rotation_sign == -1.0
+    for side in ("suction", "pressure"):
+        first = getattr(a.main_blade, side)
+        second = getattr(b.main_blade, side)
+        # The meridional passage is untouched; only theta reverses.
+        assert np.allclose(first[..., :2], second[..., :2])
+        assert np.allclose(first[..., 2], -second[..., 2])
+
+
+def test_an_unrecognised_impeller_rotation_is_refused():
+    with pytest.raises(ValueError, match="rotation must be one of"):
+        Impeller(Q=0.02, H=800.0, n=30000.0, shaft_diameter=0.012,
+                          inlet_hub_diameter=0.016, blade_count=6,
+                          beta2_deg=30.0, blade_thickness=0.0012,
+                          hydraulic_efficiency=0.85, rotation="backwards")

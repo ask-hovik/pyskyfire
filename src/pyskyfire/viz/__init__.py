@@ -25,8 +25,12 @@ from .plot_thermo import *
 from .plot_common import *
 from .engine_viz import *
 from .impeller_viz import *
+from .turbine_viz import *
 from .network_viz import *
 from .sankey import *
 from .scene import *
 from .components import *
 from .heat_exchanger import *
+from .heat_exchanger_component import *
+from .injector_viz import *
+from .plot_ducts import *

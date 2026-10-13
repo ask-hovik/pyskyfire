@@ -533,7 +533,24 @@ def nusselt_gnielinski(Re, Pr, darcy_factor):
     return f8*(Re-1000)*Pr/(1+12.7*np.sqrt(f8)*(Pr**(2/3)-1))
 
 
-def h_internal(Re, Pr, k, Dh, darcy_factor, *, laminar_nusselt=3.66):
+def gnielinski_temperature_correction(bulk_temperature, wall_temperature):
+    """Gnielinski's wall/bulk property factor for a heated gas, ``(T_b/T_w)^0.45``.
+
+    Multiplies a bulk-property Gnielinski Nusselt number. Toward a hot wall the
+    fluid thins and its transport properties shift, which bulk properties alone
+    do not see. A cooled fluid (wall colder than bulk) takes a factor of one,
+    Gnielinski's exponent for gas cooling being zero. The form was fitted at
+    moderate temperature ratios; a cryogen against a hot wall lies well beyond
+    them, so treat the result there as an extrapolation.
+    Reference: Gnielinski (1976); VDI Heat Atlas, chapter G1.
+    """
+    if not np.isfinite([bulk_temperature, wall_temperature]).all() or min(bulk_temperature, wall_temperature) <= 0:
+        raise ValueError("bulk and wall temperatures must be finite and positive")
+    return (bulk_temperature/wall_temperature)**0.45 if wall_temperature > bulk_temperature else 1.
+
+
+def h_internal(Re, Pr, k, Dh, darcy_factor, *, laminar_nusselt=3.66,
+               bulk_temperature=None, wall_temperature=None):
     """Internal coefficient [W/m²/K], with an explicit laminar approximation.
 
     Uses the supplied laminar Nu below Re=2300 and linearly blends to
@@ -542,13 +559,21 @@ def h_internal(Re, Pr, k, Dh, darcy_factor, *, laminar_nusselt=3.66):
     heated passages supply a suitable laminar_nusselt or coefficient model.
     Hydraulic-diameter turbulent use in noncircular passages is an engineering
     approximation. Curvature enhancement is not added to heat transfer.
+
+    Given both ``bulk_temperature`` and ``wall_temperature`` [K], the
+    Gnielinski part is multiplied by
+    :func:`gnielinski_temperature_correction`; the laminar part is not.
     """
     if not np.isfinite([Re, Pr, k, Dh, darcy_factor, laminar_nusselt]).all() or min(Re,Pr,k,Dh,darcy_factor,laminar_nusselt) <= 0:
         raise ValueError("internal convection inputs must be finite and positive")
+    if (bulk_temperature is None) != (wall_temperature is None):
+        raise ValueError("supply both bulk_temperature and wall_temperature, or neither")
     if Re <= 2300:
         Nu = laminar_nusselt
     else:
         Nu_t = nusselt_gnielinski(max(Re,4000), Pr, darcy_factor)
+        if wall_temperature is not None:
+            Nu_t *= gnielinski_temperature_correction(bulk_temperature, wall_temperature)
         w = min(1., (Re-2300)/1700)
         Nu = (1-w)*laminar_nusselt+w*Nu_t
     return Nu*k/Dh

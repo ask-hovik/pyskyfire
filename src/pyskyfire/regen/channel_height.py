@@ -68,12 +68,13 @@ def make_channel_height_fn(
     Examples
     --------
     >>> channel_height_fn = psf.regen.make_channel_height_fn(
-                contour=contour, 
-                region_fractions=[-1.0, 0.25, 1.0], 
-                flat_heights= [0.0032, 0.00134], 
-                pinch_factors= [0.6, -5.0], 
-                transition_widths=[0.1]
-    >>> fn(0.12)  # Evaluate channel height at some axial x
+    ...     contour=contour,
+    ...     region_fractions=[-1.0, 0.25, 1.0],
+    ...     flat_heights=[0.0032, 0.00134],
+    ...     pinch_factors=[0.6, -5.0],
+    ...     transition_widths=[0.1],
+    ... )
+    >>> channel_height_fn(0.12)  # Evaluate channel height at some axial x
     0.0034
     """
     # 1) find throat and endpoints

@@ -124,6 +124,7 @@ The network setup first gathers the station guesses, scalar signals, and compone
 :language: python
 :start-after: tutorial:start:network-setup
 :end-before: tutorial:end:network-setup
+:dedent: 4
 ```
 
 Each block advertises the station and signal keys it consumes and emits. The `EngineNetwork` executes the blocks in the order supplied by the list, merges each block's outputs into its station and signal dictionaries, and measures the maximum relative change in the updated quantities.
@@ -152,6 +153,7 @@ The fuel-side block sequence reads much like an engine flow schematic:
 :language: python
 :start-after: tutorial:start:fuel-side-blocks
 :end-before: tutorial:end:fuel-side-blocks
+:dedent: 4
 ```
 
 `PumpBlock.overcome` deserves special attention. It lists the downstream blocks whose pressure losses the pump must overcome:
@@ -181,6 +183,7 @@ Stage 2 pumps only the selected fraction to the higher pressure needed by the tw
 :language: python
 :start-after: tutorial:start:oxidizer-side-blocks
 :end-before: tutorial:end:oxidizer-side-blocks
+:dedent: 4
 ```
 
 This split avoids raising the entire oxidizer flow to the regenerative-circuit pressure. Change `ox_regen_flow_fraction` to explore the tradeoff between coolant/turbine mass flow and second-stage pump demand.
@@ -206,6 +209,7 @@ Before the first iteration, the script creates initial pressure-drop signals fro
 :language: python
 :start-after: tutorial:start:pressure-drop-signals
 :end-before: tutorial:end:pressure-drop-signals
+:dedent: 4
 ```
 
 This bootstrap step exists because the pumps read downstream pressure-drop signals on their first sweep, while those signals are only calculated by the loss-producing blocks during the sweep. The initial values do not need to be exact, but they should be non-negative and consistent with the station guesses.
@@ -216,6 +220,7 @@ The network is then constructed and solved:
 :language: python
 :start-after: tutorial:start:network-solve
 :end-before: tutorial:end:network-solve
+:dedent: 4
 ```
 
 During one fixed-point sweep, every block receives the current station and signal dictionaries, computes its outputs, and overwrites the corresponding dictionary entries. Pyskyfire records the largest relative update among pressure, temperature, mass flow, and scalar signals. It repeats complete sweeps until that residual falls below `tol` or the iteration limit is reached.
@@ -240,6 +245,7 @@ The main function selects the mode, runs the requested calculation, and saves a 
 :language: python
 :start-after: tutorial:start:run-and-save
 :end-before: tutorial:end:run-and-save
+:dedent: 4
 ```
 
 Both modes save the common result contract:

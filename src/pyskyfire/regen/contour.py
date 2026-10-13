@@ -288,10 +288,8 @@ class Contour:
         return self.A_e/self.A_t
 
     @property
-    def eps_c(self): 
-        """ Get the contraction ratio for the chamber
-        Returns: 
-            (float): contraction ratio """
+    def eps_c(self):
+        """Chamber contraction ratio."""
         return self.A_c/self.A_t
 
     def r(self, x):

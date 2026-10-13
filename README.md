@@ -76,6 +76,8 @@ To include the interactive plots, 3D visualisations, and HTML reports, install t
 uv pip install "pyskyfire[viz]"
 ```
 
+Impeller and turbine blade geometry is drawn with pyTurbo Aero, installed by the `impeller` and `turbine` extras.
+
 Using ```uv pip``` and not plain ```pip``` is optional. For the bleeding edge version, clone the repository and install the development environment. This includes the visualisation, test, and documentation dependencies. For example:
 
 ```
